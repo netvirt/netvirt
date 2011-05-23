@@ -10,11 +10,11 @@ AUTHORS : (in order of commits)
  - Samuel Jean <peejix at gmail dot com>
 
 LICENSE : GPLv2
-DNDS is Copyright (C) 2009, 2010, 2011 Nicolas Bouliane See the file LICENSE
+DNDS is Copyright (C) Nicolas Bouliane See the file LICENSE
 for information of licensing and distribution.
 
 SPONSOR ACKNOWLEDGMENTS :
-Mind4Networks - M4N Technologies INC, 2009, 2010
+Mind4Networks - M4N Technologies inc.
 
 REQUIREMENT :
  - OpenSSL	(Required)
@@ -22,4 +22,4 @@ REQUIREMENT :
 
 OS :
  - Gnu/Linux : Supported.
- - FreeBSD/OpenBSD/NetBSD : Need  more testing.
+ - FreeBSD/OpenBSD/NetBSD : Need more testing.
