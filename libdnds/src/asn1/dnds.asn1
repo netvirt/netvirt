@@ -1,0 +1,222 @@
+-- Dynamic-Network-Directory-Service-Protocol-V1
+-- Copyright (C) Nicolas Bouliane - Mind4Networks, 2010
+
+-- DN> Dynamic Network
+-- DS> Directory Service
+
+DNDS DEFINITIONS AUTOMATIC TAGS ::=
+BEGIN
+
+uint32max INTEGER ::= 4294967295 -- (2^^32 - 1) 
+
+DNDSMessage ::= SEQUENCE {
+	version		INTEGER (0..uint32max),
+	channel		INTEGER (0..127),
+	pdu		CHOICE {			-- Protocol Data Unit
+		dnm		DNMessage,
+		dsm		DSMessage,
+		ethernet	BIT STRING,
+		...					-- Extension marker
+	}
+}
+
+DNDSResult ::= ENUMERATED {
+		success				(1),
+		operationError			(2),
+		protocolError			(3),
+		noSuchObject			(4),
+		busy				(5),
+		secureStepUp			(6),
+		insufficientAccessRights	(7),
+		...
+}
+
+DNMessage ::= SEQUENCE {
+	seqNumber	INTEGER (0..uint32max),
+	ackNumber	INTEGER (0..uint32max),
+	dnop		CHOICE {
+		authRequest		AuthRequest,
+		authResponse		AuthResponse,
+		netinfoRequest		NetinfoRequest,
+		netinfoResponse		NetinfoResponse,
+		p2pRequest		P2pRequest,
+		p2pResponse		P2pResponse,
+		terminateRequest	TerminateRequest,
+		...
+	}
+}
+
+DSMessage ::= SEQUENCE {
+	seqNumber	INTEGER (0..uint32max),
+	ackNumber	INTEGER (0..uint32max),
+	dsop		CHOICE	{
+		authRequest		AuthRequest,
+		authResponse		AuthResponse,
+		addRequest		AddRequest,
+		addResponse		AddResponse,
+		delRequest		DelRequest,
+		delResponse		DelResponse,
+		modifyRequest		ModifyRequest,
+		modifyResponse		ModifyResponse,
+		searchRequest		SearchRequest,
+		searchResponse		SearchResponse,
+		terminateRequest	TerminateRequest,
+		...
+	}
+}
+
+DNDSObject ::= CHOICE {
+	acl		Acl,
+	aclgroup	AclGroup,
+	ippool		IpPool,
+	context		Context,
+	host		Host,
+	node		Node,
+	peer		Peer,
+	permission	Permission,
+	user		User,
+	...
+}
+
+AuthRequest ::= SEQUENCE {
+	certName	IA5String (SIZE(1..256)),
+	...
+}
+
+AuthResponse ::= DNDSResult
+
+P2pRequest ::= SEQUENCE {
+	ipLocal		OCTET STRING (SIZE(4..16)),	-- ipv4 extensible to ipv6
+	macAddrSrc	OCTET STRING (SIZE(6)),	
+	macAddrDst	OCTET STRING (SIZE(6)),
+	...
+}
+
+P2pResponse ::= SEQUENCE {
+	macAddrDst	OCTET STRING (SIZE(6)),
+	ipAddrDst	OCTET STRING (SIZE(4..16)),
+	port		INTEGER (0..uint32max),
+	result		DNDSResult,
+	...
+}
+
+AddRequest ::= DNDSObject
+AddResponse ::= DNDSResult
+
+DelRequest ::= DNDSObject
+DelResponse ::= DNDSResult
+
+ModifyRequest ::= DNDSObject
+ModifyResponse ::= DNDSResult
+
+NetinfoRequest ::= NULL
+NetinfoResponse ::= SEQUENCE {
+	ipAddress	OCTET STRING (SIZE(4..16)),
+	netmask		OCTET STRING (SIZE(4..16)),
+	result		DNDSResult,
+	...
+}
+
+
+SearchRequest ::= DNDSObject
+SearchResponse ::= SEQUENCE {
+	dndsResult	DNDSResult,
+	objects		SEQUENCE OF DNDSObject
+}
+
+TerminateRequest ::= NULL
+
+Acl ::= SEQUENCE {
+	id		INTEGER (0..uint32max),
+	contextId	INTEGER (0..uint32max),
+	description	PrintableString (SIZE(1..256)) OPTIONAL,
+	...
+}
+
+AclGroup ::= SEQUENCE {
+	id		INTEGER (0..uint32max),
+	contextId	INTEGER (0..uint32max),
+	name		PrintableString (SIZE(1..128)) OPTIONAL,
+	description	PrintableString (SIZE(1..256)) OPTIONAL,
+	...
+}
+
+IpPool ::= SEQUENCE {
+	id		INTEGER (0..uint32max),
+	ipLocal		OCTET STRING (SIZE(4..16)) OPTIONAL,
+	ipBegin		OCTET STRING (SIZE(4..16)) OPTIONAL,
+	ipEnd		OCTET STRING (SIZE(4..16)) OPTIONAL,
+	netmask		OCTET STRING (SIZE(4..16)) OPTIONAL,
+	...
+}
+
+Context ::= SEQUENCE {
+	id		INTEGER (0..uint32max),
+	ippoolId	INTEGER (0..uint32max),
+	dnsZone		PrintableString (SIZE(1..128)) OPTIONAL,
+	dnsSerial	INTEGER (0..uint32max) OPTIONAL,
+	vhost		PrintableString (SIZE(1..128)) OPTIONAL,
+	certificate	PrintableString OPTIONAL,
+	certificateKey	BIT STRING OPTIONAL,
+	trustList	NULL OPTIONAL,
+	revokeList	NULL OPTIONAL,
+	description	PrintableString SIZE((1..256)) OPTIONAL,
+	...
+}
+
+Host ::= SEQUENCE {
+	id		INTEGER (0..uint32max),
+	contextId	INTEGER (0..uint32max),
+	peerId		INTEGER (0..uint32max),
+	name		PrintableString (SIZE(1..64)) OPTIONAL,
+	macAddress	OCTET STRING (SIZE(6)) OPTIONAL,
+	ipAddress	OCTET STRING (SIZE(4..16)) OPTIONAL,
+	status		INTEGER (0..127) OPTIONAL,
+	...
+}
+
+Node ::= SEQUENCE {
+	id		INTEGER (0..uint32max),
+	type		INTEGER (0..127) OPTIONAL,
+	name		PrintableString (SIZE(1..64)) OPTIONAL,
+	ipAddress	OCTET STRING (SIZE(4..16)) OPTIONAL,
+	certificate	PrintableString OPTIONAL,
+	certificateKey	BIT STRING OPTIONAL,
+	permission	NULL OPTIONAL,
+	status		INTEGER (0..127) OPTIONAL,
+	...
+}
+
+Permission ::= SEQUENCE {
+	id		INTEGER (0..uint32max),
+        name		PrintableString (SIZE(1..64)) OPTIONAL,
+        matrix		NULL OPTIONAL,
+	...
+}
+
+Peer ::= SEQUENCE {
+	id		INTEGER (0..uint32max),
+        contextId	INTEGER (0..uint32max),
+        name		PrintableString (SIZE(1..64)) OPTIONAL,
+        ipAddress	OCTET STRING (SIZE(4..16)) OPTIONAL,
+	certificate	PrintableString OPTIONAL,
+	certificateKey	BIT STRING OPTIONAL,
+        status		INTEGER (0..127) OPTIONAL,
+	...
+}
+
+User ::= SEQUENCE {
+	id		INTEGER (0..uint32max),
+	contextId	INTEGER (0..uint32max),
+	name		PrintableString (SIZE(6..32)) OPTIONAL,
+	password	PrintableString (SIZE(6..32)) OPTIONAL,
+	firstname	PrintableString (SIZE(1..64)) OPTIONAL,
+	lastname	PrintableString (SIZE(1..64)) OPTIONAL,
+	email		IA5String (SIZE(1..256)) OPTIONAL,
+	role		INTEGER (0..127) OPTIONAL,
+	status		INTEGER (0..127) OPTIONAL,
+	...
+}
+
+END
+
