@@ -13,6 +13,9 @@ LICENSE : GPLv2
 DNDS is Copyright (C) 2009, 2010, 2011 Nicolas Bouliane See the file LICENSE
 for information of licensing and distribution.
 
+SPONSOR ACKNOWLEDGMENTS :
+Mind4Networks - M4N Technologies INC, 2009, 2010
+
 REQUIREMENT :
  - OpenSSL	(Required)
  - UDT4+patch	(Optional, Recommended)
