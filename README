@@ -1,0 +1,22 @@
+ABOUT :
+ DNDS - Dynamic Network Directory Service
+ codename : polestar
+
+A Dynamic VPN solution that allow you to securely access and manage computers/devices via Internet.
+
+AUTHORS : (in order of commits)
+ - Nicolas Bouliane <nicboul at gmail dot com>
+ - Benjamin Vanheuverzwijn <bvanheu at gmail dot com>
+ - Samuel Jean <peejix at gmail dot com>
+
+LICENSE : GPLv2
+DNDS is Copyright (C) 2009, 2010, 2011 Nicolas Bouliane See the file LICENSE
+for information of licensing and distribution.
+
+REQUIREMENT :
+ - OpenSSL	(Required)
+ - UDT4+patch	(Optional, Recommended)
+
+OS :
+ - Gnu/Linux : Supported.
+ - FreeBSD/OpenBSD/NetBSD : Need  more testing.
