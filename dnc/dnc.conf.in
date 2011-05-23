@@ -1,0 +1,10 @@
+##
+# Dynamic Network Client configuration file
+
+# Server address
+# the IP address of the server you want connect to
+server_address = 127.0.0.1
+
+# Server port
+# the PORT number of the server you want connect to
+server_port = 9090
