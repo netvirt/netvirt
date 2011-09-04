@@ -36,12 +36,12 @@ typedef struct rule {
 
 } rule_t;
 
-typedef struct ipf {
+struct ipf {
 
 	rule_t *rules;
 	uint8_t default_policy;
 
-} ipf_t;
+};
 
 ipf_t *ipf_new()
 {
