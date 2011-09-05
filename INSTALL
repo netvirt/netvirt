@@ -1,0 +1,73 @@
+
+ INSTALLATION ON THE LINUX PLATEFORM
+ -----------------------------------
+
+ To install DNDS you will need:
+
+  * build-essential
+  * autotool
+  * libtool
+  * openssl
+  * udt + patch
+
+ Quick Start
+ -----------
+
+ apt-get install build-essential
+ apt-get install autotool
+ apt-get install libtool
+
+ Getting UDT and OpenSSL
+ -----------
+
+ http://www.openssl.org
+ http://udt.sourceforge.net/
+
+ Installing OpenSSL
+ ------------------
+ 
+ You must build and install OpenSSL into /usr/local.
+
+	$ ./config --prefix=/usr/local --openssldir=/usr/local/openssl 
+
+ Installing UDT
+ --------------
+ 
+ Copy the udt patch from DNDS/patch/udt4.9_ext_ptr.patch next to
+ your UDT directory.
+
+	$ ls
+	udt4  udt4.9_ext_ptr.patch
+
+ Apply the patch.
+
+	$ patch -p0 < udt4.9_ext_ptr.patch
+ 
+ You can now build udt by invoking `make`. You DON'T NEED to `make install` it.	
+
+ Installing libdnds
+ -----------------
+
+	 $ cd DNDS/libdnds/
+	 $ autoreconf -fvi
+	 $ ./configure --with-udt=/full/path/udt4/src
+	 $ make
+	 $ sudo make install
+
+ Installing DND - Dynamic Network Daemon
+ ---------------------------------------
+
+	 $ cd DNDS/dnd
+	 $ autoreconf -fvi
+	 $ ./configure
+	 $ make
+	 $ sudo make install
+
+ Installing DNC - Dynamic Network Client
+ ---------------------------------------
+
+	 $ cd DNDS/dnc
+	 $ autoreconf -fvi
+	 $ ./configure
+	 $ make
+	 $ sudo make install
