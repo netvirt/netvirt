@@ -124,7 +124,7 @@ static void dispatch_operation(session_t *session, DNDSMessage_t *msg)
 			break;
 
 		case dnop_PR_p2pRequest:
-			p2pRequest(session, msg);
+//			p2pRequest(session, msg);
 			break;
 
                 // terminateRequest is a special case since
@@ -301,7 +301,7 @@ int dnd_init(char *listen_addr, char *port)
 #define RDV_PORT_MIN 1025
 #define RDV_PORT_MAX 65535
 
-
+/*
 void p2pRequest(port_t *port, struct rdv *rdv_request)
 {
 
@@ -397,4 +397,4 @@ void p2pRequest(port_t *port, struct rdv *rdv_request)
 }
 
 
-
+*/
