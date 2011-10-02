@@ -185,7 +185,6 @@ static void on_input(netc_t *netc)
 	while (*mbuf_itr != NULL) {
 
 		msg = (DNDSMessage_t *)(*mbuf_itr)->ext_buf;
-		DNDSMessage_printf(msg);
 
 		DNDSMessage_get_pdu(msg, &pdu);
 		switch (pdu) {

@@ -264,15 +264,12 @@ int krypt_encrypt_buf(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 	switch ( SSL_want(kconn->ssl) ) {
 
 		case SSL_NOTHING:
-			printf("ssl want nothing\n");
 			break;
 
 		case SSL_WRITING:
-			printf("ssl want writing\n");
 			break;
 
 		case SSL_READING:
-			printf("ssl want reading\n");
 			break;
 	}
 
