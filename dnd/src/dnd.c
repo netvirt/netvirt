@@ -300,12 +300,14 @@ int dnd_init(char *listen_addr, char *port)
 	return 0;
 }
 
-/*
+
 #define RDV_PORT_MIN 1025
 #define RDV_PORT_MAX 65535
 
 
-void dnd_rdv(port_t *port, struct rdv *rdv_request) {
+void p2pRequest(port_t *port, struct rdv *rdv_request)
+{
+
 	struct rdv *rdv_request_meetat1 = NULL;
 	struct rdv *rdv_request_meetat2 = NULL;
 	RDV_ASK *rdv_request_ask = NULL;
@@ -396,6 +398,6 @@ void dnd_rdv(port_t *port, struct rdv *rdv_request) {
 			return;
 	}
 }
-*/
+
 
 

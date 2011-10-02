@@ -14,6 +14,8 @@ ASN_MODULE_SOURCES=	\
 	DelResponse.c	\
 	ModifyRequest.c	\
 	ModifyResponse.c	\
+	NetinfoRequest.c	\
+	NetinfoResponse.c	\
 	SearchRequest.c	\
 	SearchResponse.c	\
 	TerminateRequest.c	\
@@ -43,6 +45,8 @@ ASN_MODULE_HEADERS=	\
 	DelResponse.h	\
 	ModifyRequest.h	\
 	ModifyResponse.h	\
+	NetinfoRequest.h	\
+	NetinfoResponse.h	\
 	SearchRequest.h	\
 	SearchResponse.h	\
 	TerminateRequest.h	\

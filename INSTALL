@@ -14,8 +14,9 @@
  -----------
 
  apt-get install build-essential
- apt-get install autotool
+ apt-get install autoconf
  apt-get install libtool
+ apt-get install pkg-config
 
  Getting UDT and OpenSSL
  -----------
