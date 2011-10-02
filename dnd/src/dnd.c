@@ -1,5 +1,4 @@
-/*
- * dnd.c: Dynamic Network Daemon
+/* * dnd.c: Dynamic Network Daemon
  *
  * Copyright (C) 2010 Nicolas Bouliane
  *
@@ -29,8 +28,6 @@
 
 static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
 {
-	JOURNAL_DEBUG("forward ethernet");
-
 	int ret;
 	uint8_t *frame;
 	size_t frame_size;
@@ -64,7 +61,7 @@ static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
 	session_dst = ftable_find(session->context->ftable, mac_addr_dst);
 
 	if (mac_addr_dst_type == ADDR_MULTICAST) {
-		JOURNAL_DEBUG("dnd]> doesn't support multicast yet :: %s:%i", __FILE__, __LINE__);
+		//JOURNAL_DEBUG("dnd]> doesn't support multicast yet :: %s:%i", __FILE__, __LINE__);
 		return;
 	}
 
@@ -73,24 +70,24 @@ static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
 		&& session_dst != NULL
 		&& session_dst->netc != NULL) {		// AND the session is up
 
-			JOURNAL_DEBUG("dnd]> forwarding the packet to [%s]", session_dst->ip);
+			//JOURNAL_DEBUG("dnd]> forwarding the packet to [%s]", session_dst->ip);
 			ret = net_send_msg(session_dst->netc, msg);
 
-			JOURNAL_DEBUG("dnd]> forwarded {%i} bytes to %s", ret, session_dst->ip);
+			//JOURNAL_DEBUG("dnd]> forwarded {%i} bytes to %s", ret, session_dst->ip);
 	}
 	// Switch flooding
 	else if (mac_addr_dst_type == ADDR_BROADCAST ||	// this packet has to be broadcasted
 		session_dst == NULL)  {			// OR the fib session is down
 
-			JOURNAL_DEBUG("dnd]> BROADCASTING");
+			//JOURNAL_DEBUG("dnd]> BROADCASTING");
 			session_list = session->context->session_list;
 			if (session_list == NULL) {
-				JOURNAL_DEBUG("dnd]> the session list is empty :: %s:%i", __FILE__, __LINE__);
+				//JOURNAL_DEBUG("dnd]> the session list is empty :: %s:%i", __FILE__, __LINE__);
 			}
 
 			while (session_list != NULL) {
 				ret = net_send_msg(session_list->netc, msg);
-				JOURNAL_DEBUG("dnd]> BR forwarded {%i} bytes to %s ", ret, session_list->ip);
+				//JOURNAL_DEBUG("dnd]> BR forwarded {%i} bytes to %s ", ret, session_list->ip);
 
 				session_list = session_list->next;
 			}
@@ -107,7 +104,7 @@ static int validate_msg(DNDSMessage_t *msg)
 	DNDSMessage_get_pdu(msg, &pdu);
 
 	if (pdu != pdu_PR_dnm) {
-		JOURNAL_DEBUG("dnd]> not a valid DNM pdu");
+		//JOURNAL_DEBUG("dnd]> not a valid DNM pdu");
 		return -1;
 	}
 
