@@ -98,9 +98,7 @@ static void net_do_krypt(netc_t *netc)
 
 	if (netc->kconn->buf_encrypt_data_size > 0) {
 
-		JOURNAL_NOTICE("netc]> want send %i", netc->kconn->buf_encrypt_data_size);
 		nbyte = netc->peer->send(netc->peer, netc->kconn->buf_encrypt, netc->kconn->buf_encrypt_data_size);
-		JOURNAL_NOTICE("netc]> peer send %i bytes", nbyte);
 
 		if (nbyte >= 0)
 			netc->kconn->buf_encrypt_data_size = 0; // XXX adjust with offset ?
@@ -202,12 +200,7 @@ static int net_decode_msg(netc_t *netc)
 		dec = ber_decode(0, &asn_DEF_DNDSMessage,
 			(void **)&netc->msg_dec, netc->buf_in + netc->buf_in_offset, netc->buf_in_data_size);
 
-		JOURNAL_NOTICE("net]> net_decode_msg data size %i", netc->buf_in_data_size);
-		JOURNAL_NOTICE("net]> net_decode_msg consumed %i bytes", dec.consumed);
-
 		if (dec.code == RC_WMORE) {
-			JOURNAL_NOTICE("net]> ber_decode returned RC_WMORE after consuming %i bytes", dec.consumed);
-
 			// decrease the data size according to the consumed bytes
 			netc->buf_in_data_size -= dec.consumed;
 
@@ -228,7 +221,6 @@ static int net_decode_msg(netc_t *netc)
 			return -1;
 		}
 		else if (dec.code == RC_OK) {
-			JOURNAL_NOTICE("net]> ber_decode returned RC_OK after consuming %i bytes", dec.consumed);
 
 			// queue the fully decoded message
 			net_queue_msg(netc, netc->msg_dec);
@@ -262,7 +254,6 @@ static void net_on_input(peer_t *peer)
 	if (netc->security_level > NET_UNSECURE
 		&& netc->kconn->status == KRYPT_HANDSHAKE) {
 
-		JOURNAL_NOTICE("netc]> process handshake");
 
 		ret = krypt_do_handshake(netc->kconn, peer->buffer, peer->buffer_data_len);
 		peer->buffer_data_len = 0;
@@ -487,7 +478,6 @@ netc_t *net_client(const char *listen_addr,
 
 	netc = net_connection_new(security_level);
 	if (netc == NULL) {
-		JOURNAL_NOTICE("net]> client initialization failed :: %s:%i", __FILE__, __LINE__);
 	        return NULL;
 	}
 
