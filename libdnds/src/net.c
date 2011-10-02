@@ -176,7 +176,6 @@ static int net_flush_queue_out(netc_t *netc)
 //		iovcnt++;
 
 		nbyte = peer->send(peer, (*mbuf_itr)->ext_buf, (*mbuf_itr)->ext_size);
-		JOURNAL_DEBUG("peer send %i bytes", nbyte);
 
 		*mbuf_itr = (*mbuf_itr)->next;
 	}
@@ -260,8 +259,6 @@ static void net_on_input(peer_t *peer)
 	netc = peer->ext_ptr;
 	peer->buffer_data_len = peer->recv(peer);
 
-	JOURNAL_DEBUG("on_input]> peer recv %i", peer->buffer_data_len);
-
 	if (netc->security_level > NET_UNSECURE
 		&& netc->kconn->status == KRYPT_HANDSHAKE) {
 
@@ -305,8 +302,6 @@ static void net_on_input(peer_t *peer)
 	if (netc->security_level > NET_UNSECURE
 		&& netc->kconn->status == KRYPT_SECURE) {
 
-		JOURNAL_DEBUG("netc]> process encrypted data");
-
 		int peek = 0; // buffer to hold the byte we are peeking at
 		int state_p = 0;
 		do {
@@ -334,7 +329,6 @@ static void net_on_input(peer_t *peer)
 	}
 	else if (netc->security_level == NET_UNSECURE) {
 
-		JOURNAL_DEBUG("netc]> process un-encrypted data");
 		serialize_buf_in(netc, peer->buffer, peer->buffer_data_len);
 	}
 
@@ -435,8 +429,6 @@ int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 	peer_t *peer = NULL;
 	size_t nbyte;
 
-	JOURNAL_DEBUG("netc]> network send message");
-
 	ec = der_encode(&asn_DEF_DNDSMessage, msg, serialize_buf_enc, netc);
 	if (ec.encoded == -1) {
 		netc->buf_enc_data_size = 0;	// mark the buffer as empty
@@ -454,7 +446,6 @@ int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 	if (netc->security_level > NET_UNSECURE
 		&& netc->kconn->status == KRYPT_SECURE) {
 
-		JOURNAL_DEBUG("netc]> send encrypted msg");
 		krypt_encrypt_buf(netc->kconn, netc->buf_enc, netc->buf_enc_data_size);
 		net_queue_out(netc, netc->kconn->buf_encrypt, netc->kconn->buf_encrypt_data_size);
 		netc->kconn->buf_encrypt_data_size = 0;
