@@ -110,9 +110,7 @@ int krypt_set_rsa(krypt_t *kconn)
 
 	// Set the certificate and key
 	ret = SSL_use_certificate(kconn->ssl, kconn->passport->certificate);
-	printf("use cert %i\n", ret);
 	ret = SSL_use_PrivateKey(kconn->ssl, kconn->passport->keyring);
-	printf("use pvkey %i\n", ret);
 
 	if (kconn->conn_type == KRYPT_SERVER) {
 		JOURNAL_NOTICE("KRYPT]> set verify\n");
@@ -150,7 +148,6 @@ int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 
 	if (buf != NULL && buf_data_size > 0) {
 		nbyte = BIO_write(kconn->network_bio, buf, buf_data_size);
-		JOURNAL_DEBUG("krypt]> BIO write %d bytes", nbyte, buf_data_size);
 	}
 
 	// This fix a weird bug, I dont understand why
@@ -169,7 +166,6 @@ int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 	else if (ret > 0 && !SSL_renegotiate_pending(kconn->ssl)) {
 		// Handshake successfully completed
 		kconn->status = KRYPT_SECURE;
-		JOURNAL_DEBUG("krypt]> handshake successful");
 		status = 0;
 	}
 	else if (ret == 0) {
@@ -181,20 +177,15 @@ int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 	}
 	else if (ret < 0) {
 		// Need more data to continue
-		JOURNAL_DEBUG("krypt]> handshake needs more data to continue");
 		status = 1;
 	}
 
 	nbyte = BIO_ctrl_pending(kconn->network_bio);
-	JOURNAL_DEBUG("krypt]> network bio pending: %i bytes", nbyte);
 
 	if (nbyte > 0) { // Read pending data into the BIO
 		nbyte = BIO_read(kconn->network_bio, kconn->buf_encrypt, kconn->buf_encrypt_size);
 		kconn->buf_encrypt_data_size = nbyte; // FIXME dynamic buffer
 	}
-
-	JOURNAL_DEBUG("krypt]> bio read %i bytes", nbyte);
-	JOURNAL_DEBUG("krypt]> handshake status %i", status);
 
 	return status;
 }
@@ -203,7 +194,6 @@ int krypt_push_encrypted_data(krypt_t *kconn, uint8_t *buf, size_t buf_data_size
 {
 	int nbyte;
 	nbyte = BIO_write(kconn->network_bio, buf, buf_data_size);
-	JOURNAL_DEBUG("krypt]> BIO write %d bytes", nbyte, buf_data_size);
 
 	return nbyte;
 }
@@ -234,15 +224,12 @@ int krypt_decrypt_buf(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 
 		switch (error) {
 			case SSL_ERROR_WANT_READ:
-				JOURNAL_DEBUG("krypt]> <%s> SSL_ERROR_WANT_READ", __func__);
-
 				nbyte = BIO_read(kconn->network_bio, kconn->buf_encrypt, kconn->buf_encrypt_size);
 				kconn->buf_encrypt_data_size = nbyte; // FIXME dynamic buffer
 
 				break;
 
 			case SSL_ERROR_WANT_WRITE:
-				JOURNAL_DEBUG("krypt]> <%s> SSL_ERROR_WANT_WRITE", __func__);
 				break;
 
 			default:
@@ -277,20 +264,16 @@ int krypt_encrypt_buf(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 	switch ( SSL_want(kconn->ssl) ) {
 
 		case SSL_NOTHING:
-			printf("ssl want nothing\n");
 			break;
 
 		case SSL_WRITING:
-			printf("ssl want writing\n");
 			break;
 
 		case SSL_READING:
-			printf("ssl want reading\n");
 			break;
 	}
 
 	nbyte = SSL_write(kconn->ssl, buf, buf_data_size);
-	JOURNAL_DEBUG("krypt]> ssl write %i bytes", nbyte);
 
 	if (nbyte <= 0) {
 
@@ -299,13 +282,10 @@ int krypt_encrypt_buf(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 		switch (error) {
 
 			case SSL_ERROR_WANT_READ:
-				JOURNAL_DEBUG("krypt]> <%s> SSL_ERROR_WANT_READ", __func__);
 				break;
 			case SSL_ERROR_WANT_WRITE:
-				JOURNAL_DEBUG("krypt]> <%s> SSL_ERROR_WANT_WRITE", __func__);
 				break;
 			default:
-				JOURNAL_DEBUG("krypt]> <%s> SSL error", __func__);
 				ssl_error_stack();
 				return -1;
 		}
@@ -328,7 +308,6 @@ int krypt_secure_connection(krypt_t *kconn, uint8_t protocol, uint8_t conn_type,
 	switch (protocol) {
 
 		case KRYPT_TLS:
-			JOURNAL_DEBUG("krypt]> using TLSv1");
 			kconn->ctx = SSL_CTX_new(TLSv1_method());
 			break;
 
