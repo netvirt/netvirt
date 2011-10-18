@@ -47,7 +47,7 @@ DNDSMessage_t *decode()
 	size_t errlen = sizeof(errbuf);
 
 	ret = asn_check_constraints(&asn_DEF_DNDSMessage, msg, errbuf, &errlen);
-	printf("ret %i::%s\n", ret, errbuf);
+	printf("decode ret:(%i) errbuf:(%s)\n", ret, errbuf);
 
 	return msg;
 }
@@ -249,6 +249,7 @@ void test_P2pResponse_dnm()
 	P2pResponse_set_macAddrDst(msg, macAddrDst);
 	P2pResponse_set_ipAddrDst(msg, "66.55.44.33");
 	P2pResponse_set_port(msg, 9000);
+	P2pResponse_set_side(msg, P2pSide_client);
 	P2pResponse_set_result(msg, DNDSResult_success);
 
 	/// Encoding part
@@ -920,21 +921,21 @@ void test_TerminateRequest()
 
 int main()
 {
-	test_DNDS_ethernet();
+/*	test_DNDS_ethernet();
 	show_DNDS_ethernet();
 
-/*	test_AddRequest();
+	test_AddRequest();
 	show_AddRequest();
 
 	test_AddResponse();
 	show_AddResponse();
-
+*/
 	test_P2pRequest_dnm();
 	show_P2pRequest_dnm();
 
 	test_P2pResponse_dnm();
 	show_P2pResponse_dnm();
-
+/*
 	test_AuthRequest_dnm();
 	show_AuthRequest_dnm();
 
