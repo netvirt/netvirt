@@ -67,7 +67,7 @@ static void tunnel_in(iface_t *iface)
 	DNDSMessage_set_ethernet(msg, iface->frame, frame_len);
 
 	// Check if we have a P2P connection in the forward table with the dest mac addr
-	p2p_session = ftable_find(ftable, mac_dst);
+	/*p2p_session = ftable_find(ftable, mac_dst);
 
 	if (p2p_session == NULL) {
 		// Ask for a P2P session
@@ -77,7 +77,7 @@ static void tunnel_in(iface_t *iface)
 		// Send the message using the P2P session
 		session = p2p_session;
 	}
-
+	*/
 	net_send_msg(session->netc, msg);
 }
 
@@ -185,7 +185,6 @@ static void on_input(netc_t *netc)
 	while (*mbuf_itr != NULL) {
 
 		msg = (DNDSMessage_t *)(*mbuf_itr)->ext_buf;
-		DNDSMessage_printf(msg);
 
 		DNDSMessage_get_pdu(msg, &pdu);
 		switch (pdu) {
