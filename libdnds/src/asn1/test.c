@@ -1,7 +1,13 @@
-// API Dynamic-Network-Directory-Service-Protocol-V1
-// Copyright (C) Nicolas Bouliane - Mind4Networks, 2010
+/* API Dynamic-Network-Directory-Service-Protocol-V1
+ * Copyright (C) Nicolas Bouliane - Mind4Networks, 2010, 2011
+ */
 
 #include "dnds.h"
+
+/* HOWTO compile `test' unit-test
+ * gcc test.c -c -o test.o -I ../ -I ./
+ * gcc ../dnds.o *.o -o test
+ */
 
 static int write_out(const void *buffer, size_t size, void *app_key)
 {
