@@ -14,6 +14,7 @@ libasn1_la_SOURCES=	\
 	AuthResponse.c	\
 	P2pRequest.c	\
 	P2pResponse.c	\
+	P2pSide.c	\
 	AddRequest.c	\
 	AddResponse.c	\
 	DelRequest.c	\
@@ -45,6 +46,7 @@ libasn1_include_HEADERS=	\
 	AuthResponse.h	\
 	P2pRequest.h	\
 	P2pResponse.h	\
+	P2pSide.h	\
 	AddRequest.h	\
 	AddResponse.h	\
 	DelRequest.h	\
