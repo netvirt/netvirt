@@ -1,7 +1,7 @@
 /*
  * dnds.c: Dynamic Network Directory Service Protocol API
  *
- * Copyright (C) 2010 Nicolas Bouliane
+ * Copyright (C) 2010, 2011 Nicolas Bouliane
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -1148,6 +1148,44 @@ int P2pResponse_get_port(DNDSMessage_t *msg, uint32_t *port)
 	}
 
 	*port = msg->pdu.choice.dnm.dnop.choice.p2pResponse.port;
+
+	return DNDS_success;
+}
+
+int P2pResponse_set_side(DNDSMessage_t *msg, e_P2pSide side)
+{
+	if (msg == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dnm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_p2pResponse) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.p2pResponse.side = side;
+
+	return DNDS_success;
+}
+
+int P2pResponse_get_side(DNDSMessage_t *msg, e_P2pSide *side)
+{
+	if (msg == NULL || side == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dnm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_p2pResponse) {
+		return DNDS_invalid_op;
+	}
+
+	*side = msg->pdu.choice.dnm.dnop.choice.p2pResponse.side;
 
 	return DNDS_success;
 }
@@ -3298,6 +3336,22 @@ int User_get_status(DNDSObject_t *object, uint8_t *status)
 
 	return DNDS_success;
 }
+char *P2pSide_str(e_P2pSide side)
+{
+	char *str = NULL;
+
+	switch (side) {
+		case P2pSide_client:
+			str = strdup("Client");
+			break;
+
+		case P2pSide_server:
+			str = strdup("Client");
+			break;
+	}
+
+	return str;
+}
 
 // DNDS API functions
 char *DNDSResult_str(e_DNDSResult result)
@@ -3470,6 +3524,10 @@ void P2pResponse_printf(DNDSMessage_t *msg)
 	uint32_t port;
 	P2pResponse_get_port(msg, &port);
 	printf("P2pResponse> port: %i\n", port);
+
+	e_P2pSide side;
+	P2pResponse_get_side(msg, &side);
+	printf("P2pResponse> side: %i :: %s\n", side, P2pSide_str(side));
 
 	e_DNDSResult result;
 	P2pResponse_get_result(msg, &result);
