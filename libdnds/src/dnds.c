@@ -1007,7 +1007,7 @@ int P2pRequest_set_macAddrDst(DNDSMessage_t *msg, uint8_t *macAddrDst)
 
 int P2pRequest_get_macAddrDst(DNDSMessage_t *msg, uint8_t *macAddrDst)
 {
-	if (msg == NULL || macAddrDst) {
+	if (msg == NULL) {
 		return DNDS_invalid_param;
 	}
 
