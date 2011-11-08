@@ -628,6 +628,10 @@ netc_t *net_p2p(const char *listen_addr,
 	netc->protocol = protocol;
 	netc->security_level = security_level;
 
+	printf("listen_addr: %s\n", listen_addr);
+	printf("dest_addr: %s\n", dest_addr);
+	printf("port: %s\n", port);
+	
 	peer = udtbus_rendezvous(listen_addr, dest_addr, port, net_on_disconnect, net_on_input, netc);
 	if (peer == NULL) {
 		JOURNAL_ERR("net]> unable to initialize the p2p connection :: %s:%i", __FILE__, __LINE__);
