@@ -234,7 +234,7 @@ void test_P2pResponse_dnm()
 {
 	/// Building a P2pRequest ///
 
-	uint8_t macAddrDst[ETH_ALEN] = { 0xc, 0xb, 0xa, 0xc, 0xb, 0xa };
+	uint8_t macAddrDst[ETH_ALEN] = { 0xaf, 0xbe, 0xcd, 0xdc, 0xeb, 0xfa };
 
 	DNDSMessage_t *msg;	// a DNDS Message
 
