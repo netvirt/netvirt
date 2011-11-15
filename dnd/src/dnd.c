@@ -1,4 +1,4 @@
-/* * dnd.c: Dynamic Network Daemon
+/* dnd.c: Dynamic Network Daemon
  *
  * Copyright (C) 2010 Nicolas Bouliane
  *
@@ -40,13 +40,12 @@ static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
 	session_t *session_src = NULL;
 	session_t *session_list = NULL;
 
-
 	if (session->auth != SESS_AUTHENTICATED)
 		return;
 
 	DNDSMessage_get_ethernet(msg, &frame, &frame_size);
 
-	// New mac address ? add it to the lookup table
+	/* New mac address ? Add it to the lookup table */
 	inet_get_mac_addr_src(frame, mac_addr_src);
 	session_src = ftable_find(session->context->ftable, mac_addr_src);
 	if (session_src == NULL) {
@@ -55,7 +54,7 @@ static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
 		context_add_session(session->context, session);
 	}
 
-	// Lookup the destination
+	/* Lookup the destination */
 	inet_get_mac_addr_dst(frame, mac_addr_dst);
 	mac_addr_dst_type = inet_get_mac_addr_type(mac_addr_dst);
 	session_dst = ftable_find(session->context->ftable, mac_addr_dst);
@@ -65,19 +64,23 @@ static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
 		return;
 	}
 
-	// Switch forwarding
-	if (mac_addr_dst_type == ADDR_UNICAST		// the destination address is unicast
+	/* TODO if session_src and session_dst are valid, send a p2p request
+	 * ...
+	 */
+
+	/* Switch forwarding */
+	if (mac_addr_dst_type == ADDR_UNICAST		/* The destination address is unicast */
 		&& session_dst != NULL
-		&& session_dst->netc != NULL) {		// AND the session is up
+		&& session_dst->netc != NULL) {		/* AND the session is up */
 
 			//JOURNAL_DEBUG("dnd]> forwarding the packet to [%s]", session_dst->ip);
 			ret = net_send_msg(session_dst->netc, msg);
 
 			//JOURNAL_DEBUG("dnd]> forwarded {%i} bytes to %s", ret, session_dst->ip);
-	}
-	// Switch flooding
-	else if (mac_addr_dst_type == ADDR_BROADCAST ||	// this packet has to be broadcasted
-		session_dst == NULL)  {			// OR the fib session is down
+
+	} else if (mac_addr_dst_type == ADDR_BROADCAST ||	/* This packet has to be broadcasted */
+		session_dst == NULL)  {				/* OR the fib session is down */
+	/* Switch flooding */
 
 			//JOURNAL_DEBUG("dnd]> BROADCASTING");
 			session_list = session->context->session_list;
@@ -91,9 +94,7 @@ static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
 
 				session_list = session_list->next;
 			}
-
-	}
-	else {
+	} else {
 		JOURNAL_WARN("dnd]> unknown packet");
 	}
 }
@@ -127,9 +128,10 @@ static void dispatch_operation(session_t *session, DNDSMessage_t *msg)
 			p2pRequest(session, msg);
 			break;
 
-                // terminateRequest is a special case since
-                // it has no Response message associated with it,
-		// simply disconnect the client
+                /* TerminateRequest is a special case since
+                 * it has no Response message associated with it,
+		 * simply disconnect the client
+		 */
 		case dnop_PR_NOTHING:
 		default:
 		case dnop_PR_terminateRequest:
@@ -150,10 +152,10 @@ static void on_secure(netc_t *netc)
 
 	if (session->auth == SESS_WAIT_STEP_UP) {
 
-		// Set the session as authenticated
+		/* Set the session as authenticated */
 		session->auth = SESS_AUTHENTICATED;
 
-		// Send a message to inform the client
+		/* Send a message to acknowledge the client */
 		DNDSMessage_t *msg = NULL;
 		DNDSMessage_new(&msg);
 		DNDSMessage_set_channel(msg, 0);
@@ -169,7 +171,7 @@ static void on_secure(netc_t *netc)
 		DNDSMessage_del(msg);
 		msg = NULL;
 
-		// Send to the client its network information
+		/* Send to the client his network informations */
 		ip_address = ippool_get_ip(context->ippool);
 		session->ip = strdup(ip_address);
 		JOURNAL_DEBUG("session ip %s", session->ip);
@@ -183,7 +185,7 @@ static void on_secure(netc_t *netc)
 		DNMessage_set_operation(msg, dnop_PR_netinfoResponse);
 
 		NetinfoResponse_set_ipAddress(msg, ip_address);
-		// TODO - find the real netmask
+		/* TODO find the real netmask */
 		NetinfoResponse_set_netmask(msg, "255.255.255.0");
 
 		JOURNAL_DEBUG("dnd]> client ip address %s", ip_address);
@@ -208,18 +210,17 @@ static void on_input(netc_t *netc)
 	while (*mbuf_itr != NULL) {
 
 		msg = (DNDSMessage_t *)(*mbuf_itr)->ext_buf;
-
 		DNDSMessage_get_pdu(msg, &pdu);
 
 		switch (pdu) {
-			case pdu_PR_dnm:	// DNDS protocol
+			case pdu_PR_dnm:	/* DNDS protocol */
 				dispatch_operation(session, msg);
 				break;
-			case pdu_PR_ethernet:	// ethernet
+			case pdu_PR_ethernet:	/* Ethernet */
 				forward_ethernet(session, msg);
 				break;
-			default:		// invalid PDU
-				// TODO - error
+			default:
+				/* TODO disconnect session */
 				JOURNAL_ERR("dnd]> invalid PDU");
 				break;
 		}
@@ -259,7 +260,7 @@ static void on_disconnect(netc_t *netc)
 		return;
 	}
 
-	// remove the session from the context session list
+	/* Remove the session from the context session list */
 	context_del_session(session->context, session);
 	ftable_erase(session->context->ftable, session->mac_addr);
 
@@ -448,5 +449,3 @@ void p2pRequest(session_t *session, DNDSMessage_t *req_msg)
 	}
 */
 }
-
-
