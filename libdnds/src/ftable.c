@@ -29,6 +29,7 @@ static unsigned ftable_hash(const void *mac)
 
 	unsigned h = hashword((uint32_t*)key, 2, 0);
 
+	printf("hashed: %x\n", h);
 	return h;
 }
 
