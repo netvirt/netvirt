@@ -124,7 +124,7 @@ static void dispatch_operation(session_t *session, DNDSMessage_t *msg)
 			break;
 
 		case dnop_PR_p2pRequest:
-//			p2pRequest(session, msg);
+			p2pRequest(session, msg);
 			break;
 
                 // terminateRequest is a special case since
@@ -300,10 +300,63 @@ int dnd_init(char *listen_addr, char *port)
 #define RDV_PORT_MIN 1025
 #define RDV_PORT_MAX 65535
 
-/*
-void p2pRequest(port_t *port, struct rdv *rdv_request)
+void p2pRequest(session_t *session, DNDSMessage_t *req_msg)
 {
 
+        char ipLocal[INET_ADDRSTRLEN];
+        uint8_t macAddrSrc[ETHER_ADDR_LEN];
+        uint8_t macAddrDst[ETHER_ADDR_LEN];
+
+        P2pRequest_get_ipLocal(req_msg, ipLocal);
+        printf("P2pRequest> ipLocal: %s\n", ipLocal);
+
+        P2pRequest_get_macAddrSrc(req_msg, macAddrSrc);
+        printf("P2pRequest> macAddrSrc: %x:%x:%x:%x:%x:%x\n", macAddrSrc[0],macAddrSrc[1],macAddrSrc[2],
+                                                        macAddrSrc[3],macAddrSrc[4],macAddrSrc[5]);
+        P2pRequest_get_macAddrDst(req_msg, macAddrDst);
+        printf("P2pRequest> macAddrDst: %x:%x:%x:%x:%x:%x\n", macAddrDst[0],macAddrDst[1],macAddrDst[2],                                                                                macAddrDst[3],macAddrDst[4],macAddrDst[5]);
+
+	printf("session->ip %s\n", session->ip);
+	printf("session->netc %s\n", session->netc->peer->host);
+
+	session_t *session_dst;
+	session_dst = ftable_find(session->context->ftable, macAddrDst);
+	if (session_dst != NULL) {
+		printf("session_dst->ip %s\n", session_dst->ip);
+		printf("session->netc %s\n", session->netc->peer->host);
+
+	DNDSMessage_t *msg;
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_pdu(msg, pdu_PR_dnm);
+
+	DNMessage_set_operation(msg, dnop_PR_p2pResponse);
+	
+	P2pResponse_set_macAddrDst(msg, macAddrDst);
+	P2pResponse_set_ipAddrDst(msg, "192.168.1.112");
+	P2pResponse_set_port(msg, 35000);
+	P2pResponse_set_side(msg, P2pSide_client);
+	P2pResponse_set_result(msg, DNDSResult_success);
+
+	net_send_msg(session->netc, msg);
+
+//---------------------------------
+
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_pdu(msg, pdu_PR_dnm);
+
+	DNMessage_set_operation(msg, dnop_PR_p2pResponse);
+	
+	P2pResponse_set_macAddrDst(msg, macAddrSrc);
+	P2pResponse_set_ipAddrDst(msg, ipLocal);
+	P2pResponse_set_port(msg, 35000);
+	P2pResponse_set_side(msg, P2pSide_client);
+	P2pResponse_set_result(msg, DNDSResult_success);
+
+	net_send_msg(session_dst->netc, msg);
+
+}
+	
+/*
 	struct rdv *rdv_request_meetat1 = NULL;
 	struct rdv *rdv_request_meetat2 = NULL;
 	RDV_ASK *rdv_request_ask = NULL;
@@ -393,7 +446,7 @@ void p2pRequest(port_t *port, struct rdv *rdv_request)
 			JOURNAL_WARN("dnd]> received unknown RDV type (%d)", rdv_request->type);
 			return;
 	}
+*/
 }
 
 
-*/
