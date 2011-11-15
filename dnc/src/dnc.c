@@ -50,8 +50,9 @@ static void tunnel_in(iface_t *iface)
 	DNDSMessage_t *msg = NULL;
 	size_t frame_len = 0;
 
-	uint8_t mac_src[6]; // mac address source (aka our mac addr)
-	uint8_t mac_dst[6]; // mac address destination
+	uint8_t mac_addr_src[6]; // mac address source (aka our mac addr)
+	uint8_t mac_addr_dst[6]; // mac address destinatio
+	uint8_t mac_addr_dst_type;
 
 	session = (dn_sess_t *)iface->ext_ptr;
 	if (session->auth == SESS_NOT_AUTH) {
@@ -61,23 +62,34 @@ static void tunnel_in(iface_t *iface)
 
 	frame_len = iface->read(iface);
 
+	inet_get_mac_addr_src(iface->frame, mac_addr_src);
+	inet_get_mac_addr_dst(iface->frame, mac_addr_dst);
+	mac_addr_dst_type = inet_get_mac_addr_type(mac_addr_dst);
+	printf("mac addr type %d\n", mac_addr_dst_type);
+
 	DNDSMessage_new(&msg);
 	DNDSMessage_set_channel(msg, 0);
 	DNDSMessage_set_pdu(msg, pdu_PR_ethernet);
 	DNDSMessage_set_ethernet(msg, iface->frame, frame_len);
 
+	printf("lookup mac %x\n", mac_addr_dst);
+
+	printf("P2pRequest> mac_addr_dst: %x:%x:%x:%x:%x:%x\n", mac_addr_dst[0],mac_addr_dst[1],mac_addr_dst[2],
+                                                    mac_addr_dst[3],mac_addr_dst[4],mac_addr_dst[5]);	
+
+
 	// Check if we have a P2P connection in the forward table with the dest mac addr
-	/*p2p_session = ftable_find(ftable, mac_dst);
+	p2p_session = ftable_find(ftable, mac_addr_dst);
 
 	if (p2p_session == NULL) {
 		// Ask for a P2P session
-		request_p2p(session->netc, mac_src, mac_dst);
+		request_p2p(session->netc, mac_addr_src, mac_addr_dst);
 	}
 	else if (p2p_session->auth == SESS_AUTH) {
 		// Send the message using the P2P session
 		session = p2p_session;
 	}
-	*/
+	
 	net_send_msg(session->netc, msg);
 }
 
@@ -146,7 +158,7 @@ static void on_connect(netc_t *netc)
                 session->type = SESS_TYPE_P2P_SERVER;
         }
 
-        session->auth = SESS_NOT_AUTH;
+        session->auth = SESS_AUTH;
         session->iface = NULL;
         session->peer = NULL;
         session->netc = netc;
@@ -268,19 +280,24 @@ static void dispatch_operation(dn_sess_t *sess, DNDSMessage_t *msg)
 
 		case dnop_PR_p2pResponse:
 
+			P2pResponse_get_macAddrDst(msg, mac_dst);
 			P2pResponse_get_ipAddrDst(msg, dest_addr);
 			P2pResponse_get_port(msg, &port);
+		
+			printf("P2pRequest> mac_dst: %x:%x:%x:%x:%x:%x\n", mac_dst[0],mac_dst[1],mac_dst[2],
+                                                        mac_dst[3],mac_dst[4],mac_dst[5]);	
 
 			JOURNAL_DEBUG("dnc]> p2p i will act as the %s", (state == NET_P2P_CLIENT ? "client" : "server"));
-
 			JOURNAL_INFO("dnc]> p2p trying to connect to %s on port %d...", dest_addr, port);
 
 			snprintf(port_name, 6, "%d", port);
 
-			p2p_netc = net_p2p(NULL, dest_addr, port_name, NET_PROTO_UDT, NET_SECURE_RSA, state,
+			printf("dest_addr: %s\n", dest_addr);
+			p2p_netc = net_p2p("192.168.1.135", dest_addr, port_name, NET_PROTO_UDT, NET_UNSECURE, state,
 						on_connect, p2p_on_secure, on_disconnect, on_input);
 
 			if (p2p_netc != NULL) {
+				printf("insert mac %x\n", mac_dst);
 				if (ftable_insert(ftable, mac_dst, p2p_netc->ext_ptr)) {
 					// TODO : handle error
 				}
