@@ -14,7 +14,8 @@
 
 #include "request.h"
 
-void request_p2p(netc_t *netc, uint8_t *mac_src, uint8_t *mac_dst) {
+void request_p2p(netc_t *netc, uint8_t *mac_src, uint8_t *mac_dst)
+{
 	DNDSMessage_t *msg;
 	size_t nbyte;
 
@@ -26,6 +27,14 @@ void request_p2p(netc_t *netc, uint8_t *mac_src, uint8_t *mac_dst) {
 			mac_dst[4],
 			mac_dst[5]);
 
+	JOURNAL_DEBUG("dnc]> asking rendezvous with %02x:%02x:%02x:%02x:%02x:%02x",
+			mac_src[0],
+			mac_src[1],
+			mac_src[2],
+			mac_src[3],
+			mac_src[4],
+			mac_src[5]);
+
 	DNDSMessage_new(&msg);
 	DNDSMessage_set_channel(msg, 0);
 	DNDSMessage_set_pdu(msg, pdu_PR_dnm);
@@ -35,7 +44,9 @@ void request_p2p(netc_t *netc, uint8_t *mac_src, uint8_t *mac_dst) {
 	DNMessage_set_operation(msg, dnop_PR_p2pRequest);
 
 	// TODO - fetch local ip
-	P2pRequest_set_ipLocal(msg, "local ip");
+	char local_ip[16];
+	inet_get_local_ip(local_ip, 16);
+	P2pRequest_set_ipLocal(msg, local_ip);
 	P2pRequest_set_macAddrSrc(msg, mac_src);
 	P2pRequest_set_macAddrDst(msg, mac_dst);
 
