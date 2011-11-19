@@ -42,6 +42,7 @@ static void dispatch_operation(dn_sess_t *sess, DNDSMessage_t *msg);
 static int cert_num = 0;
 static ftable_t *ftable;
 
+dn_sess_t *master_sess;
 // iface -> vpn
 static void tunnel_in(iface_t *iface)
 {
@@ -71,9 +72,8 @@ static void tunnel_in(iface_t *iface)
 	DNDSMessage_set_channel(msg, 0);
 	DNDSMessage_set_pdu(msg, pdu_PR_ethernet);
 	DNDSMessage_set_ethernet(msg, iface->frame, frame_len);
-
+/*
 	printf("lookup mac %x\n", mac_addr_dst);
-
 	printf("P2pRequest> mac_addr_dst: %x:%x:%x:%x:%x:%x\n", mac_addr_dst[0],mac_addr_dst[1],mac_addr_dst[2],
                                                     mac_addr_dst[3],mac_addr_dst[4],mac_addr_dst[5]);	
 
@@ -89,7 +89,7 @@ static void tunnel_in(iface_t *iface)
 		// Send the message using the P2P session
 		session = p2p_session;
 	}
-	
+*/
 	net_send_msg(session->netc, msg);
 }
 
@@ -109,14 +109,27 @@ static void tunnel_out(iface_t *iface, DNDSMessage_t *msg)
 	iface->write(iface, frame, length);
 }
 
-// TODO: move this elsewhere (like in request.c or auth.c)?
-void authenticate(netc_t *netc)
+void transmit_register(netc_t *netc)
 {
         size_t nbyte;
+	char local_ip[16];
+	uint8_t mac_address[6] = {0};
 	dn_sess_t *session = (dn_sess_t *)netc->ext_ptr;
 
-        // Building an AuthRequest
+	inet_get_local_ip(local_ip, 16);
+	inet_get_iface_mac_address(session->iface->devname, mac_address);
 
+	printf("local ip %s\n", local_ip);
+
+	printf("%02x:%02x:%02x:%02x:%02x:%02x\n",
+		mac_address[0],
+		mac_address[1],
+		mac_address[2],
+		mac_address[3],
+		mac_address[4],
+		mac_address[5]);
+
+        // Building an AuthRequest
         DNDSMessage_t *msg;
 
         DNDSMessage_new(&msg);
@@ -128,6 +141,8 @@ void authenticate(netc_t *netc)
         DNMessage_set_operation(msg, dnop_PR_authRequest);
 
         AuthRequest_set_certName(msg, "nib@1", 5);
+//	AuthRequest_set_ipLocal(msg, local_ip);
+//	AuthRequest_set_macAddress(msg, mac_address);
 
         nbyte = net_send_msg(netc, msg);
 
@@ -158,9 +173,9 @@ static void on_connect(netc_t *netc)
                 session->type = SESS_TYPE_P2P_SERVER;
         }
 
+
         session->auth = SESS_AUTH;
-        session->iface = NULL;
-        session->peer = NULL;
+        session->iface = master_sess->iface;
         session->netc = netc;
 	netc->ext_ptr = session;
 }
@@ -180,7 +195,7 @@ static void on_secure(netc_t *netc)
 
 	if (sess->auth == SESS_NOT_AUTH) {
 		JOURNAL_NOTICE("dnc]> authenticate");
-		authenticate(netc);
+		transmit_register(netc);
 	}
 }
 
@@ -189,7 +204,7 @@ static void on_input(netc_t *netc)
 	DNDSMessage_t *msg;
 	dn_sess_t *sess;
 	mbuf_t **mbuf_itr;
-	pdu_PR pdu; // Protocol Data Unit
+	pdu_PR pdu;
 
 	mbuf_itr = &netc->queue_msg;
 	sess = netc->ext_ptr;
@@ -223,8 +238,6 @@ static void on_disconnect(netc_t *netc)
 	dn_sess_t *sess;
 
 	sess = netc->ext_ptr;
-	// XXX port_free(port);
-	// XXX Reconnect if keep-alive is set (default)
 }
 
 static void dispatch_operation(dn_sess_t *sess, DNDSMessage_t *msg)
@@ -269,11 +282,9 @@ static void dispatch_operation(dn_sess_t *sess, DNDSMessage_t *msg)
 			printf("got ip address %s\n", ip_addr);
 
 			sess->auth = SESS_AUTH;
-
-			sess->iface = netbus_newtun(tunnel_in);
+			master_sess = sess; // XXX 
 			tun_up(sess->iface->devname, ip_addr);
 
-			sess->iface->ext_ptr = sess;
 
 			// FIXME cache the network informations
 			break;
@@ -341,17 +352,27 @@ int dnc_init(char *server_address, char *server_port)
 		return -1;
 	}
 
+	/* Initialize the forward table */
         ftable = ftable_new(1024, session_itemdup, session_itemrel);
 
 	sess = calloc(1, sizeof(dn_sess_t));
 	sess->iface = NULL;
 	sess->netc = netc;
 	sess->auth = SESS_NOT_AUTH;
-
 	netc->ext_ptr = sess;
 
-	
-//	authenticate(netc);
+	/* Create the tunnel interface now,
+	 * so when we register, we can get the interface
+	 * mac address needed by the server.
+	 */
+	sess->iface = netbus_newtun(tunnel_in);
+	sess->iface->ext_ptr = sess;
+	tun_up(sess->iface->devname, "0.0.0.0");
+
+	/* XXX
+	 * if the link is unsecure,
+	 * transmit_register(netc);
+	 */
 
 	return 0;
 }
