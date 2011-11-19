@@ -10,6 +10,7 @@ typedef struct peer {
 
 	int type;
 	int socket;
+
 	struct in_addr dst; // FIXME - should we trash this?
 	struct sockaddr_in peername; // FIXME - should we trash this?
 

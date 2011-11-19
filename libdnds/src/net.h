@@ -34,27 +34,27 @@
 
 typedef struct netc {
 
-	DNDSMessage_t *msg_dec;		// Decoded DNDS Message ready to be queued
+	DNDSMessage_t *msg_dec;		/* Decoded DNDS Message ready to be queued */
 
-	uint8_t *buf_in;		// Serialize raw input data
-	size_t buf_in_size;		// Buffer size in memory
-	size_t buf_in_offset;		// Start of the valid data
-	size_t buf_in_data_size;	// Data size in the buffer
+	uint8_t *buf_in;		/* Serialize raw input data */
+	size_t buf_in_size;		/* Buffer size in memory */
+	size_t buf_in_offset;		/* Start of the valid data */
+	size_t buf_in_data_size;	/* Data size in the buffer */
 
-	uint8_t *buf_enc;		// Serialized encoded chunks
-	size_t buf_enc_size;		// Buffer size in memory
-	size_t buf_enc_data_size;	// Data size in the buffer
+	uint8_t *buf_enc;		/* Serialized encoded chunks */
+	size_t buf_enc_size;		/* Buffer size in memory */
+	size_t buf_enc_data_size;	/* Data size in the buffer */
 
-	mbuf_t *queue_msg;		// Queue of decoded DNDS Message ready to be processed
-	mbuf_t *queue_out;		// Queue of encoded DNDS Message ready to be sent
+	mbuf_t *queue_msg;		/* Queue of decoded DNDS Message ready to be processed */
+	mbuf_t *queue_out;		/* Queue of encoded DNDS Message ready to be sent */
 
-	struct krypt *kconn;		// SSL-related security informations
-	uint8_t security_level;		// Security level set { UNSECURE, ADH, RSA }
+	struct krypt *kconn;		/* SSL-related security informations */
+	uint8_t security_level;		/* Security level set { UNSECURE, ADH, RSA } */
 
-	uint8_t protocol;		// Transport protocol { TCP, UDT }
-	uint8_t conn_type;		// Connection type { SERVER, CLIENT, P2P_CLIENT, P2P_SERVER }
+	uint8_t protocol;		/* Transport protocol { TCP, UDT } */
+	uint8_t conn_type;		/* Connection type { SERVER, CLIENT, P2P_CLIENT, P2P_SERVER } */
 
-	peer_t *peer;			// Low-level peer informations
+	peer_t *peer;			/* Low-level peer informations */
 	void *ext_ptr;
 
 	void (*on_secure)(struct netc *);
