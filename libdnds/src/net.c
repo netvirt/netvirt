@@ -621,7 +621,7 @@ netc_t *net_p2p(const char *listen_addr,
 		return NULL;
 	}
 
-	netc->on_connect = NULL;
+	netc->on_connect = on_connect;
 	netc->on_disconnect = on_disconnect;
 	netc->on_input = on_input;
 	netc->conn_type = conn_type;
@@ -663,7 +663,7 @@ netc_t *net_p2p(const char *listen_addr,
 		krypt_do_handshake(netc->kconn, NULL, 0);
 	}
 
-	on_connect(netc);
+	netc->on_connect(netc);
 
 	return netc;
 }
