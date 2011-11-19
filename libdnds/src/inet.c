@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 
@@ -163,6 +164,32 @@ int inet_get_local_ip(char *ip, size_t ip_len)
 	}
 
 	return strlen(ip);
+}
+
+/*
+ * Get the mac address corresponding to the given interface
+ */
+int inet_get_iface_mac_address(char *iface_name, char *mac_address)
+{
+	int fd;
+	struct ifreq ifr;
+
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+	ifr.ifr_addr.sa_family = AF_INET;
+	strncpy(ifr.ifr_name, iface_name, IFNAMSIZ-1);
+
+	ioctl(fd, SIOCGIFHWADDR, &ifr);
+	close(fd);
+
+	mac_address[0] = ifr.ifr_hwaddr.sa_data[0];
+	mac_address[1] = ifr.ifr_hwaddr.sa_data[1];
+	mac_address[2] = ifr.ifr_hwaddr.sa_data[2];
+	mac_address[3] = ifr.ifr_hwaddr.sa_data[3];
+	mac_address[4] = ifr.ifr_hwaddr.sa_data[4];
+	mac_address[5] = ifr.ifr_hwaddr.sa_data[5];
+
+	return 0;
 }
 
 void inet_print_ether_type(void *data)
