@@ -146,6 +146,18 @@ static void dispatch_operation(session_t *session, DNDSMessage_t *msg)
 
 void handle_netinfo_request(session_t *session, DNDSMessage_t *msg)
 {
+	NetinfoRequest_get_ipLocal(msg, session->ip_local);
+	NetinfoRequest_get_macAddr(msg, session->tun_mac_addr);
+
+	printf("client local ip %s\n", session->ip_local);
+		printf("%02x:%02x:%02x:%02x:%02x:%02x\n",
+			session->tun_mac_addr[0],
+			session->tun_mac_addr[1],
+			session->tun_mac_addr[2],
+			session->tun_mac_addr[3],
+			session->tun_mac_addr[4],
+			session->tun_mac_addr[5]);
+
 	transmit_netinfo_response(session->netc);
 }
 
