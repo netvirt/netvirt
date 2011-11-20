@@ -124,6 +124,10 @@ static void dispatch_operation(session_t *session, DNDSMessage_t *msg)
 			authRequest(session, msg);
 			break;
 
+		case dnop_PR_netinfoRequest:
+			handle_netinfo_request(session, msg);
+			break;
+
 		case dnop_PR_p2pRequest:
 			p2pRequest(session, msg);
 			break;
@@ -140,15 +144,47 @@ static void dispatch_operation(session_t *session, DNDSMessage_t *msg)
 	}
 }
 
+void handle_netinfo_request(session_t *session, DNDSMessage_t *msg)
+{
+	transmit_netinfo_response(session->netc);
+}
+
+void transmit_netinfo_response(netc_t *netc)
+{
+	char *ip_address;
+	session_t *session = netc->ext_ptr;
+
+	context_t *context = NULL;
+	context = session->context;
+
+	/* Send to the client his network informations */
+	ip_address = ippool_get_ip(context->ippool);
+	session->ip = strdup(ip_address);
+	JOURNAL_DEBUG("session ip %s", session->ip);
+
+	DNDSMessage_t *msg = NULL;
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dnm);
+
+	DNMessage_set_seqNumber(msg, 1);
+	DNMessage_set_ackNumber(msg, 0);
+	DNMessage_set_operation(msg, dnop_PR_netinfoResponse);
+
+	NetinfoResponse_set_ipAddress(msg, ip_address);
+	NetinfoResponse_set_netmask(msg, "255.255.255.0");	/* TODO find the real netmask */
+
+	JOURNAL_DEBUG("dnd]> client ip address %s", ip_address);
+
+	net_send_msg(session->netc, msg);
+
+}
+
 static void on_secure(netc_t *netc)
 {
 	size_t nbyte;
-	char *ip_address;
 	session_t *session;
-	context_t *context = NULL;
-
 	session = netc->ext_ptr;
-	context = session->context;
 
 	if (session->auth == SESS_WAIT_STEP_UP) {
 
@@ -166,30 +202,6 @@ static void on_secure(netc_t *netc)
 		DNMessage_set_operation(msg, dnop_PR_authResponse);
 
 		AuthResponse_set_result(msg, DNDSResult_success);
-		nbyte = net_send_msg(session->netc, msg);
-
-		DNDSMessage_del(msg);
-		msg = NULL;
-
-		/* Send to the client his network informations */
-		ip_address = ippool_get_ip(context->ippool);
-		session->ip = strdup(ip_address);
-		JOURNAL_DEBUG("session ip %s", session->ip);
-
-		DNDSMessage_new(&msg);
-		DNDSMessage_set_channel(msg, 0);
-		DNDSMessage_set_pdu(msg, pdu_PR_dnm);
-
-		DNMessage_set_seqNumber(msg, 1);
-		DNMessage_set_ackNumber(msg, 0);
-		DNMessage_set_operation(msg, dnop_PR_netinfoResponse);
-
-		NetinfoResponse_set_ipAddress(msg, ip_address);
-		/* TODO find the real netmask */
-		NetinfoResponse_set_netmask(msg, "255.255.255.0");
-
-		JOURNAL_DEBUG("dnd]> client ip address %s", ip_address);
-
 		nbyte = net_send_msg(session->netc, msg);
 
 		DNDSMessage_del(msg);

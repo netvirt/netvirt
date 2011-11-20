@@ -736,7 +736,104 @@ int ModifyResponse_get_result(DNDSMessage_t *msg, e_DNDSResult *result)
 	return DNDS_success;
 }
 
-// NetinfoRequest ::= NULL
+// NetinfoRequest
+int NetinfoRequest_set_ipLocal(DNDSMessage_t *msg, char *ipLocal)
+{
+	if (msg == NULL || ipLocal == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dnm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_netinfoRequest) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.netinfoRequest.ipLocal.buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
+	if (msg->pdu.choice.dnm.dnop.choice.netinfoRequest.ipLocal.buf == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	int ret;
+	ret = inet_pton(AF_INET, ipLocal, msg->pdu.choice.dnm.dnop.choice.netinfoRequest.ipLocal.buf);
+	if (ret != 1) {
+		return DNDS_conversion_failed;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.netinfoRequest.ipLocal.size = sizeof(struct in_addr);
+
+	return DNDS_success;
+ }
+
+int NetinfoRequest_get_ipLocal(DNDSMessage_t *msg, char *ipLocal)
+{
+	if (msg == NULL || ipLocal == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dnm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_netinfoRequest) {
+		return DNDS_invalid_op;
+	}
+
+	const char *ret;
+	ret = inet_ntop(AF_INET, msg->pdu.choice.dnm.dnop.choice.netinfoRequest.ipLocal.buf, ipLocal, INET_ADDRSTRLEN);
+	if (ret == NULL) {
+		return DNDS_conversion_failed;
+	}
+
+	return DNDS_success;
+}
+
+int NetinfoRequest_set_macAddr(DNDSMessage_t *msg, uint8_t *macAddr)
+{
+	if (msg == NULL || macAddr == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dnm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_netinfoRequest) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.netinfoRequest.macAddr.buf = (uint8_t *)calloc(1, ETHER_ADDR_LEN);
+	if (msg->pdu.choice.dnm.dnop.choice.netinfoRequest.macAddr.buf == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	memmove(msg->pdu.choice.dnm.dnop.choice.netinfoRequest.macAddr.buf, macAddr, ETHER_ADDR_LEN);
+	msg->pdu.choice.dnm.dnop.choice.netinfoRequest.macAddr.size = ETHER_ADDR_LEN;
+
+	return DNDS_success;
+}
+
+int NetinfoRequest_get_macAddr(DNDSMessage_t *msg, uint8_t *macAddr)
+{
+	if (msg == NULL || macAddr == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dnm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_netinfoRequest) {
+		return DNDS_invalid_op;
+	}
+
+	memmove(macAddr, msg->pdu.choice.dnm.dnop.choice.netinfoRequest.macAddr.buf, ETHER_ADDR_LEN);
+
+	return DNDS_success;
+}
+
 // NetinfoResponse
 int NetinfoResponse_set_ipAddress(DNDSMessage_t *msg, char *ipAddress)
 {
@@ -3575,6 +3672,18 @@ void ModifyResponse_printf(DNDSMessage_t *msg)
 	e_DNDSResult result;
 	ModifyResponse_get_result(msg, &result);
 	printf("ModifyResponse> result: %i :: %s\n", result, DNDSResult_str(result));
+}
+
+void NetinfoRequest_printf(DNDSMessage_t *msg)
+{
+	char ipLocal[INET_ADDRSTRLEN];
+	NetinfoRequest_get_ipLocal(msg, ipLocal);
+	printf("NetinfoRequest> ipLocal: %s\n", ipLocal);
+
+	char macAddr[ETHER_ADDR_LEN];
+	NetinfoRequest_get_macAddr(msg, macAddr);
+	printf("NetinfoRequest> macAddr: %x:%x:%x:%x:%x:%x\n", macAddr[0],macAddr[1],macAddr[2],
+								macAddr[3],macAddr[4],macAddr[5]);
 }
 
 void NetinfoResponse_printf(DNDSMessage_t *msg)

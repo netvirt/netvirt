@@ -594,6 +594,7 @@ void show_NetinfoRequest()
 	msg = decode();
 	DNDSMessage_printf(msg);
 	DNMessage_printf(msg);
+	NetinfoRequest_printf(msg);
 }
 
 void test_NetinfoRequest()
@@ -609,6 +610,11 @@ void test_NetinfoRequest()
 	DNMessage_set_seqNumber(msg, 600);
 	DNMessage_set_ackNumber(msg, 0);
 	DNMessage_set_operation(msg, dnop_PR_netinfoRequest);
+
+	uint8_t macAddr[ETH_ALEN] = { 0xd, 0xe, 0xa, 0xd, 0xb, 0xe };
+
+	NetinfoRequest_set_ipLocal(msg, "192.168.10.10");
+	NetinfoRequest_set_macAddr(msg, macAddr);
 
 	/// Encoding part
 
@@ -929,13 +935,13 @@ int main()
 
 	test_AddResponse();
 	show_AddResponse();
-*/
+
 	test_P2pRequest_dnm();
 	show_P2pRequest_dnm();
 
 	test_P2pResponse_dnm();
 	show_P2pResponse_dnm();
-/*
+
 	test_AuthRequest_dnm();
 	show_AuthRequest_dnm();
 
@@ -959,13 +965,13 @@ int main()
 
 	test_ModifyResponse();
 	show_ModifyResponse();
-
+*/
 	test_NetinfoRequest();
 	show_NetinfoRequest();
 
 	test_NetinfoResponse();
 	show_NetinfoResponse();
-
+/*
 	test_SearchRequest();
 	show_SearchRequest();
 
