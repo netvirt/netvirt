@@ -118,7 +118,12 @@ DelResponse ::= DNDSResult
 ModifyRequest ::= DNDSObject
 ModifyResponse ::= DNDSResult
 
-NetinfoRequest ::= NULL
+NetinfoRequest ::= SEQUENCE {
+	ipLocal		OCTET STRING (SIZE(4..16)),	-- ipv4 extensible to ipv6
+	macAddr		OCTET STRING (SIZE(6)),
+	...
+}
+
 NetinfoResponse ::= SEQUENCE {
 	ipAddress	OCTET STRING (SIZE(4..16)),
 	netmask		OCTET STRING (SIZE(4..16)),
