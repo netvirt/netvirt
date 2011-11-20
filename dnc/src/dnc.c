@@ -111,6 +111,9 @@ static void tunnel_out(iface_t *iface, DNDSMessage_t *msg)
 
 void transmit_netinfo_request(dn_sess_t *sess)
 {
+	inet_get_local_ip(sess->ip_local, 16);
+	inet_get_iface_mac_address(sess->iface->devname, sess->tun_mac_addr);
+
 	DNDSMessage_t *msg;
 
 	DNDSMessage_new(&msg);
@@ -194,9 +197,6 @@ static void on_secure(netc_t *netc)
 	if (sess->auth == SESS_NOT_AUTH) {
 		JOURNAL_NOTICE("dnc]> authenticate");
 		transmit_register(netc);
-	} else {
-
-		transmit_netinfo_request(sess);
 	}
 }
 
