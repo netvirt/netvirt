@@ -18,6 +18,9 @@ typedef struct {
 	uint8_t auth;
 	uint8_t type;
 
+	char ip_local[16];
+	uint8_t tun_mac_addr[6];
+
 	iface_t *iface;
 	peer_t *peer;
 	netc_t *netc;

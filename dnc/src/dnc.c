@@ -109,6 +109,24 @@ static void tunnel_out(iface_t *iface, DNDSMessage_t *msg)
 	iface->write(iface, frame, length);
 }
 
+void transmit_netinfo_request(dn_sess_t *sess)
+{
+	DNDSMessage_t *msg;
+
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dnm);
+
+	DNMessage_set_seqNumber(msg, 0);
+	DNMessage_set_ackNumber(msg, 0);
+	DNMessage_set_operation(msg, dnop_PR_netinfoRequest);
+
+	NetinfoRequest_set_ipLocal(msg, sess->ip_local);
+	NetinfoRequest_set_macAddr(msg, sess->tun_mac_addr);
+
+	net_send_msg(sess->netc, msg);
+}
+
 void transmit_register(netc_t *netc)
 {
         size_t nbyte;
@@ -116,10 +134,10 @@ void transmit_register(netc_t *netc)
 	uint8_t mac_address[6] = {0};
 	dn_sess_t *session = (dn_sess_t *)netc->ext_ptr;
 
-	inet_get_local_ip(local_ip, 16);
-	inet_get_iface_mac_address(session->iface->devname, mac_address);
+	inet_get_local_ip(session->ip_local, 16);
+	inet_get_iface_mac_address(session->iface->devname, session->tun_mac_addr);
 
-	printf("local ip %s\n", local_ip);
+/*	printf("local ip %s\n", local_ip);
 
 	printf("%02x:%02x:%02x:%02x:%02x:%02x\n",
 		mac_address[0],
@@ -128,6 +146,7 @@ void transmit_register(netc_t *netc)
 		mac_address[3],
 		mac_address[4],
 		mac_address[5]);
+*/
 
         // Building an AuthRequest
         DNDSMessage_t *msg;
@@ -141,11 +160,8 @@ void transmit_register(netc_t *netc)
         DNMessage_set_operation(msg, dnop_PR_authRequest);
 
         AuthRequest_set_certName(msg, "nib@1", 5);
-//	AuthRequest_set_ipLocal(msg, local_ip);
-//	AuthRequest_set_macAddress(msg, mac_address);
 
         nbyte = net_send_msg(netc, msg);
-
         if (nbyte == -1) {
                 JOURNAL_NOTICE("dnc]> malformed message\n", nbyte);
                 return;
@@ -273,6 +289,8 @@ static void dispatch_operation(dn_sess_t *sess, DNDSMessage_t *msg)
 			else {
 				JOURNAL_ERR("dnc]> unknown AuthResponse result");
 			}
+
+			transmit_netinfo_request(sess);
 
 			break;
 

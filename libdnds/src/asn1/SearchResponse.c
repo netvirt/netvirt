@@ -75,8 +75,8 @@ static ber_tlv_tag_t asn_DEF_SearchResponse_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
 static asn_TYPE_tag2member_t asn_MAP_SearchResponse_tag2el_1[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* dndsResult at 132 */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 } /* objects at 134 */
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* dndsResult at 137 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 } /* objects at 139 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_SearchResponse_specs_1 = {
 	sizeof(struct SearchResponse),
