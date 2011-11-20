@@ -6,92 +6,104 @@
 
 #include "NetinfoRequest.h"
 
-int
-NetinfoRequest_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
+static int
+memb_ipLocal_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
-	/* Replace with underlying type checker */
-	td->check_constraints = asn_DEF_NULL.check_constraints;
-	return td->check_constraints(td, sptr, ctfailcb, app_key);
+	const OCTET_STRING_t *st = (const OCTET_STRING_t *)sptr;
+	size_t size;
+	
+	if(!sptr) {
+		_ASN_CTFAIL(app_key, td, sptr,
+			"%s: value not given (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+	
+	size = st->size;
+	
+	if((size >= 4 && size <= 16)) {
+		/* Constraint check succeeded */
+		return 0;
+	} else {
+		_ASN_CTFAIL(app_key, td, sptr,
+			"%s: constraint failed (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
 }
 
-/*
- * This type is implemented using NULL,
- * so here we adjust the DEF accordingly.
- */
-static void
-NetinfoRequest_1_inherit_TYPE_descriptor(asn_TYPE_descriptor_t *td) {
-	td->free_struct    = asn_DEF_NULL.free_struct;
-	td->print_struct   = asn_DEF_NULL.print_struct;
-	td->ber_decoder    = asn_DEF_NULL.ber_decoder;
-	td->der_encoder    = asn_DEF_NULL.der_encoder;
-	td->xer_decoder    = asn_DEF_NULL.xer_decoder;
-	td->xer_encoder    = asn_DEF_NULL.xer_encoder;
-	td->uper_decoder   = asn_DEF_NULL.uper_decoder;
-	td->uper_encoder   = asn_DEF_NULL.uper_encoder;
-	if(!td->per_constraints)
-		td->per_constraints = asn_DEF_NULL.per_constraints;
-	td->elements       = asn_DEF_NULL.elements;
-	td->elements_count = asn_DEF_NULL.elements_count;
-	td->specifics      = asn_DEF_NULL.specifics;
+static int
+memb_macAddr_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
+			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
+	const OCTET_STRING_t *st = (const OCTET_STRING_t *)sptr;
+	size_t size;
+	
+	if(!sptr) {
+		_ASN_CTFAIL(app_key, td, sptr,
+			"%s: value not given (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+	
+	size = st->size;
+	
+	if((size == 6)) {
+		/* Constraint check succeeded */
+		return 0;
+	} else {
+		_ASN_CTFAIL(app_key, td, sptr,
+			"%s: constraint failed (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
 }
 
-void
-NetinfoRequest_free(asn_TYPE_descriptor_t *td,
-		void *struct_ptr, int contents_only) {
-	NetinfoRequest_1_inherit_TYPE_descriptor(td);
-	td->free_struct(td, struct_ptr, contents_only);
-}
-
-int
-NetinfoRequest_print(asn_TYPE_descriptor_t *td, const void *struct_ptr,
-		int ilevel, asn_app_consume_bytes_f *cb, void *app_key) {
-	NetinfoRequest_1_inherit_TYPE_descriptor(td);
-	return td->print_struct(td, struct_ptr, ilevel, cb, app_key);
-}
-
-asn_dec_rval_t
-NetinfoRequest_decode_ber(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
-		void **structure, const void *bufptr, size_t size, int tag_mode) {
-	NetinfoRequest_1_inherit_TYPE_descriptor(td);
-	return td->ber_decoder(opt_codec_ctx, td, structure, bufptr, size, tag_mode);
-}
-
-asn_enc_rval_t
-NetinfoRequest_encode_der(asn_TYPE_descriptor_t *td,
-		void *structure, int tag_mode, ber_tlv_tag_t tag,
-		asn_app_consume_bytes_f *cb, void *app_key) {
-	NetinfoRequest_1_inherit_TYPE_descriptor(td);
-	return td->der_encoder(td, structure, tag_mode, tag, cb, app_key);
-}
-
-asn_dec_rval_t
-NetinfoRequest_decode_xer(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
-		void **structure, const char *opt_mname, const void *bufptr, size_t size) {
-	NetinfoRequest_1_inherit_TYPE_descriptor(td);
-	return td->xer_decoder(opt_codec_ctx, td, structure, opt_mname, bufptr, size);
-}
-
-asn_enc_rval_t
-NetinfoRequest_encode_xer(asn_TYPE_descriptor_t *td, void *structure,
-		int ilevel, enum xer_encoder_flags_e flags,
-		asn_app_consume_bytes_f *cb, void *app_key) {
-	NetinfoRequest_1_inherit_TYPE_descriptor(td);
-	return td->xer_encoder(td, structure, ilevel, flags, cb, app_key);
-}
-
+static asn_TYPE_member_t asn_MBR_NetinfoRequest_1[] = {
+	{ ATF_NOFLAGS, 0, offsetof(struct NetinfoRequest, ipLocal),
+		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_OCTET_STRING,
+		memb_ipLocal_constraint_1,
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"ipLocal"
+		},
+	{ ATF_NOFLAGS, 0, offsetof(struct NetinfoRequest, macAddr),
+		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_OCTET_STRING,
+		memb_macAddr_constraint_1,
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"macAddr"
+		},
+};
 static ber_tlv_tag_t asn_DEF_NetinfoRequest_tags_1[] = {
-	(ASN_TAG_CLASS_UNIVERSAL | (5 << 2))
+	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
+};
+static asn_TYPE_tag2member_t asn_MAP_NetinfoRequest_tag2el_1[] = {
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* ipLocal at 122 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 } /* macAddr at 123 */
+};
+static asn_SEQUENCE_specifics_t asn_SPC_NetinfoRequest_specs_1 = {
+	sizeof(struct NetinfoRequest),
+	offsetof(struct NetinfoRequest, _asn_ctx),
+	asn_MAP_NetinfoRequest_tag2el_1,
+	2,	/* Count of tags in the map */
+	0, 0, 0,	/* Optional elements (not needed) */
+	1,	/* Start extensions */
+	3	/* Stop extensions */
 };
 asn_TYPE_descriptor_t asn_DEF_NetinfoRequest = {
 	"NetinfoRequest",
 	"NetinfoRequest",
-	NetinfoRequest_free,
-	NetinfoRequest_print,
-	NetinfoRequest_constraint,
-	NetinfoRequest_decode_ber,
-	NetinfoRequest_encode_der,
-	NetinfoRequest_decode_xer,
-	NetinfoRequest_encode_xer,
+	SEQUENCE_free,
+	SEQUENCE_print,
+	SEQUENCE_constraint,
+	SEQUENCE_decode_ber,
+	SEQUENCE_encode_der,
+	SEQUENCE_decode_xer,
+	SEQUENCE_encode_xer,
 	0, 0,	/* No PER support, use "-gen-PER" to enable */
 	0,	/* Use generic outmost tag fetcher */
 	asn_DEF_NetinfoRequest_tags_1,
@@ -101,7 +113,8 @@ asn_TYPE_descriptor_t asn_DEF_NetinfoRequest = {
 	sizeof(asn_DEF_NetinfoRequest_tags_1)
 		/sizeof(asn_DEF_NetinfoRequest_tags_1[0]), /* 1 */
 	0,	/* No PER visible constraints */
-	0, 0,	/* No members */
-	0	/* No specifics */
+	asn_MBR_NetinfoRequest_1,
+	2,	/* Elements count */
+	&asn_SPC_NetinfoRequest_specs_1	/* Additional specs */
 };
 
