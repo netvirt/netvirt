@@ -11,24 +11,28 @@
 #include <asn_application.h>
 
 /* Including external dependencies */
-#include <NULL.h>
+#include <OCTET_STRING.h>
+#include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* NetinfoRequest */
-typedef NULL_t	 NetinfoRequest_t;
+typedef struct NetinfoRequest {
+	OCTET_STRING_t	 ipLocal;
+	OCTET_STRING_t	 macAddr;
+	/*
+	 * This type is extensible,
+	 * possible extensions are below.
+	 */
+	
+	/* Context for parsing across buffer boundaries */
+	asn_struct_ctx_t _asn_ctx;
+} NetinfoRequest_t;
 
 /* Implementation */
 extern asn_TYPE_descriptor_t asn_DEF_NetinfoRequest;
-asn_struct_free_f NetinfoRequest_free;
-asn_struct_print_f NetinfoRequest_print;
-asn_constr_check_f NetinfoRequest_constraint;
-ber_type_decoder_f NetinfoRequest_decode_ber;
-der_type_encoder_f NetinfoRequest_encode_der;
-xer_type_decoder_f NetinfoRequest_decode_xer;
-xer_type_encoder_f NetinfoRequest_encode_xer;
 
 #ifdef __cplusplus
 }
