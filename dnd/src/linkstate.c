@@ -20,6 +20,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <sys/queue.h>
+
 int linkst_join(int idx_a, int idx_b, uint8_t **adj_matrix, int max_node)
 {
 	if (idx_a < 0 || idx_a > max_node || idx_b < 0 || idx_b > max_node)
@@ -33,15 +35,23 @@ int linkst_join(int idx_a, int idx_b, uint8_t **adj_matrix, int max_node)
 
 	return 0;
 }
+struct nodes {
 
-struct nodes *linkst_disjoin(int idx, uint8_t **adj_matrix, int active_nodes)
+	int index;
+	LIST_ENTRY(nodes) nodes;
+};
+LIST_HEAD(nodelist, nodes);
+
+struct nodelist *linkst_disjoin(int idx, uint8_t **adj_matrix, int active_nodes)
 {
 	if (idx < 0 || idx > active_nodes)
 		return NULL;
 
 	if (adj_matrix == NULL)
-		return NULL;;
+		return NULL;
 
+	struct nodelist *nodes_head = malloc(sizeof(struct nodelist));
+	struct nodes *nodes;
 	int i;
 
 	for (i=0; i<=active_nodes; i++) {	/* 0 to active_nodes-1 gives `active_nodes` iterations */
@@ -49,12 +59,14 @@ struct nodes *linkst_disjoin(int idx, uint8_t **adj_matrix, int active_nodes)
 		if (adj_matrix[idx][i] == 1) {
 			adj_matrix[idx][i] = 0;
 			adj_matrix[i][idx] = 0;
-			printf("[%d] ---> [%d]\n", idx, i);
+
+			nodes = malloc(sizeof(struct nodes));
+			nodes->index = i;
+			LIST_INSERT_HEAD(nodes_head,nodes ,nodes);
 		}
 	}
 
-	/* XXX Build the list of nodes that was joint with the node that is leaving */	
-	return NULL;
+	return nodes_head;
 }
 
 uint8_t **linkst_new_matrix(int max_node)
@@ -83,5 +95,11 @@ int main()
 
 	linkst_join(idx_a, idx_b, adj_matrix, max_node);
 	linkst_join(idx_a, idx_d, adj_matrix, max_node);
-	linkst_disjoin(idx_a, adj_matrix, active_nodes);
+
+	struct nodelist *nodes_head = linkst_disjoin(idx_a, adj_matrix, active_nodes);
+	struct nodes *np;
+
+	for (np = nodes_head->lh_first; np != NULL; np = np->nodes.le_next) {
+           printf("[%d] ====> [%d]\n", idx_a, np->index);
+	}
 }
