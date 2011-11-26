@@ -7,12 +7,14 @@
 
 #include "dnd.h"
 #include "ippool.h"
+#include "linkst.h"
 
 typedef struct context {
 
 	int id;					// context unique identifier
 	ftable_t *ftable;			// forwarding table
 
+	uint8_t **linkst;			// linkstate adjacency matrix
 	ippool_t *ippool;			// ip address pool
 	uint8_t *bitpool;			// bitpool used to generated unique ID per session
 
