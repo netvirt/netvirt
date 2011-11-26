@@ -52,6 +52,8 @@ static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
 		memcpy(session->mac_addr, mac_addr_src, 6);
 		ftable_insert(session->context->ftable, mac_addr_src, session);
 		context_add_session(session->context, session);
+
+		JOURNAL_DEBUG("dnd]> new ID [%d]\n", session->id);
 	}
 
 	/* Lookup the destination */
