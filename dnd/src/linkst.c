@@ -16,6 +16,23 @@
 
 #include <sys/queue.h>
 
+int linkst_joined(int idx_a, int idx_b, uint8_t **adjacency_matrix, int max_node)
+{
+	if (idx_a < 0 || idx_a > max_node || idx_b < 0 || idx_b > max_node)
+		return -1;
+
+	if (adjacency_matrix == NULL)
+		return -1;
+
+	if (adjacency_matrix[idx_a][idx_b] == 1
+		&& adjacency_matrix[idx_b][idx_a] == 1) {
+
+		return 1; /* nodes are joined */
+	}
+
+	return 0;
+}
+
 int linkst_join(int idx_a, int idx_b, uint8_t **adjacency_matrix, int max_node)
 {
 	if (idx_a < 0 || idx_a > max_node || idx_b < 0 || idx_b > max_node)
@@ -93,29 +110,30 @@ uint8_t **linkst_new(size_t max_node)
 
 	return adjacency_matrix;
 }
+
 #if 0
 int main()
 {
 	int max_node = 10;
 	uint8_t **linkst;
 
-	uint8_t *bitpool;
-	bitpool_new(&bitpool, max_node);
+//	uint8_t *bitpool;
+//	bitpool_new(&bitpool, max_node);
 
 	/* there is 4 active nodee */
 	int idx_a, idx_b, idx_c, idx_d;
 	int active_nodes = 0;
 
-	bitpool_allocate_bit(bitpool, max_node, &idx_a);
+	idx_a = 1; //bitpool_allocate_bit(bitpool, max_node, &idx_a);
 	active_nodes++;
 
-	bitpool_allocate_bit(bitpool, max_node, &idx_b);
+	idx_b = 2; //bitpool_allocate_bit(bitpool, max_node, &idx_b);
 	active_nodes++;
 
-	bitpool_allocate_bit(bitpool, max_node, &idx_c);
+	idx_c = 3; //bitpool_allocate_bit(bitpool, max_node, &idx_c);
 	active_nodes++;
 
-	bitpool_allocate_bit(bitpool, max_node, &idx_d);
+	idx_d = 4; //bitpool_allocate_bit(bitpool, max_node, &idx_d);
 	active_nodes++;
 
 	linkst = linkst_new(max_node);
@@ -123,8 +141,17 @@ int main()
 	linkst_join(idx_a, idx_b, linkst, max_node);
 	linkst_join(idx_a, idx_d, linkst, max_node);
 
+	int state;
+
+	state = linkst_joined(idx_a, idx_b, linkst, max_node);
+	printf("state [%d] || [%d] %s [%d]\n", state, idx_a, state == 1 ? "<==>": "//", idx_b);
+
+	state = linkst_joined(idx_a, idx_c, linkst, max_node);
+	printf("state [%d] || [%d] %s [%d]\n", state, idx_a, state == 1 ? "<==>": "//", idx_c);
+
+
 	struct nodelist *nodes_head = linkst_disjoin(idx_a, linkst, active_nodes);
-	bitpool_release_bit(bitpool, max_node, idx_a);
+//	bitpool_release_bit(bitpool, max_node, idx_a);
 	struct nodes *np;
 
 	for (np = nodes_head->lh_first; np != NULL; np = np->nodes.le_next) {
@@ -133,6 +160,6 @@ int main()
 
 	linkst_free_nodes(nodes_head);
 	linkst_free(linkst, max_node);
-	bitpool_free(bitpool);
+//	bitpool_free(bitpool);
 }
 #endif
