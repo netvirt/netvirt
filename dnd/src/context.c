@@ -81,6 +81,7 @@ int context_create(uint32_t id, char *address, char *netmask )
 	context->id = id;
 
 	bitpool_new(&context->bitpool, 1024);
+	context->linkst = linkst_new(1024);
 
 	// no port yet
 	context->session_list = NULL;
