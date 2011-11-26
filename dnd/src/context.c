@@ -38,6 +38,8 @@ void context_del_session(context_t *context, session_t *session)
 		else
 			printf("no previons link ??!\n");
 	}
+
+	bitpool_release_bit(context->bitpool, 1024, session->id);
 }
 
 void context_add_session(context_t *context, session_t *session)
@@ -52,6 +54,8 @@ void context_add_session(context_t *context, session_t *session)
 		context->session_list->prev = session;
 		context->session_list = session;
 	}
+
+	bitpool_allocate_bit(context->bitpool, 1024, &session->id);
 }
 
 context_t *context_lookup(uint32_t context_id)
@@ -75,6 +79,8 @@ int context_create(uint32_t id, char *address, char *netmask )
 
 	context->ippool = ippool_new(address, netmask);
 	context->id = id;
+
+	bitpool_new(&context->bitpool, 1024);
 
 	// no port yet
 	context->session_list = NULL;
