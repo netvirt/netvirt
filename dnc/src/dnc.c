@@ -56,8 +56,8 @@ static void tunnel_in(iface_t *iface)
 	uint8_t mac_addr_dst_type;
 
 	session = (dn_sess_t *)iface->ext_ptr;
-	if (session->auth == SESS_NOT_AUTH) {
-		JOURNAL_ERR("dnc]> session not authenticated");
+	if (session->auth != SESS_AUTH) {
+		//JOURNAL_ERR("dnc]> session not authenticated");
 		return;
 	}
 
@@ -66,7 +66,7 @@ static void tunnel_in(iface_t *iface)
 	inet_get_mac_addr_src(iface->frame, mac_addr_src);
 	inet_get_mac_addr_dst(iface->frame, mac_addr_dst);
 	mac_addr_dst_type = inet_get_mac_addr_type(mac_addr_dst);
-	printf("mac addr type %d\n", mac_addr_dst_type);
+//	printf("mac addr type %d\n", mac_addr_dst_type);
 
 	DNDSMessage_new(&msg);
 	DNDSMessage_set_channel(msg, 0);
@@ -111,6 +111,9 @@ static void tunnel_out(iface_t *iface, DNDSMessage_t *msg)
 
 void transmit_netinfo_request(dn_sess_t *sess)
 {
+	inet_get_local_ip(sess->ip_local, 16);
+	inet_get_iface_mac_address(sess->iface->devname, sess->tun_mac_addr);
+
 	DNDSMessage_t *msg;
 
 	DNDSMessage_new(&msg);
@@ -130,25 +133,8 @@ void transmit_netinfo_request(dn_sess_t *sess)
 void transmit_register(netc_t *netc)
 {
         size_t nbyte;
-	char local_ip[16];
-	uint8_t mac_address[6] = {0};
 	dn_sess_t *session = (dn_sess_t *)netc->ext_ptr;
 
-	inet_get_local_ip(session->ip_local, 16);
-	inet_get_iface_mac_address(session->iface->devname, session->tun_mac_addr);
-
-/*	printf("local ip %s\n", local_ip);
-
-	printf("%02x:%02x:%02x:%02x:%02x:%02x\n",
-		mac_address[0],
-		mac_address[1],
-		mac_address[2],
-		mac_address[3],
-		mac_address[4],
-		mac_address[5]);
-*/
-
-        // Building an AuthRequest
         DNDSMessage_t *msg;
 
         DNDSMessage_new(&msg);
@@ -168,7 +154,6 @@ void transmit_register(netc_t *netc)
         }
 
         JOURNAL_NOTICE("dnc]> sent %i bytes\n", nbyte);
-
 	session->auth = SESS_WAIT_RESPONSE;
 
         return;
@@ -280,7 +265,7 @@ static void dispatch_operation(dn_sess_t *sess, DNDSMessage_t *msg)
 
 			if (result == DNDSResult_success) {
 				JOURNAL_INFO("dnc]> session authenticated");
-				sess->auth = SESS_AUTH;
+				transmit_netinfo_request(sess);
 			}
 			else if (result == DNDSResult_secureStepUp) {
 				JOURNAL_INFO("dnc]> server authentication require step up");
@@ -290,8 +275,6 @@ static void dispatch_operation(dn_sess_t *sess, DNDSMessage_t *msg)
 				JOURNAL_ERR("dnc]> unknown AuthResponse result");
 			}
 
-			transmit_netinfo_request(sess);
-
 			break;
 
 		case dnop_PR_netinfoResponse:
@@ -299,10 +282,9 @@ static void dispatch_operation(dn_sess_t *sess, DNDSMessage_t *msg)
 			NetinfoResponse_get_ipAddress(msg, ip_addr);
 			printf("got ip address %s\n", ip_addr);
 
-			sess->auth = SESS_AUTH;
 			master_sess = sess; // XXX 
 			tun_up(sess->iface->devname, ip_addr);
-
+			sess->auth = SESS_AUTH;
 
 			// FIXME cache the network informations
 			break;
