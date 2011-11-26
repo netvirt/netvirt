@@ -76,20 +76,15 @@ static void tunnel_in(iface_t *iface)
 	printf("lookup mac %x\n", mac_addr_dst);
 	printf("P2pRequest> mac_addr_dst: %x:%x:%x:%x:%x:%x\n", mac_addr_dst[0],mac_addr_dst[1],mac_addr_dst[2],
                                                     mac_addr_dst[3],mac_addr_dst[4],mac_addr_dst[5]);	
-
+*/
 
 	// Check if we have a P2P connection in the forward table with the dest mac addr
 	p2p_session = ftable_find(ftable, mac_addr_dst);
-
-	if (p2p_session == NULL) {
-		// Ask for a P2P session
-		request_p2p(session->netc, mac_addr_src, mac_addr_dst);
-	}
-	else if (p2p_session->auth == SESS_AUTH) {
+	if (p2p_session && p2p_session->auth == SESS_AUTH) {
 		// Send the message using the P2P session
 		session = p2p_session;
 	}
-*/
+
 	net_send_msg(session->netc, msg);
 }
 
@@ -304,7 +299,7 @@ static void dispatch_operation(dn_sess_t *sess, DNDSMessage_t *msg)
 			snprintf(port_name, 6, "%d", port);
 
 			printf("dest_addr: %s\n", dest_addr);
-			p2p_netc = net_p2p("192.168.1.135", dest_addr, port_name, NET_PROTO_UDT, NET_UNSECURE, state,
+			p2p_netc = net_p2p("0.0.0.0", dest_addr, port_name, NET_PROTO_UDT, NET_UNSECURE, state,
 						on_connect, p2p_on_secure, on_disconnect, on_input);
 
 			if (p2p_netc != NULL) {
