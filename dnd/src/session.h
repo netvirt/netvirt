@@ -9,6 +9,8 @@ typedef struct session {
 	uint8_t auth;
 
 	int id;
+	char ip_local[16];
+	uint8_t tun_mac_addr[6];
 
 	netc_t *netc;
 	struct context *context;
