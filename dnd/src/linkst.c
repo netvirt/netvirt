@@ -16,66 +16,6 @@
 
 #include <sys/queue.h>
 
-static int get_bit(const uint8_t bitmap[], size_t bit)
-{
-	return (bitmap[bit/8] >> (bit % 8)) & 1;
-}
-
-static void set_bit(uint8_t bitmap[], size_t bit)
-{
-	bitmap[bit/8] |= (1 << (bit % 8));
-}
-
-static void clear_bit(uint8_t bitmap[], size_t bit)
-{
-	bitmap[bit/8] &= ~(1 << (bit % 8));
-}
-
-/*
-*/
-
-static int bitpool_release_bit(uint8_t bitpool[], size_t nbits, uint32_t bit)
-{
-	if (bit < nbits) {
-		clear_bit(bitpool, bit);
-		return 0;
-	}
-
-	return -1;
-}
-static int bitpool_allocate_bit(uint8_t bitpool[], size_t nbits, uint32_t *bit)
-{
-	uint32_t i, j, nbyte;
-
-	nbyte = nbits/8;
-
-	for (i = 0; (i < nbyte) && (bitpool[i] == 0xff); i++);
-
-	if (i == nbyte)
-		return -1;	/* bitpool is full ! */
-
-	for (j = 0; get_bit(bitpool + i, j); j++);
-
-	*bit = i * 8 + j;
-
-	set_bit(bitpool, *bit);
-
-	return 0;
-}
-
-static void bitpool_free(uint8_t *bitpool)
-{
-	free(bitpool);
-}
-
-static int bitpool_new(uint8_t **bitpool, size_t nbits)
-{
-	int nbyte = (nbits+7)/8;
-	*bitpool = calloc(nbyte, sizeof(uint8_t));
-
-	return *bitpool != NULL;
-}
- 
 int linkst_join(int idx_a, int idx_b, uint8_t **adjacency_matrix, int max_node)
 {
 	if (idx_a < 0 || idx_a > max_node || idx_b < 0 || idx_b > max_node)
@@ -153,6 +93,7 @@ uint8_t **linkst_new(size_t max_node)
 
 	return adjacency_matrix;
 }
+#if 0
 int main()
 {
 	int max_node = 10;
@@ -194,3 +135,4 @@ int main()
 	linkst_free(linkst, max_node);
 	bitpool_free(bitpool);
 }
+#endif
