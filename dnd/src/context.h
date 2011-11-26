@@ -14,6 +14,7 @@ typedef struct context {
 	ftable_t *ftable;			// forwarding table
 
 	ippool_t *ippool;			// ip address pool
+	uint8_t *bitpool;			// bitpool used to generated unique ID per session
 
 	struct session *session_list;		// all session open in this context
 
