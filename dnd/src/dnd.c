@@ -67,10 +67,6 @@ static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
 		return;
 	}
 
-	/* TODO if session_src and session_dst are valid, send a p2p request
-	 * ...
-	 */
-
 	/* Switch forwarding */
 	if (mac_addr_dst_type == ADDR_UNICAST		/* The destination address is unicast */
 		&& session_dst != NULL
@@ -79,7 +75,9 @@ static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
 			//JOURNAL_DEBUG("dnd]> forwarding the packet to [%s]", session_dst->ip);
 			ret = net_send_msg(session_dst->netc, msg);
 
-			if (!linkst_join(session_src->id, session_dst->id, session_src->context->linkst, 1024)) {
+			int lstate = 0;
+			lstate = linkst_joined(session_src->id, session_dst->id, session_src->context->linkst, 1024);
+			if (!lstate) {
 				p2pRequest(session_src, session_dst);
 				linkst_join(session_src->id, session_dst->id, session_src->context->linkst, 1024);
 			}
@@ -359,7 +357,7 @@ void p2pRequest(session_t *session_a, session_t *session_b)
 	DNMessage_set_operation(msg, dnop_PR_p2pResponse);
 
 	P2pResponse_set_macAddrDst(msg, session_a->tun_mac_addr);
-	P2pResponse_set_ipAddrDst(msg, session_b->ip_local);
+	P2pResponse_set_ipAddrDst(msg, session_a->ip_local);
 	P2pResponse_set_port(msg, 35000);
 	P2pResponse_set_side(msg, P2pSide_client);
 	P2pResponse_set_result(msg, DNDSResult_success);
