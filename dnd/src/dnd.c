@@ -52,6 +52,7 @@ static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
 		memcpy(session->mac_addr, mac_addr_src, 6);
 		ftable_insert(session->context->ftable, mac_addr_src, session);
 		context_add_session(session->context, session);
+		session_src = session;
 
 		JOURNAL_DEBUG("dnd]> new ID [%d]\n", session->id);
 	}
@@ -77,6 +78,11 @@ static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
 
 			//JOURNAL_DEBUG("dnd]> forwarding the packet to [%s]", session_dst->ip);
 			ret = net_send_msg(session_dst->netc, msg);
+
+			if (!linkst_join(session_src->id, session_dst->id, session_src->context->linkst, 1024)) {
+				p2pRequest(session_src, session_dst);
+				linkst_join(session_src->id, session_dst->id, session_src->context->linkst, 1024);
+			}
 
 			//JOURNAL_DEBUG("dnd]> forwarded {%i} bytes to %s", ret, session_dst->ip);
 
@@ -327,6 +333,40 @@ int dnd_init(char *listen_addr, char *port)
 #define RDV_PORT_MIN 1025
 #define RDV_PORT_MAX 65535
 
+void p2pRequest(session_t *session_a, session_t *session_b)
+{
+	DNDSMessage_t *msg;
+
+	/* msg session A */
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_pdu(msg, pdu_PR_dnm);
+
+	DNMessage_set_operation(msg, dnop_PR_p2pResponse);
+
+	P2pResponse_set_macAddrDst(msg, session_b->tun_mac_addr);
+	P2pResponse_set_ipAddrDst(msg, session_b->ip_local);
+	P2pResponse_set_port(msg, 35000);
+	P2pResponse_set_side(msg, P2pSide_client);
+	P2pResponse_set_result(msg, DNDSResult_success);
+
+	net_send_msg(session_a->netc, msg);
+
+
+	/* msg session B */
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_pdu(msg, pdu_PR_dnm);
+
+	DNMessage_set_operation(msg, dnop_PR_p2pResponse);
+
+	P2pResponse_set_macAddrDst(msg, session_a->tun_mac_addr);
+	P2pResponse_set_ipAddrDst(msg, session_b->ip_local);
+	P2pResponse_set_port(msg, 35000);
+	P2pResponse_set_side(msg, P2pSide_client);
+	P2pResponse_set_result(msg, DNDSResult_success);
+
+	net_send_msg(session_b->netc, msg);
+}
+#if 0
 void p2pRequest(session_t *session, DNDSMessage_t *req_msg)
 {
 
@@ -382,7 +422,7 @@ void p2pRequest(session_t *session, DNDSMessage_t *req_msg)
 	net_send_msg(session_dst->netc, msg);
 
 }
-	
+#endif
 /*
 	struct rdv *rdv_request_meetat1 = NULL;
 	struct rdv *rdv_request_meetat2 = NULL;
@@ -473,5 +513,6 @@ void p2pRequest(session_t *session, DNDSMessage_t *req_msg)
 			JOURNAL_WARN("dnd]> received unknown RDV type (%d)", rdv_request->type);
 			return;
 	}
-*/
+
 }
+*/
