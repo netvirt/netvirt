@@ -335,8 +335,8 @@ void p2pRequest(session_t *session_a, session_t *session_b)
 {
 	DNDSMessage_t *msg;
 
-	char ip_a;
-	char ip_b;
+	char *ip_a;
+	char *ip_b;
 
 	if (!strcmp(session_a->netc->peer->host, session_b->netc->peer->host)) {
 
