@@ -335,6 +335,11 @@ void p2pRequest(session_t *session_a, session_t *session_b)
 {
 	DNDSMessage_t *msg;
 
+
+	printf("A ip public %s\n", session_a->netc->peer->host);
+	printf("B ip public %s\n", session_b->netc->peer->host);
+
+
 	/* msg session A */
 	DNDSMessage_new(&msg);
 	DNDSMessage_set_pdu(msg, pdu_PR_dnm);
