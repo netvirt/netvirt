@@ -335,10 +335,21 @@ void p2pRequest(session_t *session_a, session_t *session_b)
 {
 	DNDSMessage_t *msg;
 
+	char ip_a;
+	char ip_b;
 
-	printf("A ip public %s\n", session_a->netc->peer->host);
-	printf("B ip public %s\n", session_b->netc->peer->host);
+	if (!strcmp(session_a->netc->peer->host, session_b->netc->peer->host)) {
 
+		ip_a = strdup(session_a->ip_local);
+		ip_b = strdup(session_b->ip_local);
+	} else {
+
+		ip_a = strdup(session_a->netc->peer->host);
+		ip_b = strdup(session_b->netc->peer->host);
+	}
+
+	printf("A ip public %s\n", ip_a);
+	printf("B ip public %s\n", ip_b);
 
 	/* msg session A */
 	DNDSMessage_new(&msg);
@@ -347,7 +358,7 @@ void p2pRequest(session_t *session_a, session_t *session_b)
 	DNMessage_set_operation(msg, dnop_PR_p2pResponse);
 
 	P2pResponse_set_macAddrDst(msg, session_b->tun_mac_addr);
-	P2pResponse_set_ipAddrDst(msg, session_b->ip_local);
+	P2pResponse_set_ipAddrDst(msg, ip_b);
 	P2pResponse_set_port(msg, 35000);
 	P2pResponse_set_side(msg, P2pSide_client);
 	P2pResponse_set_result(msg, DNDSResult_success);
@@ -362,7 +373,7 @@ void p2pRequest(session_t *session_a, session_t *session_b)
 	DNMessage_set_operation(msg, dnop_PR_p2pResponse);
 
 	P2pResponse_set_macAddrDst(msg, session_a->tun_mac_addr);
-	P2pResponse_set_ipAddrDst(msg, session_a->ip_local);
+	P2pResponse_set_ipAddrDst(msg, ip_a);
 	P2pResponse_set_port(msg, 35000);
 	P2pResponse_set_side(msg, P2pSide_client);
 	P2pResponse_set_result(msg, DNDSResult_success);
