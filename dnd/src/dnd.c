@@ -32,9 +32,9 @@ static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
 	uint8_t *frame;
 	size_t frame_size;
 
-	uint8_t mac_addr_src[6];
-	uint8_t mac_addr_dst[6];
-	uint8_t mac_addr_dst_type;
+	uint8_t macaddr_src[ETHER_ADDR_LEN];
+	uint8_t macaddr_dst[ETHER_ADDR_LEN];
+	uint8_t macaddr_dst_type;
 
 	session_t *session_dst = NULL;
 	session_t *session_src = NULL;
@@ -46,11 +46,11 @@ static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
 	DNDSMessage_get_ethernet(msg, &frame, &frame_size);
 
 	/* New mac address ? Add it to the lookup table */
-	inet_get_mac_addr_src(frame, mac_addr_src);
-	session_src = ftable_find(session->context->ftable, mac_addr_src);
+	inet_get_mac_addr_src(frame, macaddr_src);
+	session_src = ftable_find(session->context->ftable, macaddr_src);
 	if (session_src == NULL) {
-		memcpy(session->mac_addr, mac_addr_src, 6);
-		ftable_insert(session->context->ftable, mac_addr_src, session);
+		memcpy(session->mac_addr, macaddr_src, ETHER_ADDR_LEN);
+		ftable_insert(session->context->ftable, macaddr_src, session);
 		context_add_session(session->context, session);
 		session_src = session;
 
@@ -58,17 +58,17 @@ static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
 	}
 
 	/* Lookup the destination */
-	inet_get_mac_addr_dst(frame, mac_addr_dst);
-	mac_addr_dst_type = inet_get_mac_addr_type(mac_addr_dst);
-	session_dst = ftable_find(session->context->ftable, mac_addr_dst);
+	inet_get_mac_addr_dst(frame, macaddr_dst);
+	macaddr_dst_type = inet_get_mac_addr_type(macaddr_dst);
+	session_dst = ftable_find(session->context->ftable, macaddr_dst);
 
-	if (mac_addr_dst_type == ADDR_MULTICAST) {
-		//JOURNAL_DEBUG("dnd]> doesn't support multicast yet :: %s:%i", __FILE__, __LINE__);
+	if (macaddr_dst_type == ADDR_MULTICAST) {
+		/* Multicast is not supported yet */
 		return;
 	}
 
 	/* Switch forwarding */
-	if (mac_addr_dst_type == ADDR_UNICAST		/* The destination address is unicast */
+	if (macaddr_dst_type == ADDR_UNICAST		/* The destination address is unicast */
 		&& session_dst != NULL
 		&& session_dst->netc != NULL) {		/* AND the session is up */
 
@@ -82,22 +82,13 @@ static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
 				linkst_join(session_src->id, session_dst->id, session_src->context->linkst, 1024);
 			}
 
-			//JOURNAL_DEBUG("dnd]> forwarded {%i} bytes to %s", ret, session_dst->ip);
-
-	} else if (mac_addr_dst_type == ADDR_BROADCAST ||	/* This packet has to be broadcasted */
-		session_dst == NULL)  {				/* OR the fib session is down */
 	/* Switch flooding */
+	} else if (macaddr_dst_type == ADDR_BROADCAST ||	/* This packet has to be broadcasted */
+		session_dst == NULL)  {				/* OR the fib session is down */
 
-			//JOURNAL_DEBUG("dnd]> BROADCASTING");
 			session_list = session->context->session_list;
-			if (session_list == NULL) {
-				//JOURNAL_DEBUG("dnd]> the session list is empty :: %s:%i", __FILE__, __LINE__);
-			}
-
 			while (session_list != NULL) {
 				ret = net_send_msg(session_list->netc, msg);
-				//JOURNAL_DEBUG("dnd]> BR forwarded {%i} bytes to %s ", ret, session_list->ip);
-
 				session_list = session_list->next;
 			}
 	} else {
@@ -327,13 +318,16 @@ int dnd_init(char *listen_addr, char *port)
 	return 0;
 }
 
-
 #define RDV_PORT_MIN 1025
 #define RDV_PORT_MAX 65535
 
 void p2pRequest(session_t *session_a, session_t *session_b)
 {
 	DNDSMessage_t *msg;
+
+/* its a p2pRequest, but the message is p2pResponse
+ * TODO fix dnds.asn1 protocol
+ */
 
 	char *ip_a;
 	char *ip_b;
@@ -380,153 +374,3 @@ void p2pRequest(session_t *session_a, session_t *session_b)
 
 	net_send_msg(session_b->netc, msg);
 }
-#if 0
-void p2pRequest(session_t *session, DNDSMessage_t *req_msg)
-{
-
-        char ipLocal[INET_ADDRSTRLEN];
-        uint8_t macAddrSrc[ETHER_ADDR_LEN];
-        uint8_t macAddrDst[ETHER_ADDR_LEN];
-
-        P2pRequest_get_ipLocal(req_msg, ipLocal);
-        printf("P2pRequest> ipLocal: %s\n", ipLocal);
-
-        P2pRequest_get_macAddrSrc(req_msg, macAddrSrc);
-        printf("P2pRequest> macAddrSrc: %x:%x:%x:%x:%x:%x\n", macAddrSrc[0],macAddrSrc[1],macAddrSrc[2],
-                                                        macAddrSrc[3],macAddrSrc[4],macAddrSrc[5]);
-        P2pRequest_get_macAddrDst(req_msg, macAddrDst);
-        printf("P2pRequest> macAddrDst: %x:%x:%x:%x:%x:%x\n", macAddrDst[0],macAddrDst[1],macAddrDst[2],                                                                                macAddrDst[3],macAddrDst[4],macAddrDst[5]);
-
-	printf("session->ip %s\n", session->ip);
-	printf("session->netc %s\n", session->netc->peer->host);
-
-	session_t *session_dst;
-	session_dst = ftable_find(session->context->ftable, macAddrDst);
-	if (session_dst != NULL) {
-		printf("session_dst->ip %s\n", session_dst->ip);
-		printf("session->netc %s\n", session->netc->peer->host);
-
-	DNDSMessage_t *msg;
-	DNDSMessage_new(&msg);
-	DNDSMessage_set_pdu(msg, pdu_PR_dnm);
-
-	DNMessage_set_operation(msg, dnop_PR_p2pResponse);
-	
-	P2pResponse_set_macAddrDst(msg, macAddrDst);
-	P2pResponse_set_ipAddrDst(msg, "192.168.1.112");
-	P2pResponse_set_port(msg, 35000);
-	P2pResponse_set_side(msg, P2pSide_client);
-	P2pResponse_set_result(msg, DNDSResult_success);
-
-	net_send_msg(session->netc, msg);
-
-//---------------------------------
-
-	DNDSMessage_new(&msg);
-	DNDSMessage_set_pdu(msg, pdu_PR_dnm);
-
-	DNMessage_set_operation(msg, dnop_PR_p2pResponse);
-	
-	P2pResponse_set_macAddrDst(msg, macAddrSrc);
-	P2pResponse_set_ipAddrDst(msg, ipLocal);
-	P2pResponse_set_port(msg, 35000);
-	P2pResponse_set_side(msg, P2pSide_client);
-	P2pResponse_set_result(msg, DNDSResult_success);
-
-	net_send_msg(session_dst->netc, msg);
-
-}
-#endif
-/*
-	struct rdv *rdv_request_meetat1 = NULL;
-	struct rdv *rdv_request_meetat2 = NULL;
-	RDV_ASK *rdv_request_ask = NULL;
-	RDV_ASK *rdv_ask_table_entry = NULL;
-	fib_entry_t *fib_dest = NULL; // destinator
-	port_t *port_dest = NULL;
-	uint32_t rdv_request_length = 0;
-	uint32_t hash;
-	uint16_t portnumber; // (int)12345, rendez-vous port
-	char portnumberstr[6]; // used to (int)12345 => "12345"
-
-	if (rdv_request == NULL) {
-		JOURNAL_ERR("dnd]> rdv request was null");
-		return;
-	}
-
-	rdv_ntoh(rdv_request);
-
-	rdv_print(rdv_request);
-
-	dnd (rdv_request->type) {
-		case RDV_REQUEST_ASK:
-			JOURNAL_DEBUG("dnd]> %s asked a rendez-vous", port->ip);
-			rdv_request_ask = (RDV_ASK *)((uint8_t *)rdv_request + sizeof(struct rdv));
-
-			// 1. Find who wants to talk to who
-			fib_dest = fib_lookup(port->context->fib_cache, rdv_request_ask->dest_mac);
-			if (fib_dest == NULL) {
-				JOURNAL_ERR("dnd]> unknown mac addr for rendezvous");
-				return;
-			}
-			port_dest = fib_dest->port;
-
-			// 2. Check if there is a rendez-vous request pending for the node
-			hash = rdvask_hash(rdv_request_ask->dest_mac, rdv_request_ask->src_mac);
-			rdv_ask_table_entry = table_rdvask[hash];
-
-			if (rdv_ask_table_entry != NULL) {
-				// Generate a random port
-				srand((unsigned int)time(NULL));
-				portnumber = rand()%((RDV_PORT_MAX-RDV_PORT_MIN)+1)+RDV_PORT_MIN;
-				snprintf(portnumberstr, 6, "%d", portnumber);
-
-				// 3. If so, check if they are using the same public IP
-				if (strcmp(port_dest->xtpc->peer->host, port->xtpc->peer->host) == 0) {
-					// 4. Yes, use the provided private ip
-					rdv_request_meetat1 = rdv_meetat(rdv_request_ask->dest_mac, rdv_ask_table_entry->local_ip, portnumberstr, RDV_STATE_LISTEN);
-					rdv_request_meetat2 = rdv_meetat(rdv_request_ask->src_mac, rdv_request_ask->local_ip, portnumberstr, RDV_STATE_CONNECT);
-				}
-				else {
-					// 4. No, use their public ip
-					rdv_request_meetat1 = rdv_meetat(rdv_request_ask->dest_mac, port_dest->xtpc->peer->host, portnumberstr, RDV_STATE_LISTEN);
-					rdv_request_meetat2 = rdv_meetat(rdv_request_ask->src_mac, port->xtpc->peer->host, portnumberstr, RDV_STATE_CONNECT);
-				}
-
-				rdv_request_length = rdv_request_meetat1->length;
-
-				rdv_hton(rdv_request_meetat1);
-				xtp_send(port->xtpc, 0, rdv_request_meetat1, rdv_request_length, XTP_TYPE_RDV);
-
-				rdv_hton(rdv_request_meetat2);
-				xtp_send(port_dest->xtpc, 0, rdv_request_meetat2, rdv_request_length, XTP_TYPE_RDV);
-
-				// 5. Delete the rendezvous request from the table
-				free(rdv_ask_table_entry);
-				table_rdvask[hash] = NULL;
-			}
-			else {
-				// 3. Add the rendezvous request ask to the table
-				hash = rdvask_hash(rdv_request_ask->src_mac, rdv_request_ask->dest_mac);
-
-				rdv_ask_table_entry = malloc(sizeof(RDV_ASK));
-				strncpy(rdv_ask_table_entry->local_ip, rdv_request_ask->local_ip, 15);
-				strncpy(rdv_ask_table_entry->src_mac, rdv_request_ask->src_mac, 6);
-				strncpy(rdv_ask_table_entry->dest_mac, rdv_request_ask->dest_mac, 6);
-
-				table_rdvask[hash] = rdv_ask_table_entry;
-			}
-
-			break;
-		case RDV_REQUEST_MEETAT:
-			// TODO - wat a rendezvous meetat to the dnd o_q ?
-			JOURNAL_WARN("dnd]> received a RDV_REQUEST_MEETAT");
-			break;
-		default:
-			// TODO - error
-			JOURNAL_WARN("dnd]> received unknown RDV type (%d)", rdv_request->type);
-			return;
-	}
-
-}
-*/
