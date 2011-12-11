@@ -12,6 +12,8 @@
 
 /* Including external dependencies */
 #include <OCTET_STRING.h>
+#include <NativeInteger.h>
+#include "P2pSide.h"
 #include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
@@ -20,9 +22,10 @@ extern "C" {
 
 /* P2pRequest */
 typedef struct P2pRequest {
-	OCTET_STRING_t	 ipLocal;
-	OCTET_STRING_t	 macAddrSrc;
 	OCTET_STRING_t	 macAddrDst;
+	OCTET_STRING_t	 ipAddrDst;
+	unsigned long	 port;
+	P2pSide_t	 side;
 	/*
 	 * This type is extensible,
 	 * possible extensions are below.
@@ -33,6 +36,7 @@ typedef struct P2pRequest {
 } P2pRequest_t;
 
 /* Implementation */
+/* extern asn_TYPE_descriptor_t asn_DEF_port_4;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_P2pRequest;
 
 #ifdef __cplusplus

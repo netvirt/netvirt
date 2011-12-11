@@ -4,7 +4,7 @@
 -- DN> Dynamic Network
 -- DS> Directory Service
 
--- asn1c ./dnds.asn1 -fnative-types
+-- asn1c dnds.asn1 -fnative-types
 
 DNDS DEFINITIONS AUTOMATIC TAGS ::=
 BEGIN
@@ -92,19 +92,17 @@ P2pSide ::= ENUMERATED {
 	server		(2),
 	...
 }
-		
-P2pRequest ::= SEQUENCE {
-	ipLocal		OCTET STRING (SIZE(4..16)),	-- ipv4 extensible to ipv6
-	macAddrSrc	OCTET STRING (SIZE(6)),	
-	macAddrDst	OCTET STRING (SIZE(6)),
-	...
-}
 
-P2pResponse ::= SEQUENCE {
+P2pRequest ::= SEQUENCE {
 	macAddrDst	OCTET STRING (SIZE(6)),
 	ipAddrDst	OCTET STRING (SIZE(4..16)),
 	port		INTEGER (0..uint32max),
 	side		P2pSide,
+	...
+}
+	
+P2pResponse ::= SEQUENCE {
+	macAddrDst	OCTET STRING (SIZE(6)),
 	result		DNDSResult,
 	...
 }

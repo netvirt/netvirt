@@ -204,8 +204,9 @@ void test_P2pRequest_dnm()
 	DNMessage_set_ackNumber(msg, 0);
 	DNMessage_set_operation(msg, dnop_PR_p2pRequest);
 
-	P2pRequest_set_ipLocal(msg, "192.168.10.3");
-	P2pRequest_set_macAddrSrc(msg, macAddrSrc);
+	P2pRequest_set_ipAddrDst(msg, "66.55.44.33");
+	P2pRequest_set_port(msg, 9000);
+	P2pRequest_set_side(msg, P2pSide_client);
 	P2pRequest_set_macAddrDst(msg, macAddrDst);
 
 	/// Encoding part
@@ -247,9 +248,6 @@ void test_P2pResponse_dnm()
 	DNMessage_set_operation(msg, dnop_PR_p2pResponse);
 
 	P2pResponse_set_macAddrDst(msg, macAddrDst);
-	P2pResponse_set_ipAddrDst(msg, "66.55.44.33");
-	P2pResponse_set_port(msg, 9000);
-	P2pResponse_set_side(msg, P2pSide_client);
 	P2pResponse_set_result(msg, DNDSResult_success);
 
 	/// Encoding part
@@ -935,13 +933,13 @@ int main()
 
 	test_AddResponse();
 	show_AddResponse();
-
+*/
 	test_P2pRequest_dnm();
 	show_P2pRequest_dnm();
 
 	test_P2pResponse_dnm();
 	show_P2pResponse_dnm();
-
+/*
 	test_AuthRequest_dnm();
 	show_AuthRequest_dnm();
 
@@ -965,13 +963,13 @@ int main()
 
 	test_ModifyResponse();
 	show_ModifyResponse();
-*/
+
 	test_NetinfoRequest();
 	show_NetinfoRequest();
 
 	test_NetinfoResponse();
 	show_NetinfoResponse();
-/*
+
 	test_SearchRequest();
 	show_SearchRequest();
 
