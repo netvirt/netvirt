@@ -12,8 +12,6 @@
 
 /* Including external dependencies */
 #include <OCTET_STRING.h>
-#include <NativeInteger.h>
-#include "P2pSide.h"
 #include "DNDSResult.h"
 #include <constr_SEQUENCE.h>
 
@@ -24,9 +22,6 @@ extern "C" {
 /* P2pResponse */
 typedef struct P2pResponse {
 	OCTET_STRING_t	 macAddrDst;
-	OCTET_STRING_t	 ipAddrDst;
-	unsigned long	 port;
-	P2pSide_t	 side;
 	DNDSResult_t	 result;
 	/*
 	 * This type is extensible,
@@ -38,7 +33,6 @@ typedef struct P2pResponse {
 } P2pResponse_t;
 
 /* Implementation */
-/* extern asn_TYPE_descriptor_t asn_DEF_port_4;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_P2pResponse;
 
 #ifdef __cplusplus
