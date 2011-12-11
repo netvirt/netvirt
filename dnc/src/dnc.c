@@ -264,11 +264,11 @@ static void dispatch_operation(dn_sess_t *session, DNDSMessage_t *msg)
 
 			break;
 
-		case dnop_PR_p2pResponse:
+		case dnop_PR_p2pRequest:
 
-			P2pResponse_get_macAddrDst(msg, mac_dst);
-			P2pResponse_get_ipAddrDst(msg, dest_addr);
-			P2pResponse_get_port(msg, &port);
+			P2pRequest_get_macAddrDst(msg, mac_dst);
+			P2pRequest_get_ipAddrDst(msg, dest_addr);
+			P2pRequest_get_port(msg, &port);
 		
 			snprintf(port_name, 6, "%d", port);
 			p2p_netc = net_p2p("0.0.0.0", dest_addr, port_name, NET_PROTO_UDT, NET_UNSECURE, state,
