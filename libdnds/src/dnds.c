@@ -980,103 +980,6 @@ int NetinfoResponse_get_result(DNDSMessage_t *msg, e_DNDSResult *result)
 }
 
 // P2pRequest
-int P2pRequest_set_ipLocal(DNDSMessage_t *msg, char *ipLocal)
-{
-	if (msg == NULL || ipLocal == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dnm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_p2pRequest) {
-		return DNDS_invalid_op;
-	}
-
-	msg->pdu.choice.dnm.dnop.choice.p2pRequest.ipLocal.buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
-	if (msg->pdu.choice.dnm.dnop.choice.p2pRequest.ipLocal.buf == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	int ret;
-	ret = inet_pton(AF_INET, ipLocal, msg->pdu.choice.dnm.dnop.choice.p2pRequest.ipLocal.buf);
-	if (ret != 1) {
-		return DNDS_conversion_failed;
-	}
-
-	msg->pdu.choice.dnm.dnop.choice.p2pRequest.ipLocal.size = sizeof(struct in_addr);
-
-	return DNDS_success;
-}
-
-int P2pRequest_get_ipLocal(DNDSMessage_t *msg, char *ipLocal)
-{
-	if (msg == NULL || ipLocal == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dnm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_p2pRequest) {
-		return DNDS_invalid_op;
-	}
-
-	const char *ret;
-	ret = inet_ntop(AF_INET, msg->pdu.choice.dnm.dnop.choice.p2pRequest.ipLocal.buf, ipLocal, INET_ADDRSTRLEN);
-	if (ret == NULL) {
-		return DNDS_conversion_failed;
-	}
-
-	return DNDS_success;
-}
-
-int P2pRequest_set_macAddrSrc(DNDSMessage_t *msg, uint8_t *macAddrSrc)
-{
-	if (msg == NULL || macAddrSrc == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dnm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_p2pRequest) {
-		return DNDS_invalid_op;
-	}
-
-	msg->pdu.choice.dnm.dnop.choice.p2pRequest.macAddrSrc.buf = (uint8_t *)calloc(1, ETHER_ADDR_LEN);
-	if (msg->pdu.choice.dnm.dnop.choice.p2pRequest.macAddrSrc.buf == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	memmove(msg->pdu.choice.dnm.dnop.choice.p2pRequest.macAddrSrc.buf, macAddrSrc, ETHER_ADDR_LEN);
-	msg->pdu.choice.dnm.dnop.choice.p2pRequest.macAddrSrc.size = ETHER_ADDR_LEN;
-
-	return DNDS_success;
-}
-
-int P2pRequest_get_macAddrSrc(DNDSMessage_t *msg, uint8_t *macAddrSrc)
-{
-	if (msg == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dnm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_p2pRequest) {
-		return DNDS_invalid_op;
-	}
-
-	memmove(macAddrSrc, msg->pdu.choice.dnm.dnop.choice.p2pRequest.macAddrSrc.buf, ETHER_ADDR_LEN);
-
-	return DNDS_success;
-}
-
 int P2pRequest_set_macAddrDst(DNDSMessage_t *msg, uint8_t *macAddrDst)
 {
 	if (msg == NULL || macAddrDst == NULL) {
@@ -1117,6 +1020,127 @@ int P2pRequest_get_macAddrDst(DNDSMessage_t *msg, uint8_t *macAddrDst)
 	}
 
 	memmove(macAddrDst, msg->pdu.choice.dnm.dnop.choice.p2pRequest.macAddrDst.buf, ETHER_ADDR_LEN);
+
+	return DNDS_success;
+}
+
+int P2pRequest_set_ipAddrDst(DNDSMessage_t *msg, char *ipAddrDst)
+{
+	if (msg == NULL || ipAddrDst == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dnm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_p2pRequest) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.p2pRequest.ipAddrDst.buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
+	if (msg->pdu.choice.dnm.dnop.choice.p2pRequest.ipAddrDst.buf == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	int ret;
+	ret = inet_pton(AF_INET, ipAddrDst, msg->pdu.choice.dnm.dnop.choice.p2pRequest.ipAddrDst.buf);
+	if (ret != 1) {
+		return DNDS_conversion_failed;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.p2pRequest.ipAddrDst.size = sizeof(struct in_addr);
+
+	return DNDS_success;
+}
+
+int P2pRequest_get_ipAddrDst(DNDSMessage_t *msg, char *ipAddrDst)
+{
+	if (msg == NULL || ipAddrDst == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dnm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_p2pRequest) {
+		return DNDS_invalid_op;
+	}
+
+	const char *ret;
+	ret = inet_ntop(AF_INET, msg->pdu.choice.dnm.dnop.choice.p2pRequest.ipAddrDst.buf, ipAddrDst, INET_ADDRSTRLEN);
+	if (ret == NULL) {
+		return DNDS_conversion_failed;
+	}
+
+	return DNDS_success;
+}
+
+int P2pRequest_set_port(DNDSMessage_t *msg, uint32_t port)
+{
+	if (msg == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dnm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_p2pRequest) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.p2pRequest.port = port;
+
+	return DNDS_success;
+}
+
+int P2pRequest_get_port(DNDSMessage_t *msg, uint32_t *port)
+{
+	if (msg == NULL || port == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	*port = msg->pdu.choice.dnm.dnop.choice.p2pRequest.port;
+
+	return DNDS_success;
+}
+
+int P2pRequest_set_side(DNDSMessage_t *msg, e_P2pSide side)
+{
+	if (msg == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dnm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_p2pRequest) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.p2pRequest.side = side;
+
+	return DNDS_success;
+}
+
+int P2pRequest_get_side(DNDSMessage_t *msg, e_P2pSide *side)
+{
+	if (msg == NULL || side == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dnm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_p2pRequest) {
+		return DNDS_invalid_op;
+	}
+
+	*side = msg->pdu.choice.dnm.dnop.choice.p2pRequest.side;
 
 	return DNDS_success;
 }
@@ -1162,127 +1186,6 @@ int P2pResponse_get_macAddrDst(DNDSMessage_t *msg, uint8_t *macAddrDst)
 	}
 
 	memmove(macAddrDst, msg->pdu.choice.dnm.dnop.choice.p2pResponse.macAddrDst.buf, ETHER_ADDR_LEN);
-
-	return DNDS_success;
-}
-
-int P2pResponse_set_ipAddrDst(DNDSMessage_t *msg, char *ipAddrDst)
-{
-	if (msg == NULL || ipAddrDst == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dnm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_p2pResponse) {
-		return DNDS_invalid_op;
-	}
-
-	msg->pdu.choice.dnm.dnop.choice.p2pResponse.ipAddrDst.buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
-	if (msg->pdu.choice.dnm.dnop.choice.p2pResponse.ipAddrDst.buf == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	int ret;
-	ret = inet_pton(AF_INET, ipAddrDst, msg->pdu.choice.dnm.dnop.choice.p2pResponse.ipAddrDst.buf);
-	if (ret != 1) {
-		return DNDS_conversion_failed;
-	}
-
-	msg->pdu.choice.dnm.dnop.choice.p2pResponse.ipAddrDst.size = sizeof(struct in_addr);
-
-	return DNDS_success;
-}
-
-int P2pResponse_get_ipAddrDst(DNDSMessage_t *msg, char *ipAddrDst)
-{
-	if (msg == NULL || ipAddrDst == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dnm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_p2pResponse) {
-		return DNDS_invalid_op;
-	}
-
-	const char *ret;
-	ret = inet_ntop(AF_INET, msg->pdu.choice.dnm.dnop.choice.p2pResponse.ipAddrDst.buf, ipAddrDst, INET_ADDRSTRLEN);
-	if (ret == NULL) {
-		return DNDS_conversion_failed;
-	}
-
-	return DNDS_success;
-}
-
-int P2pResponse_set_port(DNDSMessage_t *msg, uint32_t port)
-{
-	if (msg == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dnm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_p2pResponse) {
-		return DNDS_invalid_op;
-	}
-
-	msg->pdu.choice.dnm.dnop.choice.p2pResponse.port = port;
-
-	return DNDS_success;
-}
-
-int P2pResponse_get_port(DNDSMessage_t *msg, uint32_t *port)
-{
-	if (msg == NULL || port == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	*port = msg->pdu.choice.dnm.dnop.choice.p2pResponse.port;
-
-	return DNDS_success;
-}
-
-int P2pResponse_set_side(DNDSMessage_t *msg, e_P2pSide side)
-{
-	if (msg == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dnm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_p2pResponse) {
-		return DNDS_invalid_op;
-	}
-
-	msg->pdu.choice.dnm.dnop.choice.p2pResponse.side = side;
-
-	return DNDS_success;
-}
-
-int P2pResponse_get_side(DNDSMessage_t *msg, e_P2pSide *side)
-{
-	if (msg == NULL || side == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dnm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_p2pResponse) {
-		return DNDS_invalid_op;
-	}
-
-	*side = msg->pdu.choice.dnm.dnop.choice.p2pResponse.side;
 
 	return DNDS_success;
 }
@@ -3595,17 +3498,21 @@ void AddResponse_printf(DNDSMessage_t *msg)
 
 void P2pRequest_printf(DNDSMessage_t *msg)
 {
-	char ipLocal[INET_ADDRSTRLEN];
-	P2pRequest_get_ipLocal(msg, ipLocal);
-	printf("P2pRequest> ipLocal: %s\n", ipLocal);
-
-	uint8_t macAddrSrc[ETHER_ADDR_LEN];
-	P2pRequest_get_macAddrSrc(msg, macAddrSrc);
-	printf("P2pRequest> macAddrSrc: %x:%x:%x:%x:%x:%x\n", macAddrSrc[0],macAddrSrc[1],macAddrSrc[2],
-							macAddrSrc[3],macAddrSrc[4],macAddrSrc[5]);
 	uint8_t macAddrDst[ETHER_ADDR_LEN];
 	P2pRequest_get_macAddrDst(msg, macAddrDst);
 	printf("P2pRequest> macAddrDst: %x:%x:%x:%x:%x:%x\n", macAddrDst[0],macAddrDst[1],macAddrDst[2],										macAddrDst[3],macAddrDst[4],macAddrDst[5]);
+
+	char ipAddrDst[INET_ADDRSTRLEN];
+	P2pRequest_get_ipAddrDst(msg, ipAddrDst);
+	printf("P2pRequest> ipAddrDst: %s\n", ipAddrDst);
+
+	uint32_t port;
+	P2pRequest_get_port(msg, &port);
+	printf("P2pRequest> port: %i\n", port);
+
+	e_P2pSide side;
+	P2pRequest_get_side(msg, &side);
+	printf("P2pRequest> side: %i :: %s\n", side, P2pSide_str(side));
 }
 
 void P2pResponse_printf(DNDSMessage_t *msg)
@@ -3614,18 +3521,6 @@ void P2pResponse_printf(DNDSMessage_t *msg)
 	P2pResponse_get_macAddrDst(msg, macAddrDst);
 	printf("P2pResponse> macAddrDst: %x:%x:%x:%x:%x:%x\n", macAddrDst[0],macAddrDst[1],macAddrDst[2],
 								macAddrDst[3],macAddrDst[4],macAddrDst[5]);
-	char ipAddrDst[INET_ADDRSTRLEN];
-	P2pResponse_get_ipAddrDst(msg, ipAddrDst);
-	printf("P2pResponse> ipAddrDst: %s\n", ipAddrDst);
-
-	uint32_t port;
-	P2pResponse_get_port(msg, &port);
-	printf("P2pResponse> port: %i\n", port);
-
-	e_P2pSide side;
-	P2pResponse_get_side(msg, &side);
-	printf("P2pResponse> side: %i :: %s\n", side, P2pSide_str(side));
-
 	e_DNDSResult result;
 	P2pResponse_get_result(msg, &result);
 	printf("P2pResponse> result: %i :: %s\n", result, DNDSResult_str(result));

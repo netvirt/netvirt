@@ -325,10 +325,6 @@ void p2pRequest(session_t *session_a, session_t *session_b)
 {
 	DNDSMessage_t *msg;
 
-/* its a p2pRequest, but the message is p2pResponse
- * TODO fix dnds.asn1 protocol
- */
-
 	char *ip_a;
 	char *ip_b;
 
@@ -349,28 +345,25 @@ void p2pRequest(session_t *session_a, session_t *session_b)
 	DNDSMessage_new(&msg);
 	DNDSMessage_set_pdu(msg, pdu_PR_dnm);
 
-	DNMessage_set_operation(msg, dnop_PR_p2pResponse);
+	DNMessage_set_operation(msg, dnop_PR_p2pRequest);
 
-	P2pResponse_set_macAddrDst(msg, session_b->tun_mac_addr);
-	P2pResponse_set_ipAddrDst(msg, ip_b);
-	P2pResponse_set_port(msg, 35000);
-	P2pResponse_set_side(msg, P2pSide_client);
-	P2pResponse_set_result(msg, DNDSResult_success);
+	P2pRequest_set_macAddrDst(msg, session_b->tun_mac_addr);
+	P2pRequest_set_ipAddrDst(msg, ip_b);
+	P2pRequest_set_port(msg, 35000);
+	P2pRequest_set_side(msg, P2pSide_client);
 
 	net_send_msg(session_a->netc, msg);
-
 
 	/* msg session B */
 	DNDSMessage_new(&msg);
 	DNDSMessage_set_pdu(msg, pdu_PR_dnm);
 
-	DNMessage_set_operation(msg, dnop_PR_p2pResponse);
+	DNMessage_set_operation(msg, dnop_PR_p2pRequest);
 
-	P2pResponse_set_macAddrDst(msg, session_a->tun_mac_addr);
-	P2pResponse_set_ipAddrDst(msg, ip_a);
-	P2pResponse_set_port(msg, 35000);
-	P2pResponse_set_side(msg, P2pSide_client);
-	P2pResponse_set_result(msg, DNDSResult_success);
+	P2pRequest_set_macAddrDst(msg, session_a->tun_mac_addr);
+	P2pRequest_set_ipAddrDst(msg, ip_a);
+	P2pRequest_set_port(msg, 35000);
+	P2pRequest_set_side(msg, P2pSide_client);
 
 	net_send_msg(session_b->netc, msg);
 }
