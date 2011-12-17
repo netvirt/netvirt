@@ -22,9 +22,7 @@
 #include "dnc.h"
 #include "certificates.h"
 
-#ifndef CONFIG_FILE
-# define CONFIG_FILE "/usr/local/etc/dnds/dnc.conf"
-#endif
+#define CONFIG_FILE "/etc/dnds/dnc.conf"
 
 char *server_address = NULL;
 char *server_port = NULL;
