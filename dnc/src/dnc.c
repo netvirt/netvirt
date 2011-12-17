@@ -291,7 +291,7 @@ static void dispatch_operation(dn_sess_t *session, DNDSMessage_t *msg)
 		// simply disconnect the client;
 		case dnop_PR_NOTHING:
 		default:
-			JOURNAL_NOTICE("dsd]> not a valid DNM operation");
+			JOURNAL_NOTICE("dnc]> not a valid DNM operation");
 		case dnop_PR_terminateRequest:
 			// XXX terminate(session);
 			break;
