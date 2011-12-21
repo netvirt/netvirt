@@ -1,0 +1,9 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+override_dh_auto_configure:
+	dh_auto_configure -- --with-udt=/home/nib/coding/udt4/src
+%:
+	dh $@ 
