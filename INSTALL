@@ -55,6 +55,15 @@
 	 $ make
 	 $ sudo make install
 
+
+ Configure error
+ ---------------
+
+ If you get anything like this, it's because you forgot to install pkg-config
+
+ ./configure: line 17832: syntax error near unexpected token `openssl,'
+ ./configure: line 17832: `	PKG_CHECK_EXISTS(openssl, pkgconfig_have_openssl=yes, pkgconfig_have_openssl=no)'
+
  Installing DND - Dynamic Network Daemon
  ---------------------------------------
 
