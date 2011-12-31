@@ -350,7 +350,7 @@ void p2pRequest(session_t *session_a, session_t *session_b)
 
 	P2pRequest_set_macAddrDst(msg, session_b->tun_mac_addr);
 	P2pRequest_set_ipAddrDst(msg, ip_b);
-	P2pRequest_set_port(msg, 35000);
+	P2pRequest_set_port(msg, port);
 	P2pRequest_set_side(msg, P2pSide_client);
 
 	net_send_msg(session_a->netc, msg);
@@ -363,7 +363,7 @@ void p2pRequest(session_t *session_a, session_t *session_b)
 
 	P2pRequest_set_macAddrDst(msg, session_a->tun_mac_addr);
 	P2pRequest_set_ipAddrDst(msg, ip_a);
-	P2pRequest_set_port(msg, 35000);
+	P2pRequest_set_port(msg, port);
 	P2pRequest_set_side(msg, P2pSide_client);
 
 	net_send_msg(session_b->netc, msg);
