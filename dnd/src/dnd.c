@@ -318,13 +318,11 @@ int dnd_init(char *listen_addr, char *port)
 	return 0;
 }
 
-#define RDV_PORT_MIN 1025
-#define RDV_PORT_MAX 65535
-
 void p2pRequest(session_t *session_a, session_t *session_b)
 {
 	DNDSMessage_t *msg;
 
+	uint32_t port;
 	char *ip_a;
 	char *ip_b;
 
@@ -337,6 +335,9 @@ void p2pRequest(session_t *session_a, session_t *session_b)
 		ip_a = strdup(session_a->netc->peer->host);
 		ip_b = strdup(session_b->netc->peer->host);
 	}
+
+	/* basic random port : 49152–65535 */
+	port = rand() % (65535-49152+1)+49152;
 
 	printf("A ip public %s\n", ip_a);
 	printf("B ip public %s\n", ip_b);
