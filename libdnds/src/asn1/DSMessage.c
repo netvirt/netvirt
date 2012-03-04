@@ -275,8 +275,17 @@ asn_TYPE_descriptor_t asn_DEF_ackNumber_3 = {
 };
 
 static asn_TYPE_member_t asn_MBR_dsop_4[] = {
-	{ ATF_NOFLAGS, 0, offsetof(struct dsop, choice.authRequest),
+	{ ATF_NOFLAGS, 0, offsetof(struct dsop, choice.peerConnectInfo),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PeerConnectInfo,
+		0,	/* Defer constraints checking to the member type */
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"peerConnectInfo"
+		},
+	{ ATF_NOFLAGS, 0, offsetof(struct dsop, choice.authRequest),
+		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_AuthRequest,
 		0,	/* Defer constraints checking to the member type */
@@ -285,7 +294,7 @@ static asn_TYPE_member_t asn_MBR_dsop_4[] = {
 		"authRequest"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct dsop, choice.authResponse),
-		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_AuthResponse,
 		0,	/* Defer constraints checking to the member type */
@@ -294,7 +303,7 @@ static asn_TYPE_member_t asn_MBR_dsop_4[] = {
 		"authResponse"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct dsop, choice.addRequest),
-		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_AddRequest,
 		0,	/* Defer constraints checking to the member type */
@@ -303,7 +312,7 @@ static asn_TYPE_member_t asn_MBR_dsop_4[] = {
 		"addRequest"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct dsop, choice.addResponse),
-		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_AddResponse,
 		0,	/* Defer constraints checking to the member type */
@@ -312,7 +321,7 @@ static asn_TYPE_member_t asn_MBR_dsop_4[] = {
 		"addResponse"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct dsop, choice.delRequest),
-		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_DelRequest,
 		0,	/* Defer constraints checking to the member type */
@@ -321,7 +330,7 @@ static asn_TYPE_member_t asn_MBR_dsop_4[] = {
 		"delRequest"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct dsop, choice.delResponse),
-		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_DelResponse,
 		0,	/* Defer constraints checking to the member type */
@@ -330,7 +339,7 @@ static asn_TYPE_member_t asn_MBR_dsop_4[] = {
 		"delResponse"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct dsop, choice.modifyRequest),
-		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_ModifyRequest,
 		0,	/* Defer constraints checking to the member type */
@@ -339,7 +348,7 @@ static asn_TYPE_member_t asn_MBR_dsop_4[] = {
 		"modifyRequest"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct dsop, choice.modifyResponse),
-		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_ModifyResponse,
 		0,	/* Defer constraints checking to the member type */
@@ -348,7 +357,7 @@ static asn_TYPE_member_t asn_MBR_dsop_4[] = {
 		"modifyResponse"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct dsop, choice.searchRequest),
-		(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (9 << 2)),
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_SearchRequest,
 		0,	/* Defer constraints checking to the member type */
@@ -357,7 +366,7 @@ static asn_TYPE_member_t asn_MBR_dsop_4[] = {
 		"searchRequest"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct dsop, choice.searchResponse),
-		(ASN_TAG_CLASS_CONTEXT | (9 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (10 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_SearchResponse,
 		0,	/* Defer constraints checking to the member type */
@@ -366,7 +375,7 @@ static asn_TYPE_member_t asn_MBR_dsop_4[] = {
 		"searchResponse"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct dsop, choice.terminateRequest),
-		(ASN_TAG_CLASS_CONTEXT | (10 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (11 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_TerminateRequest,
 		0,	/* Defer constraints checking to the member type */
@@ -376,17 +385,18 @@ static asn_TYPE_member_t asn_MBR_dsop_4[] = {
 		},
 };
 static asn_TYPE_tag2member_t asn_MAP_dsop_tag2el_4[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* authRequest at 55 */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* authResponse at 56 */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* addRequest at 57 */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* addResponse at 58 */
-    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* delRequest at 59 */
-    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* delResponse at 60 */
-    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* modifyRequest at 61 */
-    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* modifyResponse at 62 */
-    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* searchRequest at 63 */
-    { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 }, /* searchResponse at 64 */
-    { (ASN_TAG_CLASS_CONTEXT | (10 << 2)), 10, 0, 0 } /* terminateRequest at 65 */
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* peerConnectInfo at 55 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* authRequest at 56 */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* authResponse at 57 */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* addRequest at 58 */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* addResponse at 59 */
+    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* delRequest at 60 */
+    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* delResponse at 61 */
+    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* modifyRequest at 62 */
+    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* modifyResponse at 63 */
+    { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 }, /* searchRequest at 64 */
+    { (ASN_TAG_CLASS_CONTEXT | (10 << 2)), 10, 0, 0 }, /* searchResponse at 65 */
+    { (ASN_TAG_CLASS_CONTEXT | (11 << 2)), 11, 0, 0 } /* terminateRequest at 66 */
 };
 static asn_CHOICE_specifics_t asn_SPC_dsop_specs_4 = {
 	sizeof(struct dsop),
@@ -394,9 +404,9 @@ static asn_CHOICE_specifics_t asn_SPC_dsop_specs_4 = {
 	offsetof(struct dsop, present),
 	sizeof(((struct dsop *)0)->present),
 	asn_MAP_dsop_tag2el_4,
-	11,	/* Count of tags in the map */
+	12,	/* Count of tags in the map */
 	0,
-	11	/* Extensions start */
+	12	/* Extensions start */
 };
 static /* Use -fall-defs-global to expose */
 asn_TYPE_descriptor_t asn_DEF_dsop_4 = {
@@ -417,7 +427,7 @@ asn_TYPE_descriptor_t asn_DEF_dsop_4 = {
 	0,	/* No tags (count) */
 	0,	/* No PER visible constraints */
 	asn_MBR_dsop_4,
-	11,	/* Elements count */
+	12,	/* Elements count */
 	&asn_SPC_dsop_specs_4	/* Additional specs */
 };
 
