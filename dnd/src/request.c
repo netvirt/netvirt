@@ -88,13 +88,3 @@ int authRequest(session_t *session, DNDSMessage_t *req_msg)
 	return 0;
 }
 
-/*
-void p2pRequest(session_t *session, DNDSMessage_t *msg)
-{
-	// 1. Find who wants to talk to who
-	// 2. Check if there is a rendez-vous request pending
-	// 3. If so, check if they are using the same public ip
-	// 4. Send the p2p response
-	// 3. Add the rendezvous request to the table
-}
-*/

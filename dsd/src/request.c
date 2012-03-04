@@ -12,6 +12,11 @@
 #include <dnds/dnds.h>
 #include "request.h"
 
+void peerConnectInfo(ds_sess_t *sess, DNDSMessage_t *req_msg)
+{
+	PeerConnectInfo_printf(req_msg);
+}
+
 void authRequest(ds_sess_t *sess, DNDSMessage_t *req_msg)
 {
 	char *certName;
