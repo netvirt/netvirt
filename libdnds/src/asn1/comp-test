@@ -1,4 +1,4 @@
 #!/bin/bash
-gcc test.c -c -o test.o -I ../ -I ./
-gcc ../dnds.o *.o -o test
+gcc -Wall test.c -c -o test.o -I ../ -I ./
+gcc -Wall ../dnds.o *.o -o test
 

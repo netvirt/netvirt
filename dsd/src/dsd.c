@@ -15,6 +15,7 @@
 #include <dnds/net.h>
 #include <dnds/pki.h>
 
+#include "dao.h"
 #include "dsd.h"
 #include "request.h"
 
@@ -53,7 +54,14 @@ static void dispatch_operation(ds_sess_t *sess, DNDSMessage_t *msg)
 	dsop_PR operation;
 	DSMessage_get_operation(msg, &operation);
 
+	printf("operation %i\n", operation);
+	printf("peerConnectInfo %i\n", dsop_PR_peerConnectInfo);
+	printf("authRequest %i\n", dsop_PR_authRequest);
 	switch (operation) {
+
+		case dsop_PR_peerConnectInfo:
+			peerConnectInfo(sess, msg);
+			break;
 
 		case dsop_PR_authRequest:
 			authRequest(sess, msg);
@@ -91,6 +99,7 @@ static void dispatch_operation(ds_sess_t *sess, DNDSMessage_t *msg)
 static void on_secure(netc_t *netc)
 {
 	printf("on secure!\n");
+	dao_fetch_context();
 }
 
 static void on_input(netc_t *netc)
@@ -147,8 +156,6 @@ static void on_connect(netc_t *netc)
 
 	sess->netc = netc;
 	netc->ext_ptr = sess;
-
-// FIXME	sess->timeout_id = chronos_add(5000, timeout_session, sess);
 }
 
 
@@ -157,16 +164,18 @@ void dsd_fini(void *ext_ptr)
 	// XXX free all sessions
 }
 
-int dsd_init(char *listen_addr, char *port, char *certificate, char *privatekey, char *trusted_authority)
+int dsd_init(char *ip_address, char *port, char *certificate, char *privatekey, char *trusted_authority)
 {
 	int ret;
 
 	event_register(EVENT_EXIT, "dsd_fini", dsd_fini, PRIO_AGNOSTIC);
 
+	dao_connect();
+
 	passport_t *dsd_passport;
 	dsd_passport = pki_passport_load_from_file(certificate, privatekey, trusted_authority);
 
-	ret = net_server(listen_addr, port, NET_PROTO_UDT, NET_SECURE_RSA, dsd_passport,
+	ret = net_server(ip_address, port, NET_PROTO_UDT, NET_SECURE_RSA, dsd_passport,
 			on_connect, on_disconnect, on_input, on_secure);
 
 	if (ret < 0) {

@@ -52,6 +52,7 @@ DSMessage ::= SEQUENCE {
 	seqNumber	INTEGER (0..uint32max),
 	ackNumber	INTEGER (0..uint32max),
 	dsop		CHOICE	{
+		peerConnectInfo		PeerConnectInfo,
 		authRequest		AuthRequest,
 		authResponse		AuthResponse,
 		addRequest		AddRequest,
@@ -104,6 +105,19 @@ P2pRequest ::= SEQUENCE {
 P2pResponse ::= SEQUENCE {
 	macAddrDst	OCTET STRING (SIZE(6)),
 	result		DNDSResult,
+	...
+}
+
+ConnectState ::= ENUMERATED {
+	connected	(1),
+	disconnected	(2),
+	...
+}
+
+PeerConnectInfo ::= SEQUENCE {
+	certName	IA5String (SIZE(1..256)),
+	ipAddr		OCTET STRING (SIZE(4..16)),
+	state		ConnectState,
 	...
 }
 
