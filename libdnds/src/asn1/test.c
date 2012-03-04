@@ -83,6 +83,7 @@ void test_DNDS_ethernet()
 
 	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
 
+	// XXX free(frame)
 	DNDSMessage_del(msg);
 }
 
@@ -164,6 +165,47 @@ void test_AddResponse()
 	DSMessage_set_operation(msg, dsop_PR_addResponse);
 
 	AddResponse_set_result(msg, DNDSResult_success);
+
+	/// Encoding part
+
+	asn_enc_rval_t ec;	// Encoder return value
+	FILE *fp = fopen("dnds.ber", "wb"); // BER output
+	ec = der_encode(&asn_DEF_DNDSMessage, msg, write_out, fp);
+	fclose(fp);
+
+	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
+
+	DNDSMessage_del(msg);
+}
+
+void show_PeerConnectInfo()
+{
+	DNDSMessage_t *msg;
+
+	msg = decode();
+	DNDSMessage_printf(msg);
+	DSMessage_printf(msg);
+	PeerConnectInfo_printf(msg);
+}
+
+void test_PeerConnectInfo()
+{
+	/// Building a PeerConnectInfo ///
+	int ret;
+
+	DNDSMessage_t *msg;
+
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dsm);	// Directory Service Message
+
+	DSMessage_set_seqNumber(msg, 800);
+	DSMessage_set_ackNumber(msg, 0);
+	DSMessage_set_operation(msg, dsop_PR_peerConnectInfo);
+
+	PeerConnectInfo_set_certName(msg, "unique_name@context", 19);
+	PeerConnectInfo_set_ipAddr(msg, "44.128.0.1");
+	PeerConnectInfo_set_state(msg, ConnectState_connected);
 
 	/// Encoding part
 
@@ -925,6 +967,9 @@ void test_TerminateRequest()
 
 int main()
 {
+	test_PeerConnectInfo();
+	show_PeerConnectInfo();
+
 /*	test_DNDS_ethernet();
 	show_DNDS_ethernet();
 
@@ -933,13 +978,13 @@ int main()
 
 	test_AddResponse();
 	show_AddResponse();
-*/
+
 	test_P2pRequest_dnm();
 	show_P2pRequest_dnm();
 
 	test_P2pResponse_dnm();
 	show_P2pResponse_dnm();
-/*
+
 	test_AuthRequest_dnm();
 	show_AuthRequest_dnm();
 

@@ -15,6 +15,8 @@ libasn1_la_SOURCES=	\
 	P2pRequest.c	\
 	P2pResponse.c	\
 	P2pSide.c	\
+	ConnectState.c	\
+	PeerConnectInfo.c	\
 	AddRequest.c	\
 	AddResponse.c	\
 	DelRequest.c	\
@@ -47,6 +49,8 @@ libasn1_include_HEADERS=	\
 	P2pRequest.h	\
 	P2pResponse.h	\
 	P2pSide.h	\
+	ConnectState.h	\
+	PeerConnectInfo.h	\
 	AddRequest.h	\
 	AddResponse.h	\
 	DelRequest.h	\

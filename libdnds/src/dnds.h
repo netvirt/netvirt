@@ -66,6 +66,14 @@ int DSMessage_get_operation(DNDSMessage_t *msg, dsop_PR *operation);
 int DNDSObject_set_objectType(DNDSObject_t *object, DNDSObject_PR type);
 int DNDSObject_get_objectType(DNDSObject_t *object, DNDSObject_PR *type);
 
+// PeerConnectInfo
+int PeerConnectInfo_set_certName(DNDSMessage_t *msg, char *name, size_t length);
+int PeerConnectInfo_get_certName(DNDSMessage_t *msg, char **name, size_t *length);
+int PeerConnectInfo_set_ipAddr(DNDSMessage_t *msg, char *ipAddress);
+int PeerConnectInfo_get_ipAddr(DNDSMessage_t *msg, char *ipAddress);
+int PeerConnectInfo_set_state(DNDSMessage_t *msg, e_ConnectState state);
+int PeerConnectInfo_get_state(DNDSMessage_t *msg, e_ConnectState *state);
+
 // AddRequest
 int AddRequest_set_objectType(DNDSMessage_t *msg, DNDSObject_PR objType, DNDSObject_t **object);
 int AddRequest_get_objectType(DNDSMessage_t *msg, DNDSObject_PR *objType);
