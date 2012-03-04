@@ -1,6 +1,6 @@
 /* Directory Service Daemon
  *
- * Copyright (C) 2010, 2011 Nicolas Bouliane
+ * Copyright (C) 2010, 2011, 2012 Nicolas Bouliane
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -27,9 +27,7 @@
 #include "config.h"
 #include "dsd.h"
 
-#ifndef CONFIG_FILE
-# define CONFIG_FILE "/usr/local/etc/dnds/dsd.conf"
-#endif
+#define CONFIG_FILE "/etc/dnds/dsd.conf"
 
 char *listen_address = NULL;
 char *port = NULL;
@@ -66,6 +64,7 @@ int main(int argc, char *argv[])
 
 	if (getuid() != 0) {
 		JOURNAL_NOTICE("%s must be run as root", argv[0]);
+		_exit(EXIT_ERR);
 	}
 
 	while ((opt = getopt(argc, argv, "dv")) != -1) {

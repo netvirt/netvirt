@@ -24,6 +24,7 @@
 
 #include "context.h"
 #include "dnd.h"
+#include "dsc.h"
 #include "session.h"
 
 static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
@@ -187,6 +188,9 @@ void transmit_netinfo_response(netc_t *netc)
 
 	net_send_msg(session->netc, msg);
 
+	transmit_peerconnectinfo(ConnectState_connected,
+				session->ip, "demo");
+
 }
 
 static void on_secure(netc_t *netc)
@@ -289,6 +293,9 @@ static void on_disconnect(netc_t *netc)
 		JOURNAL_DEBUG("dnd]> disconnecting ip {%s}", session->ip);
 		ippool_release_ip(session->context->ippool, session->ip);
 	}
+
+	transmit_peerconnectinfo(ConnectState_disconnected,
+				session->ip, "demo");
 
 	session_free(session);
 
