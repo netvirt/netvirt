@@ -78,6 +78,30 @@ static void ssl_error_stack()
 	} while (e);
 }
 
+static long post_handshake_check(SSL *ssl)
+{
+	X509 *cert;
+	X509_NAME *subj_ptr;
+	char subj[256];
+
+	cert = SSL_get_peer_certificate(ssl);
+	if (cert == NULL)
+		return 0;
+
+	subj_ptr = X509_get_subject_name(cert);
+	X509_NAME_get_text_by_NID(subj_ptr, NID_commonName, subj, 256);
+
+	printf("COMMON NAME: %s\n", subj);
+
+	return 0;
+}
+
+static int verify_callback(int ok, X509_STORE_CTX *store)
+{
+	/* XXX Verify Not Before / Not After.. etc */
+	return ok;
+}
+
 static int krypt_set_adh(krypt_t *kconn)
 {
 	JOURNAL_NOTICE("krypt]> set adh");
@@ -106,7 +130,7 @@ int krypt_set_rsa(krypt_t *kconn)
 	SSL_CTX_set_cert_store(kconn->ctx, kconn->passport->trusted_authority);
 
 	// Force the peer cert verifying + fail if no cert is sent by the peer
-	SSL_set_verify(kconn->ssl, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, 0);
+	SSL_set_verify(kconn->ssl, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, verify_callback);
 
 	// Set the certificate and key
 	ret = SSL_use_certificate(kconn->ssl, kconn->passport->certificate);
@@ -165,6 +189,7 @@ int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 	}
 	else if (ret > 0 && !SSL_renegotiate_pending(kconn->ssl)) {
 		// Handshake successfully completed
+		post_handshake_check(kconn->ssl);
 		kconn->status = KRYPT_SECURE;
 		status = 0;
 	}

@@ -24,7 +24,7 @@
 #include "context.h"
 #include "session.h"
 
-#define CONTEXT_LIST_SIZE 256
+#define CONTEXT_LIST_SIZE 512
 context_t *context_table[CONTEXT_LIST_SIZE] = {NULL};
 
 void context_del_session(context_t *context, session_t *session)
@@ -107,6 +107,7 @@ int context_init()
 
 	event_register(EVENT_EXIT, "context:context_fini()", context_fini, PRIO_AGNOSTIC);
 	context_create(1, "44.128.0.0", "255.255.255.0");
+	context_create(1000, "44.128.0.0", "255.255.255.0");
 
 	return 0;
 }
