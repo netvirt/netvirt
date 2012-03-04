@@ -310,6 +310,138 @@ int DNDSObject_get_objectType(DNDSObject_t *object, DNDSObject_PR *objType)
 	return DNDS_success;
 }
 
+// PeerConnectInfo
+int PeerConnectInfo_set_certName(DNDSMessage_t *msg, char *name, size_t length)
+{
+	if (msg == NULL || name == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_peerConnectInfo) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.certName.buf = strdup(name);
+	msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.certName.size = length;
+
+	return DNDS_success;
+}
+
+int PeerConnectInfo_get_certName(DNDSMessage_t *msg, char **name, size_t *length)
+{
+	if (msg == NULL || name == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_peerConnectInfo) {
+		return DNDS_invalid_op;
+	}
+
+	*name = msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.certName.buf;
+	*length = msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.certName.size;
+
+	return DNDS_success;
+}
+
+int PeerConnectInfo_set_ipAddr(DNDSMessage_t *msg, char *ipAddress)
+{
+	if (msg == NULL || ipAddress == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_peerConnectInfo) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.ipAddr.buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
+	if (msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.ipAddr.buf == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	int ret;
+	ret = inet_pton(AF_INET, ipAddress, msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.ipAddr.buf);
+	if (ret != 1) {
+		return DNDS_conversion_failed;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.ipAddr.size = sizeof(struct in_addr);
+
+	return DNDS_success;
+}
+
+int PeerConnectInfo_get_ipAddr(DNDSMessage_t *msg, char *ipAddress)
+{
+	if (msg == NULL || ipAddress == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_peerConnectInfo) {
+		return DNDS_invalid_op;
+	}
+
+	char *ret;
+	ret = inet_ntop(AF_INET, msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.ipAddr.buf, ipAddress, INET_ADDRSTRLEN);
+	if (ret == NULL) {
+		return DNDS_conversion_failed;
+	}
+
+	return DNDS_success;
+}
+
+int PeerConnectInfo_set_state(DNDSMessage_t *msg, e_ConnectState state)
+{
+	if (msg == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_peerConnectInfo) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.state = state;
+
+	return DNDS_success;
+}
+
+int PeerConnectInfo_get_state(DNDSMessage_t *msg, e_ConnectState *state)
+{
+	if (msg == NULL || state == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_peerConnectInfo) {
+		return DNDS_invalid_op;
+	}
+
+	*state = msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.state;
+
+	return DNDS_success;
+}
+
 // AddRequest
 int AddRequest_set_objectType(DNDSMessage_t *msg, DNDSObject_PR objType, DNDSObject_t **object)
 {
@@ -3336,21 +3468,27 @@ int User_get_status(DNDSObject_t *object, uint8_t *status)
 
 	return DNDS_success;
 }
+
+char *ConnectState_str(e_ConnectState state)
+{
+	switch (state) {
+	case ConnectState_connected:
+		return "Connected";
+	case ConnectState_disconnected:
+		return "Disconnected";
+	}
+	return "Unknown";
+}
+
 char *P2pSide_str(e_P2pSide side)
 {
-	char *str = NULL;
-
 	switch (side) {
-		case P2pSide_client:
-			str = strdup("Client");
-			break;
-
-		case P2pSide_server:
-			str = strdup("Client");
-			break;
+	case P2pSide_client:
+		return "Client";
+	case P2pSide_server:
+		return "Server";
 	}
-
-	return str;
+	return "Unknown";
 }
 
 // DNDS API functions
@@ -3494,6 +3632,25 @@ void AddResponse_printf(DNDSMessage_t *msg)
 	e_DNDSResult result;
 	AddResponse_get_result(msg, &result);
 	printf("AddResponse> result: %i :: %s\n", result, DNDSResult_str(result));
+}
+
+void PeerConnectInfo_printf(DNDSMessage_t *msg)
+{
+	int ret = 0;
+
+	size_t length;
+	char *certName;
+
+	ret = PeerConnectInfo_get_certName(msg, &certName, &length);
+	printf("PeerConnectInfo> certName(%i): %s\n", ret, certName);
+
+	char ipAddress[INET_ADDRSTRLEN];
+	ret = PeerConnectInfo_get_ipAddr(msg, ipAddress);
+	printf("PeerConnectInfo> ipAddr(%i): %s\n", ret, ipAddress);
+
+	e_ConnectState state;
+	ret = PeerConnectInfo_get_state(msg, &state);
+	printf("PeerConnectInfo> state(%i): %i :: %s\n", ret, state, ConnectState_str(state));
 }
 
 void P2pRequest_printf(DNDSMessage_t *msg)
