@@ -10,6 +10,7 @@
  *
  */
 
+#include <openssl/ssl.h>
 #include <openssl/bio.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
@@ -383,10 +384,10 @@ void pki_write_privatekey(EVP_PKEY *privatekey, const char *filename)
 
 void pki_init()
 {
-	SSL_library_init();
-	SSL_load_error_strings();
+	//SSL_library_init();
+	//SSL_load_error_strings();
 }
-/*
+
 int main()
 {
 	pki_init();
@@ -403,8 +404,8 @@ int main()
 	dnd_digital_id = pki_digital_id("dnd-0", "CA", "Quebec",
 					"Levis", "info@demo.com", "DNDS");
 
-	dsc_digital_id = pki_digital_id("dsc-0", "CA", "Quebec",
-					"Levis", "info@demo.com", "DNDS");
+	dsc_digital_id = pki_digital_id("demo@1", "", "",
+					"", "client@demo", "demo");
 
 	embassy_t *dsd_embassy;
 	dsd_embassy = pki_embassy_new(dsd_digital_id, expiration_delay);
@@ -428,14 +429,14 @@ int main()
 	// DNC <--> DND
 	digital_id_t *dsd_ctx1_id, *dnd_ctx1_id, *dnc_ctx1_id;
 
-	dsd_ctx1_id = pki_digital_id("dsd-ctx1", "CA", "Quebec",
-					"Levis", "info@demo.com", "DNDS");
+	dsd_ctx1_id = pki_digital_id("dsd@10", "CA", "Quebec",
+					"Levis", "info@dynvpn.com", "M4Nt inc");
 
-	dnd_ctx1_id = pki_digital_id("dnd-ctx1", "CA", "Quebec",
-					"Levis", "info@demo.com", "DNDS");
+	dnd_ctx1_id = pki_digital_id("dnd@10", "CA", "Quebec",
+					"Levis", "info@dynvpn.com", "M4Nt inc");
 
-	dnc_ctx1_id = pki_digital_id("dnc-ctx1", "CA", "Quebec",
-					"Levis", "info@demo.com", "DNDS");
+	dnc_ctx1_id = pki_digital_id("DEMO@10", "", "",
+					"", "info@dynvpn.com", "M4Nt inc");
 
 	embassy_t *dsd_ctx1_embassy;
 	dsd_ctx1_embassy = pki_embassy_new(dsd_ctx1_id, expiration_delay);
@@ -466,4 +467,4 @@ int main()
 
 	return 0;
 }
-*/
+
