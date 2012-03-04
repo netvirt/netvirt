@@ -20,9 +20,7 @@
 #include "dnd.h"
 #include "dsc.h"
 
-#ifndef CONFIG_FILE
-# define CONFIG_FILE "/usr/local/etc/dnds/dnd.conf"
-#endif
+#define CONFIG_FILE "/etc/dnds/dnd.conf"
 
 char *listen_address = NULL;
 char *listen_port = NULL;
@@ -86,12 +84,12 @@ int main(int argc, char *argv[])
 		JOURNAL_ERR("dnd]> krypt_init() failed :: %s:%i", __FILE__, __LINE__);
 		_exit(EXIT_ERR);
 	}
-/*
-	if (dsc_init("127.0.0.1", "9090", certificate, privatekey, trusted_authority)) {
+
+	if (dsc_init("127.0.0.1", "9091", certificate, privatekey, trusted_authority)) {
 		JOURNAL_ERR("dnd]> dnc_init() failed :: %s:%i\n", __FILE__, __LINE__);
 		_exit(EXIT_ERR);
 	}
-*/
+
 	if (dnd_init(listen_address, listen_port)) {
 		JOURNAL_ERR("dnd]> dnd_init() failed :: %s:%i", __FILE__, __LINE__);
 		_exit(EXIT_ERR);
