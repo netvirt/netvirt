@@ -16,6 +16,7 @@ libasn1_la_SOURCES=	\
 	P2pResponse.c	\
 	P2pSide.c	\
 	ConnectState.c	\
+	ContextInfo.c	\
 	PeerConnectInfo.c	\
 	AddRequest.c	\
 	AddResponse.c	\
@@ -28,6 +29,7 @@ libasn1_la_SOURCES=	\
 	SearchRequest.c	\
 	SearchResponse.c	\
 	TerminateRequest.c	\
+	Topology.c	\
 	Acl.c	\
 	AclGroup.c	\
 	IpPool.c	\
@@ -50,6 +52,7 @@ libasn1_include_HEADERS=	\
 	P2pResponse.h	\
 	P2pSide.h	\
 	ConnectState.h	\
+	ContextInfo.h	\
 	PeerConnectInfo.h	\
 	AddRequest.h	\
 	AddResponse.h	\
@@ -62,6 +65,7 @@ libasn1_include_HEADERS=	\
 	SearchRequest.h	\
 	SearchResponse.h	\
 	TerminateRequest.h	\
+	Topology.h	\
 	Acl.h	\
 	AclGroup.h	\
 	IpPool.h	\
