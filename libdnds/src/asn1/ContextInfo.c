@@ -4,32 +4,7 @@
  * 	found in "dnds.asn1"
  */
 
-#include "Permission.h"
-
-static int permitted_alphabet_table_3[256] = {
- 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/*                  */
- 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/*                  */
- 1, 0, 0, 0, 0, 0, 0, 2, 3, 4, 0, 5, 6, 7, 8, 9,	/* .      '() +,-./ */
-10,11,12,13,14,15,16,17,18,19,20, 0, 0,21, 0,22,	/* 0123456789:  = ? */
- 0,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,	/*  ABCDEFGHIJKLMNO */
-38,39,40,41,42,43,44,45,46,47,48, 0, 0, 0, 0, 0,	/* PQRSTUVWXYZ      */
- 0,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,	/*  abcdefghijklmno */
-64,65,66,67,68,69,70,71,72,73,74, 0, 0, 0, 0, 0,	/* pqrstuvwxyz      */
-};
-
-static int check_permitted_alphabet_3(const void *sptr) {
-	int *table = permitted_alphabet_table_3;
-	/* The underlying type is PrintableString */
-	const PrintableString_t *st = (const PrintableString_t *)sptr;
-	const uint8_t *ch = st->buf;
-	const uint8_t *end = ch + st->size;
-	
-	for(; ch < end; ch++) {
-		uint8_t cv = *ch;
-		if(!table[cv]) return -1;
-	}
-	return 0;
-}
+#include "ContextInfo.h"
 
 static int
 id_2_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
@@ -129,7 +104,7 @@ memb_id_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 }
 
 static int
-memb_name_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
+memb_description_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
 	const PrintableString_t *st = (const PrintableString_t *)sptr;
 	size_t size;
@@ -143,8 +118,59 @@ memb_name_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 	
 	size = st->size;
 	
-	if((size >= 1 && size <= 64)
-		 && !check_permitted_alphabet_3(st)) {
+	if((size >= 1 && size <= 256)) {
+		/* Constraint check succeeded */
+		return 0;
+	} else {
+		_ASN_CTFAIL(app_key, td, sptr,
+			"%s: constraint failed (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+}
+
+static int
+memb_network_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
+			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
+	const OCTET_STRING_t *st = (const OCTET_STRING_t *)sptr;
+	size_t size;
+	
+	if(!sptr) {
+		_ASN_CTFAIL(app_key, td, sptr,
+			"%s: value not given (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+	
+	size = st->size;
+	
+	if((size >= 4 && size <= 16)) {
+		/* Constraint check succeeded */
+		return 0;
+	} else {
+		_ASN_CTFAIL(app_key, td, sptr,
+			"%s: constraint failed (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+}
+
+static int
+memb_netmask_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
+			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
+	const OCTET_STRING_t *st = (const OCTET_STRING_t *)sptr;
+	size_t size;
+	
+	if(!sptr) {
+		_ASN_CTFAIL(app_key, td, sptr,
+			"%s: value not given (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+	
+	size = st->size;
+	
+	if((size >= 4 && size <= 16)) {
 		/* Constraint check succeeded */
 		return 0;
 	} else {
@@ -188,8 +214,8 @@ asn_TYPE_descriptor_t asn_DEF_id_2 = {
 	&asn_SPC_id_specs_2	/* Additional specs */
 };
 
-static asn_TYPE_member_t asn_MBR_Permission_1[] = {
-	{ ATF_NOFLAGS, 0, offsetof(struct Permission, id),
+static asn_TYPE_member_t asn_MBR_ContextInfo_1[] = {
+	{ ATF_NOFLAGS, 0, offsetof(struct ContextInfo, id),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_id_2,
@@ -198,45 +224,95 @@ static asn_TYPE_member_t asn_MBR_Permission_1[] = {
 		0,
 		"id"
 		},
-	{ ATF_POINTER, 2, offsetof(struct Permission, name),
+	{ ATF_NOFLAGS, 0, offsetof(struct ContextInfo, topology),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_PrintableString,
-		memb_name_constraint_1,
-		0,	/* PER is not compiled, use -gen-PER */
-		0,
-		"name"
-		},
-	{ ATF_POINTER, 1, offsetof(struct Permission, matrix),
-		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_NULL,
+		&asn_DEF_Topology,
 		0,	/* Defer constraints checking to the member type */
 		0,	/* PER is not compiled, use -gen-PER */
 		0,
-		"matrix"
+		"topology"
+		},
+	{ ATF_POINTER, 1, offsetof(struct ContextInfo, description),
+		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PrintableString,
+		memb_description_constraint_1,
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"description"
+		},
+	{ ATF_NOFLAGS, 0, offsetof(struct ContextInfo, network),
+		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_OCTET_STRING,
+		memb_network_constraint_1,
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"network"
+		},
+	{ ATF_NOFLAGS, 0, offsetof(struct ContextInfo, netmask),
+		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_OCTET_STRING,
+		memb_netmask_constraint_1,
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"netmask"
+		},
+	{ ATF_NOFLAGS, 0, offsetof(struct ContextInfo, serverCert),
+		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PrintableString,
+		0,	/* Defer constraints checking to the member type */
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"serverCert"
+		},
+	{ ATF_NOFLAGS, 0, offsetof(struct ContextInfo, serverPrivkey),
+		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PrintableString,
+		0,	/* Defer constraints checking to the member type */
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"serverPrivkey"
+		},
+	{ ATF_NOFLAGS, 0, offsetof(struct ContextInfo, trustedCert),
+		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PrintableString,
+		0,	/* Defer constraints checking to the member type */
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"trustedCert"
 		},
 };
-static ber_tlv_tag_t asn_DEF_Permission_tags_1[] = {
+static ber_tlv_tag_t asn_DEF_ContextInfo_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
-static asn_TYPE_tag2member_t asn_MAP_Permission_tag2el_1[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* id at 237 */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* name at 238 */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 } /* matrix at 239 */
+static asn_TYPE_tag2member_t asn_MAP_ContextInfo_tag2el_1[] = {
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* id at 126 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* topology at 127 */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* description at 128 */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* network at 129 */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* netmask at 130 */
+    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* serverCert at 131 */
+    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* serverPrivkey at 132 */
+    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 } /* trustedCert at 133 */
 };
-static asn_SEQUENCE_specifics_t asn_SPC_Permission_specs_1 = {
-	sizeof(struct Permission),
-	offsetof(struct Permission, _asn_ctx),
-	asn_MAP_Permission_tag2el_1,
-	3,	/* Count of tags in the map */
+static asn_SEQUENCE_specifics_t asn_SPC_ContextInfo_specs_1 = {
+	sizeof(struct ContextInfo),
+	offsetof(struct ContextInfo, _asn_ctx),
+	asn_MAP_ContextInfo_tag2el_1,
+	8,	/* Count of tags in the map */
 	0, 0, 0,	/* Optional elements (not needed) */
-	2,	/* Start extensions */
-	4	/* Stop extensions */
+	7,	/* Start extensions */
+	9	/* Stop extensions */
 };
-asn_TYPE_descriptor_t asn_DEF_Permission = {
-	"Permission",
-	"Permission",
+asn_TYPE_descriptor_t asn_DEF_ContextInfo = {
+	"ContextInfo",
+	"ContextInfo",
 	SEQUENCE_free,
 	SEQUENCE_print,
 	SEQUENCE_constraint,
@@ -246,15 +322,15 @@ asn_TYPE_descriptor_t asn_DEF_Permission = {
 	SEQUENCE_encode_xer,
 	0, 0,	/* No PER support, use "-gen-PER" to enable */
 	0,	/* Use generic outmost tag fetcher */
-	asn_DEF_Permission_tags_1,
-	sizeof(asn_DEF_Permission_tags_1)
-		/sizeof(asn_DEF_Permission_tags_1[0]), /* 1 */
-	asn_DEF_Permission_tags_1,	/* Same as above */
-	sizeof(asn_DEF_Permission_tags_1)
-		/sizeof(asn_DEF_Permission_tags_1[0]), /* 1 */
+	asn_DEF_ContextInfo_tags_1,
+	sizeof(asn_DEF_ContextInfo_tags_1)
+		/sizeof(asn_DEF_ContextInfo_tags_1[0]), /* 1 */
+	asn_DEF_ContextInfo_tags_1,	/* Same as above */
+	sizeof(asn_DEF_ContextInfo_tags_1)
+		/sizeof(asn_DEF_ContextInfo_tags_1[0]), /* 1 */
 	0,	/* No PER visible constraints */
-	asn_MBR_Permission_1,
-	3,	/* Elements count */
-	&asn_SPC_Permission_specs_1	/* Additional specs */
+	asn_MBR_ContextInfo_1,
+	8,	/* Elements count */
+	&asn_SPC_ContextInfo_specs_1	/* Additional specs */
 };
 
