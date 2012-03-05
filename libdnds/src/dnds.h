@@ -109,7 +109,12 @@ int ModifyRequest_get_object(DNDSMessage_t *msg, DNDSObject_t **object);
 int ModifyResponse_set_result(DNDSMessage_t *msg, e_DNDSResult result);
 int ModifyResponse_get_result(DNDSMessage_t *msg, e_DNDSResult *result);
 
-// NetinfoRequest ::= NULL
+// NetinfoRequest
+int NetinfoRequest_set_ipLocal(DNDSMessage_t *msg, char *ipLocal);
+int NetinfoRequest_get_ipLocal(DNDSMessage_t *msg, char *ipLocal);
+int NetinfoRequest_set_macAddr(DNDSMessage_t *msg, uint8_t *macAddr);
+int NetinfoRequest_get_macAddr(DNDSMessage_t *msg, uint8_t *macAddr);
+
 // NetinfoResponse
 int NetinfoResponse_set_ipAddress(DNDSMessage_t *msg, char *ipAddress);
 int NetinfoResponse_get_ipAddress(DNDSMessage_t *msg, char *ipAddress);
@@ -119,12 +124,14 @@ int NetinfoResponse_set_result(DNDSMessage_t *msg, e_DNDSResult result);
 int NetinfoResponse_get_result(DNDSMessage_t *msg, e_DNDSResult *result);
 
 // P2pRequest
-int P2pRequest_set_ipLocal(DNDSMessage_t *msg, char *ipLocal);
-int P2pRequest_get_ipLocal(DNDSMessage_t *msg, char *ipLocal);
-int P2pRequest_set_macAddrSrc(DNDSMessage_t *msg, uint8_t *macAddrSrc);
-int P2pRequest_get_macAddrSrc(DNDSMessage_t *msg, uint8_t *macAddrSrc);
 int P2pRequest_set_macAddrDst(DNDSMessage_t *msg, uint8_t *macAddrDst);
 int P2pRequest_get_macAddrDst(DNDSMessage_t *msg, uint8_t *macAddrDst);
+int P2pRequest_set_ipAddrDst(DNDSMessage_t *msg, char *ipAddrDst);
+int P2pRequest_get_ipAddrDst(DNDSMessage_t *msg, char *ipAddrDst);
+int P2pRequest_set_port(DNDSMessage_t *msg, uint32_t port);
+int P2pRequest_get_port(DNDSMessage_t *msg, uint32_t *port);
+int P2pRequest_set_side(DNDSMessage_t *msg, e_P2pSide side);
+int P2pRequest_get_side(DNDSMessage_t *msg, e_P2pSide *side);
 
 // P2pResponse
 int P2pResponse_set_macAddrDst(DNDSMessage_t *msg, uint8_t *macAddrDst);
@@ -133,6 +140,8 @@ int P2pResponse_set_ipAddrDst(DNDSMessage_t *msg, char *ipAddrDst);
 int P2pResponse_get_ipAddrDst(DNDSMessage_t *msg, char *ipAddrDst);
 int P2pResponse_set_port(DNDSMessage_t *msg, uint32_t port);
 int P2pResponse_get_port(DNDSMessage_t *msg, uint32_t *port);
+int P2pRequest_set_side(DNDSMessage_t *msg, e_P2pSide side);
+int P2pRequest_get_side(DNDSMessage_t *msg, e_P2pSide *side);
 int P2pResponse_set_result(DNDSMessage_t *msg, e_DNDSResult result);
 int P2pResponse_get_result(DNDSMessage_t *msg, e_DNDSResult *result);
 
@@ -278,6 +287,7 @@ void DNDSMessage_printf(DNDSMessage_t *msg);
 void DNDSMessage_ethernet_printf(DNDSMessage_t *msg);
 void DSMessage_printf(DNDSMessage_t *msg);
 void DNMessage_printf(DNDSMessage_t *msg);
+void PeerConnectInfo_printf(DNDSMessage_t *msg);
 void AddRequest_printf(DNDSMessage_t *msg);
 void AddResponse_printf(DNDSMessage_t *msg);
 void P2pRequest_printf(DNDSMessage_t *msg);
@@ -289,6 +299,8 @@ void DelResponse_printf(DNDSMessage_t *msg);
 void ModifyRequest_printf(DNDSMessage_t *msg);
 void ModifyResponse_printf(DNDSMessage_t *msg);
 void ModifyReponse_printf(DNDSMessage_t *msg);
+void NetinfoRequest_printf(DNDSMessage_t *msg);
+void NetinfoResponse_printf(DNDSMessage_t *msg);
 void SearchRequest_printf(DNDSMessage_t *msg);
 void SearchResponse_printf(DNDSMessage_t *msg);
 void Acl_printf(DNDSObject_t *object);
