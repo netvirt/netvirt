@@ -13,6 +13,7 @@
 /* Including external dependencies */
 #include <NativeInteger.h>
 #include "PeerConnectInfo.h"
+#include "ContextInfo.h"
 #include "AuthRequest.h"
 #include "AuthResponse.h"
 #include "AddRequest.h"
@@ -35,6 +36,7 @@ extern "C" {
 typedef enum dsop_PR {
 	dsop_PR_NOTHING,	/* No components present */
 	dsop_PR_peerConnectInfo,
+	dsop_PR_contextInfo,
 	dsop_PR_authRequest,
 	dsop_PR_authResponse,
 	dsop_PR_addRequest,
@@ -58,6 +60,7 @@ typedef struct DSMessage {
 		dsop_PR present;
 		union DSMessage__dsop_u {
 			PeerConnectInfo_t	 peerConnectInfo;
+			ContextInfo_t	 contextInfo;
 			AuthRequest_t	 authRequest;
 			AuthResponse_t	 authResponse;
 			AddRequest_t	 addRequest;

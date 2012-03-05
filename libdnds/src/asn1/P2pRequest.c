@@ -9,7 +9,6 @@
 static int
 port_4_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
-	unsigned long value;
 	
 	if(!sptr) {
 		_ASN_CTFAIL(app_key, td, sptr,
@@ -18,7 +17,6 @@ port_4_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
 		return -1;
 	}
 	
-	value = *(const unsigned long *)sptr;
 	
 	/* Constraint check succeeded */
 	return 0;
@@ -144,7 +142,6 @@ memb_ipAddrDst_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 static int
 memb_port_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
-	unsigned long value;
 	
 	if(!sptr) {
 		_ASN_CTFAIL(app_key, td, sptr,
@@ -153,7 +150,6 @@ memb_port_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 		return -1;
 	}
 	
-	value = *(const unsigned long *)sptr;
 	
 	/* Constraint check succeeded */
 	return 0;
@@ -234,10 +230,10 @@ static ber_tlv_tag_t asn_DEF_P2pRequest_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
 static asn_TYPE_tag2member_t asn_MAP_P2pRequest_tag2el_1[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* macAddrDst at 98 */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* ipAddrDst at 99 */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* port at 100 */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 } /* side at 101 */
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* macAddrDst at 99 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* ipAddrDst at 100 */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* port at 101 */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 } /* side at 102 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_P2pRequest_specs_1 = {
 	sizeof(struct P2pRequest),

@@ -53,6 +53,7 @@ DSMessage ::= SEQUENCE {
 	ackNumber	INTEGER (0..uint32max),
 	dsop		CHOICE	{
 		peerConnectInfo		PeerConnectInfo,
+		contextInfo		ContextInfo,
 		authRequest		AuthRequest,
 		authResponse		AuthResponse,
 		addRequest		AddRequest,
@@ -111,6 +112,25 @@ P2pResponse ::= SEQUENCE {
 ConnectState ::= ENUMERATED {
 	connected	(1),
 	disconnected	(2),
+	...
+}
+
+Topology ::= ENUMERATED {
+	mesh		(1),
+	hubspoke	(2),
+	gateway		(3),
+	...
+}
+
+ContextInfo ::= SEQUENCE {
+	id		INTEGER (0..uint32max),
+	topology	Topology,
+	description	PrintableString SIZE((1..256)) OPTIONAL,
+	network		OCTET STRING SIZE((4..16)),
+	netmask		OCTET STRING SIZE((4..16)),
+	serverCert	PrintableString,
+	serverPrivkey	PrintableString,
+	trustedCert	PrintableString,
 	...
 }
 
