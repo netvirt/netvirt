@@ -178,6 +178,53 @@ void test_AddResponse()
 	DNDSMessage_del(msg);
 }
 
+void show_ContextInfo()
+{
+	DNDSMessage_t *msg;
+
+	msg = decode();
+	DNDSMessage_printf(msg);
+	DSMessage_printf(msg);
+	ContextInfo_printf(msg);
+}
+
+void test_ContextInfo()
+{
+	/// Building a ContextInfo ///
+	int ret;
+
+	DNDSMessage_t *msg;
+
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dsm);	// Directory Service Message
+
+	DSMessage_set_seqNumber(msg, 800);
+	DSMessage_set_ackNumber(msg, 0);
+	DSMessage_set_operation(msg, dsop_PR_contextInfo);
+
+	ContextInfo_set_id(msg, 1);
+	ContextInfo_set_topology(msg, Topology_mesh);
+	ContextInfo_set_description(msg, "Demo");
+	ContextInfo_set_network(msg, "44.1.0.0");
+	ContextInfo_set_netmask(msg, "255.255.0.0");
+	ContextInfo_set_serverCert(msg, "CERTIFICATE SERVER");
+	ContextInfo_set_serverPrivkey(msg, "PRIVATEKEY SERVER");
+	ContextInfo_set_trustedCert(msg, "CERTIFICATE TRUSTED");
+
+	/// Encoding part
+
+	asn_enc_rval_t ec;	// Encoder return value
+	FILE *fp = fopen("dnds.ber", "wb"); // BER output
+	ec = der_encode(&asn_DEF_DNDSMessage, msg, write_out, fp);
+	fclose(fp);
+
+	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
+
+	DNDSMessage_del(msg);
+
+}
+
 void show_PeerConnectInfo()
 {
 	DNDSMessage_t *msg;
@@ -967,6 +1014,9 @@ void test_TerminateRequest()
 
 int main()
 {
+	test_ContextInfo();
+	show_ContextInfo();
+
 	test_PeerConnectInfo();
 	show_PeerConnectInfo();
 
