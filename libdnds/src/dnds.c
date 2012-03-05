@@ -310,6 +310,87 @@ int DNDSObject_get_objectType(DNDSObject_t *object, DNDSObject_PR *objType)
 	return DNDS_success;
 }
 
+// ContextInfo
+int ContextInfo_set_id(DNDSMessage_t *msg)
+{
+	return DNDS_success;
+}
+
+int ContextInfo_set_topology(DNDSMessage_t *msg)
+{
+	return DNDS_success;
+}
+
+int ContextInfo_set_description(DNDSMessage_t *msg)
+{
+	return DNDS_success;
+}
+
+int ContextInfo_set_network(DNDSMessage_t *msg)
+{
+	return DNDS_success;
+}
+
+int ContextInfo_set_netmask(DNDSMessage_t *msg)
+{
+	return DNDS_success;
+}
+
+int ContextInfo_set_serverCert(DNDSMessage_t *msg)
+{
+	return DNDS_success;
+}
+
+int ContextInfo_set_serverPrivkey(DNDSMessage_t *msg)
+{
+	return DNDS_success;
+}
+
+int ContextInfo_set_trustedCert(DNDSMessage_t *msg)
+{
+	return DNDS_success;
+}
+
+int ContextInfo_get_id(DNDSMessage_t *msg)
+{
+	return DNDS_success;
+}
+
+int ContextInfo_get_topology(DNDSMessage_t *msg)
+{
+	return DNDS_success;
+}
+
+int ContextInfo_get_description(DNDSMessage_t *msg)
+{
+	return DNDS_success;
+}
+
+int ContextInfo_get_network(DNDSMessage_t *msg)
+{
+	return DNDS_success;
+}
+
+int ContextInfo_get_netmask(DNDSMessage_t *msg)
+{
+	return DNDS_success;
+}
+
+int ContextInfo_get_serverCert(DNDSMessage_t *msg)
+{
+	return DNDS_success;
+}
+
+int ContextInfo_get_serverPrivkey(DNDSMessage_t *msg)
+{
+	return DNDS_success;
+}
+
+int ContextInfo_get_trustedCert(DNDSMessage_t *msg)
+{
+	return DNDS_success;
+}
+
 // PeerConnectInfo
 int PeerConnectInfo_set_certName(DNDSMessage_t *msg, char *name, size_t length)
 {
@@ -3632,6 +3713,11 @@ void AddResponse_printf(DNDSMessage_t *msg)
 	e_DNDSResult result;
 	AddResponse_get_result(msg, &result);
 	printf("AddResponse> result: %i :: %s\n", result, DNDSResult_str(result));
+}
+
+void ContextInfo_printf(DNDSMessage_t *msg)
+{
+
 }
 
 void PeerConnectInfo_printf(DNDSMessage_t *msg)
