@@ -9,7 +9,6 @@
 static int
 version_2_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
-	unsigned long value;
 	
 	if(!sptr) {
 		_ASN_CTFAIL(app_key, td, sptr,
@@ -18,7 +17,6 @@ version_2_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
 		return -1;
 	}
 	
-	value = *(const unsigned long *)sptr;
 	
 	/* Constraint check succeeded */
 	return 0;
@@ -92,7 +90,6 @@ version_2_encode_xer(asn_TYPE_descriptor_t *td, void *structure,
 static int
 memb_version_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
-	unsigned long value;
 	
 	if(!sptr) {
 		_ASN_CTFAIL(app_key, td, sptr,
@@ -101,7 +98,6 @@ memb_version_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 		return -1;
 	}
 	
-	value = *(const unsigned long *)sptr;
 	
 	/* Constraint check succeeded */
 	return 0;
