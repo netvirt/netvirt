@@ -34,7 +34,6 @@ static int check_permitted_alphabet_4(const void *sptr) {
 static int
 id_2_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
-	unsigned long value;
 	
 	if(!sptr) {
 		_ASN_CTFAIL(app_key, td, sptr,
@@ -43,7 +42,6 @@ id_2_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
 		return -1;
 	}
 	
-	value = *(const unsigned long *)sptr;
 	
 	/* Constraint check succeeded */
 	return 0;
@@ -117,7 +115,6 @@ id_2_encode_xer(asn_TYPE_descriptor_t *td, void *structure,
 static int
 contextId_3_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
-	unsigned long value;
 	
 	if(!sptr) {
 		_ASN_CTFAIL(app_key, td, sptr,
@@ -126,7 +123,6 @@ contextId_3_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
 		return -1;
 	}
 	
-	value = *(const unsigned long *)sptr;
 	
 	/* Constraint check succeeded */
 	return 0;
@@ -200,7 +196,6 @@ contextId_3_encode_xer(asn_TYPE_descriptor_t *td, void *structure,
 static int
 memb_id_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
-	unsigned long value;
 	
 	if(!sptr) {
 		_ASN_CTFAIL(app_key, td, sptr,
@@ -209,7 +204,6 @@ memb_id_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 		return -1;
 	}
 	
-	value = *(const unsigned long *)sptr;
 	
 	/* Constraint check succeeded */
 	return 0;
@@ -218,7 +212,6 @@ memb_id_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 static int
 memb_contextId_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
-	unsigned long value;
 	
 	if(!sptr) {
 		_ASN_CTFAIL(app_key, td, sptr,
@@ -227,7 +220,6 @@ memb_contextId_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 		return -1;
 	}
 	
-	value = *(const unsigned long *)sptr;
 	
 	/* Constraint check succeeded */
 	return 0;
@@ -446,13 +438,13 @@ static ber_tlv_tag_t asn_DEF_Peer_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
 static asn_TYPE_tag2member_t asn_MAP_Peer_tag2el_1[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* id at 224 */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* contextId at 225 */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* name at 226 */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* ipAddress at 227 */
-    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* certificate at 228 */
-    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* certificateKey at 229 */
-    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 } /* status at 230 */
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* id at 244 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* contextId at 245 */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* name at 246 */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* ipAddress at 247 */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* certificate at 248 */
+    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* certificateKey at 249 */
+    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 } /* status at 250 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_Peer_specs_1 = {
 	sizeof(struct Peer),

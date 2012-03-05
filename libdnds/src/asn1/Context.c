@@ -59,7 +59,6 @@ static int check_permitted_alphabet_6(const void *sptr) {
 static int
 id_2_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
-	unsigned long value;
 	
 	if(!sptr) {
 		_ASN_CTFAIL(app_key, td, sptr,
@@ -68,7 +67,6 @@ id_2_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
 		return -1;
 	}
 	
-	value = *(const unsigned long *)sptr;
 	
 	/* Constraint check succeeded */
 	return 0;
@@ -142,7 +140,6 @@ id_2_encode_xer(asn_TYPE_descriptor_t *td, void *structure,
 static int
 ippoolId_3_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
-	unsigned long value;
 	
 	if(!sptr) {
 		_ASN_CTFAIL(app_key, td, sptr,
@@ -151,7 +148,6 @@ ippoolId_3_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
 		return -1;
 	}
 	
-	value = *(const unsigned long *)sptr;
 	
 	/* Constraint check succeeded */
 	return 0;
@@ -225,7 +221,6 @@ ippoolId_3_encode_xer(asn_TYPE_descriptor_t *td, void *structure,
 static int
 dnsSerial_5_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
-	unsigned long value;
 	
 	if(!sptr) {
 		_ASN_CTFAIL(app_key, td, sptr,
@@ -234,7 +229,6 @@ dnsSerial_5_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
 		return -1;
 	}
 	
-	value = *(const unsigned long *)sptr;
 	
 	/* Constraint check succeeded */
 	return 0;
@@ -308,7 +302,6 @@ dnsSerial_5_encode_xer(asn_TYPE_descriptor_t *td, void *structure,
 static int
 memb_id_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
-	unsigned long value;
 	
 	if(!sptr) {
 		_ASN_CTFAIL(app_key, td, sptr,
@@ -317,7 +310,6 @@ memb_id_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 		return -1;
 	}
 	
-	value = *(const unsigned long *)sptr;
 	
 	/* Constraint check succeeded */
 	return 0;
@@ -326,7 +318,6 @@ memb_id_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 static int
 memb_ippoolId_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
-	unsigned long value;
 	
 	if(!sptr) {
 		_ASN_CTFAIL(app_key, td, sptr,
@@ -335,7 +326,6 @@ memb_ippoolId_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 		return -1;
 	}
 	
-	value = *(const unsigned long *)sptr;
 	
 	/* Constraint check succeeded */
 	return 0;
@@ -371,7 +361,6 @@ memb_dnsZone_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 static int
 memb_dnsSerial_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
-	unsigned long value;
 	
 	if(!sptr) {
 		_ASN_CTFAIL(app_key, td, sptr,
@@ -380,7 +369,6 @@ memb_dnsSerial_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 		return -1;
 	}
 	
-	value = *(const unsigned long *)sptr;
 	
 	/* Constraint check succeeded */
 	return 0;
@@ -634,16 +622,16 @@ static ber_tlv_tag_t asn_DEF_Context_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
 static asn_TYPE_tag2member_t asn_MAP_Context_tag2el_1[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* id at 180 */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* ippoolId at 181 */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* dnsZone at 182 */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* dnsSerial at 183 */
-    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* vhost at 184 */
-    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* certificate at 185 */
-    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* certificateKey at 186 */
-    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* trustList at 187 */
-    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* revokeList at 188 */
-    { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 } /* description at 189 */
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* id at 200 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* ippoolId at 201 */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* dnsZone at 202 */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* dnsSerial at 203 */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* vhost at 204 */
+    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* certificate at 205 */
+    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* certificateKey at 206 */
+    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* trustList at 207 */
+    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* revokeList at 208 */
+    { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 } /* description at 209 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_Context_specs_1 = {
 	sizeof(struct Context),
