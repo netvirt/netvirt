@@ -60,13 +60,15 @@ void context_add_session(context_t *context, session_t *session)
 
 context_t *context_lookup(uint32_t context_id)
 {
+	printf("lookup id %d\n", context_id);
 	if (context_id >= 0 && context_id < CONTEXT_LIST_SIZE)
 		return context_table[context_id];
 
 	return NULL;
 }
 
-int context_create(uint32_t id, char *address, char *netmask )
+int context_create(uint32_t id, char *address, char *netmask,
+			char *serverCert, char *serverPrivkey, char *trustedCert)
 {
 	context_t *context;
 
@@ -79,6 +81,8 @@ int context_create(uint32_t id, char *address, char *netmask )
 
 	context->ippool = ippool_new(address, netmask);
 	context->id = id;
+
+	context->passport = pki_passport_load_from_memory(serverCert, serverPrivkey, trustedCert);
 
 	bitpool_new(&context->bitpool, 1024);
 	context->linkst = linkst_new(1024);
@@ -106,8 +110,8 @@ int context_init()
 	int ret;
 
 	event_register(EVENT_EXIT, "context:context_fini()", context_fini, PRIO_AGNOSTIC);
-	context_create(1, "44.128.0.0", "255.255.255.0");
-	context_create(1000, "44.128.0.0", "255.255.255.0");
+//	context_create(1, "44.128.0.0", "255.255.255.0");
+//	context_create(1000, "44.128.0.0", "255.255.255.0");
 
 	return 0;
 }
