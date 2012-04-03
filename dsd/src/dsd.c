@@ -99,7 +99,45 @@ static void dispatch_operation(ds_sess_t *sess, DNDSMessage_t *msg)
 static void on_secure(netc_t *netc)
 {
 	printf("on secure!\n");
-	dao_fetch_context();
+
+	char *id;
+	char *topology_id;
+	char *description;
+	char *network;
+	char *netmask;
+	char *serverCert;
+	char *serverPrivkey;
+	char *trustedCert;
+
+	dao_fetch_context(&id,
+			&topology_id,
+			&description,
+			&network,
+			&netmask,
+			&serverCert,
+			&serverPrivkey,
+			&trustedCert);
+
+
+	DNDSMessage_t *msg;
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+
+	DSMessage_set_seqNumber(msg, 0);
+	DSMessage_set_ackNumber(msg, 1);
+	DSMessage_set_operation(msg, dsop_PR_contextInfo);
+
+        ContextInfo_set_id(msg, atoi(id));
+        ContextInfo_set_topology(msg, Topology_mesh);
+        ContextInfo_set_description(msg, description, strlen(description));
+        ContextInfo_set_network(msg, network);
+        ContextInfo_set_netmask(msg, netmask);
+        ContextInfo_set_serverCert(msg, serverCert, strlen(serverCert));
+        ContextInfo_set_serverPrivkey(msg, serverPrivkey, strlen(serverPrivkey));
+        ContextInfo_set_trustedCert(msg, trustedCert, strlen(trustedCert));
+
+	net_send_msg(netc, msg);
 }
 
 static void on_input(netc_t *netc)
@@ -169,8 +207,6 @@ int dsd_init(char *ip_address, char *port, char *certificate, char *privatekey, 
 	int ret;
 
 	event_register(EVENT_EXIT, "dsd_fini", dsd_fini, PRIO_AGNOSTIC);
-
-	dao_connect();
 
 	passport_t *dsd_passport;
 	dsd_passport = pki_passport_load_from_file(certificate, privatekey, trusted_authority);
