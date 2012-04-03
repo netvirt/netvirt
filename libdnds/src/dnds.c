@@ -311,83 +311,352 @@ int DNDSObject_get_objectType(DNDSObject_t *object, DNDSObject_PR *objType)
 }
 
 // ContextInfo
-int ContextInfo_set_id(DNDSMessage_t *msg)
+int ContextInfo_set_id(DNDSMessage_t *msg, uint32_t id)
 {
+	if (msg == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.id = id;
+
 	return DNDS_success;
 }
 
-int ContextInfo_set_topology(DNDSMessage_t *msg)
+int ContextInfo_get_id(DNDSMessage_t *msg, uint32_t *id)
 {
+	if (msg == NULL || id == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
+		return DNDS_invalid_op;
+	}
+
+	*id = msg->pdu.choice.dsm.dsop.choice.contextInfo.id;
+
 	return DNDS_success;
 }
 
-int ContextInfo_set_description(DNDSMessage_t *msg)
+int ContextInfo_set_topology(DNDSMessage_t *msg, e_Topology topology)
 {
+	if (msg == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.topology = topology;
+
 	return DNDS_success;
 }
 
-int ContextInfo_set_network(DNDSMessage_t *msg)
+int ContextInfo_get_topology(DNDSMessage_t *msg, e_Topology *topology)
 {
+	if (msg == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
+		return DNDS_invalid_op;
+	}
+
+	*topology = msg->pdu.choice.dsm.dsop.choice.contextInfo.topology;
+
 	return DNDS_success;
 }
 
-int ContextInfo_set_netmask(DNDSMessage_t *msg)
+int ContextInfo_set_description(DNDSMessage_t *msg, const char *description, size_t length)
 {
+	if (msg == NULL || description == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.description = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (msg->pdu.choice.dsm.dsop.choice.contextInfo.description == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.description->buf = strdup(description);
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.description->size = length;
+
 	return DNDS_success;
 }
 
-int ContextInfo_set_serverCert(DNDSMessage_t *msg)
+int ContextInfo_get_description(DNDSMessage_t *msg, char **description, size_t *length)
 {
+	if (msg == NULL || description == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
+		return DNDS_invalid_op;
+	}
+
+	*description = msg->pdu.choice.dsm.dsop.choice.contextInfo.description->buf;
+	*length = msg->pdu.choice.dsm.dsop.choice.contextInfo.description->size;
+
 	return DNDS_success;
 }
 
-int ContextInfo_set_serverPrivkey(DNDSMessage_t *msg)
+int ContextInfo_set_network(DNDSMessage_t *msg, char *network)
 {
+	if (msg == NULL || network == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.network.buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
+	if (msg->pdu.choice.dsm.dsop.choice.contextInfo.network.buf == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	int ret;
+	ret = inet_pton(AF_INET, network, msg->pdu.choice.dsm.dsop.choice.contextInfo.network.buf);
+	if (ret != 1) {
+		return DNDS_conversion_failed;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.network.size = sizeof(struct in_addr);
+
 	return DNDS_success;
 }
 
-int ContextInfo_set_trustedCert(DNDSMessage_t *msg)
+int ContextInfo_get_network(DNDSMessage_t *msg, char *network)
 {
+	if (msg == NULL || network == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
+		return DNDS_invalid_op;
+	}
+
+	const char *ret;
+	ret = inet_ntop(AF_INET, msg->pdu.choice.dsm.dsop.choice.contextInfo.network.buf, network, INET_ADDRSTRLEN);
+	if (ret == NULL) {
+		return DNDS_conversion_failed;
+	}
+
 	return DNDS_success;
 }
 
-int ContextInfo_get_id(DNDSMessage_t *msg)
+int ContextInfo_set_netmask(DNDSMessage_t *msg, char *netmask)
 {
+	if (msg == NULL || netmask == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.netmask.buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
+	if (msg->pdu.choice.dsm.dsop.choice.contextInfo.netmask.buf == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	int ret;
+	ret = inet_pton(AF_INET, netmask, msg->pdu.choice.dsm.dsop.choice.contextInfo.netmask.buf);
+	if (ret != 1) {
+		return DNDS_conversion_failed;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.netmask.size = sizeof(struct in_addr);
+
 	return DNDS_success;
 }
 
-int ContextInfo_get_topology(DNDSMessage_t *msg)
+int ContextInfo_get_netmask(DNDSMessage_t *msg, char *netmask)
 {
+	if (msg == NULL || netmask == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
+		return DNDS_invalid_op;
+	}
+
+	const char *ret;
+	ret = inet_ntop(AF_INET, msg->pdu.choice.dsm.dsop.choice.contextInfo.netmask.buf, netmask, INET_ADDRSTRLEN);
+	if (ret == NULL) {
+		return DNDS_conversion_failed;
+	}
+
 	return DNDS_success;
 }
 
-int ContextInfo_get_description(DNDSMessage_t *msg)
+
+int ContextInfo_set_serverCert(DNDSMessage_t *msg, const char *serverCert, size_t length)
 {
+	if (msg == NULL || serverCert == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.serverCert.buf = strdup(serverCert);
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.serverCert.size = length;
+
 	return DNDS_success;
 }
 
-int ContextInfo_get_network(DNDSMessage_t *msg)
+int ContextInfo_get_serverCert(DNDSMessage_t *msg, char **serverCert, size_t *length)
 {
+	if (msg == NULL || serverCert == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
+		return DNDS_invalid_op;
+	}
+
+	*serverCert = msg->pdu.choice.dsm.dsop.choice.contextInfo.serverCert.buf;
+	*length = msg->pdu.choice.dsm.dsop.choice.contextInfo.serverCert.size;
+
 	return DNDS_success;
 }
 
-int ContextInfo_get_netmask(DNDSMessage_t *msg)
+int ContextInfo_set_serverPrivkey(DNDSMessage_t *msg, const char *serverPrivkey, size_t length)
 {
+	if (msg == NULL || serverPrivkey == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.serverPrivkey.buf = strdup(serverPrivkey);
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.serverPrivkey.size = length;
+
 	return DNDS_success;
 }
 
-int ContextInfo_get_serverCert(DNDSMessage_t *msg)
+int ContextInfo_get_serverPrivkey(DNDSMessage_t *msg, char **serverPrivkey, size_t *length)
 {
+	if (msg == NULL || serverPrivkey == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
+		return DNDS_invalid_op;
+	}
+
+	*serverPrivkey = msg->pdu.choice.dsm.dsop.choice.contextInfo.serverPrivkey.buf;
+	*length = msg->pdu.choice.dsm.dsop.choice.contextInfo.serverPrivkey.size;
+
 	return DNDS_success;
 }
 
-int ContextInfo_get_serverPrivkey(DNDSMessage_t *msg)
+int ContextInfo_set_trustedCert(DNDSMessage_t *msg, const char *trustedCert, size_t length)
 {
+	if (msg == NULL || trustedCert == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.trustedCert.buf = strdup(trustedCert);
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.trustedCert.size = length;
+
 	return DNDS_success;
 }
 
-int ContextInfo_get_trustedCert(DNDSMessage_t *msg)
+
+int ContextInfo_get_trustedCert(DNDSMessage_t *msg, char **trustedCert, size_t *length)
 {
+	if (msg == NULL || trustedCert == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
+		return DNDS_invalid_op;
+	}
+
+	*trustedCert = msg->pdu.choice.dsm.dsop.choice.contextInfo.trustedCert.buf;
+	*length = msg->pdu.choice.dsm.dsop.choice.contextInfo.trustedCert.size;
+
 	return DNDS_success;
 }
 
@@ -476,7 +745,7 @@ int PeerConnectInfo_get_ipAddr(DNDSMessage_t *msg, char *ipAddress)
 		return DNDS_invalid_op;
 	}
 
-	char *ret;
+	const char *ret;
 	ret = inet_ntop(AF_INET, msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.ipAddr.buf, ipAddress, INET_ADDRSTRLEN);
 	if (ret == NULL) {
 		return DNDS_conversion_failed;
@@ -1806,7 +2075,7 @@ int AclGroup_set_name(DNDSObject_t *object, char *name, size_t length)
 
 int AclGroup_get_name(DNDSObject_t *object, char **name, size_t *length)
 {
-	if (object == NULL || name == NULL) {
+	if (object == NULL || name == NULL || length == NULL) {
 		return DNDS_invalid_param;
 	}
 
@@ -3550,6 +3819,19 @@ int User_get_status(DNDSObject_t *object, uint8_t *status)
 	return DNDS_success;
 }
 
+char *Topology_str(e_Topology topology)
+{
+	switch (topology) {
+	case Topology_mesh:
+		return "Mesh";
+	case Topology_hubspoke:
+		return "Hub and Spoke";
+	case Topology_gateway:
+		return "Gateway";
+	}
+	return "Unknown";
+}
+
 char *ConnectState_str(e_ConnectState state)
 {
 	switch (state) {
@@ -3717,7 +3999,40 @@ void AddResponse_printf(DNDSMessage_t *msg)
 
 void ContextInfo_printf(DNDSMessage_t *msg)
 {
+	int ret = 0;
+	size_t length;
 
+	uint32_t id;
+        ret = ContextInfo_get_id(msg, &id);
+	printf("ContextInfo> id(%i): %d\n", ret,  id);
+
+	e_Topology topology;
+        ret = ContextInfo_get_topology(msg, &topology);
+	printf("ContextInfo> topology(%i): %s\n", ret, Topology_str(topology));
+
+	char *desc;
+        ret = ContextInfo_get_description(msg, &desc, &length);
+	printf("ContextInfo> description(%i): %s\n", ret, desc);
+
+	char network[INET_ADDRSTRLEN];
+        ret = ContextInfo_get_network(msg, network);
+	printf("ContextInfo> network(%i): %s\n", ret, network);
+
+	char netmask[INET_ADDRSTRLEN];
+        ret = ContextInfo_get_netmask(msg, netmask);
+	printf("ContextInfo> netmask(%i): %s\n", ret, netmask);
+
+	char *serverCert;
+        ret = ContextInfo_get_serverCert(msg, &serverCert, &length);
+	printf("ContextInfo> serverCert(%i): %s\n", ret, serverCert);
+
+	char *serverPrivkey;
+        ret = ContextInfo_get_serverPrivkey(msg, &serverPrivkey, &length);
+	printf("ContextInfo> serverPrivkey(%i): %s\n", ret, serverPrivkey);
+
+	char *trustedCert;
+        ret = ContextInfo_get_trustedCert(msg, &trustedCert, &length);
+	printf("ContextInfo> trustedCert(%i): %s\n", ret, trustedCert);
 }
 
 void PeerConnectInfo_printf(DNDSMessage_t *msg)
