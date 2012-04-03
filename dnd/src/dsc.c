@@ -43,20 +43,79 @@ static void on_secure(netc_t *netc)
 	JOURNAL_DEBUG("dsc on secure");
 }
 
+static void handle_contextinfo(netc_t *netc, DNDSMessage_t *msg)
+{
+	size_t length;
+	uint32_t id;
+	char network[INET_ADDRSTRLEN];
+	char netmask[INET_ADDRSTRLEN];
+
+//	ContextInfo_printf(msg);
+	ContextInfo_get_id(msg, &id);
+	ContextInfo_get_network(msg, network);
+	ContextInfo_get_netmask(msg, netmask);
+
+	char *serverCert;
+	char *serverPrivkey;
+	char *trustedCert;
+
+	ContextInfo_get_serverCert(msg, &serverCert, &length);
+	ContextInfo_get_serverPrivkey(msg, &serverPrivkey, &length);
+	ContextInfo_get_trustedCert(msg, &trustedCert, &length);
+
+	context_create(id, network, netmask, serverCert, serverPrivkey, trustedCert);
+}
+
+static void dispatch_operation(netc_t *netc, DNDSMessage_t *msg)
+{
+	dnop_PR operation;
+
+	DSMessage_get_operation(msg, &operation);
+
+	printf("dispatch operation\n");
+//	switch (operation) {
+//	case dsop_PR_contextInfo:
+		handle_contextinfo(netc, msg);
+//		break;
+//	}
+}
+
 static void on_input(netc_t *netc)
 {
+	DNDSMessage_t *msg;
+	mbuf_t **mbuf_itr;
+	pdu_PR pdu;
 
+	mbuf_itr = &netc->queue_msg;
+
+	while (*mbuf_itr != NULL) {
+
+		msg = (DNDSMessage_t *)(*mbuf_itr)->ext_buf;
+		DNDSMessage_get_pdu(msg, &pdu);
+
+		switch (pdu) {
+			case pdu_PR_dsm:	/* DNDS protocol */
+				dispatch_operation(netc, msg);
+				break;
+			default:
+				/* TODO disconnect session */
+				JOURNAL_ERR("dnd]> invalid PDU");
+				break;
+		}
+
+		mbuf_del(mbuf_itr, *mbuf_itr);
+	}
 }
 
 static void on_connect(netc_t *netc)
 {
-
+	JOURNAL_DEBUG("dsc on connect");
 }
 
 
 static void on_disconnect(netc_t *netc)
 {
-
+	JOURNAL_DEBUG("dsc on disconnect");
 }
 
 void dsc_fini(void *ext_ptr)
@@ -66,7 +125,6 @@ void dsc_fini(void *ext_ptr)
 
 int dsc_init(char *ip_address, char *port, char *certificate, char *privatekey, char *trusted_authority)
 {
-
 	passport_t *dnd_passport;
 	dnd_passport = pki_passport_load_from_file(certificate, privatekey, trusted_authority);
 
@@ -80,4 +138,3 @@ int dsc_init(char *ip_address, char *port, char *certificate, char *privatekey, 
 
 	return 0;
 }
-
