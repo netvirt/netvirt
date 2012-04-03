@@ -111,6 +111,8 @@ void transmit_netinfo_request(dn_sess_t *session)
 
 void transmit_register(netc_t *netc)
 {
+	X509_NAME *subj_ptr;
+	char subj[256];
         size_t nbyte;
 	dn_sess_t *session = (dn_sess_t *)netc->ext_ptr;
 
@@ -124,8 +126,13 @@ void transmit_register(netc_t *netc)
         DNMessage_set_ackNumber(msg, 0);
         DNMessage_set_operation(msg, dnop_PR_authRequest);
 
+	subj_ptr = X509_get_subject_name(session->passport->certificate);
+	X509_NAME_get_text_by_NID(subj_ptr, NID_commonName, subj, 256);
+
+	JOURNAL_NOTICE("dnc> my common name: %s\n", subj);
+
 	/* XXX Fetch the certificate COMMON NAME */
-        AuthRequest_set_certName(msg, "nib@1", 5);
+        AuthRequest_set_certName(msg, subj, strlen(subj));
 
         nbyte = net_send_msg(netc, msg);
         if (nbyte == -1) {
@@ -248,7 +255,7 @@ static void dispatch_operation(dn_sess_t *session, DNDSMessage_t *msg)
 				net_step_up(session->netc);
 			}
 			else {
-				JOURNAL_ERR("dnc]> unknown AuthResponse result");
+				JOURNAL_ERR("dnc]> unknown AuthResponse result (%i)", result);
 			}
 
 			break;
@@ -298,28 +305,30 @@ static void dispatch_operation(dn_sess_t *session, DNDSMessage_t *msg)
 	}
 }
 
-int dnc_init(char *server_address, char *server_port)
+int dnc_init(char *server_address, char *server_port,
+		char *certificate, char *privatekey, char *trusted_authority)
 {
 	netc_t *netc;
 	dn_sess_t *session;
+	session = calloc(1, sizeof(dn_sess_t));
 
-	#include "certificates.h"
-	passport_t *dnc_ctx_passport;
-	dnc_ctx_passport = pki_passport_load_from_memory(dnc_ctx1_cert_pem,
-							 dnc_ctx1_privkey_pem,
-							 dsd_ctx1_cert_pem);
+//	#include "certificates.h"
+//	passport_t *dnc_ctx_passport;
+	session->passport = pki_passport_load_from_file(certificate,
+							 privatekey,
+							 trusted_authority);
 
-	netc = net_client(server_address, server_port, NET_PROTO_UDT, NET_SECURE_ADH, dnc_ctx_passport,
+	netc = net_client(server_address, server_port, NET_PROTO_UDT, NET_SECURE_ADH, session->passport,
 		on_disconnect, on_input, on_secure);
 
 	if (netc == NULL ) {
+		free(session);
 		return -1;
 	}
 
 	/* Initialize the forward table */
         ftable = ftable_new(1024, session_itemdup, session_itemrel);
 
-	session = calloc(1, sizeof(dn_sess_t));
 	session->iface = NULL;
 	session->netc = netc;
 	session->auth = SESS_NOT_AUTH;
