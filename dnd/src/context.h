@@ -4,6 +4,7 @@
 #include <dnds/ftable.h>
 #include <dnds/netbus.h>
 #include <dnds/mbuf.h>
+#include <dnds/pki.h>
 
 #include "dnd.h"
 #include "ippool.h"
@@ -19,6 +20,8 @@ typedef struct context {
 	uint8_t *bitpool;			// bitpool used to generated unique ID per session
 
 	struct session *session_list;		// all session open in this context
+
+	passport_t *passport;
 
 } context_t;
 

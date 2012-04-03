@@ -427,43 +427,43 @@ int main()
 
 
 	// DNC <--> DND
-	digital_id_t *dsd_ctx1_id, *dnd_ctx1_id, *dnc_ctx1_id;
+	digital_id_t *embassy_demo_id, *dnd_demo_id, *dnc_demo_id;
 
-	dsd_ctx1_id = pki_digital_id("dsd@10", "CA", "Quebec",
-					"Levis", "info@dynvpn.com", "M4Nt inc");
+	embassy_demo_id = pki_digital_id("embassy@2", "CA", "Quebec",
+					"Levis", "nib@dynvpn.com", "M4Nt inc");
 
-	dnd_ctx1_id = pki_digital_id("dnd@10", "CA", "Quebec",
-					"Levis", "info@dynvpn.com", "M4Nt inc");
+	dnd_demo_id = pki_digital_id("dnd@2", "CA", "Quebec",
+					"Levis", "nib@dynvpn.com", "M4Nt inc");
 
-	dnc_ctx1_id = pki_digital_id("DEMO@10", "", "",
-					"", "info@dynvpn.com", "M4Nt inc");
+	dnc_demo_id = pki_digital_id("dnc@2", "CA", "Quebec",
+					"", "nib@dynvpn.com", "M4Nt inc");
 
-	embassy_t *dsd_ctx1_embassy;
-	dsd_ctx1_embassy = pki_embassy_new(dsd_ctx1_id, expiration_delay);
+	embassy_t *embassy_demo;
+	embassy_demo = pki_embassy_new(embassy_demo_id, expiration_delay);
 
-	passport_t *dnd_ctx1_passport;
-	dnd_ctx1_passport = pki_embassy_deliver_passport(dsd_ctx1_embassy, dnd_ctx1_id, expiration_delay);
+	passport_t *dnd_passport_demo;
+	dnd_passport_demo = pki_embassy_deliver_passport(embassy_demo, dnd_demo_id, expiration_delay);
 
-	passport_t *dnc_ctx1_passport;
-	dnc_ctx1_passport = pki_embassy_deliver_passport(dsd_ctx1_embassy, dnc_ctx1_id, expiration_delay);
+	passport_t *dnc_passport_demo;
+	dnc_passport_demo = pki_embassy_deliver_passport(embassy_demo, dnc_demo_id, expiration_delay);
 
-	pki_write_certificate(dsd_ctx1_embassy->certificate, "./dsd_ctx1_cert.pem");
-	pki_write_privatekey(dsd_ctx1_embassy->keyring, "./dsd_ctx1_privkey.pem");
+	pki_write_certificate(embassy_demo->certificate, "./embassy_demo_cert.pem");
+	pki_write_privatekey(embassy_demo->keyring, "./embassy_demo_privkey.pem");
 
-	pki_write_certificate(dnd_ctx1_passport->certificate, "./dnd_ctx1_cert.pem");
-	pki_write_privatekey(dnd_ctx1_passport->keyring, "./dnd_ctx1_privkey.pem");
+	pki_write_certificate(dnd_passport_demo->certificate, "./dnd_demo_cert.pem");
+	pki_write_privatekey(dnd_passport_demo->keyring, "./dnd_demo_privkey.pem");
 
-	pki_write_certificate(dnc_ctx1_passport->certificate, "./dnc_ctx1_cert.pem");
-	pki_write_privatekey(dnc_ctx1_passport->keyring, "./dnc_ctx1_privkey.pem");
+	pki_write_certificate(dnc_passport_demo->certificate, "./dnc_demo_cert.pem");
+	pki_write_privatekey(dnc_passport_demo->keyring, "./dnc_demo_privkey.pem");
 
 	// free
 	pki_passport_free(dnd_passport);
 	pki_passport_free(dsc_passport);
 	pki_embassy_free(dsd_embassy);
 
-	pki_passport_free(dnc_ctx1_passport);
-	pki_passport_free(dnd_ctx1_passport);
-	pki_embassy_free(dsd_ctx1_embassy);
+	pki_passport_free(dnc_passport_demo);
+	pki_passport_free(dnd_passport_demo);
+	pki_embassy_free(embassy_demo);
 
 	return 0;
 }

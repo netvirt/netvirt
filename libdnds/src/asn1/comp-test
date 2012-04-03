@@ -1,4 +1,4 @@
 #!/bin/bash
-gcc -Wall test.c -c -o test.o -I ../ -I ./
+gcc -Wunused-but-set-variable -Wall test.c -c -o test.o -I ../ -I ./
 gcc -Wall ../dnds.o *.o -o test
 

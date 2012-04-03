@@ -205,12 +205,12 @@ void test_ContextInfo()
 
 	ContextInfo_set_id(msg, 1);
 	ContextInfo_set_topology(msg, Topology_mesh);
-	ContextInfo_set_description(msg, "Demo");
+	ContextInfo_set_description(msg, "Demo", 4);
 	ContextInfo_set_network(msg, "44.1.0.0");
 	ContextInfo_set_netmask(msg, "255.255.0.0");
-	ContextInfo_set_serverCert(msg, "CERTIFICATE SERVER");
-	ContextInfo_set_serverPrivkey(msg, "PRIVATEKEY SERVER");
-	ContextInfo_set_trustedCert(msg, "CERTIFICATE TRUSTED");
+	ContextInfo_set_serverCert(msg, "CERTIFICATE SERVER", 17);
+	ContextInfo_set_serverPrivkey(msg, "PRIVATEKEY SERVER", 17) ;
+	ContextInfo_set_trustedCert(msg, "CERTIFICATE TRUSTED", 17);
 
 	/// Encoding part
 
@@ -1016,9 +1016,10 @@ int main()
 {
 	test_ContextInfo();
 	show_ContextInfo();
-
+/*
 	test_PeerConnectInfo();
 	show_PeerConnectInfo();
+*/
 
 /*	test_DNDS_ethernet();
 	show_DNDS_ethernet();
