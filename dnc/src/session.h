@@ -21,6 +21,8 @@ typedef struct {
 	char ip_local[16];
 	uint8_t tun_mac_addr[6];
 
+	passport_t *passport;
+
 	iface_t *iface;
 	peer_t *peer;
 	netc_t *netc;
