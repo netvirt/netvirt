@@ -28,6 +28,9 @@ int authRequest(session_t *session, DNDSMessage_t *req_msg)
 	uint8_t valid;
 	uint8_t step_up;
 
+	AuthRequest_printf(req_msg);
+	AuthRequest_get_certName(req_msg, &certName, &length);
+
 	if (session->auth != SESS_NOT_AUTHENTICATED) {
 		JOURNAL_NOTICE("dnd]> authRequest duplicate");
 		return;
@@ -47,10 +50,14 @@ int authRequest(session_t *session, DNDSMessage_t *req_msg)
 
 	// TODO - validate certificate
 	// fetch the appropriate certificate
-	valid = strncmp(certName, "nib@1", length);
-	if (valid == 0) {
+//	valid = strncmp(certName, "nib@1", length);
+
+	printf("contextid %i\n", atoi( strchr( certName, '@' )+1));
+
+	session->context = context_lookup(atoi( strchr( certName, '@' )+1));
+	if (session->context != NULL) {
 		// FIXME - load the right context
-		session->context = context_lookup(1);
+//		session->context = context_lookup(1);
 
 		if (session->netc->security_level == NET_UNSECURE) {
 
@@ -65,13 +72,13 @@ int authRequest(session_t *session, DNDSMessage_t *req_msg)
 			AuthResponse_set_result(msg, DNDSResult_secureStepUp);
 			nbyte = net_send_msg(session->netc, msg);
 
-			#include "certificates.h"
-			passport_t *dnd_ctx_passport;
-			dnd_ctx_passport = pki_passport_load_from_memory(dnd_ctx1_cert_pem,
-									 dnd_ctx1_privkey_pem, 
-									 dsd_ctx1_cert_pem);
+//			#include "certificates.h"
+//			passport_t *dnd_ctx_passport;
+//			dnd_ctx_passport = pki_passport_load_from_memory(dnd_ctx1_cert_pem,
+//									 dnd_ctx1_privkey_pem, 
+//									 dsd_ctx1_cert_pem);
 
-			krypt_add_passport(session->netc->kconn, dnd_ctx_passport);
+			krypt_add_passport(session->netc->kconn, session->context->passport);
 			session->auth = SESS_WAIT_STEP_UP;
 			net_step_up(session->netc);
 

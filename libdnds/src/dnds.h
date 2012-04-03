@@ -66,6 +66,25 @@ int DSMessage_get_operation(DNDSMessage_t *msg, dsop_PR *operation);
 int DNDSObject_set_objectType(DNDSObject_t *object, DNDSObject_PR type);
 int DNDSObject_get_objectType(DNDSObject_t *object, DNDSObject_PR *type);
 
+// ContextInfo
+
+int ContextInfo_set_id(DNDSMessage_t *msg, uint32_t id);
+int ContextInfo_get_id(DNDSMessage_t *msg, uint32_t *id);
+int ContextInfo_set_topology(DNDSMessage_t *msg, e_Topology topology);
+int ContextInfo_get_topology(DNDSMessage_t *msg, e_Topology *topology);
+int ContextInfo_set_description(DNDSMessage_t *msg, const char *description, size_t length);
+int ContextInfo_get_description(DNDSMessage_t *msg, char **description, size_t *length);
+int ContextInfo_set_network(DNDSMessage_t *msg, char *network);
+int ContextInfo_get_network(DNDSMessage_t *msg, char *network);
+int ContextInfo_set_netmask(DNDSMessage_t *msg, char *netmask);
+int ContextInfo_get_netmask(DNDSMessage_t *msg, char *netmask);
+int ContextInfo_set_serverCert(DNDSMessage_t *msg, const char *serverCert, size_t length);
+int ContextInfo_get_serverCert(DNDSMessage_t *msg, char **serverCert, size_t *length);
+int ContextInfo_set_serverPrivkey(DNDSMessage_t *msg, const char *serverPrivkey, size_t length);
+int ContextInfo_get_serverPrivkey(DNDSMessage_t *msg, char **serverPrivkey, size_t *length);
+int ContextInfo_set_trustedCert(DNDSMessage_t *msg, const char *trustedCert, size_t length);
+int ContextInfo_get_trustedCert(DNDSMessage_t *msg, char **trustedCert, size_t *length);
+
 // PeerConnectInfo
 int PeerConnectInfo_set_certName(DNDSMessage_t *msg, char *name, size_t length);
 int PeerConnectInfo_get_certName(DNDSMessage_t *msg, char **name, size_t *length);

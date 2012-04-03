@@ -26,11 +26,17 @@
 
 char *server_address = NULL;
 char *server_port = NULL;
+char *certificate = NULL;
+char *privatekey = NULL;
+char *trusted_authority = NULL;
 
 struct options opts[] = {
 
 	{ "server_address",	&server_address,	OPT_STR | OPT_MAN },
 	{ "server_port",	&server_port,		OPT_STR | OPT_MAN },
+	{ "certificate",	&certificate,		OPT_STR | OPT_MAN },
+	{ "privatekey",		&privatekey,		OPT_STR | OPT_MAN },
+	{ "trusted_authority",	&trusted_authority,	OPT_STR | OPT_MAN },
 
 	{ NULL }
 };
@@ -69,7 +75,7 @@ int main(int argc, char *argv[])
 
 	JOURNAL_INFO("dnc]> connecting...");
 
-	if (dnc_init(server_address, server_port)) {
+	if (dnc_init(server_address, server_port, certificate, privatekey, trusted_authority)) {
 		JOURNAL_ERR("dnc]> dnc_init() failed :: %s:%i", __FILE__, __LINE__);
 		_exit(EXIT_ERR);
 	}

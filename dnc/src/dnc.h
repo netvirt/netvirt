@@ -1,6 +1,7 @@
 #ifndef DNC_DNC_H
 #define DNC_DNC_H
 
-int dnc_init(char *listen_addr, char *port);
+int dnc_init(char *server_address, char *server_port,
+		char *certificate, char *privatekey, char *trusted_authority);
 
 #endif /* DNC_DNC_H */

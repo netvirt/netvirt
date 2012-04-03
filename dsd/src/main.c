@@ -25,6 +25,7 @@
 #include <dnds/xsched.h>
 
 #include "config.h"
+#include "dao.h"
 #include "dsd.h"
 
 #define CONFIG_FILE "/etc/dnds/dsd.conf"
@@ -32,7 +33,6 @@
 char *listen_address = NULL;
 char *port = NULL;
 
-char *database = NULL;
 char *database_host = NULL;
 char *database_username = NULL;
 char *database_password = NULL;
@@ -46,7 +46,6 @@ struct options opts[] = {
 
 	{ "listen_address",	&listen_address,	OPT_STR | OPT_MAN },
 	{ "port",		&port,			OPT_STR | OPT_MAN },
-	{ "database",		&database,		OPT_STR | OPT_MAN },
 	{ "database_host",	&database_host,		OPT_STR | OPT_MAN },
 	{ "database_username",	&database_username,	OPT_STR | OPT_MAN },
 	{ "database_password",	&database_password,	OPT_STR | OPT_MAN },
@@ -108,6 +107,8 @@ int main(int argc, char *argv[])
 
 	krypt_init();
 	pki_init();
+
+	dao_connect(database_host, database_username, database_password, database_name);
 
 	if (dsd_init(listen_address, port, certificate, privatekey, trusted_authority)) {
 		JOURNAL_NOTICE("dsd]> dnds_init() failed. :: %s:%i\n", __FILE__, __LINE__);
