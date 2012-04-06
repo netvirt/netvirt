@@ -10,11 +10,10 @@
  *
  */
 
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <sys/queue.h>
+#include "linkst.h"
 
 int linkst_joined(int idx_a, int idx_b, uint8_t **adjacency_matrix, int max_node)
 {
@@ -46,12 +45,6 @@ int linkst_join(int idx_a, int idx_b, uint8_t **adjacency_matrix, int max_node)
 
 	return 0;
 }
-struct nodes {
-
-	int index;
-	LIST_ENTRY(nodes) nodes;
-};
-LIST_HEAD(nodelist, nodes);
 
 void linkst_free_nodes(struct nodelist *nodes_head)
 {
@@ -76,7 +69,7 @@ struct nodelist *linkst_disjoin(int idx, uint8_t **adjacency_matrix, int active_
 	struct nodes *node;
 	int i;
 
-	for (i=0; i<=active_nodes; i++) {	/* 0 to active_nodes-1 gives `active_nodes` iterations */
+	for (i = 0; i <= active_nodes; i++) {	/* 0 to active_nodes-1 gives `active_nodes` iterations */
 
 		if (adjacency_matrix[idx][i] == 1) {
 			adjacency_matrix[idx][i] = 0;
@@ -94,7 +87,7 @@ struct nodelist *linkst_disjoin(int idx, uint8_t **adjacency_matrix, int active_
 void linkst_free(uint8_t **adjacency_matrix, size_t max_node)
 {
 	int i;
-	for (i=0; i<max_node; i++)
+	for (i = 0; i < max_node; i++)
 		free(adjacency_matrix[i]);
 
 	free(adjacency_matrix);
@@ -105,7 +98,7 @@ uint8_t **linkst_new(size_t max_node)
 	int i;
 	uint8_t **adjacency_matrix;
 	adjacency_matrix = calloc(max_node, sizeof(uint8_t *));
-	for (i=0; i<max_node; i++)
+	for (i = 0; i < max_node; i++)
 		adjacency_matrix[i] = calloc(max_node, sizeof(uint8_t));
 
 	return adjacency_matrix;
