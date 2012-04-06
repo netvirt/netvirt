@@ -1,7 +1,6 @@
 /*
- * dsc.c: Directory Service Client
- *
- * Copyright (C) 2010 Nicolas Bouliane
+ * Dynamic Network Directory Service
+ * Copyright (C) 2010-2012 Nicolas Bouliane
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -15,9 +14,10 @@
 #include <dnds/net.h>
 #include <dnds/pki.h>
 
+#include "context.h"
 #include "dsc.h"
 
-netc_t *netc; /* Temporary here */
+netc_t *netc;
 
 int transmit_peerconnectinfo(e_ConnectState state, char *ipAddress, char *certName)
 {
@@ -36,6 +36,8 @@ int transmit_peerconnectinfo(e_ConnectState state, char *ipAddress, char *certNa
         PeerConnectInfo_set_state(msg, state);  
 
 	net_send_msg(netc, msg);
+
+	return 0;
 }
 
 static void on_secure(netc_t *netc)
@@ -68,7 +70,7 @@ static void handle_contextinfo(netc_t *netc, DNDSMessage_t *msg)
 
 static void dispatch_operation(netc_t *netc, DNDSMessage_t *msg)
 {
-	dnop_PR operation;
+	dsop_PR operation;
 
 	DSMessage_get_operation(msg, &operation);
 
