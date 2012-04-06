@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <sys/ioctl.h>
 #include <sys/types.h>
@@ -169,7 +170,7 @@ int inet_get_local_ip(char *ip, size_t ip_len)
 /*
  * Get the mac address corresponding to the given interface
  */
-int inet_get_iface_mac_address(char *iface_name, char *mac_address)
+int inet_get_iface_mac_address(char *iface_name, uint8_t *mac_address)
 {
 	int fd;
 	struct ifreq ifr;
@@ -238,6 +239,6 @@ void inet_print_arp(peer_t *peer)
 			ea->arp_tha[1], ea->arp_tha[2], ea->arp_sha[3],
 			ea->arp_tha[4], ea->arp_sha[5]);
 		JOURNAL_DEBUG("inet]> arp_tpa: %02x:%02x:%02x:%02x", ea->arp_tpa[0],
-			ea->arp_tpa[1], ea->arp_tpa[2], ea->arp_tpa[4]);
+			ea->arp_tpa[1], ea->arp_tpa[2], ea->arp_tpa[3]);
 	}
 }
