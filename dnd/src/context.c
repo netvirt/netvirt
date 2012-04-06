@@ -1,7 +1,6 @@
 /*
- * context.c: Context API
- *
- * Copyright (C) 2010 Nicolas Bouliane
+ * Dynamic Network Directory Service
+ * Copyright (C) 2010-2012 Nicolas Bouliane
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -14,6 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <dnds/bitpool.h>
 #include <dnds/event.h>
 #include <dnds/hash.h>
 #include <dnds/journal.h>
@@ -24,10 +24,12 @@
 #include "context.h"
 #include "session.h"
 
+/* XXX the context list should bee a tree, or a hashlist */
+
 #define CONTEXT_LIST_SIZE 512
 context_t *context_table[CONTEXT_LIST_SIZE] = {NULL};
 
-void context_del_session(context_t *context, session_t *session)
+void context_del_session(context_t *context, struct session *session)
 {
 	if (session == context->session_list)
 		context->session_list = NULL;
@@ -36,13 +38,13 @@ void context_del_session(context_t *context, session_t *session)
 		if (session->prev)
 			session->prev->next = session->next;
 		else
-			printf("no previons link ??!\n");
+			printf("no previons link ?\n");
 	}
 
 	bitpool_release_bit(context->bitpool, 1024, session->id);
 }
 
-void context_add_session(context_t *context, session_t *session)
+void context_add_session(context_t *context, struct session *session)
 {
 	if (context->session_list == NULL) {
 		context->session_list = session;
@@ -61,7 +63,7 @@ void context_add_session(context_t *context, session_t *session)
 context_t *context_lookup(uint32_t context_id)
 {
 	printf("lookup id %d\n", context_id);
-	if (context_id >= 0 && context_id < CONTEXT_LIST_SIZE)
+	if (context_id < CONTEXT_LIST_SIZE)
 		return context_table[context_id];
 
 	return NULL;
@@ -87,7 +89,6 @@ int context_create(uint32_t id, char *address, char *netmask,
 	bitpool_new(&context->bitpool, 1024);
 	context->linkst = linkst_new(1024);
 
-	// no port yet
 	context->session_list = NULL;
 
 	context->ftable = ftable_new(1024, session_itemdup, session_itemrel);
@@ -107,11 +108,7 @@ void context_fini(void *ext_ptr)
 
 int context_init()
 {
-	int ret;
-
 	event_register(EVENT_EXIT, "context:context_fini()", context_fini, PRIO_AGNOSTIC);
-//	context_create(1, "44.128.0.0", "255.255.255.0");
-//	context_create(1000, "44.128.0.0", "255.255.255.0");
 
 	return 0;
 }
