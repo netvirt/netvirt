@@ -97,12 +97,16 @@ int DNDSMessage_set_ethernet(DNDSMessage_t *msg, uint8_t *frame, size_t length)
 {
 	msg->pdu.choice.ethernet.buf = frame;
 	msg->pdu.choice.ethernet.size = length;
+
+	return 0;
 }
 
 int DNDSMessage_get_ethernet(DNDSMessage_t *msg, uint8_t **frame, size_t *length)
 {
 	*frame = msg->pdu.choice.ethernet.buf;
 	*length = msg->pdu.choice.ethernet.size;
+
+	return 0;
 }
 
 // DNMessage
@@ -406,7 +410,7 @@ int ContextInfo_set_description(DNDSMessage_t *msg, const char *description, siz
 		return DNDS_alloc_failed;
 	}
 
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.description->buf = strdup(description);
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.description->buf = (uint8_t *)strdup(description);
 	msg->pdu.choice.dsm.dsop.choice.contextInfo.description->size = length;
 
 	return DNDS_success;
@@ -426,7 +430,7 @@ int ContextInfo_get_description(DNDSMessage_t *msg, char **description, size_t *
 		return DNDS_invalid_op;
 	}
 
-	*description = msg->pdu.choice.dsm.dsop.choice.contextInfo.description->buf;
+	*description = (char *)msg->pdu.choice.dsm.dsop.choice.contextInfo.description->buf;
 	*length = msg->pdu.choice.dsm.dsop.choice.contextInfo.description->size;
 
 	return DNDS_success;
@@ -553,7 +557,7 @@ int ContextInfo_set_serverCert(DNDSMessage_t *msg, const char *serverCert, size_
 		return DNDS_invalid_op;
 	}
 
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.serverCert.buf = strdup(serverCert);
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.serverCert.buf = (uint8_t *)strdup(serverCert);
 	msg->pdu.choice.dsm.dsop.choice.contextInfo.serverCert.size = length;
 
 	return DNDS_success;
@@ -573,7 +577,7 @@ int ContextInfo_get_serverCert(DNDSMessage_t *msg, char **serverCert, size_t *le
 		return DNDS_invalid_op;
 	}
 
-	*serverCert = msg->pdu.choice.dsm.dsop.choice.contextInfo.serverCert.buf;
+	*serverCert = (char *)msg->pdu.choice.dsm.dsop.choice.contextInfo.serverCert.buf;
 	*length = msg->pdu.choice.dsm.dsop.choice.contextInfo.serverCert.size;
 
 	return DNDS_success;
@@ -593,7 +597,7 @@ int ContextInfo_set_serverPrivkey(DNDSMessage_t *msg, const char *serverPrivkey,
 		return DNDS_invalid_op;
 	}
 
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.serverPrivkey.buf = strdup(serverPrivkey);
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.serverPrivkey.buf = (uint8_t *)strdup(serverPrivkey);
 	msg->pdu.choice.dsm.dsop.choice.contextInfo.serverPrivkey.size = length;
 
 	return DNDS_success;
@@ -613,7 +617,7 @@ int ContextInfo_get_serverPrivkey(DNDSMessage_t *msg, char **serverPrivkey, size
 		return DNDS_invalid_op;
 	}
 
-	*serverPrivkey = msg->pdu.choice.dsm.dsop.choice.contextInfo.serverPrivkey.buf;
+	*serverPrivkey = (char *)msg->pdu.choice.dsm.dsop.choice.contextInfo.serverPrivkey.buf;
 	*length = msg->pdu.choice.dsm.dsop.choice.contextInfo.serverPrivkey.size;
 
 	return DNDS_success;
@@ -633,7 +637,7 @@ int ContextInfo_set_trustedCert(DNDSMessage_t *msg, const char *trustedCert, siz
 		return DNDS_invalid_op;
 	}
 
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.trustedCert.buf = strdup(trustedCert);
+	msg->pdu.choice.dsm.dsop.choice.contextInfo.trustedCert.buf = (uint8_t *)strdup(trustedCert);
 	msg->pdu.choice.dsm.dsop.choice.contextInfo.trustedCert.size = length;
 
 	return DNDS_success;
@@ -654,7 +658,7 @@ int ContextInfo_get_trustedCert(DNDSMessage_t *msg, char **trustedCert, size_t *
 		return DNDS_invalid_op;
 	}
 
-	*trustedCert = msg->pdu.choice.dsm.dsop.choice.contextInfo.trustedCert.buf;
+	*trustedCert = (char *)msg->pdu.choice.dsm.dsop.choice.contextInfo.trustedCert.buf;
 	*length = msg->pdu.choice.dsm.dsop.choice.contextInfo.trustedCert.size;
 
 	return DNDS_success;
@@ -675,7 +679,7 @@ int PeerConnectInfo_set_certName(DNDSMessage_t *msg, char *name, size_t length)
 		return DNDS_invalid_op;
 	}
 
-	msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.certName.buf = strdup(name);
+	msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.certName.buf = (uint8_t *)strdup(name);
 	msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.certName.size = length;
 
 	return DNDS_success;
@@ -695,7 +699,7 @@ int PeerConnectInfo_get_certName(DNDSMessage_t *msg, char **name, size_t *length
 		return DNDS_invalid_op;
 	}
 
-	*name = msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.certName.buf;
+	*name = (char *)msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.certName.buf;
 	*length = msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.certName.size;
 
 	return DNDS_success;
@@ -904,7 +908,7 @@ int AuthRequest_set_certName(DNDSMessage_t *msg, char *certName, size_t length)
 				return DNDS_invalid_op;
 			}
 
-			msg->pdu.choice.dsm.dsop.choice.authRequest.certName.buf = strdup(certName);
+			msg->pdu.choice.dsm.dsop.choice.authRequest.certName.buf = (uint8_t *)strdup(certName);
 			msg->pdu.choice.dsm.dsop.choice.authRequest.certName.size = length;
 			break;
 
@@ -914,7 +918,7 @@ int AuthRequest_set_certName(DNDSMessage_t *msg, char *certName, size_t length)
 				return DNDS_invalid_op;
 			}
 
-			msg->pdu.choice.dnm.dnop.choice.authRequest.certName.buf = strdup(certName);
+			msg->pdu.choice.dnm.dnop.choice.authRequest.certName.buf = (uint8_t *)strdup(certName);
 			msg->pdu.choice.dnm.dnop.choice.authRequest.certName.size = length;
 			break;
 
@@ -938,7 +942,7 @@ int AuthRequest_get_certName(DNDSMessage_t *msg, char **certName, size_t *length
 				return DNDS_invalid_op;
 			}
 
-			*certName = msg->pdu.choice.dsm.dsop.choice.authRequest.certName.buf;
+			*certName = (char *)msg->pdu.choice.dsm.dsop.choice.authRequest.certName.buf;
 			*length = msg->pdu.choice.dsm.dsop.choice.authRequest.certName.size;
 			break;
 
@@ -948,7 +952,7 @@ int AuthRequest_get_certName(DNDSMessage_t *msg, char **certName, size_t *length
 				return DNDS_invalid_op;
 			}
 
-			*certName = msg->pdu.choice.dnm.dnop.choice.authRequest.certName.buf;
+			*certName = (char *)msg->pdu.choice.dnm.dnop.choice.authRequest.certName.buf;
 			*length = msg->pdu.choice.dnm.dnop.choice.authRequest.certName.size;
 			break;
 
@@ -1965,7 +1969,7 @@ int Acl_set_description(DNDSObject_t *object, char *description, size_t length)
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.acl.description->buf = strdup(description);
+	object->choice.acl.description->buf = (uint8_t *)strdup(description);
 	object->choice.acl.description->size = length;
 
 	return DNDS_success;
@@ -1985,7 +1989,7 @@ int Acl_get_description(DNDSObject_t *object, char **description, size_t *length
 		return DNDS_value_not_present;
 	}
 
-	*description = object->choice.acl.description->buf;
+	*description = (char *)object->choice.acl.description->buf;
 	*length = object->choice.acl.description->size;
 
 	return DNDS_success;
@@ -2067,7 +2071,7 @@ int AclGroup_set_name(DNDSObject_t *object, char *name, size_t length)
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.aclgroup.name->buf = strdup(name);
+	object->choice.aclgroup.name->buf = (uint8_t *)strdup(name);
 	object->choice.aclgroup.name->size = length;
 
 	return DNDS_success;
@@ -2087,7 +2091,7 @@ int AclGroup_get_name(DNDSObject_t *object, char **name, size_t *length)
 		return DNDS_value_not_present;
 	}
 
-	*name = object->choice.aclgroup.name->buf;
+	*name = (char *)object->choice.aclgroup.name->buf;
 	*length = object->choice.aclgroup.name->size;
 
 	return DNDS_success;
@@ -2108,7 +2112,7 @@ int AclGroup_set_description(DNDSObject_t *object, char *description, size_t len
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.aclgroup.description->buf = strdup(description);
+	object->choice.aclgroup.description->buf = (uint8_t *)strdup(description);
 	object->choice.aclgroup.description->size = length;
 
 	return DNDS_success;
@@ -2128,7 +2132,7 @@ int AclGroup_get_description(DNDSObject_t *object, char **description, size_t *l
 		return DNDS_value_not_present;
 	}
 
-	*description = object->choice.aclgroup.description->buf;
+	*description = (char *)object->choice.aclgroup.description->buf;
 	*length = object->choice.aclgroup.description->size;
 
 	return DNDS_success;
@@ -2457,7 +2461,7 @@ int Context_set_dnsZone(DNDSObject_t *object, char *dnsZone, size_t length)
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.context.dnsZone->buf = strdup(dnsZone);
+	object->choice.context.dnsZone->buf = (uint8_t *)strdup(dnsZone);
 	object->choice.context.dnsZone->size = length;
 
 	return DNDS_success;
@@ -2477,7 +2481,7 @@ int Context_get_dnsZone(DNDSObject_t *object, char **dnsZone, size_t *length)
 		return DNDS_value_not_present;
 	}
 
-	*dnsZone = object->choice.context.dnsZone->buf;
+	*dnsZone = (char *)object->choice.context.dnsZone->buf;
 	*length = object->choice.context.dnsZone->size;
 
 	return DNDS_success;
@@ -2537,7 +2541,7 @@ int Context_set_vhost(DNDSObject_t *object, char *vhost, size_t length)
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.context.vhost->buf = strdup(vhost);
+	object->choice.context.vhost->buf = (uint8_t *)strdup(vhost);
 	object->choice.context.vhost->size = length;
 
 	return DNDS_success;
@@ -2557,7 +2561,7 @@ int Context_get_vhost(DNDSObject_t *object, char **vhost, size_t *length)
 		return DNDS_value_not_present;
 	}
 
-	*vhost = object->choice.context.vhost->buf;
+	*vhost = (char *)object->choice.context.vhost->buf;
 	*length = object->choice.context.vhost->size;
 
 	return DNDS_success;
@@ -2578,7 +2582,7 @@ int Context_set_certificate(DNDSObject_t *object, char *certificate, size_t leng
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.context.certificate->buf = strdup(certificate);
+	object->choice.context.certificate->buf = (uint8_t *)strdup(certificate);
 	object->choice.context.certificate->size = length;
 
 	return DNDS_success;
@@ -2598,7 +2602,7 @@ int Context_get_certificate(DNDSObject_t *object, char **certificate, size_t *le
 		return DNDS_value_not_present;
 	}
 
-	*certificate = object->choice.context.certificate->buf;
+	*certificate = (char *)object->choice.context.certificate->buf;
 	*length = object->choice.context.certificate->size;
 
 	return DNDS_success;
@@ -2652,10 +2656,12 @@ int Context_get_certificateKey(DNDSObject_t *object, uint8_t **certificateKey, s
 
 int Context_set_trustList()
 {
+	return 0;
 }
 
 int Context_set_revokeList()
 {
+	return 0;
 }
 
 int Context_set_description(DNDSObject_t *object, char *description, size_t length)
@@ -2673,7 +2679,7 @@ int Context_set_description(DNDSObject_t *object, char *description, size_t leng
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.context.description->buf = strdup(description);
+	object->choice.context.description->buf = (uint8_t *)strdup(description);
 	object->choice.context.description->size = length;
 
 	return DNDS_success;
@@ -2693,7 +2699,7 @@ int Context_get_description(DNDSObject_t *object, char **description, size_t *le
 		return DNDS_value_not_present;
 	}
 
-	*description = object->choice.context.description->buf;
+	*description = (char *)object->choice.context.description->buf;
 	*length = object->choice.context.description->size;
 
 	return DNDS_success;
@@ -2805,7 +2811,7 @@ int Host_set_name(DNDSObject_t *object, char *name, size_t length)
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.host.name->buf = strdup(name);
+	object->choice.host.name->buf = (uint8_t *)strdup(name);
 	object->choice.host.name->size = length;
 
 	return DNDS_success;
@@ -2825,7 +2831,7 @@ int Host_get_name(DNDSObject_t *object, char **name, size_t *length)
 		return DNDS_value_not_present;
 	}
 
-	*name = object->choice.host.name->buf;
+	*name = (char *)object->choice.host.name->buf;
 	*length = object->choice.host.name->size;
 
 	return DNDS_success;
@@ -3015,7 +3021,7 @@ int Node_set_name(DNDSObject_t *object, char *name, size_t length)
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.node.name->buf = strdup(name);
+	object->choice.node.name->buf = (uint8_t *)strdup(name);
 	object->choice.node.name->size = length;
 
 	return DNDS_success;
@@ -3035,7 +3041,7 @@ int Node_get_name(DNDSObject_t *object, char **name, size_t *length)
 		return DNDS_value_not_present;
 	}
 
-	*name = object->choice.node.name->buf;
+	*name = (char *)object->choice.node.name->buf;
 	*length = object->choice.node.name->size;
 
 	return DNDS_success;
@@ -3089,7 +3095,7 @@ int Node_get_ipAddress(DNDSObject_t *object, char *ipAddress)
 	const char *ret;
 	ret = inet_ntop(AF_INET, object->choice.node.ipAddress->buf, ipAddress, INET_ADDRSTRLEN);
 	if (ret == NULL) {
-		DNDS_conversion_failed;
+		return DNDS_conversion_failed;
 	}
 
 	return DNDS_success;
@@ -3110,7 +3116,7 @@ int Node_set_certificate(DNDSObject_t *object, char *certificate, size_t length)
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.node.certificate->buf = strdup(certificate);
+	object->choice.node.certificate->buf = (uint8_t *)strdup(certificate);
 	object->choice.node.certificate->size = length;
 
 	return DNDS_success;
@@ -3130,7 +3136,7 @@ int Node_get_certificate(DNDSObject_t *object, char **certificate, size_t *lengt
 		return DNDS_value_not_present;
 	}
 
-	*certificate = object->choice.node.certificate->buf;
+	*certificate = (char *)object->choice.node.certificate->buf;
 	*length = object->choice.node.certificate->size;
 
 	return DNDS_success;
@@ -3184,6 +3190,7 @@ int Node_get_certificateKey(DNDSObject_t *object, uint8_t **certificateKey, size
 
 int Node_set_permission()
 {
+	return 0;
 }
 
 int Node_set_status(DNDSObject_t *object, uint8_t status)
@@ -3224,14 +3231,17 @@ int Node_get_status(DNDSObject_t *object, uint8_t *status)
 // Permission
 int Permission_set_id()
 {
+	return 0;
 }
 
 int Permission_set_name()
 {
+	return 0;
 }
 
 int Permission_set_matrix()
 {
+	return 0;
 }
 
 // Peer
@@ -3364,7 +3374,7 @@ int Peer_set_certificate(DNDSObject_t *object, char *certificate, size_t length)
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.peer.certificate->buf = strdup(certificate);
+	object->choice.peer.certificate->buf = (uint8_t *)strdup(certificate);
 	object->choice.peer.certificate->size = length;
 
 	return DNDS_success;
@@ -3372,7 +3382,7 @@ int Peer_set_certificate(DNDSObject_t *object, char *certificate, size_t length)
 
 int Peer_get_certificate(DNDSObject_t *object, char **certificate, size_t *length)
 {
-	if (object == NULL || certificate == NULL || length == length) {
+	if (object == NULL || certificate == NULL || length == NULL) {
 		return DNDS_invalid_param;
 	}
 
@@ -3384,7 +3394,7 @@ int Peer_get_certificate(DNDSObject_t *object, char **certificate, size_t *lengt
 		return DNDS_value_not_present;
 	}
 
-	*certificate = object->choice.peer.certificate->buf;
+	*certificate = (char *)object->choice.peer.certificate->buf;
 	*length = object->choice.peer.certificate->size;
 
 	return DNDS_success;
@@ -3551,7 +3561,7 @@ int User_set_name(DNDSObject_t *object, char *name, size_t length)
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.user.name->buf = strdup(name);
+	object->choice.user.name->buf = (uint8_t *)strdup(name);
 	object->choice.user.name->size = length;
 
 	return DNDS_success;
@@ -3571,7 +3581,7 @@ int User_get_name(DNDSObject_t *object, char **name, size_t *length)
 		return DNDS_value_not_present;
 	}
 
-	*name = object->choice.user.name->buf;
+	*name = (char *)object->choice.user.name->buf;
 	*length = object->choice.user.name->size;
 
 	return DNDS_success;
@@ -3592,7 +3602,7 @@ int User_set_password(DNDSObject_t *object, char *password, size_t length)
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.user.password->buf = strdup(password);
+	object->choice.user.password->buf = (uint8_t *)strdup(password);
 	object->choice.user.password->size = length;
 
 	return DNDS_success;
@@ -3612,7 +3622,7 @@ int User_get_password(DNDSObject_t *object, char **password, size_t *length)
 		return DNDS_value_not_present;
 	}
 
-	*password = object->choice.user.password->buf;
+	*password = (char *)object->choice.user.password->buf;
 	*length = object->choice.user.password->size;
 
 	return DNDS_success;
@@ -3633,7 +3643,7 @@ int User_set_firstname(DNDSObject_t *object, char *firstname, size_t length)
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.user.firstname->buf = strdup(firstname);
+	object->choice.user.firstname->buf = (uint8_t *)strdup(firstname);
 	object->choice.user.firstname->size = length;
 
 	return DNDS_success;
@@ -3653,7 +3663,7 @@ int User_get_firstname(DNDSObject_t *object, char **firstname, size_t *length)
 		return DNDS_value_not_present;
 	}
 
-	*firstname = object->choice.user.firstname->buf;
+	*firstname = (char *)object->choice.user.firstname->buf;
 	*length = object->choice.user.firstname->size;
 
 	return DNDS_success;
@@ -3674,7 +3684,7 @@ int User_set_lastname(DNDSObject_t *object, char *lastname, size_t length)
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.user.lastname->buf = strdup(lastname);
+	object->choice.user.lastname->buf = (uint8_t *)strdup(lastname);
 	object->choice.user.lastname->size = length;
 
 	return DNDS_success;
@@ -3694,7 +3704,7 @@ int User_get_lastname(DNDSObject_t *object, char **lastname, size_t *length)
 		return DNDS_value_not_present;
 	}
 
-	*lastname = object->choice.user.lastname->buf;
+	*lastname = (char *)object->choice.user.lastname->buf;
 	*length = object->choice.user.lastname->size;
 
 	return DNDS_success;
@@ -3715,7 +3725,7 @@ int User_set_email(DNDSObject_t *object, char *email, size_t length)
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.user.email->buf = strdup(email);
+	object->choice.user.email->buf = (uint8_t *)strdup(email);
 	object->choice.user.email->size = length;
 
 	return DNDS_success;
@@ -3735,7 +3745,7 @@ int User_get_email(DNDSObject_t *object, char **email, size_t *length)
 		return DNDS_value_not_present;
 	}
 
-	*email = object->choice.user.email->buf;
+	*email = (char *)object->choice.user.email->buf;
 	*length = object->choice.user.email->size;
 
 	return DNDS_success;
@@ -4133,7 +4143,7 @@ void NetinfoRequest_printf(DNDSMessage_t *msg)
 	NetinfoRequest_get_ipLocal(msg, ipLocal);
 	printf("NetinfoRequest> ipLocal: %s\n", ipLocal);
 
-	char macAddr[ETHER_ADDR_LEN];
+	uint8_t macAddr[ETHER_ADDR_LEN];
 	NetinfoRequest_get_macAddr(msg, macAddr);
 	printf("NetinfoRequest> macAddr: %x:%x:%x:%x:%x:%x\n", macAddr[0],macAddr[1],macAddr[2],
 								macAddr[3],macAddr[4],macAddr[5]);
@@ -4425,6 +4435,9 @@ void DNDSObject_printf(DNDSObject_t *obj)
 
 		case DNDSObject_PR_user:
 			User_printf(obj);
+			break;
+
+		case DNDSObject_PR_NOTHING:
 			break;
 	}
 }

@@ -1,7 +1,6 @@
 /*
- * session.c: Session API
- *
- * Copyright (C) 2010 Nicolas Bouliane
+ * Dynamic Network Directory Service
+ * Copyright (C) 2010-2012 Nicolas Bouliane
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -13,11 +12,11 @@
 #include <dnds/journal.h>
 #include "session.h"
 
-session_t *session_new()
+struct session *session_new()
 {
-	session_t *session = NULL;
+	struct session *session = NULL;
 
-	session = (session_t *)calloc(1, sizeof(session_t));
+	session = calloc(1, sizeof(struct session));
 	if (session == NULL) {
 		JOURNAL_CRIT("dnd]> memory allocation failed");
 		return NULL;
@@ -27,12 +26,12 @@ session_t *session_new()
 	session->prev = NULL;
 	session->context = NULL;
 
-	session->auth = SESS_NOT_AUTHENTICATED;
+	session->status = SESSION_STATUS_NOT_AUTHED;
 
 	return session;
 }
 
-void session_free(session_t *session)
+void session_free(struct session*session)
 {
 	if (session == NULL) {
 		return;
@@ -45,7 +44,7 @@ void session_free(session_t *session)
 	free(session);
 }
 
-void session_terminate(session_t *session)
+void session_terminate(struct session *session)
 {
 	JOURNAL_INFO("dnd]> terminating session");
 	net_disconnect(session->netc);
@@ -54,19 +53,19 @@ void session_terminate(session_t *session)
 
 void *session_itemdup(const void *item)
 {
-	session_t *session;
-	session = calloc(1, sizeof(session_t));
+	struct session *session;
+	session = calloc(1, sizeof(struct session));
 
-	memmove(session, item, sizeof(session_t));
+	memmove(session, item, sizeof(struct session));
 
 	return session;
 }
 
 void session_itemrel(void *item)
 {
-	session_t *session;
+	struct session *session;
 	if (item != NULL) {
-		session = (session_t*)item;
+		session = (struct session *)item;
 		free(session);
 	}
 }
