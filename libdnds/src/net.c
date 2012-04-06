@@ -94,7 +94,7 @@ static netc_t *net_connection_new(uint8_t security_level)
 // send data that SSL generated during read/write/handshake operations.
 static void net_do_krypt(netc_t *netc)
 {
-	size_t nbyte;
+	ssize_t nbyte;
 
 	if (netc->kconn->buf_encrypt_data_size > 0) {
 
@@ -128,7 +128,7 @@ static void net_queue_out(netc_t *netc, uint8_t *buf, size_t data_size)
 }
 
 // serialize data coming from the low-level network layer
-static int serialize_buf_in(netc_t *netc, const void *buf, size_t data_size)
+static void serialize_buf_in(netc_t *netc, const void *buf, size_t data_size)
 {
 	memmove(netc->buf_in + netc->buf_in_offset + netc->buf_in_data_size, buf, data_size);
 	netc->buf_in_data_size += data_size;
@@ -194,7 +194,7 @@ static int net_decode_msg(netc_t *netc)
 	asn_dec_rval_t dec;
 
 	if (netc->buf_in_data_size == 0)
-		return;
+		return 0;
 
 	do {
 		dec = ber_decode(0, &asn_DEF_DNDSMessage,

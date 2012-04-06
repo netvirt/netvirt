@@ -1,6 +1,6 @@
-/* dnd.c: Dynamic Network Daemon
- *
- * Copyright (C) 2010 Nicolas Bouliane
+/*
+ * Dynamic Network Directory Service
+ * Copyright (C) 2010-2012 Nicolas Bouliane
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,9 +25,10 @@
 #include "context.h"
 #include "dnd.h"
 #include "dsc.h"
+#include "request.h"
 #include "session.h"
 
-static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
+static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 {
 	int ret;
 	uint8_t *frame;
@@ -37,11 +38,11 @@ static void forward_ethernet(session_t *session, DNDSMessage_t *msg)
 	uint8_t macaddr_dst[ETHER_ADDR_LEN];
 	uint8_t macaddr_dst_type;
 
-	session_t *session_dst = NULL;
-	session_t *session_src = NULL;
-	session_t *session_list = NULL;
+	struct session *session_dst = NULL;
+	struct session *session_src = NULL;
+	struct session *session_list = NULL;
 
-	if (session->auth != SESS_AUTHENTICATED)
+	if (session->status != SESSION_STATUS_AUTHED)
 		return;
 
 	DNDSMessage_get_ethernet(msg, &frame, &frame_size);
@@ -110,59 +111,10 @@ static int validate_msg(DNDSMessage_t *msg)
 	return 0;
 }
 
-static void dispatch_operation(session_t *session, DNDSMessage_t *msg)
-{
-	dnop_PR operation;
-
-	DNMessage_get_operation(msg, &operation);
-
-	switch (operation) {
-
-		case dnop_PR_authRequest:
-			authRequest(session, msg);
-			break;
-
-		case dnop_PR_netinfoRequest:
-			handle_netinfo_request(session, msg);
-			break;
-
-		case dnop_PR_p2pRequest:
-			p2pRequest(session, msg);
-			break;
-
-                /* TerminateRequest is a special case since
-                 * it has no Response message associated with it,
-		 * simply disconnect the client
-		 */
-		case dnop_PR_NOTHING:
-		default:
-		case dnop_PR_terminateRequest:
-			session_terminate(session);
-			break;
-	}
-}
-
-void handle_netinfo_request(session_t *session, DNDSMessage_t *msg)
-{
-	NetinfoRequest_get_ipLocal(msg, session->ip_local);
-	NetinfoRequest_get_macAddr(msg, session->tun_mac_addr);
-
-	printf("client local ip %s\n", session->ip_local);
-		printf("%02x:%02x:%02x:%02x:%02x:%02x\n",
-			session->tun_mac_addr[0],
-			session->tun_mac_addr[1],
-			session->tun_mac_addr[2],
-			session->tun_mac_addr[3],
-			session->tun_mac_addr[4],
-			session->tun_mac_addr[5]);
-
-	transmit_netinfo_response(session->netc);
-}
-
 void transmit_netinfo_response(netc_t *netc)
 {
 	char *ip_address;
-	session_t *session = netc->ext_ptr;
+	struct session *session = netc->ext_ptr;
 
 	context_t *context = NULL;
 	context = session->context;
@@ -190,19 +142,64 @@ void transmit_netinfo_response(netc_t *netc)
 
 	transmit_peerconnectinfo(ConnectState_connected,
 				session->ip, "demo");
-
 }
+
+void handle_netinfo_request(struct session *session, DNDSMessage_t *msg)
+{
+	NetinfoRequest_get_ipLocal(msg, session->ip_local);
+	NetinfoRequest_get_macAddr(msg, session->tun_mac_addr);
+
+	printf("client local ip %s\n", session->ip_local);
+	printf("%02x:%02x:%02x:%02x:%02x:%02x\n",
+		session->tun_mac_addr[0],
+		session->tun_mac_addr[1],
+		session->tun_mac_addr[2],
+		session->tun_mac_addr[3],
+		session->tun_mac_addr[4],
+		session->tun_mac_addr[5]);
+
+	transmit_netinfo_response(session->netc);
+}
+
+static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
+{
+	dnop_PR operation;
+
+	DNMessage_get_operation(msg, &operation);
+
+	switch (operation) {
+
+		case dnop_PR_authRequest:
+			authRequest(session, msg);
+			break;
+
+		case dnop_PR_netinfoRequest:
+			handle_netinfo_request(session, msg);
+			break;
+
+                /* TerminateRequest is a special case since
+                 * it has no Response message associated with it,
+		 * simply disconnect the client
+		 */
+		case dnop_PR_NOTHING:
+		default:
+		case dnop_PR_terminateRequest:
+			session_terminate(session);
+			break;
+	}
+}
+
 
 static void on_secure(netc_t *netc)
 {
 	size_t nbyte;
-	session_t *session;
+	struct session *session;
 	session = netc->ext_ptr;
 
-	if (session->auth == SESS_WAIT_STEP_UP) {
+	if (session->status == SESSION_STATUS_WAIT_STEPUP) {
 
 		/* Set the session as authenticated */
-		session->auth = SESS_AUTHENTICATED;
+		session->status = SESSION_STATUS_AUTHED;
 
 		/* Send a message to acknowledge the client */
 		DNDSMessage_t *msg = NULL;
@@ -225,12 +222,12 @@ static void on_secure(netc_t *netc)
 static void on_input(netc_t *netc)
 {
 	DNDSMessage_t *msg;
-	session_t *session;
+	struct session *session;
 	mbuf_t **mbuf_itr;
 	pdu_PR pdu;
 
 	mbuf_itr = &netc->queue_msg;
-	session = (session_t *)netc->ext_ptr;
+	session = (struct session *)netc->ext_ptr;
 
 	while (*mbuf_itr != NULL) {
 
@@ -256,7 +253,7 @@ static void on_input(netc_t *netc)
 
 static void on_connect(netc_t *netc)
 {
-	session_t *session = NULL;
+	struct session *session = NULL;
 
 	session = session_new();
 	if (session == NULL) {
@@ -274,13 +271,13 @@ static void on_connect(netc_t *netc)
 static void on_disconnect(netc_t *netc)
 {
 	int ret = 0;
-	session_t *session = NULL;
+	struct session *session = NULL;
 
 	JOURNAL_DEBUG("dnd]> disconnect");
 
 	session = netc->ext_ptr;
 
-	if (session->auth == SESS_NOT_AUTHENTICATED) {
+	if (session->status == SESSION_STATUS_NOT_AUTHED) {
 		session_free(session);
 		return;
 	}
@@ -325,53 +322,3 @@ int dnd_init(char *listen_addr, char *port)
 	return 0;
 }
 
-void p2pRequest(session_t *session_a, session_t *session_b)
-{
-	DNDSMessage_t *msg;
-
-	uint32_t port;
-	char *ip_a;
-	char *ip_b;
-
-	if (!strcmp(session_a->netc->peer->host, session_b->netc->peer->host)) {
-
-		ip_a = strdup(session_a->ip_local);
-		ip_b = strdup(session_b->ip_local);
-	} else {
-
-		ip_a = strdup(session_a->netc->peer->host);
-		ip_b = strdup(session_b->netc->peer->host);
-	}
-
-	/* basic random port : 49152–65535 */
-	port = rand() % (65535-49152+1)+49152;
-
-	printf("A ip public %s\n", ip_a);
-	printf("B ip public %s\n", ip_b);
-
-	/* msg session A */
-	DNDSMessage_new(&msg);
-	DNDSMessage_set_pdu(msg, pdu_PR_dnm);
-
-	DNMessage_set_operation(msg, dnop_PR_p2pRequest);
-
-	P2pRequest_set_macAddrDst(msg, session_b->tun_mac_addr);
-	P2pRequest_set_ipAddrDst(msg, ip_b);
-	P2pRequest_set_port(msg, port);
-	P2pRequest_set_side(msg, P2pSide_client);
-
-	net_send_msg(session_a->netc, msg);
-
-	/* msg session B */
-	DNDSMessage_new(&msg);
-	DNDSMessage_set_pdu(msg, pdu_PR_dnm);
-
-	DNMessage_set_operation(msg, dnop_PR_p2pRequest);
-
-	P2pRequest_set_macAddrDst(msg, session_a->tun_mac_addr);
-	P2pRequest_set_ipAddrDst(msg, ip_a);
-	P2pRequest_set_port(msg, port);
-	P2pRequest_set_side(msg, P2pSide_client);
-
-	net_send_msg(session_b->netc, msg);
-}

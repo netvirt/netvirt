@@ -1,7 +1,6 @@
 /*
- * bitpool.c
- *
- * Copyright (C) 2010 Nicolas Bouliane
+ * Dynamic Network Directory Service
+ * Copyright (C) 2010-2012 Nicolas Bouliane
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -10,8 +9,9 @@
  *
  */
 
-#include <stdint.h>
 #include <stdlib.h>
+
+#include "bitpool.h"
 
 static int get_bit(const uint8_t bitmap[], size_t bit)
 {
