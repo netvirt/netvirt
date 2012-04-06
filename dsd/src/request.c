@@ -1,6 +1,6 @@
-/* Directory Service Daemon
- *
- * Copyright (C) 2010, 2011 Nicolas Bouliane
+/*
+ * Dynamic Network Directory Service
+ * Copyright (C) 2010-2012 Nicolas Bouliane
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -12,12 +12,12 @@
 #include <dnds/dnds.h>
 #include "request.h"
 
-void peerConnectInfo(ds_sess_t *sess, DNDSMessage_t *req_msg)
+void peerConnectInfo(struct session *session, DNDSMessage_t *req_msg)
 {
 	PeerConnectInfo_printf(req_msg);
 }
 
-void authRequest(ds_sess_t *sess, DNDSMessage_t *req_msg)
+void authRequest(struct session *session, DNDSMessage_t *req_msg)
 {
 	char *certName;
 	size_t length;
@@ -29,7 +29,7 @@ void authRequest(ds_sess_t *sess, DNDSMessage_t *req_msg)
 	printf("certName: %s\n", certName);
 
 	// XXX mark the session as authenticated
-	sess->auth = SESS_AUTH;
+	session->status = SESSION_STATUS_AUTHED;
 
 	// XXX answer the client
 	DNDSMessage_t *msg;
@@ -43,25 +43,25 @@ void authRequest(ds_sess_t *sess, DNDSMessage_t *req_msg)
 	DSMessage_set_operation(msg, dsop_PR_authResponse);
 	AuthResponse_set_result(msg, DNDSResult_success);
 
-	net_send_msg(sess->netc, msg);
+	net_send_msg(session->netc, msg);
 }
 
-void addRequest(ds_sess_t *sess, DNDSMessage_t *msg)
+void addRequest(struct session *session, DNDSMessage_t *msg)
 {
 
 }
 
-void delRequest(ds_sess_t *sess, DNDSMessage_t *msg)
+void delRequest(struct session *session, DNDSMessage_t *msg)
 {
 
 }
 
-void modifyRequest(ds_sess_t *sess, DNDSMessage_t *msg)
+void modifyRequest(struct session *session, DNDSMessage_t *msg)
 {
 
 }
 
-void searchRequest(ds_sess_t *sess, DNDSMessage_t *msg)
+void searchRequest(struct session *session, DNDSMessage_t *msg)
 {
 
 }
