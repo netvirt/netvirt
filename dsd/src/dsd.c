@@ -1,6 +1,6 @@
-/* Directory Service Daemon
- *
- * Copyright (C) 2010, 2011 Nicolas Bouliane
+/*
+ * Dynamic Network Directory Service
+ * Copyright (C) 2010-2012 Nicolas Bouliane
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,21 +19,23 @@
 #include "dsd.h"
 #include "request.h"
 
-static void session_free(ds_sess_t *sess)
+static void session_free(struct session *session)
 {
-	free(sess);
+	free(session);
 }
 
-static ds_sess_t *session_new()
+static struct session *session_new()
 {
-	ds_sess_t *sess = calloc(1, sizeof(ds_sess_t));
-	sess->auth = SESS_NOT_AUTH;
+	struct session *session = calloc(1, sizeof(struct session));
+	session->status = SESSION_STATUS_NOT_AUTHED;
+
+	return session;
 }
 
-static void terminate(ds_sess_t *sess)
+static void terminate(struct session *session)
 {
-	net_disconnect(sess->netc);
-	session_free(sess);
+	net_disconnect(session->netc);
+	session_free(session);
 }
 
 static int validate_msg(DNDSMessage_t *msg)
@@ -49,7 +51,7 @@ static int validate_msg(DNDSMessage_t *msg)
 	return 0;
 }
 
-static void dispatch_operation(ds_sess_t *sess, DNDSMessage_t *msg)
+static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 {
 	dsop_PR operation;
 	DSMessage_get_operation(msg, &operation);
@@ -60,27 +62,27 @@ static void dispatch_operation(ds_sess_t *sess, DNDSMessage_t *msg)
 	switch (operation) {
 
 		case dsop_PR_peerConnectInfo:
-			peerConnectInfo(sess, msg);
+			peerConnectInfo(session, msg);
 			break;
 
 		case dsop_PR_authRequest:
-			authRequest(sess, msg);
+			authRequest(session, msg);
 			break;
 
 		case dsop_PR_addRequest:
-			addRequest(sess, msg);
+			addRequest(session, msg);
 			break;
 
 		case dsop_PR_delRequest:
-			delRequest(sess, msg);
+			delRequest(session, msg);
 			break;
 
 		case dsop_PR_modifyRequest:
-			modifyRequest(sess, msg);
+			modifyRequest(session, msg);
 			break;
 
 		case dsop_PR_searchRequest:
-			searchRequest(sess, msg);
+			searchRequest(session, msg);
 			break;
 
 		/* terminateRequest is a special case since
@@ -91,7 +93,7 @@ static void dispatch_operation(ds_sess_t *sess, DNDSMessage_t *msg)
 		default:
 			JOURNAL_NOTICE("dsd]> not a valid DSM operation");
 		case dsop_PR_terminateRequest:
-			terminate(sess);
+			terminate(session);
 			break;
 	}
 }
@@ -143,11 +145,11 @@ static void on_secure(netc_t *netc)
 static void on_input(netc_t *netc)
 {
 	DNDSMessage_t *msg;
-	ds_sess_t *sess;
+	struct session *session;
 	mbuf_t **mbuf_itr;
 
 	mbuf_itr = &netc->queue_msg;
-	sess = (ds_sess_t *)netc->ext_ptr;
+	session = (struct session *)netc->ext_ptr;
 
 	while (*mbuf_itr != NULL) {
 
@@ -155,9 +157,9 @@ static void on_input(netc_t *netc)
 		DNDSMessage_printf(msg);
 
 		if (validate_msg(msg) == 0)
-			dispatch_operation(sess, msg);
+			dispatch_operation(session, msg);
 		else {
-			terminate(sess);
+			terminate(session);
 			return;
 		}
 
@@ -169,37 +171,35 @@ static void on_input(netc_t *netc)
 
 static void on_disconnect(netc_t *netc)
 {
-	ds_sess_t *sess;
-	sess = (ds_sess_t *)netc->ext_ptr;
+	struct session *session;
+	session = (struct session *)netc->ext_ptr;
 
-	session_free(sess);
+	session_free(session);
 }
 
-static void timeout_session(ds_sess_t *sess)
+static void timeout_session(struct session *session)
 {
 	printf("time out sess\n");
-// FIXME	chronos_remove(sess->timeout_id);
-	terminate(sess);
+	terminate(session);
 }
 
 static void on_connect(netc_t *netc)
 {
-	ds_sess_t *sess;
+	struct session *session;
 
-	sess = session_new();
-	if (sess == NULL) {
+	session = session_new();
+	if (session == NULL) {
 		net_disconnect(netc);
 		return;
 	}
 
-	sess->netc = netc;
-	netc->ext_ptr = sess;
+	session->netc = netc;
+	netc->ext_ptr = session;
 }
-
 
 void dsd_fini(void *ext_ptr)
 {
-	// XXX free all sessions
+
 }
 
 int dsd_init(char *ip_address, char *port, char *certificate, char *privatekey, char *trusted_authority)

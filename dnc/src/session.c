@@ -1,7 +1,6 @@
 /*
- * session.c: Session API
- *
- * Copyright (C) 2010 Nicolas Bouliane
+ * Dynamic Network Directory Service
+ * Copyright (C) 2010-2012 Nicolas Bouliane
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -14,20 +13,20 @@
 
 void *session_itemdup(const void *item)
 {
-	dn_sess_t *sess;
-	sess = calloc(1, sizeof(dn_sess_t));
+	struct session *session;
 
-	memcpy(sess, item, sizeof(dn_sess_t));
+	session = calloc(1, sizeof(struct session));
+	memcpy(session, item, sizeof(struct session));
 
-	return sess;
+	return session;
 }
 
 void session_itemrel(void *item)
 {
-	dn_sess_t *session;
+	struct session *session;
 
 	if (item != NULL) {
-		session = (dn_sess_t *)item;
+		session = (struct session *)item;
 		free(session);
 	}
 }
