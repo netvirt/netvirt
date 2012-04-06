@@ -111,6 +111,8 @@ static int krypt_set_adh(krypt_t *kconn)
 
 	SSL_CTX_set_tmp_dh_callback(kconn->ctx, tmp_dh_callback);
 	SSL_CTX_set_verify(kconn->ctx, SSL_VERIFY_NONE, NULL);
+
+	return 0;
 }
 
 // XXX Clean up this function, we MUST handle all errors possible
@@ -145,6 +147,8 @@ int krypt_set_rsa(krypt_t *kconn)
 	}
 
 	kconn->security_level = KRYPT_RSA;
+
+	return 0;
 }
 
 void krypt_add_passport(krypt_t *kconn, passport_t *passport)
@@ -192,6 +196,8 @@ int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 		post_handshake_check(kconn->ssl);
 		kconn->status = KRYPT_SECURE;
 		status = 0;
+
+		printf("Cipher used: %s\n", SSL_get_cipher_name(kconn->ssl));
 	}
 	else if (ret == 0) {
 		// Error

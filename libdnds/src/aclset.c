@@ -35,15 +35,16 @@ static int aclset_cmp(const void *p1, const void *p2)
 	acl1 = (acl_t*)p1;
 	acl2 = (acl_t*)p2;
 
-	if (acl1->id == acl2->id)
-		return 0;
-
-	else if (acl1->id > acl2->id)
+	if (acl1->id > acl2->id)
 		return 1;
 
 	else if (acl1->id < acl2->id)
 		return -1;
+
+	/* (acl1->id == acl2->id) */
+	return 0;
 }
+
 
 static void *aclset_dup(void *p)
 {

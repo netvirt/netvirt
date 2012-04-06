@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2010 Nicolas Bouliane
+ * Dynamic Network Directory Service
+ * Copyright (C) 2010-2012 Nicolas Bouliane
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -15,6 +16,7 @@
 #include <dnds/journal.h>
 #include <dnds/netbus.h>
 #include <dnds/options.h>
+#include <dnds/udtbus.h>
 #include <dnds/xsched.h>
 
 #include "dnd.h"
@@ -25,6 +27,9 @@
 char *listen_address = NULL;
 char *listen_port = NULL;
 
+char *dsc_address = NULL;
+char *dsc_port = NULL;
+
 char *certificate = NULL;
 char *privatekey = NULL;
 char *trusted_authority = NULL;
@@ -33,6 +38,8 @@ struct options opts[] = {
 
 	{ "listen_address",	&listen_address,	OPT_STR | OPT_MAN },
 	{ "listen_port",	&listen_port,		OPT_STR | OPT_MAN },
+	{ "dsc_address",	&dsc_address,		OPT_STR | OPT_MAN },
+	{ "dsc_port",		&dsc_port,		OPT_STR | OPT_MAN },
 	{ "certificate",	&certificate,		OPT_STR | OPT_MAN },
 	{ "privatekey",		&privatekey,		OPT_STR | OPT_MAN },
 	{ "trusted_authority",	&trusted_authority,	OPT_STR | OPT_MAN },
@@ -40,18 +47,14 @@ struct options opts[] = {
 	{ NULL }
 };
 
-static bool is_root() {
-	return (getuid() == 0);
-}
-
 int main(int argc, char *argv[])
 {
-	if (!is_root()) {
+	if (getuid() != 0) {
 		fprintf(stderr, "dnd]> you must be root\n");
 		_exit(EXIT_NOT_ROOT);
 	}
 
-	// State initialization
+	/* State initialization */
 	if (option_parse(opts, CONFIG_FILE)) {
 		JOURNAL_ERR("dnd]> option_parse() failed :: %s:%i", __FILE__, __LINE__);
 		_exit(EXIT_ERR);
@@ -59,7 +62,7 @@ int main(int argc, char *argv[])
 
 	option_dump(opts);
 
-	// Systems initialization
+	/* System initialization */
 	if (event_init()) {
 		JOURNAL_ERR("dnd]> event_init() failed :: %s:%i", __FILE__, __LINE__);
 		_exit(EXIT_ERR);
@@ -85,7 +88,8 @@ int main(int argc, char *argv[])
 		_exit(EXIT_ERR);
 	}
 
-	if (dsc_init("127.0.0.1", "9091", certificate, privatekey, trusted_authority)) {
+	/* Server initialization */
+	if (dsc_init(dsc_address, dsc_port, certificate, privatekey, trusted_authority)) {
 		JOURNAL_ERR("dnd]> dnc_init() failed :: %s:%i\n", __FILE__, __LINE__);
 		_exit(EXIT_ERR);
 	}
@@ -95,7 +99,7 @@ int main(int argc, char *argv[])
 		_exit(EXIT_ERR);
 	}
 
-	// Now... run !
+	/* Now... run ! */
 	scheduler();
 
 	return 0;
