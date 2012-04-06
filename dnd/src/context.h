@@ -25,6 +25,8 @@ typedef struct context {
 
 } context_t;
 
+int context_create(uint32_t id, char *address, char *netmask,
+			char *serverCert, char *serverPrivkey, char *trustedCert);
 void context_del_session(context_t *ctx, struct session *session);
 void context_add_session(context_t *ctx, struct session *session);
 context_t *context_lookup(uint32_t id);
