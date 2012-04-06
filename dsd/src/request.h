@@ -1,17 +1,26 @@
-// Directory Service Request
-// Copyright (C) Nicolas Bouliane, Mind4Networks, 2010
+/*
+ * Dynamic Network Directory Service
+ * Copyright (C) 2010-2012 Nicolas Bouliane
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; version 2
+ * of the License.
+ *
+ */
 
-#ifndef REQUEST_H
-#define REQUEST_H
+#ifndef DSD_REQUEST_H
+#define DSD_REQUEST_H
 
 #include <dnds/dnds.h>
 #include "dsd.h"
 
-void authRequest(ds_sess_t *sess, DNDSMessage_t *msg);
-void addRequest(ds_sess_t *sess, DNDSMessage_t *msg);
-void delRequest(ds_sess_t *sess, DNDSMessage_t *msg);
-void modifyRequest(ds_sess_t *sess, DNDSMessage_t *msg);
-void searchRequest(ds_sess_t *sess, DNDSMessage_t *msg);
+void authRequest(struct session *session, DNDSMessage_t *msg);
+void addRequest(struct session *session, DNDSMessage_t *msg);
+void delRequest(struct session *session, DNDSMessage_t *msg);
+void modifyRequest(struct session *session, DNDSMessage_t *msg);
+void searchRequest(struct session *session, DNDSMessage_t *msg);
+void peerConnectInfo(struct session *session, DNDSMessage_t *req_msg);
 
-#endif // REQUEST_H
+#endif
 
