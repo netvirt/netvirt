@@ -1,7 +1,6 @@
 /*
- * request.c: Request handler API
- *
- * Copyright (C) 2010 Nicolas Bouliane
+ * Dynamic Network Directory Service
+ * Copyright (C) 2010-2012 Nicolas Bouliane
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,23 +16,21 @@
 #include "request.h"
 #include "context.h"
 
-/* TODO
- * clean this prototype
- */
-int authRequest(session_t *session, DNDSMessage_t *req_msg)
+int authRequest(struct session *session, DNDSMessage_t *req_msg)
 {
 	char *certName;
 	size_t length;
 	size_t nbyte;
 	uint8_t valid;
 	uint8_t step_up;
+	uint32_t context_id;
 
 	AuthRequest_printf(req_msg);
 	AuthRequest_get_certName(req_msg, &certName, &length);
 
-	if (session->auth != SESS_NOT_AUTHENTICATED) {
+	if (session->status != SESSION_STATUS_NOT_AUTHED) {
 		JOURNAL_NOTICE("dnd]> authRequest duplicate");
-		return;
+		return -1;
 	}
 
 	DNDSMessage_t *msg = NULL;
@@ -48,43 +45,30 @@ int authRequest(session_t *session, DNDSMessage_t *req_msg)
 
 	AuthRequest_get_certName(req_msg, &certName, &length);
 
-	// TODO - validate certificate
-	// fetch the appropriate certificate
-//	valid = strncmp(certName, "nib@1", length);
+	/* something@id */
+	context_id = atoi(strchr(certName,'@')+1);
+	printf("contextid %i\n", context_id);
+	session->context = context_lookup(context_id);
 
-	printf("contextid %i\n", atoi( strchr( certName, '@' )+1));
-
-	session->context = context_lookup(atoi( strchr( certName, '@' )+1));
 	if (session->context != NULL) {
-		// FIXME - load the right context
-//		session->context = context_lookup(1);
-
 		if (session->netc->security_level == NET_UNSECURE) {
 
 			AuthResponse_set_result(msg, DNDSResult_success);
 			nbyte = net_send_msg(session->netc, msg);
-			session->auth = SESS_WAIT_STEP_UP;
-			session->netc->on_secure(session->netc);
-		}
-		else {
 
-	
+			session->status = SESSION_STATUS_AUTHED;
+			session->netc->on_secure(session->netc);
+
+		} else {
+
 			AuthResponse_set_result(msg, DNDSResult_secureStepUp);
 			nbyte = net_send_msg(session->netc, msg);
 
-//			#include "certificates.h"
-//			passport_t *dnd_ctx_passport;
-//			dnd_ctx_passport = pki_passport_load_from_memory(dnd_ctx1_cert_pem,
-//									 dnd_ctx1_privkey_pem, 
-//									 dsd_ctx1_cert_pem);
-
 			krypt_add_passport(session->netc->kconn, session->context->passport);
-			session->auth = SESS_WAIT_STEP_UP;
+			session->status = SESSION_STATUS_WAIT_STEPUP;
 			net_step_up(session->netc);
-
 		}
-	}
-	else {
+	} else {
 
 		AuthResponse_set_result(msg, DNDSResult_insufficientAccessRights);
 		nbyte = net_send_msg(session->netc, msg);
@@ -95,3 +79,53 @@ int authRequest(session_t *session, DNDSMessage_t *req_msg)
 	return 0;
 }
 
+void p2pRequest(struct session *session_a, struct session *session_b)
+{
+	DNDSMessage_t *msg;
+
+	uint32_t port;
+	char *ip_a;
+	char *ip_b;
+
+	if (!strcmp(session_a->netc->peer->host, session_b->netc->peer->host)) {
+
+		ip_a = strdup(session_a->ip_local);
+		ip_b = strdup(session_b->ip_local);
+	} else {
+
+		ip_a = strdup(session_a->netc->peer->host);
+		ip_b = strdup(session_b->netc->peer->host);
+	}
+
+	/* basic random port : 49152–65535 */
+	port = rand() % (65535-49152+1)+49152;
+
+	printf("A ip public %s\n", ip_a);
+	printf("B ip public %s\n", ip_b);
+
+	/* msg session A */
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_pdu(msg, pdu_PR_dnm);
+
+	DNMessage_set_operation(msg, dnop_PR_p2pRequest);
+
+	P2pRequest_set_macAddrDst(msg, session_b->tun_mac_addr);
+	P2pRequest_set_ipAddrDst(msg, ip_b);
+	P2pRequest_set_port(msg, port);
+	P2pRequest_set_side(msg, P2pSide_client);
+
+	net_send_msg(session_a->netc, msg);
+
+	/* msg session B */
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_pdu(msg, pdu_PR_dnm);
+
+	DNMessage_set_operation(msg, dnop_PR_p2pRequest);
+
+	P2pRequest_set_macAddrDst(msg, session_a->tun_mac_addr);
+	P2pRequest_set_ipAddrDst(msg, ip_a);
+	P2pRequest_set_port(msg, port);
+	P2pRequest_set_side(msg, P2pSide_client);
+
+	net_send_msg(session_b->netc, msg);
+}

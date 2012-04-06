@@ -50,6 +50,8 @@ ipf_t *ipf_new()
 	ipf = calloc(1, sizeof(ipf_t));
 	ipf->rules = NULL;
 	ipf->default_policy = IPF_ACCEPT;
+
+	return ipf;
 }
 
 void ipf_del(ipf_t *ipf)
@@ -90,6 +92,8 @@ int ipf_rule_append(ipf_t *ipf, ipset_t *ipset_src, ipset_t *ipset_dst, uint8_t 
 		rule->prev = ipf->rules->prev->next;
 		ipf->rules->prev = rule;
 	}
+
+	return 0;
 }
 
 int ipf_rule_del(ipf_t *ipf, ipset_t *ipset_src, ipset_t *ipset_dst, uint8_t verdict)
@@ -111,7 +115,7 @@ int ipf_rule_del(ipf_t *ipf, ipset_t *ipset_src, ipset_t *ipset_dst, uint8_t ver
 
 	if (rule == NULL) {
 		printf("not found\n");
-		return;
+		return -1;
 	}
 
 	if (rule == ipf->rules)
@@ -126,6 +130,7 @@ int ipf_rule_del(ipf_t *ipf, ipset_t *ipset_src, ipset_t *ipset_dst, uint8_t ver
 	}
 
 	free(rule);
+	return 0;
 }
 
 void ipf_default_policy(ipf_t *ipf, uint8_t verdict)

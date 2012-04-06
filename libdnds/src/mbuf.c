@@ -117,7 +117,7 @@ mbuf_t *mbuf_new(const void *buf, size_t data_size, uint8_t mem_type, void (*fre
 		case MBUF_BYREF:
 			mbuf = (mbuf_t *)calloc(1, sizeof(mbuf_t));
 			mbuf->mem_type = mem_type;
-			mbuf->ext_buf = buf;
+			mbuf->ext_buf = (uint8_t *)buf;
 			mbuf->free = free;
 			break;
 	}
