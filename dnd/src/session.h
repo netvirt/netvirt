@@ -1,32 +1,49 @@
+/*
+ * Dynamic Network Directory Service
+ * Copyright (C) 2010-2012 Nicolas Bouliane
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; version 2
+ * of the License.
+ *
+ */
+
 #ifndef DND_SESSION_H
 #define DND_SESSION_H
 
+#include <dnds/net.h>
 #include "context.h"
 
-typedef struct session {
+#define SESSION_STATUS_AUTHED           0x1
+#define SESSION_STATUS_NOT_AUTHED       0x2
+#define SESSION_STATUS_WAIT_STEPUP      0x4
 
-	char *ip;
-	uint8_t auth;
+struct session {
 
-	int id;
-	char ip_local[16];
-	uint8_t tun_mac_addr[6];
+	uint8_t status;
+
+	char *ip;	/* Client tunnel IP address */
+
+	uint32_t id;
+	char ip_local[INET_ADDRSTRLEN];
+	uint8_t tun_mac_addr[ETHER_ADDR_LEN];
 
 	netc_t *netc;
 	struct context *context;
 
-	// FIXME should we support a mac list ?
-	uint8_t mac_addr[6];
+	/* should we support a mac list XXX */
+	uint8_t mac_addr[ETHER_ADDR_LEN];
 
 	struct session *next;
 	struct session *prev;
 
-} session_t;
+};
 
-session_t *session_new();
-void session_free(session_t *session);
-void session_terminate(session_t *session);
+struct session *session_new();
+void session_free(struct session *session);
+void session_terminate(struct session *session);
 void *session_itemdup(const void *item);
 void session_itemrel(void *item);
 
-#endif /* DND_SESSION_H */
+#endif
