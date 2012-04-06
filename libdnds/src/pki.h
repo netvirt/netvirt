@@ -1,5 +1,16 @@
+/*
+ * Dynamic Network Directory Service
+ * Copyright (C) 2010-2012 Nicolas Bouliane
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; version 2
+ * of the License.
+ *
+ */
+
 #ifndef DNDS_PKI_H
-#define DNDS_PKI_H 1
+#define DNDS_PKI_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -52,4 +63,4 @@ passport_t *pki_passport_load_from_file(char *certificate_filename,
 					char *privatekey_filename,
 					char *trusted_authority_filename);
 
-#endif // DNDS_PKI_H
+#endif
