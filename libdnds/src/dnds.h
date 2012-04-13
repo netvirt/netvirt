@@ -165,6 +165,10 @@ int P2pResponse_set_result(DNDSMessage_t *msg, e_DNDSResult result);
 int P2pResponse_get_result(DNDSMessage_t *msg, e_DNDSResult *result);
 
 // SearchRequest
+int SearchRequest_set_searchType(DNDSMessage_t *msg, e_SearchType SearchType);
+int SearchRequest_get_searchType(DNDSMessage_t *msg, e_SearchType *SearchType);
+int SearchRequest_set_objectName(DNDSMessage_t *msg, e_ObjectName ObjectName);
+int SearchRequest_get_objectName(DNDSMessage_t *msg, e_ObjectName *ObjectName);
 int SearchRequest_set_objectType(DNDSMessage_t *msg, DNDSObject_PR objType, DNDSObject_t **object);
 int SearchRequest_get_objectType(DNDSMessage_t *msg, DNDSObject_PR *objType);
 int SearchRequest_get_object(DNDSMessage_t *msg, DNDSObject_t **object);
@@ -212,24 +216,23 @@ int IpPool_set_netmask(DNDSObject_t *IpPoolObject, char *netmask);
 int IpPool_get_netmask(DNDSObject_t *IpPoolObject, char *netmask);
 
 // Context
-int Context_set_id(DNDSObject_t *ContextObject, uint32_t id);
-int Context_get_id(DNDSObject_t *ContextObject, uint32_t *id);
-int Context_set_ippoolId(DNDSObject_t *ContextObject, uint32_t ippoolId);
-int Context_get_ippoolId(DNDSObject_t *ContextObject, uint32_t *ippoolId);
-int Context_set_dnsZone(DNDSObject_t *ContextObject, char *dnsZone, size_t length);
-int Context_get_dnsZone(DNDSObject_t *ContextObject, char **dnsZone, size_t *length);
-int Context_set_dnsSerial(DNDSObject_t *ContextObject, uint32_t dnsSerial);
-int Context_get_dnsSerial(DNDSObject_t *ContextObject, uint32_t *dnsSerial);
-int Context_set_vhost(DNDSObject_t *ContextObject, char *vhost, size_t length);
-int Context_get_vhost(DNDSObject_t *ContextObject, char **vhost, size_t *length);
-int Context_set_certificate(DNDSObject_t *ContextObject, char *certificate, size_t length);
-int Context_get_certificate(DNDSObject_t *ContextObject, char **certificate, size_t *length);
-int Context_set_certificateKey(DNDSObject_t *ContextObject, uint8_t *certificateKey, size_t length);
-int Context_get_certificateKey(DNDSObject_t *ContextObject, uint8_t **certificateKey, size_t *length);
-int Context_set_trustList();
-int Context_set_revokeList();
-int Context_set_description(DNDSObject_t *ContextObject, char *description, size_t length);
-int Context_get_description(DNDSObject_t *ContextObject, char **description, size_t *length);
+
+int Context_set_id(DNDSObject_t *object, uint32_t id);
+int Context_get_id(DNDSObject_t *object, uint32_t *id);
+int Context_set_topology(DNDSObject_t *object, e_Topology topology);
+int Context_get_topology(DNDSObject_t *object, e_Topology *topology);
+int Context_set_description(DNDSObject_t *object, char *description, size_t length);
+int Context_get_description(DNDSObject_t *object, char **description, size_t *length);
+int Context_set_network(DNDSObject_t *object, char *network);
+int Context_get_network(DNDSObject_t *object, char *network);
+int Context_set_netmask(DNDSObject_t *object, char *netmask);
+int Context_get_netmask(DNDSObject_t *object, char *netmask);
+int Context_set_serverCert(DNDSObject_t *object, char *serverCert, size_t length);
+int Context_get_serverCert(DNDSObject_t *object, char **serverCert, size_t *length);
+int Context_set_serverPrivkey(DNDSObject_t *object, char *serverPrivkey, size_t length);
+int Context_get_serverPrivkey(DNDSObject_t *object, char **serverPrivkey, size_t *length);
+int Context_set_trustedCert(DNDSObject_t *object, char *trustedCert, size_t length);
+int Context_get_trustedCert(DNDSObject_t *object, char **trustedCert, size_t *length);
 
 // Host
 int Host_set_id(DNDSObject_t *HostObject, uint32_t id);
