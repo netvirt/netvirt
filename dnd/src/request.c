@@ -13,8 +13,9 @@
 #include <dnds/journal.h>
 #include <dnds/pki.h>
 
-#include "request.h"
 #include "context.h"
+#include "request.h"
+#include "session.h"
 
 int authRequest(struct session *session, DNDSMessage_t *req_msg)
 {
@@ -51,6 +52,8 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 	session->context = context_lookup(context_id);
 
 	if (session->context != NULL) {
+
+		session->cert_name = strdup(certName);
 		if (session->netc->security_level == NET_UNSECURE) {
 
 			AuthResponse_set_result(msg, DNDSResult_success);
