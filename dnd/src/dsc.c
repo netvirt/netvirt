@@ -43,29 +43,56 @@ int transmit_peerconnectinfo(e_ConnectState state, char *ipAddress, char *certNa
 static void on_secure(netc_t *netc)
 {
 	JOURNAL_DEBUG("dsc on secure");
+
+	DNDSMessage_t *msg;
+
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+
+	DSMessage_set_seqNumber(msg, 0);
+	DSMessage_set_ackNumber(msg, 0);
+	DSMessage_set_operation(msg, dsop_PR_searchRequest);
+
+	SearchRequest_set_searchType(msg, SearchType_all);
+	SearchRequest_set_objectName(msg, ObjectName_context);
+
+	net_send_msg(netc, msg);
 }
 
-static void handle_contextinfo(netc_t *netc, DNDSMessage_t *msg)
+static void handle_SearchResponse(netc_t *netc, DNDSMessage_t *msg)
 {
+	DNDSObject_t *object;
+	uint32_t count; int ret;
+
 	size_t length;
 	uint32_t id;
+	e_Topology topology;
+	char *desc;
 	char network[INET_ADDRSTRLEN];
 	char netmask[INET_ADDRSTRLEN];
-
-//	ContextInfo_printf(msg);
-	ContextInfo_get_id(msg, &id);
-	ContextInfo_get_network(msg, network);
-	ContextInfo_get_netmask(msg, netmask);
-
 	char *serverCert;
 	char *serverPrivkey;
 	char *trustedCert;
 
-	ContextInfo_get_serverCert(msg, &serverCert, &length);
-	ContextInfo_get_serverPrivkey(msg, &serverPrivkey, &length);
-	ContextInfo_get_trustedCert(msg, &trustedCert, &length);
+	SearchResponse_get_object_count(msg, &count);
+	while (count-- > 0) {
 
-	context_create(id, network, netmask, serverCert, serverPrivkey, trustedCert);
+		ret = SearchResponse_get_object(msg, &object);
+		if (ret == DNDS_success && object != NULL) {
+
+			Context_get_id(object, &id);
+			Context_get_topology(object, &topology);
+			Context_get_description(object, &desc, &length);
+			Context_get_network(object, network);
+			Context_get_netmask(object, netmask);
+			Context_get_serverCert(object, &serverCert, &length);
+			Context_get_serverPrivkey(object, &serverPrivkey, &length);
+			Context_get_trustedCert(object, &trustedCert, &length);
+
+			context_create(id, network, netmask, serverCert, serverPrivkey, trustedCert);
+		}
+	}
 }
 
 static void dispatch_operation(netc_t *netc, DNDSMessage_t *msg)
@@ -77,7 +104,7 @@ static void dispatch_operation(netc_t *netc, DNDSMessage_t *msg)
 	printf("dispatch operation\n");
 //	switch (operation) {
 //	case dsop_PR_contextInfo:
-		handle_contextinfo(netc, msg);
+		handle_SearchResponse(netc, msg);
 //		break;
 //	}
 }
