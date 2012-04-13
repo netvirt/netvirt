@@ -24,6 +24,7 @@ struct session {
 	uint8_t status;
 
 	char *ip;	/* Client tunnel IP address */
+	char *cert_name;
 
 	uint32_t id;
 	char ip_local[INET_ADDRSTRLEN];

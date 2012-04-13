@@ -12,9 +12,9 @@
 
 /* Including external dependencies */
 #include <NativeInteger.h>
+#include "Topology.h"
 #include <PrintableString.h>
-#include <BIT_STRING.h>
-#include <NULL.h>
+#include <OCTET_STRING.h>
 #include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
@@ -24,15 +24,13 @@ extern "C" {
 /* Context */
 typedef struct Context {
 	unsigned long	 id;
-	unsigned long	 ippoolId;
-	PrintableString_t	*dnsZone	/* OPTIONAL */;
-	unsigned long	*dnsSerial	/* OPTIONAL */;
-	PrintableString_t	*vhost	/* OPTIONAL */;
-	PrintableString_t	*certificate	/* OPTIONAL */;
-	BIT_STRING_t	*certificateKey	/* OPTIONAL */;
-	NULL_t	*trustList	/* OPTIONAL */;
-	NULL_t	*revokeList	/* OPTIONAL */;
+	Topology_t	 topology;
 	PrintableString_t	*description	/* OPTIONAL */;
+	OCTET_STRING_t	 network;
+	OCTET_STRING_t	 netmask;
+	PrintableString_t	 serverCert;
+	PrintableString_t	 serverPrivkey;
+	PrintableString_t	 trustedCert;
 	/*
 	 * This type is extensible,
 	 * possible extensions are below.
@@ -44,8 +42,6 @@ typedef struct Context {
 
 /* Implementation */
 /* extern asn_TYPE_descriptor_t asn_DEF_id_2;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_ippoolId_3;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_dnsSerial_5;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_Context;
 
 #ifdef __cplusplus
