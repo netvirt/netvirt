@@ -56,9 +56,6 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 	dsop_PR operation;
 	DSMessage_get_operation(msg, &operation);
 
-	printf("operation %i\n", operation);
-	printf("peerConnectInfo %i\n", dsop_PR_peerConnectInfo);
-	printf("authRequest %i\n", dsop_PR_authRequest);
 	switch (operation) {
 
 		case dsop_PR_peerConnectInfo:
@@ -101,45 +98,6 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 static void on_secure(netc_t *netc)
 {
 	printf("on secure!\n");
-
-	char *id;
-	char *topology_id;
-	char *description;
-	char *network;
-	char *netmask;
-	char *serverCert;
-	char *serverPrivkey;
-	char *trustedCert;
-
-	dao_fetch_context(&id,
-			&topology_id,
-			&description,
-			&network,
-			&netmask,
-			&serverCert,
-			&serverPrivkey,
-			&trustedCert);
-
-
-	DNDSMessage_t *msg;
-	DNDSMessage_new(&msg);
-	DNDSMessage_set_channel(msg, 0);
-	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
-
-	DSMessage_set_seqNumber(msg, 0);
-	DSMessage_set_ackNumber(msg, 1);
-	DSMessage_set_operation(msg, dsop_PR_contextInfo);
-
-        ContextInfo_set_id(msg, atoi(id));
-        ContextInfo_set_topology(msg, Topology_mesh);
-        ContextInfo_set_description(msg, description, strlen(description));
-        ContextInfo_set_network(msg, network);
-        ContextInfo_set_netmask(msg, netmask);
-        ContextInfo_set_serverCert(msg, serverCert, strlen(serverCert));
-        ContextInfo_set_serverPrivkey(msg, serverPrivkey, strlen(serverPrivkey));
-        ContextInfo_set_trustedCert(msg, trustedCert, strlen(trustedCert));
-
-	net_send_msg(netc, msg);
 }
 
 static void on_input(netc_t *netc)

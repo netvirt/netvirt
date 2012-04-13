@@ -1,7 +1,7 @@
 #
 # Makefile.am
 #
-SUBDIRS = src tools ## database
+SUBDIRS = src
 dsd.conf:
 	dsd.conf
 dist_sysconf_DATA = dsd.conf
