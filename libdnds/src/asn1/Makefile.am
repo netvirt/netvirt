@@ -10,13 +10,13 @@ libasn1_la_SOURCES=	\
 	DNMessage.c	\
 	DSMessage.c	\
 	DNDSObject.c	\
+	ObjectName.c	\
 	AuthRequest.c	\
 	AuthResponse.c	\
 	P2pRequest.c	\
 	P2pResponse.c	\
 	P2pSide.c	\
 	ConnectState.c	\
-	ContextInfo.c	\
 	PeerConnectInfo.c	\
 	AddRequest.c	\
 	AddResponse.c	\
@@ -28,6 +28,7 @@ libasn1_la_SOURCES=	\
 	NetinfoResponse.c	\
 	SearchRequest.c	\
 	SearchResponse.c	\
+	SearchType.c	\
 	TerminateRequest.c	\
 	Topology.c	\
 	Acl.c	\
@@ -46,13 +47,13 @@ libasn1_include_HEADERS=	\
 	DNMessage.h	\
 	DSMessage.h	\
 	DNDSObject.h	\
+	ObjectName.h	\
 	AuthRequest.h	\
 	AuthResponse.h	\
 	P2pRequest.h	\
 	P2pResponse.h	\
 	P2pSide.h	\
 	ConnectState.h	\
-	ContextInfo.h	\
 	PeerConnectInfo.h	\
 	AddRequest.h	\
 	AddResponse.h	\
@@ -64,6 +65,7 @@ libasn1_include_HEADERS=	\
 	NetinfoResponse.h	\
 	SearchRequest.h	\
 	SearchResponse.h	\
+	SearchType.h	\
 	TerminateRequest.h	\
 	Topology.h	\
 	Acl.h	\
