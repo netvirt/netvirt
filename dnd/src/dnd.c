@@ -141,7 +141,7 @@ void transmit_netinfo_response(netc_t *netc)
 	net_send_msg(session->netc, msg);
 
 	transmit_peerconnectinfo(ConnectState_connected,
-				session->ip, "demo");
+				session->ip, session->cert_name);
 }
 
 void handle_netinfo_request(struct session *session, DNDSMessage_t *msg)
@@ -292,7 +292,7 @@ static void on_disconnect(netc_t *netc)
 	}
 
 	transmit_peerconnectinfo(ConnectState_disconnected,
-				session->ip, "demo");
+				session->ip, session->cert_name);
 
 	session_free(session);
 

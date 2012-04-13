@@ -53,7 +53,6 @@ DSMessage ::= SEQUENCE {
 	ackNumber	INTEGER (0..uint32max),
 	dsop		CHOICE	{
 		peerConnectInfo		PeerConnectInfo,
-		contextInfo		ContextInfo,
 		authRequest		AuthRequest,
 		authResponse		AuthResponse,
 		addRequest		AddRequest,
@@ -79,6 +78,19 @@ DNDSObject ::= CHOICE {
 	peer		Peer,
 	permission	Permission,
 	user		User,
+	...
+}
+
+ObjectName ::= ENUMERATED {
+	acl		(1),
+	aclgroup	(2),
+	ippool		(3),
+	context		(4),
+	host		(5),
+	node		(6),
+	peer		(7),
+	permission	(8),
+	user		(9),
 	...
 }
 
@@ -115,25 +127,6 @@ ConnectState ::= ENUMERATED {
 	...
 }
 
-Topology ::= ENUMERATED {
-	mesh		(1),
-	hubspoke	(2),
-	gateway		(3),
-	...
-}
-
-ContextInfo ::= SEQUENCE {
-	id		INTEGER (0..uint32max),
-	topology	Topology,
-	description	PrintableString SIZE((1..256)) OPTIONAL,
-	network		OCTET STRING SIZE((4..16)),
-	netmask		OCTET STRING SIZE((4..16)),
-	serverCert	PrintableString,
-	serverPrivkey	PrintableString,
-	trustedCert	PrintableString,
-	...
-}
-
 PeerConnectInfo ::= SEQUENCE {
 	certName	IA5String (SIZE(1..256)),
 	ipAddr		OCTET STRING (SIZE(4..16)),
@@ -163,11 +156,26 @@ NetinfoResponse ::= SEQUENCE {
 	...
 }
 
+SearchType ::= ENUMERATED {
+	all		(1),
+	sequence	(2),
+	object		(3),
+	...
+}
 
-SearchRequest ::= DNDSObject
+SearchRequest ::= SEQUENCE {
+	searchtype	SearchType,
+	objectname	ObjectName,
+--	object		DNDSObject OPTIONAL,
+--	from		INTEGER (0..uint32max) OPTIONAL,
+--	to		INTEGER (0..uint32max) OPTIONAL,
+	...
+}
+
 SearchResponse ::= SEQUENCE {
 	dndsResult	DNDSResult,
-	objects		SEQUENCE OF DNDSObject
+	objects		SEQUENCE OF DNDSObject,
+	...
 }
 
 TerminateRequest ::= NULL
@@ -196,17 +204,22 @@ IpPool ::= SEQUENCE {
 	...
 }
 
+Topology ::= ENUMERATED {
+	mesh		(1),
+	hubspoke	(2),
+	gateway		(3),
+	...
+}
+
 Context ::= SEQUENCE {
 	id		INTEGER (0..uint32max),
-	ippoolId	INTEGER (0..uint32max),
-	dnsZone		PrintableString (SIZE(1..128)) OPTIONAL,
-	dnsSerial	INTEGER (0..uint32max) OPTIONAL,
-	vhost		PrintableString (SIZE(1..128)) OPTIONAL,
-	certificate	PrintableString OPTIONAL,
-	certificateKey	BIT STRING OPTIONAL,
-	trustList	NULL OPTIONAL,
-	revokeList	NULL OPTIONAL,
+	topology	Topology,
 	description	PrintableString SIZE((1..256)) OPTIONAL,
+	network		OCTET STRING SIZE((4..16)),
+	netmask		OCTET STRING SIZE((4..16)),
+	serverCert	PrintableString,
+	serverPrivkey	PrintableString,
+	trustedCert	PrintableString,
 	...
 }
 
