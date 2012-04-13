@@ -178,22 +178,90 @@ void test_AddResponse()
 	DNDSMessage_del(msg);
 }
 
-void show_ContextInfo()
+void show_SearchResponse_context()
 {
 	DNDSMessage_t *msg;
 
 	msg = decode();
 	DNDSMessage_printf(msg);
 	DSMessage_printf(msg);
-	ContextInfo_printf(msg);
+	SearchResponse_printf(msg);
+
+	DNDSObject_t *obj;
+	uint32_t count; int ret;
+
+	SearchResponse_get_object_count(msg, &count);
+
+	while (count-- > 0) {
+
+		ret = SearchResponse_get_object(msg, &obj);
+		if (ret == DNDS_success && obj != NULL) {
+			DNDSObject_printf(obj);
+		}
+	}
 }
 
-void test_ContextInfo()
+void test_SearchResponse_context()
 {
-	/// Building a ContextInfo ///
+	/// Building a SearchResponse
+
+	DNDSMessage_t *msg;	// A DNDS Message
+
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+
+	DSMessage_set_seqNumber(msg, 0);
+	DSMessage_set_ackNumber(msg, 400);
+	DSMessage_set_operation(msg, dsop_PR_searchResponse);
+
+	SearchResponse_set_result(msg, DNDSResult_success);
+
+	DNDSObject_t *objContext;
+	DNDSObject_new(&objContext);
+	DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
+
+	Context_set_id(objContext, 10);
+	Context_set_topology(objContext, Topology_mesh);
+	Context_set_description(objContext, "home network", 12);
+	Context_set_network(objContext, "44.128.0.0");
+	Context_set_netmask(objContext, "255.255.0.0");
+	Context_set_serverCert(objContext, "serverCert", 10);
+	Context_set_serverPrivkey(objContext, "serverPrivkey", 13);
+	Context_set_trustedCert(objContext, "trustedCert", 11);
+
+	SearchResponse_add_object(msg, objContext);
+
+	/// Encoding part
+
+	asn_enc_rval_t ec;	// Encoder return value
+	FILE *fp = fopen("dnds.ber", "wb"); // BER output
+	ec = der_encode(&asn_DEF_DNDSMessage, msg, write_out, fp);
+	fclose(fp);
+
+	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
+
+	DNDSMessage_del(msg);
+
+
+}
+
+void show_SearchRequest_context()
+{
+	DNDSMessage_t *msg;
+
+	msg = decode();
+	DNDSMessage_printf(msg);
+	DSMessage_printf(msg);
+	SearchRequest_printf(msg);
+}
+
+void test_SearchRequest_context()
+{
+	/// Building a SearchRequest context ///
 	int ret;
 
-	DNDSMessage_t *msg;
+	DNDSMessage_t *msg;	// a DNDS Message
 
 	DNDSMessage_new(&msg);
 	DNDSMessage_set_channel(msg, 0);
@@ -201,16 +269,10 @@ void test_ContextInfo()
 
 	DSMessage_set_seqNumber(msg, 800);
 	DSMessage_set_ackNumber(msg, 0);
-	DSMessage_set_operation(msg, dsop_PR_contextInfo);
+	DSMessage_set_operation(msg, dsop_PR_searchRequest);
 
-	ContextInfo_set_id(msg, 1);
-	ContextInfo_set_topology(msg, Topology_mesh);
-	ContextInfo_set_description(msg, "Demo", 4);
-	ContextInfo_set_network(msg, "44.1.0.0");
-	ContextInfo_set_netmask(msg, "255.255.0.0");
-	ContextInfo_set_serverCert(msg, "CERTIFICATE SERVER", 17);
-	ContextInfo_set_serverPrivkey(msg, "PRIVATEKEY SERVER", 17) ;
-	ContextInfo_set_trustedCert(msg, "CERTIFICATE TRUSTED", 17);
+	SearchRequest_set_searchType(msg, SearchType_all);
+	SearchRequest_set_objectName(msg, ObjectName_context);
 
 	/// Encoding part
 
@@ -765,7 +827,7 @@ void show_SearchRequest()
 	SearchRequest_printf(msg);
 
 	DNDSObject_t *obj;
-	SearchRequest_get_object(msg, &obj);
+	//SearchRequest_get_object(msg, &obj);
 	DNDSObject_printf(obj);
 }
 
@@ -784,7 +846,9 @@ void test_SearchRequest()
 	DSMessage_set_ackNumber(msg, 0);
 	DSMessage_set_operation(msg, dsop_PR_searchRequest);
 
-	SearchRequest_set_objectType(msg, DNDSObject_PR_ippool, &objIpPool);
+	SearchRequest_set_searchType(msg, SearchType_all);
+	SearchRequest_set_objectName(msg, ObjectName_context);
+//	SearchRequest_set_objectType(msg, DNDSObject_PR_ippool, &objIpPool);
 
 	IpPool_set_id(objIpPool, 1);
 	IpPool_set_ipLocal(objIpPool, "192.168.0.1");
@@ -885,6 +949,7 @@ void test_SearchResponse()
 	DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
 
 	Context_set_id(objContext, 40);
+	/*
 	Context_set_ippoolId(objContext, 20);
 	Context_set_dnsZone(objContext, "dnsZone", 7);
 	Context_set_dnsSerial(objContext, 666);
@@ -892,6 +957,7 @@ void test_SearchResponse()
 	Context_set_certificate(objContext, "certificate", 11);
 	Context_set_certificateKey(objContext, "key", 3);
 	Context_set_description(objContext, "desc", 4);
+	*/
 
 	SearchResponse_add_object(msg, objContext);
 
@@ -1014,8 +1080,12 @@ void test_TerminateRequest()
 
 int main()
 {
-	test_ContextInfo();
-	show_ContextInfo();
+	test_SearchRequest_context();
+	show_SearchRequest_context();
+
+	test_SearchResponse_context();
+	show_SearchResponse_context();
+
 /*
 	test_PeerConnectInfo();
 	show_PeerConnectInfo();
@@ -1073,4 +1143,5 @@ int main()
 	show_SearchResponse();
 */
 //	test_TerminateRequest();
+
 }

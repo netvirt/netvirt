@@ -314,356 +314,6 @@ int DNDSObject_get_objectType(DNDSObject_t *object, DNDSObject_PR *objType)
 	return DNDS_success;
 }
 
-// ContextInfo
-int ContextInfo_set_id(DNDSMessage_t *msg, uint32_t id)
-{
-	if (msg == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dsm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
-		return DNDS_invalid_op;
-	}
-
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.id = id;
-
-	return DNDS_success;
-}
-
-int ContextInfo_get_id(DNDSMessage_t *msg, uint32_t *id)
-{
-	if (msg == NULL || id == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dsm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
-		return DNDS_invalid_op;
-	}
-
-	*id = msg->pdu.choice.dsm.dsop.choice.contextInfo.id;
-
-	return DNDS_success;
-}
-
-int ContextInfo_set_topology(DNDSMessage_t *msg, e_Topology topology)
-{
-	if (msg == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dsm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
-		return DNDS_invalid_op;
-	}
-
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.topology = topology;
-
-	return DNDS_success;
-}
-
-int ContextInfo_get_topology(DNDSMessage_t *msg, e_Topology *topology)
-{
-	if (msg == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dsm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
-		return DNDS_invalid_op;
-	}
-
-	*topology = msg->pdu.choice.dsm.dsop.choice.contextInfo.topology;
-
-	return DNDS_success;
-}
-
-int ContextInfo_set_description(DNDSMessage_t *msg, const char *description, size_t length)
-{
-	if (msg == NULL || description == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dsm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
-		return DNDS_invalid_op;
-	}
-
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.description = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (msg->pdu.choice.dsm.dsop.choice.contextInfo.description == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.description->buf = (uint8_t *)strdup(description);
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.description->size = length;
-
-	return DNDS_success;
-}
-
-int ContextInfo_get_description(DNDSMessage_t *msg, char **description, size_t *length)
-{
-	if (msg == NULL || description == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dsm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
-		return DNDS_invalid_op;
-	}
-
-	*description = (char *)msg->pdu.choice.dsm.dsop.choice.contextInfo.description->buf;
-	*length = msg->pdu.choice.dsm.dsop.choice.contextInfo.description->size;
-
-	return DNDS_success;
-}
-
-int ContextInfo_set_network(DNDSMessage_t *msg, char *network)
-{
-	if (msg == NULL || network == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dsm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
-		return DNDS_invalid_op;
-	}
-
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.network.buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
-	if (msg->pdu.choice.dsm.dsop.choice.contextInfo.network.buf == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	int ret;
-	ret = inet_pton(AF_INET, network, msg->pdu.choice.dsm.dsop.choice.contextInfo.network.buf);
-	if (ret != 1) {
-		return DNDS_conversion_failed;
-	}
-
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.network.size = sizeof(struct in_addr);
-
-	return DNDS_success;
-}
-
-int ContextInfo_get_network(DNDSMessage_t *msg, char *network)
-{
-	if (msg == NULL || network == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dsm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
-		return DNDS_invalid_op;
-	}
-
-	const char *ret;
-	ret = inet_ntop(AF_INET, msg->pdu.choice.dsm.dsop.choice.contextInfo.network.buf, network, INET_ADDRSTRLEN);
-	if (ret == NULL) {
-		return DNDS_conversion_failed;
-	}
-
-	return DNDS_success;
-}
-
-int ContextInfo_set_netmask(DNDSMessage_t *msg, char *netmask)
-{
-	if (msg == NULL || netmask == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dsm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
-		return DNDS_invalid_op;
-	}
-
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.netmask.buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
-	if (msg->pdu.choice.dsm.dsop.choice.contextInfo.netmask.buf == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	int ret;
-	ret = inet_pton(AF_INET, netmask, msg->pdu.choice.dsm.dsop.choice.contextInfo.netmask.buf);
-	if (ret != 1) {
-		return DNDS_conversion_failed;
-	}
-
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.netmask.size = sizeof(struct in_addr);
-
-	return DNDS_success;
-}
-
-int ContextInfo_get_netmask(DNDSMessage_t *msg, char *netmask)
-{
-	if (msg == NULL || netmask == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dsm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
-		return DNDS_invalid_op;
-	}
-
-	const char *ret;
-	ret = inet_ntop(AF_INET, msg->pdu.choice.dsm.dsop.choice.contextInfo.netmask.buf, netmask, INET_ADDRSTRLEN);
-	if (ret == NULL) {
-		return DNDS_conversion_failed;
-	}
-
-	return DNDS_success;
-}
-
-
-int ContextInfo_set_serverCert(DNDSMessage_t *msg, const char *serverCert, size_t length)
-{
-	if (msg == NULL || serverCert == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dsm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
-		return DNDS_invalid_op;
-	}
-
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.serverCert.buf = (uint8_t *)strdup(serverCert);
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.serverCert.size = length;
-
-	return DNDS_success;
-}
-
-int ContextInfo_get_serverCert(DNDSMessage_t *msg, char **serverCert, size_t *length)
-{
-	if (msg == NULL || serverCert == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dsm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
-		return DNDS_invalid_op;
-	}
-
-	*serverCert = (char *)msg->pdu.choice.dsm.dsop.choice.contextInfo.serverCert.buf;
-	*length = msg->pdu.choice.dsm.dsop.choice.contextInfo.serverCert.size;
-
-	return DNDS_success;
-}
-
-int ContextInfo_set_serverPrivkey(DNDSMessage_t *msg, const char *serverPrivkey, size_t length)
-{
-	if (msg == NULL || serverPrivkey == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dsm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
-		return DNDS_invalid_op;
-	}
-
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.serverPrivkey.buf = (uint8_t *)strdup(serverPrivkey);
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.serverPrivkey.size = length;
-
-	return DNDS_success;
-}
-
-int ContextInfo_get_serverPrivkey(DNDSMessage_t *msg, char **serverPrivkey, size_t *length)
-{
-	if (msg == NULL || serverPrivkey == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dsm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
-		return DNDS_invalid_op;
-	}
-
-	*serverPrivkey = (char *)msg->pdu.choice.dsm.dsop.choice.contextInfo.serverPrivkey.buf;
-	*length = msg->pdu.choice.dsm.dsop.choice.contextInfo.serverPrivkey.size;
-
-	return DNDS_success;
-}
-
-int ContextInfo_set_trustedCert(DNDSMessage_t *msg, const char *trustedCert, size_t length)
-{
-	if (msg == NULL || trustedCert == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dsm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
-		return DNDS_invalid_op;
-	}
-
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.trustedCert.buf = (uint8_t *)strdup(trustedCert);
-	msg->pdu.choice.dsm.dsop.choice.contextInfo.trustedCert.size = length;
-
-	return DNDS_success;
-}
-
-
-int ContextInfo_get_trustedCert(DNDSMessage_t *msg, char **trustedCert, size_t *length)
-{
-	if (msg == NULL || trustedCert == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.present != pdu_PR_dsm) {
-		return DNDS_invalid_pdu;
-	}
-
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_contextInfo) {
-		return DNDS_invalid_op;
-	}
-
-	*trustedCert = (char *)msg->pdu.choice.dsm.dsop.choice.contextInfo.trustedCert.buf;
-	*length = msg->pdu.choice.dsm.dsop.choice.contextInfo.trustedCert.size;
-
-	return DNDS_success;
-}
-
 // PeerConnectInfo
 int PeerConnectInfo_set_certName(DNDSMessage_t *msg, char *name, size_t length)
 {
@@ -1714,6 +1364,82 @@ int P2pResponse_get_result(DNDSMessage_t *msg, e_DNDSResult *result)
 	return DNDS_success;
 }
 // SearchRequest
+int SearchRequest_set_searchType(DNDSMessage_t *msg, e_SearchType SearchType)
+{
+	if (msg == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_searchRequest) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.searchRequest.searchtype = SearchType;
+
+	return DNDS_success;
+}
+
+int SearchRequest_get_searchType(DNDSMessage_t *msg, e_SearchType *SearchType)
+{
+	if (msg == NULL || SearchType == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_searchRequest) {
+		return DNDS_invalid_op;
+	}
+
+	*SearchType = msg->pdu.choice.dsm.dsop.choice.searchRequest.searchtype;
+
+	return DNDS_success;
+}
+
+int SearchRequest_set_objectName(DNDSMessage_t *msg, e_ObjectName ObjectName)
+{
+	if (msg == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_searchRequest) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.searchRequest.objectname = ObjectName;
+
+	return DNDS_success;
+}
+
+int SearchRequest_get_objectName(DNDSMessage_t *msg, e_ObjectName *ObjectName)
+{
+	if (msg == NULL || ObjectName == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_searchRequest) {
+		return DNDS_invalid_op;
+	}
+
+	*ObjectName = msg->pdu.choice.dsm.dsop.choice.searchRequest.objectname;
+
+	return DNDS_success;
+}
+#if 0
 int SearchRequest_set_objectType(DNDSMessage_t *msg, DNDSObject_PR objType, DNDSObject_t **object)
 {
 	if (msg == NULL || object == NULL) {
@@ -1728,8 +1454,8 @@ int SearchRequest_set_objectType(DNDSMessage_t *msg, DNDSObject_PR objType, DNDS
 		return DNDS_invalid_op;
 	}
 
-	msg->pdu.choice.dsm.dsop.choice.searchRequest.present = objType;
-	*object = &msg->pdu.choice.dsm.dsop.choice.searchRequest;
+	//msg->pdu.choice.dsm.dsop.choice.searchRequest.object.present = objType;
+	//*object = &msg->pdu.choice.dsm.dsop.choice.searchRequest.object;
 
 	return DNDS_success;
 }
@@ -1748,7 +1474,7 @@ int SearchRequest_get_objectType(DNDSMessage_t *msg, DNDSObject_PR *objType)
 		return DNDS_invalid_op;
 	}
 
-	*objType = msg->pdu.choice.dsm.dsop.choice.searchRequest.present;
+	//*objType = msg->pdu.choice.dsm.dsop.choice.searchRequest.object.present;
 
 	return DNDS_success;
 }
@@ -1767,10 +1493,11 @@ int SearchRequest_get_object(DNDSMessage_t *msg, DNDSObject_t **object)
 		return DNDS_invalid_op;
 	}
 
-	*object = &msg->pdu.choice.dsm.dsop.choice.searchRequest;
+	*object = &msg->pdu.choice.dsm.dsop.choice.searchRequest.object;
 
 	return DNDS_success;
 }
+#endif
 
 // SearchResponse
 int SearchResponse_set_result(DNDSMessage_t *msg, e_DNDSResult result)
@@ -2416,7 +2143,7 @@ int Context_get_id(DNDSObject_t *object, uint32_t *id)
 	return DNDS_success;
 }
 
-int Context_set_ippoolId(DNDSObject_t *object, uint32_t ippoolId)
+int Context_set_topology(DNDSObject_t *object, e_Topology topology)
 {
 	if (object == NULL) {
 		return DNDS_invalid_param;
@@ -2426,14 +2153,14 @@ int Context_set_ippoolId(DNDSObject_t *object, uint32_t ippoolId)
 		return DNDS_invalid_object_type;
 	}
 
-	object->choice.context.ippoolId = ippoolId;
+	object->choice.context.topology = topology;
 
 	return DNDS_success;
 }
 
-int Context_get_ippoolId(DNDSObject_t *object, uint32_t *ippoolId)
+int Context_get_topology(DNDSObject_t *object, e_Topology *topology)
 {
-	if (object == NULL || ippoolId == NULL) {
+	if (object == NULL || topology == NULL) {
 		return DNDS_invalid_param;
 	}
 
@@ -2441,227 +2168,9 @@ int Context_get_ippoolId(DNDSObject_t *object, uint32_t *ippoolId)
 		return DNDS_invalid_object_type;
 	}
 
-	*ippoolId = object->choice.context.ippoolId;
+	*topology = object->choice.context.topology;
 
 	return DNDS_success;
-}
-
-int Context_set_dnsZone(DNDSObject_t *object, char *dnsZone, size_t length)
-{
-	if (object == NULL || dnsZone == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_context) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.context.dnsZone = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.context.dnsZone == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.context.dnsZone->buf = (uint8_t *)strdup(dnsZone);
-	object->choice.context.dnsZone->size = length;
-
-	return DNDS_success;
-}
-
-int Context_get_dnsZone(DNDSObject_t *object, char **dnsZone, size_t *length)
-{
-	if (object == NULL || dnsZone == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_context) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.context.dnsZone == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	*dnsZone = (char *)object->choice.context.dnsZone->buf;
-	*length = object->choice.context.dnsZone->size;
-
-	return DNDS_success;
-}
-
-int Context_set_dnsSerial(DNDSObject_t *object, uint32_t dnsSerial)
-{
-	if (object == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_context) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.context.dnsSerial = (unsigned long *)calloc(1, sizeof(unsigned long));
-	if (object->choice.context.dnsSerial == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	*object->choice.context.dnsSerial = dnsSerial;
-
-	return DNDS_success;
-}
-
-int Context_get_dnsSerial(DNDSObject_t *object, uint32_t *dnsSerial)
-{
-	if (object == NULL || dnsSerial == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_context) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.context.dnsSerial == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	*dnsSerial = *object->choice.context.dnsSerial;
-
-	return DNDS_success;
-}
-
-int Context_set_vhost(DNDSObject_t *object, char *vhost, size_t length)
-{
-	if (object == NULL || vhost == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_context) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.context.vhost = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.context.vhost == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.context.vhost->buf = (uint8_t *)strdup(vhost);
-	object->choice.context.vhost->size = length;
-
-	return DNDS_success;
-}
-
-int Context_get_vhost(DNDSObject_t *object, char **vhost, size_t *length)
-{
-	if (object == NULL || vhost == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_context) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.context.vhost == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	*vhost = (char *)object->choice.context.vhost->buf;
-	*length = object->choice.context.vhost->size;
-
-	return DNDS_success;
-}
-
-int Context_set_certificate(DNDSObject_t *object, char *certificate, size_t length)
-{
-	if (object == NULL || certificate == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_context) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.context.certificate = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.context.certificate == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.context.certificate->buf = (uint8_t *)strdup(certificate);
-	object->choice.context.certificate->size = length;
-
-	return DNDS_success;
-}
-
-int Context_get_certificate(DNDSObject_t *object, char **certificate, size_t *length)
-{
-	if (object == NULL || certificate == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_context) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.context.certificateKey == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	*certificate = (char *)object->choice.context.certificate->buf;
-	*length = object->choice.context.certificate->size;
-
-	return DNDS_success;
-}
-
-int Context_set_certificateKey(DNDSObject_t *object, uint8_t *certificateKey, size_t length)
-{
-	if (object == NULL || certificateKey == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_context) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.context.certificateKey = (BIT_STRING_t *)calloc(1, sizeof(BIT_STRING_t));
-	if (object->choice.context.certificateKey == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.context.certificateKey->buf = (uint8_t *)calloc(1, length);
-	if (object->choice.context.certificateKey->buf == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	memmove(object->choice.context.certificateKey->buf, certificateKey, length);
-	object->choice.context.certificateKey->size = length;
-
-	return DNDS_success;
-}
-
-int Context_get_certificateKey(DNDSObject_t *object, uint8_t **certificateKey, size_t *length)
-{
-	if (object == NULL || certificateKey == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_context) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.context.certificateKey == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	*certificateKey = object->choice.context.certificateKey->buf;
-	*length = object->choice.context.certificateKey->size;
-
-	return DNDS_success;
-}
-
-int Context_set_trustList()
-{
-	return 0;
-}
-
-int Context_set_revokeList()
-{
-	return 0;
 }
 
 int Context_set_description(DNDSObject_t *object, char *description, size_t length)
@@ -2701,6 +2210,193 @@ int Context_get_description(DNDSObject_t *object, char **description, size_t *le
 
 	*description = (char *)object->choice.context.description->buf;
 	*length = object->choice.context.description->size;
+
+	return DNDS_success;
+}
+
+
+int Context_set_network(DNDSObject_t *object, char *network)
+{
+	if (object == NULL || network == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_context) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.context.network.buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
+	if (object->choice.context.network.buf == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	int ret;
+	ret = inet_pton(AF_INET, network, object->choice.context.network.buf);
+	if (ret != 1) {
+		return DNDS_conversion_failed;
+	}
+
+	object->choice.context.network.size = sizeof(struct in_addr);
+
+	return DNDS_success;
+}
+
+int Context_get_network(DNDSObject_t *object, char *network)
+{
+	if (object == NULL || network == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_context) {
+		return DNDS_invalid_object_type;
+	}
+
+	const char *ret;
+	ret = inet_ntop(AF_INET, object->choice.context.network.buf, network, INET_ADDRSTRLEN);
+	if (ret == NULL) {
+		return DNDS_conversion_failed;
+	}
+
+	return DNDS_success;
+}
+
+int Context_set_netmask(DNDSObject_t *object, char *netmask)
+{
+	if (object == NULL || netmask == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_context) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.context.netmask.buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
+	if (object->choice.context.netmask.buf == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	int ret;
+	ret = inet_pton(AF_INET, netmask, object->choice.context.netmask.buf);
+	if (ret != 1) {
+		return DNDS_conversion_failed;
+	}
+
+	object->choice.context.netmask.size = sizeof(struct in_addr);
+
+	return DNDS_success;
+}
+
+int Context_get_netmask(DNDSObject_t *object, char *netmask)
+{
+	if (object == NULL || netmask == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_context) {
+		return DNDS_invalid_object_type;
+	}
+
+	const char *ret;
+	ret = inet_ntop(AF_INET, object->choice.context.netmask.buf, netmask, INET_ADDRSTRLEN);
+	if (ret == NULL) {
+		return DNDS_conversion_failed;
+	}
+
+	return DNDS_success;
+}
+
+int Context_set_serverCert(DNDSObject_t *object, char *serverCert, size_t length)
+{
+	if (object == NULL || serverCert == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_context) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.context.serverCert.buf = (uint8_t *)strdup(serverCert);
+	object->choice.context.serverCert.size = length;
+
+	return DNDS_success;
+}
+
+int Context_get_serverCert(DNDSObject_t *object, char **serverCert, size_t *length)
+{
+	if (object == NULL || serverCert == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_context) {
+		return DNDS_invalid_object_type;
+	}
+
+	*serverCert = (char *)object->choice.context.serverCert.buf;
+	*length = object->choice.context.serverCert.size;
+
+	return DNDS_success;
+}
+
+int Context_set_serverPrivkey(DNDSObject_t *object, char *serverPrivkey, size_t length)
+{
+	if (object == NULL || serverPrivkey == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_context) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.context.serverPrivkey.buf = (uint8_t *)strdup(serverPrivkey);
+	object->choice.context.serverPrivkey.size = length;
+
+	return DNDS_success;
+}
+
+int Context_get_serverPrivkey(DNDSObject_t *object, char **serverPrivkey, size_t *length)
+{
+	if (object == NULL || serverPrivkey == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_context) {
+		return DNDS_invalid_object_type;
+	}
+
+	*serverPrivkey = (char *)object->choice.context.serverPrivkey.buf;
+	*length = object->choice.context.serverPrivkey.size;
+
+	return DNDS_success;
+}
+
+int Context_set_trustedCert(DNDSObject_t *object, char *trustedCert, size_t length)
+{
+	if (object == NULL || trustedCert == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_context) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.context.trustedCert.buf = (uint8_t *)strdup(trustedCert);
+	object->choice.context.trustedCert.size = length;
+
+	return DNDS_success;
+}
+
+int Context_get_trustedCert(DNDSObject_t *object, char **trustedCert, size_t *length)
+{
+	if (object == NULL || trustedCert == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_context) {
+		return DNDS_invalid_object_type;
+	}
+
+	*trustedCert = (char *)object->choice.context.trustedCert.buf;
+	*length = object->choice.context.trustedCert.size;
 
 	return DNDS_success;
 }
@@ -3829,6 +3525,44 @@ int User_get_status(DNDSObject_t *object, uint8_t *status)
 	return DNDS_success;
 }
 
+char *ObjectName_str(e_ObjectName objectname)
+{
+	switch (objectname) {
+	case ObjectName_acl:
+		return "acl";
+	case ObjectName_aclgroup:
+		return "aclgroup";
+	case ObjectName_ippool:
+		return "ippool";
+	case ObjectName_context:
+		return "context";
+	case ObjectName_host:
+		return "host";
+	case ObjectName_node:
+		return "node";
+	case ObjectName_peer:
+		return "peer";
+	case ObjectName_permission:
+		return "permission";
+	case ObjectName_user:
+		return "user";
+	}
+	return "Unknown";
+}
+
+char *SearchType_str(e_SearchType searchtype)
+{
+	switch (searchtype) {
+	case SearchType_all:
+		return "all";
+	case SearchType_sequence:
+		return "by sequence";
+	case SearchType_object:
+		return "by object";
+	}
+	return "Unknown";
+}
+
 char *Topology_str(e_Topology topology)
 {
 	switch (topology) {
@@ -4007,44 +3741,6 @@ void AddResponse_printf(DNDSMessage_t *msg)
 	printf("AddResponse> result: %i :: %s\n", result, DNDSResult_str(result));
 }
 
-void ContextInfo_printf(DNDSMessage_t *msg)
-{
-	int ret = 0;
-	size_t length;
-
-	uint32_t id;
-        ret = ContextInfo_get_id(msg, &id);
-	printf("ContextInfo> id(%i): %d\n", ret,  id);
-
-	e_Topology topology;
-        ret = ContextInfo_get_topology(msg, &topology);
-	printf("ContextInfo> topology(%i): %s\n", ret, Topology_str(topology));
-
-	char *desc;
-        ret = ContextInfo_get_description(msg, &desc, &length);
-	printf("ContextInfo> description(%i): %s\n", ret, desc);
-
-	char network[INET_ADDRSTRLEN];
-        ret = ContextInfo_get_network(msg, network);
-	printf("ContextInfo> network(%i): %s\n", ret, network);
-
-	char netmask[INET_ADDRSTRLEN];
-        ret = ContextInfo_get_netmask(msg, netmask);
-	printf("ContextInfo> netmask(%i): %s\n", ret, netmask);
-
-	char *serverCert;
-        ret = ContextInfo_get_serverCert(msg, &serverCert, &length);
-	printf("ContextInfo> serverCert(%i): %s\n", ret, serverCert);
-
-	char *serverPrivkey;
-        ret = ContextInfo_get_serverPrivkey(msg, &serverPrivkey, &length);
-	printf("ContextInfo> serverPrivkey(%i): %s\n", ret, serverPrivkey);
-
-	char *trustedCert;
-        ret = ContextInfo_get_trustedCert(msg, &trustedCert, &length);
-	printf("ContextInfo> trustedCert(%i): %s\n", ret, trustedCert);
-}
-
 void PeerConnectInfo_printf(DNDSMessage_t *msg)
 {
 	int ret = 0;
@@ -4166,9 +3862,15 @@ void NetinfoResponse_printf(DNDSMessage_t *msg)
 
 void SearchRequest_printf(DNDSMessage_t *msg)
 {
-	DNDSObject_PR objType;
-	SearchRequest_get_objectType(msg, &objType);
-	printf("SearchRequest> objType: %i\n", objType);
+	int ret = 0;
+
+	e_SearchType SearchType;
+	ret = SearchRequest_get_searchType(msg, &SearchType);
+	printf("SearchRequest> searchType(%i): %s\n", ret, SearchType_str(SearchType));
+
+	e_ObjectName ObjectName;
+	SearchRequest_get_objectName(msg, &ObjectName);
+	printf("SearchRequest> objectName(%i): %s\n", ret, ObjectName_str(ObjectName));
 }
 
 void SearchResponse_printf(DNDSMessage_t *msg)
@@ -4237,34 +3939,40 @@ void IpPool_printf(DNDSObject_t *object)
 
 void Context_printf(DNDSObject_t *object)
 {
+	int ret = 0;
+	size_t length;
+
 	uint32_t id;
-	Context_get_id(object, &id);
-	printf("Context> id: %i\n", id);
+	ret = Context_get_id(object, &id);
+	printf("Context> id(%i): %i\n", ret, id);
 
-	uint32_t ippoolId;
-	Context_get_ippoolId(object, &ippoolId);
-	printf("Context> ippoolId: %i\n", ippoolId);
+	e_Topology topology;
+        ret = Context_get_topology(object, &topology);
+	printf("Context> topology(%i): %s\n", ret, Topology_str(topology));
 
-	char *dnsZone; size_t length;
-	Context_get_dnsZone(object, &dnsZone, &length);
-	printf("Context> dnsZone: %s\n", dnsZone);
+	char *desc;
+        ret = Context_get_description(object, &desc, &length);
+	printf("Context> description(%i): %s\n", ret, desc);
 
-	uint32_t dnsSerial;
-	Context_get_dnsSerial(object, &dnsSerial);
-	printf("Context> dnsSerial: %i\n", dnsSerial);
+	char network[INET_ADDRSTRLEN];
+        ret = Context_get_network(object, network);
+	printf("Context> network(%i): %s\n", ret, network);
 
-	char *vhost;
-	Context_get_vhost(object, &vhost, &length);
-	printf("Context> vhost: %s\n", vhost);
+	char netmask[INET_ADDRSTRLEN];
+        ret = Context_get_netmask(object, netmask);
+	printf("Context> netmask(%i): %s\n", ret, netmask);
 
-	char *certificate;
-	Context_get_certificate(object, &certificate, &length);
-	printf("Context> certificate: %s\n", certificate);
+	char *serverCert;
+        ret = Context_get_serverCert(object, &serverCert, &length);
+	printf("Context> serverCert(%i): %s\n", ret, serverCert);
 
-	uint8_t *certificateKey;
-	Context_get_certificateKey(object, &certificateKey, &length);
-	printf("Context> certificateKey: ");
-	int i; for (i = 0; i < length; i++) { printf("%x", certificateKey[i]); }; printf("\n");
+	char *serverPrivkey;
+        ret = Context_get_serverPrivkey(object, &serverPrivkey, &length);
+	printf("Context> serverPrivkey(%i): %s\n", ret, serverPrivkey);
+
+	char *trustedCert;
+        ret = Context_get_trustedCert(object, &trustedCert, &length);
+	printf("Context> trustedCert(%i): %s\n", ret, trustedCert);
 }
 
 void Host_printf(DNDSObject_t *object)
