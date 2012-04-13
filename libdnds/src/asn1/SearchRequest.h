@@ -11,24 +11,29 @@
 #include <asn_application.h>
 
 /* Including external dependencies */
-#include "DNDSObject.h"
+#include "SearchType.h"
+#include "ObjectName.h"
+#include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* SearchRequest */
-typedef DNDSObject_t	 SearchRequest_t;
+typedef struct SearchRequest {
+	SearchType_t	 searchtype;
+	ObjectName_t	 objectname;
+	/*
+	 * This type is extensible,
+	 * possible extensions are below.
+	 */
+	
+	/* Context for parsing across buffer boundaries */
+	asn_struct_ctx_t _asn_ctx;
+} SearchRequest_t;
 
 /* Implementation */
 extern asn_TYPE_descriptor_t asn_DEF_SearchRequest;
-asn_struct_free_f SearchRequest_free;
-asn_struct_print_f SearchRequest_print;
-asn_constr_check_f SearchRequest_constraint;
-ber_type_decoder_f SearchRequest_decode_ber;
-der_type_encoder_f SearchRequest_encode_der;
-xer_type_decoder_f SearchRequest_decode_xer;
-xer_type_encoder_f SearchRequest_encode_xer;
 
 #ifdef __cplusplus
 }
