@@ -381,6 +381,8 @@ void cli_server_fini(cli_server_t *server)
 	if (server->socket)
 		cli_socket_close(server->socket);
 
+	cli_free_entry_all(server->command_list);
+
 	free(server);
 }
 
