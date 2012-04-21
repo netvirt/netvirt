@@ -14,6 +14,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <unistd.h>
 
 #include "ion.h"
 #include "journal.h"
@@ -110,7 +111,7 @@ static int remote_handler(usocket_t *sck, int flag)
 
 static int remote_accept(usocket_t *sck)
 {
-	int sunaddr_len;
+	socklen_t sunaddr_len;
 	struct sockaddr_un sunaddr;
 	usocket_t *remote;
 
