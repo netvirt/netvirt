@@ -38,11 +38,14 @@ enum CLIARGSPE {
 typedef struct cli_entry cli_entry_t;
 typedef struct cli_list cli_list_t;
 
+#define CLICMDSIZ 32
+#define CLIARGSSIZ 128
 #define CLIARGVSIZ 12
 typedef struct {
 	int fd;				/* remote socket file descriptor */
 	FILE *out;			/* opened socket stream to remote */
 	cli_list_t *command_list;	/* command list head */
+	char args[CLIARGSSIZ];		/* arguments slot */
 	char *argv[CLIARGVSIZ];		/* argument line */
 	int argc;			/* argument count */
 	int perror;			/* parsing error */
@@ -92,8 +95,6 @@ typedef struct {
 } cli_console_t;
 
 #define CLI_SUMMARY_VERSION 1
-#define CLICMDSIZ 32
-#define CLIARGSSIZ 128
 typedef struct {
 	uint8_t version;			/* version */
 	uint8_t retval;				/* command return value */
