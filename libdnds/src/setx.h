@@ -25,7 +25,7 @@
 static inline void setx_begin(FILE *buf) {
 	fputc(STX, buf);
 }
-static inline int setx_end(FILE *buf) {
+static inline void setx_end(FILE *buf) {
 	fputc(EOL, buf);
 	fputc(ETX, buf);
 	fflush(buf);
