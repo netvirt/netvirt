@@ -8,7 +8,6 @@
  * of the License.
  *
  */
-#include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,12 +43,13 @@ static usocket_handler_t cli_console_handler = {
 	.close = close_socket,
 };
 
-static int args_process(char *s, cli_args_t *a)
+static int args_process(cli_args_t *args)
 {
 	int blank = 1, quote = 0;
 	int pos = 0, count = 0;
+	char *s = args->args;
 
-	a->perror = 0;
+	args->perror = 0;
 
 	/* skip leading blank */
 	while(isblank(*s)) {
@@ -61,8 +61,8 @@ static int args_process(char *s, cli_args_t *a)
 		pos++;
 		if (count >= CLIARGVSIZ) {
 			/* parsing error, max arguments reached */
-			a->perror = CLIARGPEMAR;
-			a->pe_near = pos;
+			args->perror = CLIARGPEMAR;
+			args->pe_near = pos;
 			return -1;
 		}
 
@@ -79,12 +79,12 @@ static int args_process(char *s, cli_args_t *a)
 			quote = 1;
 		} else if (*s == '"' && !blank) {
 			/* parsing error, no blank before quote */
-			a->perror = CLIARGPEBBQ;
-			a->pe_near = pos;
+			args->perror = CLIARGPEBBQ;
+			args->pe_near = pos;
 			return -1;
 		} else if (blank) {
 			count++;
-			a->argv[count] = s;
+			args->argv[count] = s;
 			blank = 0;
 		}
 		s++;
@@ -92,120 +92,130 @@ static int args_process(char *s, cli_args_t *a)
 
 	if (quote) {
 		/* parsing error, no end quote */
-		a->perror = CLIARGPENEQ;
-		a->pe_near = pos;
+		args->perror = CLIARGPENEQ;
+		args->pe_near = pos;
 		return -1;
 	}
 
 	return count;
 }
 
-static void close_socket(usocket_t *su)
+static void close_socket(usocket_t *sck)
 {
-	assert(su != NULL);
-	usocket_close(su);
+	if (sck)
+		usocket_close(sck);
 }
 
-static void server_read_socket(usocket_t *su)
+static void server_read_socket(usocket_t *sck)
 {
 	cli_server_t *server;
 	cli_summary_t *cs;
 	cli_args_t args = { 0 };
 
-	assert(su);
-	server = su->udata;
-	cs = cli_read_summary(su->buf);
+	if (!sck) {
+		JOURNAL_DEBUG("cli]> %s called with NULL pointer :: %s:%i",
+		    __func__, __FILE__, __LINE__);
+		return;
+	}
+
+	server = sck->udata;
+	cs = cli_read_summary(sck->buf);
 	if (cs) {
-		args.fd = su->fd;
-		args.out = su->buf;
+		args.fd = sck->fd;
+		args.out = sck->buf;
 		args.command_list = server->command_list;
 		cs->retval = cli_exec(cs, &args, server->command_list);
-		cli_send_summary(su->buf, cs);
+		cli_send_summary(sck->buf, cs);
 		free(cs);
 	}
 }
 
-static void console_read_socket(usocket_t *su)
+static void console_read_socket(usocket_t *sck)
 {
 	JOURNAL_ERR("cli]> caller must register socket handlers :: %s:%i",
 		__FILE__, __LINE__);
 }
 
-static int handle_help(cli_entry_t *e, int cmd, cli_args_t *a)
+static int handle_help(cli_entry_t *entry, int cmd, cli_args_t *args)
 {
-	cli_entry_t *entry;
+	cli_entry_t *e;
 	cli_list_t *p;
 	int i;
 
 	switch (cmd) {
 	case CLI_INIT:
-		e->command = "help";
-		e->usage = "Usage: help [command]\n"
-			   "       Show available commands and description.\n"
-			   "\n"
-			   "If a command name is specified, it prints the "
-			   "usage notice of that command.";
+		entry->command = "help";
+		entry->usage =
+		    "Usage: help [command]\n"
+		    "       Show available commands and description.\n"
+		    "\n"
+		    "If a command name is specified, it prints the "
+		    "usage notice of that command.";
 		return CLI_RETURN_SUCCESS;
 	}
 
-	if (a->argc == 1) {
-		entry = cli_find_entry(a->argv[1], a->command_list);
-		if (entry) {
-			cli_print_usage(a->out, entry);
+	if (args->argc == 1) {
+		e = cli_find_entry(args->argv[1], args->command_list);
+		if (e) {
+			cli_print_usage(args->out, e);
 			return CLI_RETURN_SUCCESS;
 		}
 		
-		cli_print(a->out, "help: no such command `%s'\n", a->argv[1]);
+		cli_print(args->out, "help: no such command `%s'\n",
+		    args->argv[1]);
+
 		return CLI_RETURN_FAILURE;
-	} else if (a->argc > 1)
+	} else if (args->argc > 1)
 		return CLI_RETURN_SHOWUSAGE;
 
-	for (p = a->command_list; p != NULL; p = p->next) {
-		cli_print(a->out, "from `%s':\n", p->module_name);
-		for (i = 0, entry = p->entry; i < p->entry_count; i++)
-			cli_print(a->out, "%-*s\t%s\n",
-			    CLICMDSIZ, entry[i].command, entry[i].desc);
+	for (p = args->command_list; p != NULL; p = p->next) {
+		cli_print(args->out, "from `%s':\n", p->module_name);
+		for (i = 0, e = p->entry; i < p->entry_count; i++)
+			cli_print(args->out, "%-*s\t%s\n",
+			    CLICMDSIZ, e[i].command, e[i].desc);
 	}
 	return CLI_RETURN_SUCCESS;
 }
 
-static int handle_list(cli_entry_t *e, int cmd, cli_args_t *a)
+static int handle_list(cli_entry_t *entry, int cmd, cli_args_t *args)
 {
-	cli_entry_t *entry;
+	cli_entry_t *e;
 	cli_list_t *p;
 	int i;
 
 	switch (cmd) {
 	case CLI_INIT:
-		e->command = "list";
-		e->usage = "Usage: list\n"
-			   "       List available commands one per line";
+		entry->command = "list";
+		entry->usage =
+		    "Usage: list\n"
+		    "       List available commands one per line";
 		return CLI_RETURN_SUCCESS;
 	}
 
-	if (a->argc)
+	if (args->argc)
 		return CLI_RETURN_SHOWUSAGE;
 
-	for (p = a->command_list; p != NULL; p = p->next)
-		for (i = 0, entry = p->entry; i < p->entry_count; i++)
-			cli_print(a->out, "%s\n", entry[i].command);
+	for (p = args->command_list; p != NULL; p = p->next)
+		for (i = 0, e = p->entry; i < p->entry_count; i++)
+			cli_print(args->out, "%s\n", e[i].command);
 	return CLI_RETURN_SUCCESS;
 }
 
-static int handle_quit(cli_entry_t *e, int cmd, cli_args_t *a)
+static int handle_quit(cli_entry_t *entry, int cmd, cli_args_t *args)
 {
 	switch (cmd) {
 	case CLI_INIT:
-		e->command = "quit";
-		e->usage = "Usage: quit\n"
-			   "       Shutdown communication with console";
+		entry->command = "quit";
+		entry->usage =
+		    "Usage: quit\n"
+		    "       Shutdown communication with console";
 		return CLI_RETURN_SUCCESS;
 	}
 
-	if (a->argc)
+	if (args->argc)
 		return CLI_RETURN_SHOWUSAGE;
 
-	shutdown(a->fd, SHUT_RD);
+	shutdown(args->fd, SHUT_RD);
 	return CLI_RETURN_SHUTDOWN;
 }
 
@@ -229,39 +239,38 @@ cli_entry_t *cli_find_entry(char *command, cli_list_t *head) {
 	return NULL;
 }
 
-int cli_print_usage(FILE *out, cli_entry_t *e)
+int cli_print_usage(FILE *out, cli_entry_t *entry)
 {
-	if (strlen(e->usage)) {
-		cli_print(out, "%s\n", e->usage);
+	if (strlen(entry->usage)) {
+		cli_print(out, "%s\n", entry->usage);
 		return 0;
 	}
 	return -1;
 }
 
-int cli_exec(cli_summary_t *cs, cli_args_t *a, cli_list_t *head)
+int cli_exec(cli_summary_t *cs, cli_args_t *args, cli_list_t *head)
 {
 	cli_entry_t *entry = NULL;
-	char args[CLIARGSSIZ] = { 0 };
 	int ret = CLI_RETURN_INVALID;
 
-	cli_buffer_start(a->out);
+	cli_buffer_start(args->out);
 	entry = cli_find_entry(cs->command, head);
 	if (entry && entry->handler) {
-		a->argv[0] = cs->command;
-		strncpy(args, cs->args, CLIARGSSIZ-1);
-		a->argc = args_process(args, a);
-		if (a->perror) {
-			cli_print(a->out, "Parsing error near `%s': %s\n",
-			    &(cs->args[a->pe_near]),
-			    cli_args_perror(a->perror));
+		args->argv[0] = cs->command;
+		strncpy(args->args, cs->args, CLIARGSSIZ-1);
+		args->argc = args_process(args);
+		if (args->perror) {
+			cli_print(args->out, "Parsing error near `%s': %s\n",
+			    &(cs->args[args->pe_near]),
+			    cli_args_perror(args->perror));
 			ret = CLI_RETURN_FAILURE;
 		} else
-			ret = entry->handler(entry, CLI_EXEC, a);
+			ret = entry->handler(entry, CLI_EXEC, args);
 
 		if (ret == CLI_RETURN_SHOWUSAGE)
-			cli_print_usage(a->out, entry);
+			cli_print_usage(args->out, entry);
 	}
-	cli_buffer_end(a->out);
+	cli_buffer_end(args->out);
 	return ret;
 }
 
