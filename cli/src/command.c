@@ -8,7 +8,7 @@
  * of the License.
  *
  */
-#include <assert.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -43,19 +43,19 @@ static void autocomplete(const char *buf, linenoiseCompletions *lc)
 
 static void register_command(char *cmd, size_t len)
 {
-	struct command_list *c;
+	struct command_list *entry;
 
 	/* trash end of line marker */
 	cmd[len-1] = '\0';
 
-	c = calloc(1, sizeof(struct command_list));
-	if (!c) {
+	entry = calloc(1, sizeof(struct command_list));
+	if (!entry) {
 		JOURNAL_ERR("could not create entry for `%s'", cmd);
 		return;
 	}
-	strncpy(c->command, cmd, CLICMDSIZ);
-	c->next = command_list_head;
-	command_list_head = c;
+	strncpy(entry->command, cmd, CLICMDSIZ);
+	entry->next = command_list_head;
+	command_list_head = entry;
 }
 
 static void free_command_list()
@@ -68,12 +68,12 @@ static void free_command_list()
 	command_list_head = NULL;
 }
 
-static void process_command_list(usocket_t *su)
+static void process_command_list(usocket_t *sck)
 {
 	cli_summary_t *cs;
 
-	cli_read_buffer(su->buf, register_command);
-	cs = cli_read_summary(su->buf);
+	cli_read_buffer(sck->buf, register_command);
+	cs = cli_read_summary(sck->buf);
 	if (cs) {
 		if (cs->retval != CLI_RETURN_SUCCESS)
 			JOURNAL_ERR("server failed to send command list");
@@ -97,13 +97,13 @@ static int local_command(char *line)
 static int remote_command(char *line, cli_socket_t *cli_socket)
 {
 	cli_summary_t cs = { 0 };
-	struct command_list *e;
+	struct command_list *entry;
 	size_t cmdlen = 0, linelen = 0;
 
 	linelen = strlen(line);
-	for (e = command_list_head; e != NULL; e = e->next) {
-		cmdlen = strlen(e->command);
-		if (strncmp(line, e->command, cmdlen) == 0) {
+	for (entry = command_list_head; entry != NULL; entry = entry->next) {
+		cmdlen = strlen(entry->command);
+		if (strncmp(line, entry->command, cmdlen) == 0) {
 			if (cmdlen == linelen) {
 				/* perfect match, no args */
 				strncpy(cs.command, line, cmdlen);
@@ -119,7 +119,7 @@ static int remote_command(char *line, cli_socket_t *cli_socket)
 		}
 	}
 
-	if (!e) { /* command is not known */
+	if (!entry) { /* command is not known */
 		strncpy(cs.command, line, CLICMDSIZ);
 	}
 
@@ -133,11 +133,8 @@ static int remote_command(char *line, cli_socket_t *cli_socket)
 #define COMMAND_PROMPT "dndscli> "
 static void prompt(void *udata)
 {
-	cli_socket_t *cli_socket = NULL;
+	cli_socket_t *cli_socket = udata;
 	char *line;
-
-	assert(udata != NULL);
-	cli_socket = udata;
 
 	if (prompt_wait)
 		return;
@@ -160,14 +157,14 @@ static void print_buffer(char *buf, size_t buflen)
 	printf("%s", buf);
 }
 
-static void read_socket(usocket_t *su)
+static void read_socket(usocket_t *sck)
 {
 	cli_summary_t *cs;
 
-	if (cli_read_buffer(su->buf, print_buffer))
+	if (cli_read_buffer(sck->buf, print_buffer))
 		prompt_wait--;
 
-	cs = cli_read_summary(su->buf);
+	cs = cli_read_summary(sck->buf);
 	if (cs) {
 		switch (cs->retval) {
 		case CLI_RETURN_INVALID:
@@ -181,12 +178,12 @@ static void read_socket(usocket_t *su)
 	}
 }
 
-static void close_socket(usocket_t *su)
+static void close_socket(usocket_t *sck)
 {
-	cli_console_t *console = su->udata;
+	cli_console_t *console;
+	console = sck->udata;
 
-	assert(su != NULL);
-	usocket_close(su);
+	usocket_close(sck);
 	console->socket->socket = NULL;
 
 	event_throw(EVENT_EXIT, NULL);
