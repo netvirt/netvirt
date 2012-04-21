@@ -1,6 +1,6 @@
 /*
  * command.c: Command prompt
- * Copyright 2012. The OpenDNDS team. <team@opendnds.org>
+ * Copyright 2012. Jamael Seun
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
