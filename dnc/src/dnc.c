@@ -158,7 +158,7 @@ static void on_disconnect(netc_t *netc)
 	
 	do {
 		sleep(5);
-		printf("connection retry... ");
+		printf("connection retry...\n");
 		retry_netc = net_client(session->server_address,
 		    session->server_port, NET_PROTO_UDT, NET_SECURE_ADH,
 		    session->passport, on_disconnect, on_input, on_secure);
@@ -166,15 +166,11 @@ static void on_disconnect(netc_t *netc)
 		if (retry_netc)
 			break;
 		
-		printf("failed\n");
 	} while (1);
 
-	printf("ok\n");
 	session->status = SESSION_STATUS_NOT_AUTHED;
 	session->netc = retry_netc;
 	retry_netc->ext_ptr = session;
-
-	free(netc);
 }
 
 /* only used by P2P */
