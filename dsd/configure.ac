@@ -53,6 +53,5 @@ AC_SUBST(AM_CPPFLAGS)
 AC_SUBST(AM_LDFLAGS)
 
 AC_CONFIG_FILES([Makefile
-		src/Makefile
-		tools/Makefile])
+		src/Makefile])
 AC_OUTPUT
