@@ -144,12 +144,33 @@ void transmit_register(netc_t *netc)
         return;
 }
 
+static void on_input(netc_t *netc);
+static void on_secure(netc_t *netc);
+
 static void on_disconnect(netc_t *netc)
 {
 	printf("on_disconnect !!\n");
-
+	netc_t *retry_netc = NULL;
 	struct session *session;
+
 	session = netc->ext_ptr;
+	session->status = SESSION_STATUS_DOWN;
+	
+	do {
+		sleep(5);
+		printf("connection retry...\n");
+		retry_netc = net_client(session->server_address,
+		    session->server_port, NET_PROTO_UDT, NET_SECURE_ADH,
+		    session->passport, on_disconnect, on_input, on_secure);
+
+		if (retry_netc)
+			break;
+		
+	} while (1);
+
+	session->status = SESSION_STATUS_NOT_AUTHED;
+	session->netc = retry_netc;
+	retry_netc->ext_ptr = session;
 }
 
 /* only used by P2P */
@@ -308,6 +329,8 @@ int dnc_init(char *server_address, char *server_port,
 	session->passport = pki_passport_load_from_file(certificate,
 							 privatekey,
 							 trusted_authority);
+	session->server_address = server_address;
+	session->server_port = server_port;
 
 	netc = net_client(server_address, server_port, NET_PROTO_UDT, NET_SECURE_ADH,
 		session->passport, on_disconnect, on_input, on_secure);
