@@ -18,6 +18,7 @@
 #define	SESSION_STATUS_AUTHED		0x1
 #define SESSION_STATUS_NOT_AUTHED	0x2
 #define SESSION_STATUS_WAIT_ANSWER	0x4
+#define SESSION_STATUS_DOWN		0x8
 
 #define SESSION_TYPE_CLIENT		0x1
 #define SESSION_TYPE_SERVER		0x2
@@ -31,6 +32,9 @@ struct session {
 
 	char ip_local[INET_ADDRSTRLEN];
 	uint8_t tun_mac_addr[ETHER_ADDR_LEN];
+
+	char *server_address;
+	char *server_port;
 
 	passport_t *passport;
 
