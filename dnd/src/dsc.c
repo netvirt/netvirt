@@ -9,6 +9,8 @@
  *
  */
 
+#include <unistd.h>
+
 #include <dnds/dnds.h>
 #include <dnds/journal.h>
 #include <dnds/net.h>
@@ -17,7 +19,10 @@
 #include "context.h"
 #include "dsc.h"
 
-netc_t *netc;
+netc_t *dsc_netc = NULL;
+static passport_t *dnd_passport = NULL;
+static char *dsc_address = NULL;
+static char *dsc_port = NULL;
 
 int transmit_peerconnectinfo(e_ConnectState state, char *ipAddress, char *certName)
 {
@@ -35,7 +40,7 @@ int transmit_peerconnectinfo(e_ConnectState state, char *ipAddress, char *certNa
         PeerConnectInfo_set_ipAddr(msg, ipAddress);
         PeerConnectInfo_set_state(msg, state);  
 
-	net_send_msg(netc, msg);
+	net_send_msg(dsc_netc, msg);
 
 	return 0;
 }
@@ -144,7 +149,24 @@ static void on_connect(netc_t *netc)
 
 static void on_disconnect(netc_t *netc)
 {
+	netc_t *retry_netc = NULL;
+
 	JOURNAL_DEBUG("dsc on disconnect");
+
+	/* maybe net_client() should keep pointers to address,
+	   port and passport?  A net_connection_retry() would be given
+	   the current netc and return when max_retry is reached or
+	   connection is up again. */
+
+	do {
+		sleep(5);
+		printf("connection retry...\n");
+		retry_netc = net_client(dsc_address, dsc_port,
+		    NET_PROTO_UDT, NET_SECURE_RSA, dnd_passport,
+		    on_disconnect, on_input, on_secure);
+	} while (retry_netc == NULL);
+
+	dsc_netc = retry_netc;
 }
 
 void dsc_fini(void *ext_ptr)
@@ -154,13 +176,14 @@ void dsc_fini(void *ext_ptr)
 
 int dsc_init(char *ip_address, char *port, char *certificate, char *privatekey, char *trusted_authority)
 {
-	passport_t *dnd_passport;
 	dnd_passport = pki_passport_load_from_file(certificate, privatekey, trusted_authority);
+	dsc_address = ip_address;
+	dsc_port = port;
 
-	netc = net_client(ip_address, port, NET_PROTO_UDT, NET_SECURE_RSA, dnd_passport,
+	dsc_netc = net_client(ip_address, port, NET_PROTO_UDT, NET_SECURE_RSA, dnd_passport,
 				on_disconnect, on_input, on_secure);
 
-	if (netc == NULL) {
+	if (dsc_netc == NULL) {
 		JOURNAL_NOTICE("dnd]> failed to connect to the Directory Service :: %s:%i\n", __FILE__, __LINE__);
 		return -1;
 	}
