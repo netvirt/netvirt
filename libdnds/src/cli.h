@@ -114,7 +114,7 @@ int cli_read_buffer(FILE *buf, void (*p)(char *, size_t))
 
 extern int cli_exec(cli_summary_t *, cli_args_t *, cli_list_t *);
 extern cli_entry_t *cli_find_entry(char *, cli_list_t *);
-extern int cli_free_entry_all(cli_list_t *);
+extern void cli_free_entry_all(cli_list_t **);
 extern int cli_register_entry(cli_list_t **, char const *, cli_entry_t *, size_t);
 extern cli_summary_t *cli_read_summary(FILE *);
 extern int cli_send_summary(FILE *, cli_summary_t *);
