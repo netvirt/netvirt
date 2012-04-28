@@ -17,6 +17,7 @@
 #include <stdint.h>
 #include <sys/stat.h>
 
+#include <dnds/cli.h>
 #include <dnds/dnds.h>
 #include <dnds/journal.h>
 #include <dnds/mbuf.h>
@@ -29,6 +30,20 @@
 
 #include "dnc.h"
 #include "session.h"
+
+static char const module_name[] = "dnc";
+
+extern cli_server_t *dnc_cli_server;
+
+static int handle_connect(cli_entry_t *, int, cli_args_t *);
+static int handle_disconnect(cli_entry_t *, int, cli_args_t *);
+static int handle_show_peer(cli_entry_t *, int, cli_args_t *);
+
+static cli_entry_t commands[] = {
+	CLI_ENTRY(handle_connect, "Connect to a dynamic network controller"),
+	CLI_ENTRY(handle_disconnect, "Disconnect from dynamic network"),
+	CLI_ENTRY(handle_show_peer, "Show peer connection status"),
+};
 
 static void dispatch_operation(struct session *session, DNDSMessage_t *msg);
 
@@ -82,10 +97,11 @@ static void tunnel_out(iface_t *iface, DNDSMessage_t *msg)
 	iface->write(iface, frame, frame_size);
 }
 
-static void terminate(struct session *session)
+void terminate(struct session *session)
 {
+	session->status = SESSION_STATUS_DOWN;
 	net_disconnect(session->netc);
-	free(session);
+	session->netc = NULL;
 }
 
 void transmit_netinfo_request(struct session *session)
@@ -319,11 +335,98 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 	}
 }
 
+static int handle_connect(cli_entry_t *entry, int cmd, cli_args_t *args)
+{
+	netc_t *netc;
+
+	switch (cmd) {
+	case CLI_INIT:
+		entry->command = "dnc connect";
+		entry->usage =
+		    "Usage: dnc connect\n"
+		    "       Connect to dynamic network using config file.";
+		return CLI_RETURN_SUCCESS;
+	}
+
+	if (args->argc)
+		return CLI_RETURN_SHOWUSAGE;
+
+	if (master_session) {
+		if (master_session->status != SESSION_STATUS_DOWN) {
+			cli_print(args->out, "Already connected\n");
+			return CLI_RETURN_FAILURE;
+		}
+
+		netc = net_client(master_session->server_address,
+		    master_session->server_port, NET_PROTO_UDT,
+		    NET_SECURE_ADH, master_session->passport,
+		    on_disconnect, on_input, on_secure);
+
+                if (!netc) {
+			cli_print(args->out, "Cannot establish connection\n");
+			return CLI_RETURN_FAILURE;
+		}
+
+		master_session->status = SESSION_STATUS_NOT_AUTHED;
+		master_session->netc = netc;
+		netc->ext_ptr = master_session; 
+
+		return CLI_RETURN_SUCCESS;
+	}
+
+	cli_print(args->out, "Cannot get session information\n");
+	return CLI_RETURN_FAILURE;
+}
+
+static int handle_disconnect(cli_entry_t *entry, int cmd, cli_args_t *args)
+{
+	switch (cmd) {
+	case CLI_INIT:
+		entry->command = "dnc disconnect";
+		entry->usage =
+		    "Usage: dnc disconnect\n"
+		    "       Disconnect from dynamic network.";
+		return CLI_RETURN_SUCCESS;
+	}
+
+	if (args->argc)
+		return CLI_RETURN_SHOWUSAGE;
+
+	if (master_session && master_session->status != SESSION_STATUS_DOWN) {
+		terminate(master_session);
+		return CLI_RETURN_SUCCESS;
+	}
+
+	cli_print(args->out, "Not connected yet\n");
+	return CLI_RETURN_FAILURE;
+}
+
+static int handle_show_peer(cli_entry_t *entry, int cmd, cli_args_t *args)
+{
+	switch (cmd) {
+	case CLI_INIT:
+		entry->command = "dnc show peer";
+		entry->usage =
+		    "Usage: dnc show peer\n"
+		    "       Display the peering table";
+		return CLI_RETURN_SUCCESS;
+	}
+
+	if (args->argc)
+		return CLI_RETURN_SHOWUSAGE;
+
+	return CLI_RETURN_SUCCESS;
+}
+
 int dnc_init(char *server_address, char *server_port,
 		char *certificate, char *privatekey, char *trusted_authority)
 {
 	netc_t *netc;
 	struct session *session;
+
+	if (dnc_cli_server)
+		cli_register_entry(&(dnc_cli_server->command_list),
+		    module_name, commands, CLI_ENTRY_COUNT(commands));
 
 	session = calloc(1, sizeof(struct session));
 	session->passport = pki_passport_load_from_file(certificate,
