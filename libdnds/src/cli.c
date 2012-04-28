@@ -219,12 +219,15 @@ static int handle_quit(cli_entry_t *entry, int cmd, cli_args_t *args)
 	return CLI_RETURN_SHUTDOWN;
 }
 
-int cli_free_entry_all(cli_list_t *head)
+void cli_free_entry_all(cli_list_t **head)
 {
-	cli_list_t *p;
-	for (p = head; p != NULL; p = p->next)
-		free(p);
-	return 0;
+	cli_list_t *entry;
+
+	while (*head != NULL) {
+		entry = *head;
+		*head = (*head)->next;
+		free(entry);
+	}
 }
 
 cli_entry_t *cli_find_entry(char *command, cli_list_t *head) {
@@ -390,7 +393,7 @@ void cli_server_fini(cli_server_t *server)
 	if (server->socket)
 		cli_socket_close(server->socket);
 
-	cli_free_entry_all(server->command_list);
+	cli_free_entry_all(&(server->command_list));
 
 	free(server);
 }
