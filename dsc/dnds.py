@@ -96,10 +96,9 @@ msg = DNDSMessage()
 msg.setComponentByName('version', '1')
 msg.setComponentByName('channel', '0')
 msg.setComponentByName('pdu', pdu)
-"""
 
 f = open('dnds.ber', 'rb')
 substrate = f.read()
 f.close()
 my_msg, substrate = decoder.decode(substrate, asn1Spec=DNDSMessage())
-
+"""
