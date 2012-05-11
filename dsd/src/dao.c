@@ -42,6 +42,28 @@ int dao_connect(char *host, char *username, char *password, char *dbname)
 	return 0;
 }
 
+int dao_add_client(char *firstname,
+			char *lastname,
+			char *email,
+			char *company,
+			char *phone,
+			char *country,
+			char *state_province,
+			char *city,
+			char *postal_code)
+{
+
+	PGresult *result;
+	char insert_req[512];
+
+	snprintf(insert_req,	"INSERT INTO client"
+				"(firstname, lastname, email, company, phone, country, state_province, city, postal_code, status)"
+				"VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 1);",
+				firstname, lastname, email, company, phone, country, state_province, city, postal_code);
+
+	result = PQexec(dbconn, insert_req);
+}
+
 int dao_fetch_context(char **id,
 			char **topology_id,
 			char **description,
