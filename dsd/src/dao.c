@@ -9,13 +9,14 @@
  *
  */
 
-/* gcc dao.c -lpq
+/* gcc dao.c -lpq -ldnds
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include <dnds/pki.h>
 #include <postgresql/libpq-fe.h>
 
 #include "dao.h"
@@ -37,6 +38,41 @@ int dao_connect(char *host, char *username, char *password, char *dbname)
 		return -1;
 	} else {
 		printf("connected ok\n");
+	}
+
+	return 0;
+}
+
+int dao_add_embassy(int context_id, char *certificate, char *private_key)
+{
+	PGresult *result;
+	char insert_req[4000];
+
+	snprintf(insert_req, 4000, "INSERT INTO EMBASSY "
+				"(context_id, certificate, private_key, issue_serial) "
+				"VALUES ('%d', '%s', '%s', 0);",
+				context_id, certificate, private_key);
+
+	printf("insert_req: %s\n", insert_req);
+
+	result = PQexec(dbconn, insert_req);
+
+	if (!result) {
+		printf("PQexec command failed, no error code\n");
+	}
+
+	switch (PQresultStatus(result)) {
+	case PGRES_COMMAND_OK:
+		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		break;
+	case PGRES_TUPLES_OK:
+		printf("query may have returned data\n");
+		break;
+	default:
+		printf("command failed with code %s, error message %s\n",
+			PQresStatus(PQresultStatus(result)),
+			PQresultErrorMessage(result));
+		break;
 	}
 
 	return 0;
@@ -74,7 +110,6 @@ int dao_add_network(int client_id, int context_id)
 	}
 
 	return 0;
-
 }
 
 int dao_add_context(int topology_id, char *description)
@@ -234,5 +269,25 @@ int main(int argc, char *argv[])
 
 	dao_add_context(1, "description");
 	dao_add_network(1008, 3);
+
+	pki_init();
+
+	int exp_delay;
+	exp_delay = pki_expiration_delay(50);
+
+	digital_id_t *id;
+
+	id = pki_digital_id("embassy", "CA", "Quebec", "Levis", "info@demo.com", "DNDS");
+
+	embassy_t *emb;
+	emb = pki_embassy_new(id, exp_delay);
+
+	char *cert_ptr; long size;
+	char *pvkey_ptr;
+
+	pki_write_certificate_in_mem(emb->certificate, &cert_ptr, &size);
+	pki_write_privatekey_in_mem(emb->keyring, &pvkey_ptr, &size);
+
+	dao_add_embassy(4, cert_ptr, pvkey_ptr);
 
 }
