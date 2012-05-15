@@ -42,6 +42,76 @@ int dao_connect(char *host, char *username, char *password, char *dbname)
 	return 0;
 }
 
+int dao_add_network(int client_id, int context_id)
+{
+	PGresult *result;
+	char insert_req[512];
+
+	snprintf(insert_req, 512, "INSERT INTO NETWORK "
+				"(client_id, context_id) "
+				"VALUES ('%d', '%d');",
+				client_id, context_id);
+	printf("insert_req: %s\n", insert_req);
+
+	result = PQexec(dbconn, insert_req);
+
+	if (!result) {
+		printf("PQexec command failed, no error code\n");
+	}
+
+	switch (PQresultStatus(result)) {
+	case PGRES_COMMAND_OK:
+		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		break;
+	case PGRES_TUPLES_OK:
+		printf("query may have returned data\n");
+		break;
+	default:
+		printf("command failed with code %s, error message %s\n",
+			PQresStatus(PQresultStatus(result)),
+			PQresultErrorMessage(result));
+		break;
+	}
+
+	return 0;
+
+}
+
+int dao_add_context(int topology_id, char *description)
+{
+	PGresult *result;
+	char insert_req[512];
+
+	snprintf(insert_req, 512, "INSERT INTO CONTEXT "
+				"(topology_id, description) "
+				"VALUES ('%d', '%s');",
+				topology_id, description);
+
+	printf("insert_req: %s\n", insert_req);
+
+	result = PQexec(dbconn, insert_req);
+
+	if (!result) {
+		printf("PQexec command failed, no error code\n");
+	}
+
+	switch (PQresultStatus(result)) {
+	case PGRES_COMMAND_OK:
+		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		break;
+	case PGRES_TUPLES_OK:
+		printf("query may have returned data\n");
+		break;
+	default:
+		printf("command failed with code %s, error message %s\n",
+			PQresStatus(PQresultStatus(result)),
+			PQresultErrorMessage(result));
+		break;
+	}
+
+	return 0;
+}
+
 int dao_add_client(char *firstname,
 			char *lastname,
 			char *email,
@@ -146,7 +216,6 @@ int dao_fetch_context(char **id,
 	return 0;
 }
 
-#if 0
 int main(int argc, char *argv[])
 {
 	dao_connect(argv[1], argv[2], argv[3], argv[4]);
@@ -162,5 +231,8 @@ int main(int argc, char *argv[])
 			"city",
 			"postal_code");
 
+
+	dao_add_context(1, "description");
+	dao_add_network(1008, 3);
+
 }
-#endif
