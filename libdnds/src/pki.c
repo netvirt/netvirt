@@ -362,6 +362,32 @@ passport_t *pki_passport_load_from_file(char *certificate_filename,
 	return passport;
 }
 
+void pki_write_certificate_in_mem(X509 *certificate, char **certificate_ptr, long *size)
+{
+	BIO *bio_mem = NULL;
+
+	bio_mem = BIO_new(BIO_s_mem());
+	PEM_write_bio_X509(bio_mem, certificate);
+
+	*size = BIO_get_mem_data(bio_mem, certificate_ptr);
+
+	BIO_set_close(bio_mem, BIO_NOCLOSE);
+	BIO_free(bio_mem);
+}
+
+void pki_write_privatekey_in_mem(EVP_PKEY *privatekey, char **privatekey_ptr, long *size)
+{
+	BIO *bio_mem = NULL;
+
+	bio_mem = BIO_new(BIO_s_mem());
+	PEM_write_bio_PrivateKey(bio_mem, privatekey, NULL, NULL, 0, 0, NULL);
+
+	*size = BIO_get_mem_data(bio_mem, privatekey_ptr);
+
+	BIO_set_close(bio_mem, BIO_NOCLOSE);
+	BIO_free(bio_mem);
+}
+
 void pki_write_certificate(X509 *certificate, const char *filename)
 {
 	BIO *bio_file = NULL;
@@ -415,6 +441,18 @@ int main()
 
 	passport_t *dsc_passport;
 	dsc_passport = pki_embassy_deliver_passport(dsd_embassy, dsc_digital_id, expiration_delay);
+
+
+	char *cert_ptr; long size;
+	char *pvkey_ptr;
+
+	pki_write_certificate_in_mem(dsd_embassy->certificate, &cert_ptr, &size);
+	pki_write_privatekey_in_mem(dsd_embassy->keyring, &pvkey_ptr, &size);
+
+	printf("cert %s\n", cert_ptr);
+	printf("pvkey %s\n", pvkey_ptr);
+
+	return 0;
 
 	pki_write_certificate(dsd_embassy->certificate, "./dsd_cert.pem");
 	pki_write_privatekey(dsd_embassy->keyring, "dsd_privkey.pem");
