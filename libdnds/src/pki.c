@@ -299,6 +299,29 @@ uint32_t pki_expiration_delay(uint8_t years)
 	return years*365*24*60*60;
 }
 
+embassy_t *pki_embassy_load_from_memory(char *certificate, char *privatekey, uint32_t serial)
+{
+	BIO *bio_memory = NULL;
+	embassy_t *embassy;
+
+	// create an empty embassy
+	embassy = calloc(1, sizeof(embassy_t));
+
+	// fetch the certificate in PEM format and convert to X509
+	bio_memory = BIO_new_mem_buf(certificate, strlen(certificate));
+	embassy->certificate = PEM_read_bio_X509(bio_memory, NULL, NULL, NULL);
+	BIO_free(bio_memory);
+
+	// fetch the private key in PEM format and convert to EVP
+	bio_memory = BIO_new_mem_buf(privatekey, strlen(privatekey));
+	embassy->keyring = PEM_read_bio_PrivateKey(bio_memory, NULL, NULL, NULL);
+	BIO_free(bio_memory);
+
+	embassy->serial = serial;
+
+	return embassy;
+}
+
 passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, char *trusted_authority)
 {
 	BIO *bio_memory = NULL;
