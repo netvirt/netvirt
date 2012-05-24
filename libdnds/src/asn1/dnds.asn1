@@ -9,7 +9,7 @@
 DNDS DEFINITIONS AUTOMATIC TAGS ::=
 BEGIN
 
-uint32max INTEGER ::= 4294967295 -- (2^^32 - 1) 
+uint32max INTEGER ::= 4294967295 -- (2^^32 - 1)
 
 DNDSMessage ::= SEQUENCE {
 	version		INTEGER (0..uint32max),
@@ -77,7 +77,7 @@ DNDSObject ::= CHOICE {
 	node		Node,
 	peer		Peer,
 	permission	Permission,
-	user		User,
+	client		Client,
 	...
 }
 
@@ -90,7 +90,7 @@ ObjectName ::= ENUMERATED {
 	node		(6),
 	peer		(7),
 	permission	(8),
-	user		(9),
+	client		(9),
 	...
 }
 
@@ -264,15 +264,19 @@ Peer ::= SEQUENCE {
 	...
 }
 
-User ::= SEQUENCE {
+Client ::= SEQUENCE {
 	id		INTEGER (0..uint32max),
-	contextId	INTEGER (0..uint32max),
-	name		PrintableString (SIZE(6..32)) OPTIONAL,
-	password	PrintableString (SIZE(6..32)) OPTIONAL,
-	firstname	PrintableString (SIZE(1..64)) OPTIONAL,
-	lastname	PrintableString (SIZE(1..64)) OPTIONAL,
-	email		IA5String (SIZE(1..256)) OPTIONAL,
-	role		INTEGER (0..127) OPTIONAL,
+	username	PrintableString OPTIONAL,
+	password	PrintableString OPTIONAL,
+	firstname	PrintableString OPTIONAL,
+	lastname	PrintableString OPTIONAL,
+	email		PrintableString OPTIONAL,
+	company		PrintableString OPTIONAL,
+	phone		PrintableString OPTIONAL,
+	country		PrintableString OPTIONAL,
+	stateProvince	PrintableString OPTIONAL,
+	city 		PrintableString OPTIONAL,
+	postalCode	PrintableString OPTIONAL,
 	status		INTEGER (0..127) OPTIONAL,
 	...
 }

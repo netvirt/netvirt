@@ -88,19 +88,19 @@ static asn_INTEGER_enum_map_t asn_MAP_ObjectName_value2enum_1[] = {
 	{ 6,	4,	"node" },
 	{ 7,	4,	"peer" },
 	{ 8,	10,	"permission" },
-	{ 9,	4,	"user" }
+	{ 9,	6,	"client" }
 	/* This list is extensible */
 };
 static unsigned int asn_MAP_ObjectName_enum2value_1[] = {
 	0,	/* acl(1) */
 	1,	/* aclgroup(2) */
+	8,	/* client(9) */
 	3,	/* context(4) */
 	4,	/* host(5) */
 	2,	/* ippool(3) */
 	5,	/* node(6) */
 	6,	/* peer(7) */
-	7,	/* permission(8) */
-	8	/* user(9) */
+	7	/* permission(8) */
 	/* This list is extensible */
 };
 static asn_INTEGER_specifics_t asn_SPC_ObjectName_specs_1 = {

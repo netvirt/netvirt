@@ -27,7 +27,7 @@ typedef enum ObjectName {
 	ObjectName_node	= 6,
 	ObjectName_peer	= 7,
 	ObjectName_permission	= 8,
-	ObjectName_user	= 9
+	ObjectName_client	= 9
 	/*
 	 * Enumeration is extensible
 	 */

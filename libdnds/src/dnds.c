@@ -3181,346 +3181,523 @@ int Peer_get_status(DNDSObject_t *object, uint8_t *status)
 	return DNDS_success;
 }
 
-// User
-int User_set_id(DNDSObject_t *object, uint32_t id)
+// Client
+int Client_set_id(DNDSObject_t *object, uint32_t id)
 {
 	if (object == NULL) {
 		return DNDS_invalid_param;
 	}
 
-	if (object->present != DNDSObject_PR_user) {
+	if (object->present != DNDSObject_PR_client) {
 		return DNDS_invalid_object_type;
 	}
 
-	object->choice.user.id = id;
+	object->choice.client.id = id;
 
 	return DNDS_success;
 }
 
-int User_get_id(DNDSObject_t *object, uint32_t *id)
+int Client_get_id(DNDSObject_t *object, uint32_t *id)
 {
 	if (object == NULL || id == NULL) {
 		return DNDS_invalid_param;
 	}
 
-	if (object->present != DNDSObject_PR_user) {
+	if (object->present != DNDSObject_PR_client) {
 		return DNDS_invalid_object_type;
 	}
 
-	*id = object->choice.user.id;
+	*id = object->choice.client.id;
 
 	return DNDS_success;
 }
 
-int User_set_contextId(DNDSObject_t *object, uint32_t contextId)
+int Client_set_username(DNDSObject_t *object, char *username, size_t length)
 {
-	if (object == NULL) {
+	if (object == NULL || username == NULL) {
 		return DNDS_invalid_param;
 	}
 
-	if (object->present != DNDSObject_PR_user) {
+	if (object->present != DNDSObject_PR_client) {
 		return DNDS_invalid_object_type;
 	}
 
-	object->choice.user.contextId = contextId;
-
-	return DNDS_success;
-}
-
-int User_get_contextId(DNDSObject_t *object, uint32_t *contextId)
-{
-	if (object == NULL || contextId == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_user) {
-		return DNDS_invalid_object_type;
-	}
-
-	*contextId = object->choice.user.contextId;
-
-	return DNDS_success;
-}
-
-int User_set_name(DNDSObject_t *object, char *name, size_t length)
-{
-	if (object == NULL || name == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_user) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.user.name = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.user.name == NULL) {
+	object->choice.client.username = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.client.username == NULL) {
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.user.name->buf = (uint8_t *)strdup(name);
-	object->choice.user.name->size = length;
+	object->choice.client.username->buf = (uint8_t *)strdup(username);
+	object->choice.client.username->size = length;
 
 	return DNDS_success;
 }
 
-int User_get_name(DNDSObject_t *object, char **name, size_t *length)
+int Client_get_username(DNDSObject_t *object, char **username, size_t *length)
 {
-	if (object == NULL || name == NULL || length == NULL) {
+	if (object == NULL || username == NULL || length == NULL) {
 		return DNDS_invalid_param;
 	}
 
-	if (object->present != DNDSObject_PR_user) {
+	if (object->present != DNDSObject_PR_client) {
 		return DNDS_invalid_object_type;
 	}
 
-	if (object->choice.user.name == NULL) {
+	if (object->choice.client.username == NULL) {
 		return DNDS_value_not_present;
 	}
 
-	*name = (char *)object->choice.user.name->buf;
-	*length = object->choice.user.name->size;
+	*username = (char *)object->choice.client.username->buf;
+	*length = object->choice.client.username->size;
 
 	return DNDS_success;
 }
 
-int User_set_password(DNDSObject_t *object, char *password, size_t length)
+int Client_set_password(DNDSObject_t *object, char *password, size_t length)
 {
 	if (object == NULL || password == NULL) {
 		return DNDS_invalid_param;
 	}
 
-	if (object->present != DNDSObject_PR_user) {
+	if (object->present != DNDSObject_PR_client) {
 		return DNDS_invalid_object_type;
 	}
 
-	object->choice.user.password = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.user.password == NULL) {
+	object->choice.client.password = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.client.password == NULL) {
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.user.password->buf = (uint8_t *)strdup(password);
-	object->choice.user.password->size = length;
+	object->choice.client.password->buf = (uint8_t *)strdup(password);
+	object->choice.client.password->size = length;
 
 	return DNDS_success;
 }
 
-int User_get_password(DNDSObject_t *object, char **password, size_t *length)
+int Client_get_password(DNDSObject_t *object, char **password, size_t *length)
 {
 	if (object == NULL || password == NULL || length == NULL) {
 		return DNDS_invalid_param;
 	}
 
-	if (object->present != DNDSObject_PR_user) {
+	if (object->present != DNDSObject_PR_client) {
 		return DNDS_invalid_object_type;
 	}
 
-	if (object->choice.user.password == NULL) {
+	if (object->choice.client.password == NULL) {
 		return DNDS_value_not_present;
 	}
 
-	*password = (char *)object->choice.user.password->buf;
-	*length = object->choice.user.password->size;
+	*password = (char *)object->choice.client.password->buf;
+	*length = object->choice.client.password->size;
 
 	return DNDS_success;
 }
 
-int User_set_firstname(DNDSObject_t *object, char *firstname, size_t length)
+int Client_set_firstname(DNDSObject_t *object, char *firstname, size_t length)
 {
 	if (object == NULL || firstname == NULL) {
 		return DNDS_invalid_param;
 	}
 
-	if (object->present != DNDSObject_PR_user) {
+	if (object->present != DNDSObject_PR_client) {
 		return DNDS_invalid_object_type;
 	}
 
-	object->choice.user.firstname = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.user.firstname == NULL) {
+	object->choice.client.firstname = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.client.firstname == NULL) {
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.user.firstname->buf = (uint8_t *)strdup(firstname);
-	object->choice.user.firstname->size = length;
+	object->choice.client.firstname->buf = (uint8_t *)strdup(firstname);
+	object->choice.client.firstname->size = length;
 
 	return DNDS_success;
 }
 
-int User_get_firstname(DNDSObject_t *object, char **firstname, size_t *length)
+int Client_get_firstname(DNDSObject_t *object, char **firstname, size_t *length)
 {
 	if (object == NULL || firstname == NULL || length == NULL) {
 		return DNDS_invalid_param;
 	}
 
-	if (object->present != DNDSObject_PR_user) {
+	if (object->present != DNDSObject_PR_client) {
 		return DNDS_invalid_object_type;
 	}
 
-	if (object->choice.user.firstname == NULL) {
+	if (object->choice.client.firstname == NULL) {
 		return DNDS_value_not_present;
 	}
 
-	*firstname = (char *)object->choice.user.firstname->buf;
-	*length = object->choice.user.firstname->size;
+	*firstname = (char *)object->choice.client.firstname->buf;
+	*length = object->choice.client.firstname->size;
 
 	return DNDS_success;
 }
 
-int User_set_lastname(DNDSObject_t *object, char *lastname, size_t length)
+int Client_set_lastname(DNDSObject_t *object, char *lastname, size_t length)
 {
 	if (object == NULL || lastname == NULL) {
 		return DNDS_invalid_param;
 	}
 
-	if (object->present != DNDSObject_PR_user) {
+	if (object->present != DNDSObject_PR_client) {
 		return DNDS_invalid_object_type;
 	}
 
-	object->choice.user.lastname = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.user.lastname == NULL) {
+	object->choice.client.lastname = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.client.lastname == NULL) {
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.user.lastname->buf = (uint8_t *)strdup(lastname);
-	object->choice.user.lastname->size = length;
+	object->choice.client.lastname->buf = (uint8_t *)strdup(lastname);
+	object->choice.client.lastname->size = length;
 
 	return DNDS_success;
 }
 
-int User_get_lastname(DNDSObject_t *object, char **lastname, size_t *length)
+int Client_get_lastname(DNDSObject_t *object, char **lastname, size_t *length)
 {
 	if (object == NULL || lastname == NULL || length == NULL) {
 		return DNDS_invalid_param;
 	}
 
-	if (object->present != DNDSObject_PR_user) {
+	if (object->present != DNDSObject_PR_client) {
 		return DNDS_invalid_object_type;
 	}
 
-	if (object->choice.user.lastname == NULL) {
+	if (object->choice.client.lastname == NULL) {
 		return DNDS_value_not_present;
 	}
 
-	*lastname = (char *)object->choice.user.lastname->buf;
-	*length = object->choice.user.lastname->size;
+	*lastname = (char *)object->choice.client.lastname->buf;
+	*length = object->choice.client.lastname->size;
 
 	return DNDS_success;
 }
 
-int User_set_email(DNDSObject_t *object, char *email, size_t length)
+int Client_set_email(DNDSObject_t *object, char *email, size_t length)
 {
 	if (object == NULL || email == NULL) {
 		return DNDS_invalid_param;
 	}
 
-	if (object->present != DNDSObject_PR_user) {
+	if (object->present != DNDSObject_PR_client) {
 		return DNDS_invalid_object_type;
 	}
 
-	object->choice.user.email = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.user.email == NULL) {
+	object->choice.client.email = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.client.email == NULL) {
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.user.email->buf = (uint8_t *)strdup(email);
-	object->choice.user.email->size = length;
+	object->choice.client.email->buf = (uint8_t *)strdup(email);
+	object->choice.client.email->size = length;
 
 	return DNDS_success;
 }
 
-int User_get_email(DNDSObject_t *object, char **email, size_t *length)
+int Client_get_email(DNDSObject_t *object, char **email, size_t *length)
 {
 	if (object == NULL || email == NULL || length == NULL) {
 		return DNDS_invalid_param;
 	}
 
-	if (object->present != DNDSObject_PR_user) {
+	if (object->present != DNDSObject_PR_client) {
 		return DNDS_invalid_object_type;
 	}
 
-	if (object->choice.user.email == NULL) {
+	if (object->choice.client.email == NULL) {
 		return DNDS_value_not_present;
 	}
 
-	*email = (char *)object->choice.user.email->buf;
-	*length = object->choice.user.email->size;
+	*email = (char *)object->choice.client.email->buf;
+	*length = object->choice.client.email->size;
 
 	return DNDS_success;
 }
 
-int User_set_role(DNDSObject_t *object, uint8_t role)
+int Client_set_company(DNDSObject_t *object, char *company, size_t length)
+{
+	if (object == NULL || company == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_client) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.client.company = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.client.company == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.client.company->buf = (uint8_t *)strdup(company);
+	object->choice.client.company->size = length;
+
+	return DNDS_success;
+}
+
+int Client_get_company(DNDSObject_t *object, char **company, size_t *length)
+{
+	if (object == NULL || company == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_client) {
+		return DNDS_invalid_object_type;
+	}
+
+	if (object->choice.client.company == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*company = (char *)object->choice.client.company->buf;
+	*length = object->choice.client.company->size;
+
+	return DNDS_success;
+}
+
+int Client_set_phone(DNDSObject_t *object, char *phone, size_t length)
+{
+	if (object == NULL || phone == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_client) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.client.phone = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.client.phone == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.client.phone->buf = (uint8_t *)strdup(phone);
+	object->choice.client.phone->size = length;
+
+	return DNDS_success;
+}
+
+int Client_get_phone(DNDSObject_t *object, char **phone, size_t *length)
+{
+	if (object == NULL || phone == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_client) {
+		return DNDS_invalid_object_type;
+	}
+
+	if (object->choice.client.phone == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*phone = (char *)object->choice.client.phone->buf;
+	*length = object->choice.client.phone->size;
+
+	return DNDS_success;
+}
+
+int Client_set_country(DNDSObject_t *object, char *country, size_t length)
+{
+	if (object == NULL || country == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_client) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.client.country = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.client.country == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.client.country->buf = (uint8_t *)strdup(country);
+	object->choice.client.country->size = length;
+
+	return DNDS_success;
+}
+
+int Client_get_country(DNDSObject_t *object, char **country, size_t *length)
+{
+	if (object == NULL || country == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_client) {
+		return DNDS_invalid_object_type;
+	}
+
+	if (object->choice.client.country == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*country = (char *)object->choice.client.country->buf;
+	*length = object->choice.client.country->size;
+
+	return DNDS_success;
+}
+
+int Client_set_stateProvince(DNDSObject_t *object, char *stateProvince, size_t length)
+{
+	if (object == NULL || stateProvince == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_client) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.client.stateProvince = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.client.stateProvince == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.client.stateProvince->buf = (uint8_t *)strdup(stateProvince);
+	object->choice.client.stateProvince->size = length;
+
+	return DNDS_success;
+}
+
+int Client_get_stateProvince(DNDSObject_t *object, char **stateProvince, size_t *length)
+{
+	if (object == NULL || stateProvince == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_client) {
+		return DNDS_invalid_object_type;
+	}
+
+	if (object->choice.client.stateProvince == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*stateProvince = (char *)object->choice.client.stateProvince->buf;
+	*length = object->choice.client.stateProvince->size;
+
+	return DNDS_success;
+}
+
+int Client_set_city(DNDSObject_t *object, char *city, size_t length)
+{
+	if (object == NULL || city == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_client) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.client.city = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.client.city == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.client.city->buf = (uint8_t *)strdup(city);
+	object->choice.client.city->size = length;
+
+	return DNDS_success;
+}
+
+int Client_get_city(DNDSObject_t *object, char **city, size_t *length)
+{
+	if (object == NULL || city == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_client) {
+		return DNDS_invalid_object_type;
+	}
+
+	if (object->choice.client.city == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*city = (char *)object->choice.client.city->buf;
+	*length = object->choice.client.city->size;
+
+	return DNDS_success;
+}
+
+int Client_set_postalCode(DNDSObject_t *object, char *postalCode, size_t length)
+{
+	if (object == NULL || postalCode == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_client) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.client.postalCode = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.client.postalCode == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.client.postalCode->buf = (uint8_t *)strdup(postalCode);
+	object->choice.client.postalCode->size = length;
+
+	return DNDS_success;
+}
+
+int Client_get_postalCode(DNDSObject_t *object, char **postalCode, size_t *length)
+{
+	if (object == NULL || postalCode == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_client) {
+		return DNDS_invalid_object_type;
+	}
+
+	if (object->choice.client.postalCode == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*postalCode = (char *)object->choice.client.stateProvince->buf;
+	*length = object->choice.client.postalCode->size;
+
+	return DNDS_success;
+}
+
+int Client_set_status(DNDSObject_t *object, uint8_t status)
 {
 	if (object == NULL) {
 		return DNDS_invalid_param;
 	}
 
-	if (object->present != DNDSObject_PR_user) {
+	if (object->present != DNDSObject_PR_client) {
 		return DNDS_invalid_object_type;
 	}
 
-	object->choice.user.role = (long *)calloc(1, sizeof(long));
-	if (object->choice.user.role == NULL) {
+	object->choice.client.status = (long *)calloc(1, sizeof(long));
+	if (object->choice.client.status == NULL) {
 		return DNDS_alloc_failed;
 	}
 
-	*object->choice.user.role = role;
+	*object->choice.client.status = status;
 
 	return DNDS_success;
 }
 
-int User_get_role(DNDSObject_t *object, uint8_t *role)
-{
-	if (object == NULL || role == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_user) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.user.role == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	*role = *object->choice.user.role;
-
-	return DNDS_success;
-}
-
-int User_set_status(DNDSObject_t *object, uint8_t status)
-{
-	if (object == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_user) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.user.status = (long *)calloc(1, sizeof(long));
-	if (object->choice.user.status == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	*object->choice.user.status = status;
-
-	return DNDS_success;
-}
-
-int User_get_status(DNDSObject_t *object, uint8_t *status)
+int Client_get_status(DNDSObject_t *object, uint8_t *status)
 {
 	if (object == NULL || status == NULL) {
 		return DNDS_invalid_param;
 	}
 
-	if (object->present != DNDSObject_PR_user) {
+	if (object->present != DNDSObject_PR_client) {
 		return DNDS_invalid_object_type;
 	}
 
-	if (object->choice.user.status == NULL) {
+	if (object->choice.client.status == NULL) {
 		return DNDS_value_not_present;
 	}
 
-	*status = *object->choice.user.status;
+	*status = *object->choice.client.status;
 
 	return DNDS_success;
 }
@@ -3544,8 +3721,8 @@ char *ObjectName_str(e_ObjectName objectname)
 		return "peer";
 	case ObjectName_permission:
 		return "permission";
-	case ObjectName_user:
-		return "user";
+	case ObjectName_client:
+		return "client";
 	}
 	return "Unknown";
 }
@@ -4066,41 +4243,61 @@ void Permission_printf(DNDSObject_t *object)
 {
 }
 
-void User_printf(DNDSObject_t *object)
+void Client_printf(DNDSObject_t *object)
 {
 	size_t length;
 
 	uint32_t id;
-	User_get_id(object, &id);
-	printf("User> id: %i\n", id);
+	Client_get_id(object, &id);
+	printf("Client> id: %i\n", id);
 
-	uint32_t contextId;
-	User_get_contextId(object, &contextId);
-	printf("User> contextId: %i\n", contextId);
-
-	char *name;
-	User_get_name(object, &name, &length);
-	printf("User> name: %s\n", name);
+	char *username;
+	Client_get_username(object, &username, &length);
+	printf("Client> username: %s\n", username);
 
 	char *password;
-	User_get_password(object, &password, &length);
-	printf("User> password: %s\n", password);
+	Client_get_password(object, &password, &length);
+	printf("Client> password: %s\n", password);
 
 	char *firstname;
-	User_get_firstname(object, &firstname, &length);
-	printf("User> firstname: %s\n", firstname);
+	Client_get_firstname(object, &firstname, &length);
+	printf("Client> firstname: %s\n", firstname);
 
 	char *lastname;
-	User_get_lastname(object, &lastname, &length);
-	printf("User> lastname: %s\n", lastname);
+	Client_get_lastname(object, &lastname, &length);
+	printf("Client> lastname: %s\n", lastname);
 
 	char *email;
-	User_get_email(object, &email, &length);
-	printf("User> email: %s\n", email);
+	Client_get_email(object, &email, &length);
+	printf("Client> email: %s\n", email);
 
-	uint8_t role;
-	User_get_role(object, &role);
-	printf("User> role: %i\n", role);
+	char *company;
+	Client_get_company(object, &company, &length);
+	printf("Client> company: %s\n", company);
+
+	char *phone;
+	Client_get_phone(object, &phone, &length);
+	printf("Client> phone: %s\n", phone);
+
+	char *country;
+	Client_get_country(object, &country, &length);
+	printf("Client> country: %s\n", country);
+
+	char *stateProvince;
+	Client_get_stateProvince(object, &stateProvince, &length);
+	printf("Client> stateProvince: %s\n", stateProvince);
+
+	char *city;
+	Client_get_city(object, &city, &length);
+	printf("Client> city: %s\n", city);
+
+	char *postalCode;
+	Client_get_postalCode(object, &postalCode, &length);
+	printf("Client> postalCode: %s\n", postalCode);
+
+	uint8_t status;
+	Client_get_status(object, &status);
+	printf("Client> status: %i\n", status);
 }
 
 void DNDSObject_printf(DNDSObject_t *obj)
@@ -4141,8 +4338,8 @@ void DNDSObject_printf(DNDSObject_t *obj)
 		case DNDSObject_PR_permission:
 			break;
 
-		case DNDSObject_PR_user:
-			User_printf(obj);
+		case DNDSObject_PR_client:
+			Client_printf(obj);
 			break;
 
 		case DNDSObject_PR_NOTHING:

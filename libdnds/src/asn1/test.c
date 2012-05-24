@@ -105,8 +105,8 @@ void test_AddRequest()
 {
 	/// Building a AddRequest ///
 
-	DNDSMessage_t *msg;	// a DNDS Message
-	DNDSObject_t *objUser;	// a DS Object
+	DNDSMessage_t *msg;		// a DNDS Message
+	DNDSObject_t *objClient;	// a DS Object
 
 	DNDSMessage_new(&msg);
 	DNDSMessage_set_channel(msg, 0);
@@ -116,17 +116,21 @@ void test_AddRequest()
 	DSMessage_set_ackNumber(msg, 0);	// seq XOR ack
 	DSMessage_set_operation(msg, dsop_PR_addRequest);
 
-	AddRequest_set_objectType(msg, DNDSObject_PR_user, &objUser);
+	AddRequest_set_objectType(msg, DNDSObject_PR_client, &objClient);
 
-	User_set_id(objUser, 1);
-	User_set_contextId(objUser, 1);
-	User_set_name(objUser, "nicboul", 6);
-	User_set_password(objUser, "pwdpwd", 6);
-	User_set_firstname(objUser, "nicolas", 7);
-	User_set_lastname(objUser, "bouliane", 8);
-	User_set_email(objUser, "nicboul@gmail.com", 15);
-	User_set_role(objUser, 0);
-	User_set_status(objUser, 0);
+	Client_set_id(objClient, 1);
+	Client_set_username(objClient, "username", 8);
+	Client_set_password(objClient, "password", 8);
+	Client_set_firstname(objClient, "firstname", 9);
+	Client_set_lastname(objClient, "lastname", 8);
+	Client_set_email(objClient, "mailexample.com", 15);
+	Client_set_company(objClient, "mycompany", 9);
+	Client_set_phone(objClient, "thephone", 8);
+	Client_set_country(objClient, "mycountry", 9);
+	Client_set_stateProvince(objClient, "stateProvince", 13);
+	Client_set_city(objClient, "mycity", 6);
+	Client_set_postalCode(objClient, "postalCode", 10);
+	Client_set_status(objClient, 0);
 
 	/// Encoding part
 
@@ -1005,7 +1009,7 @@ void test_SearchResponse()
 	Peer_set_status(objPeer, 2);
 
 	SearchResponse_add_object(msg, objPeer);
-
+/*
 /// User1
 	DNDSObject_t *objUser1;	// A User Object
 	DNDSObject_new(&objUser1);
@@ -1039,7 +1043,7 @@ void test_SearchResponse()
 	User_set_status(objUser2, 0);
 
 	SearchResponse_add_object(msg, objUser2);
-
+*/
 	/// Encoding part
 
 	asn_enc_rval_t ec;	// Encoder return value
@@ -1080,11 +1084,14 @@ void test_TerminateRequest()
 
 int main()
 {
+
+/*
 	test_SearchRequest_context();
 	show_SearchRequest_context();
 
 	test_SearchResponse_context();
 	show_SearchResponse_context();
+*/
 
 /*
 	test_PeerConnectInfo();
@@ -1093,13 +1100,13 @@ int main()
 
 /*	test_DNDS_ethernet();
 	show_DNDS_ethernet();
-
+*/
 	test_AddRequest();
 	show_AddRequest();
 
 	test_AddResponse();
 	show_AddResponse();
-
+/*
 	test_P2pRequest_dnm();
 	show_P2pRequest_dnm();
 

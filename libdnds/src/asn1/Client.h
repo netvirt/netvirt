@@ -4,8 +4,8 @@
  * 	found in "dnds.asn1"
  */
 
-#ifndef	_User_H_
-#define	_User_H_
+#ifndef	_Client_H_
+#define	_Client_H_
 
 
 #include <asn_application.h>
@@ -13,23 +13,26 @@
 /* Including external dependencies */
 #include <NativeInteger.h>
 #include <PrintableString.h>
-#include <IA5String.h>
 #include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* User */
-typedef struct User {
+/* Client */
+typedef struct Client {
 	unsigned long	 id;
-	unsigned long	 contextId;
-	PrintableString_t	*name	/* OPTIONAL */;
+	PrintableString_t	*username	/* OPTIONAL */;
 	PrintableString_t	*password	/* OPTIONAL */;
 	PrintableString_t	*firstname	/* OPTIONAL */;
 	PrintableString_t	*lastname	/* OPTIONAL */;
-	IA5String_t	*email	/* OPTIONAL */;
-	long	*role	/* OPTIONAL */;
+	PrintableString_t	*email	/* OPTIONAL */;
+	PrintableString_t	*company	/* OPTIONAL */;
+	PrintableString_t	*phone	/* OPTIONAL */;
+	PrintableString_t	*country	/* OPTIONAL */;
+	PrintableString_t	*stateProvince	/* OPTIONAL */;
+	PrintableString_t	*city	/* OPTIONAL */;
+	PrintableString_t	*postalCode	/* OPTIONAL */;
 	long	*status	/* OPTIONAL */;
 	/*
 	 * This type is extensible,
@@ -38,16 +41,15 @@ typedef struct User {
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
-} User_t;
+} Client_t;
 
 /* Implementation */
 /* extern asn_TYPE_descriptor_t asn_DEF_id_2;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_contextId_3;	// (Use -fall-defs-global to expose) */
-extern asn_TYPE_descriptor_t asn_DEF_User;
+extern asn_TYPE_descriptor_t asn_DEF_Client;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* _User_H_ */
+#endif	/* _Client_H_ */
 #include <asn_internal.h>

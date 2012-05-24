@@ -19,7 +19,7 @@
 #include "Node.h"
 #include "Peer.h"
 #include "Permission.h"
-#include "User.h"
+#include "Client.h"
 #include <constr_CHOICE.h>
 
 #ifdef __cplusplus
@@ -37,7 +37,7 @@ typedef enum DNDSObject_PR {
 	DNDSObject_PR_node,
 	DNDSObject_PR_peer,
 	DNDSObject_PR_permission,
-	DNDSObject_PR_user,
+	DNDSObject_PR_client,
 	/* Extensions may appear below */
 	
 } DNDSObject_PR;
@@ -54,7 +54,7 @@ typedef struct DNDSObject {
 		Node_t	 node;
 		Peer_t	 peer;
 		Permission_t	 permission;
-		User_t	 user;
+		Client_t	 client;
 		/*
 		 * This type is extensible,
 		 * possible extensions are below.

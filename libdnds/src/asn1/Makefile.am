@@ -39,7 +39,7 @@ libasn1_la_SOURCES=	\
 	Node.c	\
 	Permission.c	\
 	Peer.c	\
-	User.c
+	Client.c
 
 libasn1_include_HEADERS=	\
 	DNDSMessage.h	\
@@ -76,7 +76,7 @@ libasn1_include_HEADERS=	\
 	Node.h	\
 	Permission.h	\
 	Peer.h	\
-	User.h
+	Client.h
 
 libasn1_include_HEADERS+=BOOLEAN.h
 libasn1_la_SOURCES+=BOOLEAN.c

@@ -79,14 +79,14 @@ static asn_TYPE_member_t asn_MBR_DNDSObject_1[] = {
 		0,
 		"permission"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct DNDSObject, choice.user),
+	{ ATF_NOFLAGS, 0, offsetof(struct DNDSObject, choice.client),
 		(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_User,
+		&asn_DEF_Client,
 		0,	/* Defer constraints checking to the member type */
 		0,	/* PER is not compiled, use -gen-PER */
 		0,
-		"user"
+		"client"
 		},
 };
 static asn_TYPE_tag2member_t asn_MAP_DNDSObject_tag2el_1[] = {
@@ -98,7 +98,7 @@ static asn_TYPE_tag2member_t asn_MAP_DNDSObject_tag2el_1[] = {
     { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* node at 77 */
     { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* peer at 78 */
     { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* permission at 79 */
-    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 } /* user at 80 */
+    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 } /* client at 80 */
 };
 static asn_CHOICE_specifics_t asn_SPC_DNDSObject_specs_1 = {
 	sizeof(struct DNDSObject),
