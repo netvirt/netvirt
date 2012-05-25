@@ -123,7 +123,7 @@ void test_AddRequest()
 	Client_set_password(objClient, "password", 8);
 	Client_set_firstname(objClient, "firstname", 9);
 	Client_set_lastname(objClient, "lastname", 8);
-	Client_set_email(objClient, "mailexample.com", 15);
+	Client_set_email(objClient, "mail@example.com", 15);
 	Client_set_company(objClient, "mycompany", 9);
 	Client_set_phone(objClient, "thephone", 8);
 	Client_set_country(objClient, "mycountry", 9);

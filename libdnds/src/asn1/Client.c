@@ -210,7 +210,7 @@ static asn_TYPE_member_t asn_MBR_Client_1[] = {
 	{ ATF_POINTER, 8, offsetof(struct Client, email),
 		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_PrintableString,
+		&asn_DEF_IA5String,
 		0,	/* Defer constraints checking to the member type */
 		0,	/* PER is not compiled, use -gen-PER */
 		0,

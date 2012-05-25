@@ -270,7 +270,7 @@ Client ::= SEQUENCE {
 	password	PrintableString OPTIONAL,
 	firstname	PrintableString OPTIONAL,
 	lastname	PrintableString OPTIONAL,
-	email		PrintableString OPTIONAL,
+	email		IA5String OPTIONAL,
 	company		PrintableString OPTIONAL,
 	phone		PrintableString OPTIONAL,
 	country		PrintableString OPTIONAL,

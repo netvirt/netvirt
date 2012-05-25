@@ -13,6 +13,7 @@
 /* Including external dependencies */
 #include <NativeInteger.h>
 #include <PrintableString.h>
+#include <IA5String.h>
 #include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
@@ -26,7 +27,7 @@ typedef struct Client {
 	PrintableString_t	*password	/* OPTIONAL */;
 	PrintableString_t	*firstname	/* OPTIONAL */;
 	PrintableString_t	*lastname	/* OPTIONAL */;
-	PrintableString_t	*email	/* OPTIONAL */;
+	IA5String_t	*email	/* OPTIONAL */;
 	PrintableString_t	*company	/* OPTIONAL */;
 	PrintableString_t	*phone	/* OPTIONAL */;
 	PrintableString_t	*country	/* OPTIONAL */;
