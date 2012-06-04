@@ -169,7 +169,7 @@ int dsd_init(char *ip_address, char *port, char *certificate, char *privatekey, 
 	passport_t *dsd_passport;
 	dsd_passport = pki_passport_load_from_file(certificate, privatekey, trusted_authority);
 
-	ret = net_server(ip_address, port, NET_PROTO_UDT, NET_SECURE_RSA, dsd_passport,
+	ret = net_server(ip_address, port, NET_PROTO_TCP, NET_SECURE_RSA, dsd_passport,
 			on_connect, on_disconnect, on_input, on_secure);
 
 	if (ret < 0) {

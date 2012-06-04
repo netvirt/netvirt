@@ -267,6 +267,41 @@ int dao_add_context(char *client_id, int topology_id, char *description)
 	return 0;
 }
 
+int dao_add_webcredential(char *client_id, char *username, char *password)
+{
+	PGresult *result;
+	char insert_req[512];
+
+	snprintf(insert_req, 512, "INSERT INTO webcredential "
+				"(client_id, username, password) "
+				"VALUES ('%s', '%s', crypt('%s', gen_salt('bf')));",
+				client_id, username, password);
+
+	printf("insert_req: %s\n", insert_req);
+
+	result = PQexec(dbconn, insert_req);
+
+	if (!result) {
+		printf("PQexec command failed, no error code\n");
+	}
+
+	switch (PQresultStatus(result)) {
+	case PGRES_COMMAND_OK:
+		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		break;
+	case PGRES_TUPLES_OK:
+		printf("query may have returned data\n");
+		break;
+	default:
+		printf("command failed with code %s, error message %s\n",
+			PQresStatus(PQresultStatus(result)),
+			PQresultErrorMessage(result));
+		break;
+	}
+
+	return 0;
+}
+
 int dao_add_client(char *firstname,
 			char *lastname,
 			char *email,

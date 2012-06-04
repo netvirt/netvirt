@@ -50,6 +50,85 @@ void authRequest(struct session *session, DNDSMessage_t *req_msg)
 
 void addRequest(struct session *session, DNDSMessage_t *msg)
 {
+	/* XXX This is a prototype, it only handle client object
+		and doesn't handle any error yet ... */
+
+	/* XXX dispatch per object type */
+
+	printf("add request!\n");
+
+	DNDSMessage_printf(msg);
+	DSMessage_printf(msg);
+	AddRequest_printf(msg);
+
+	DNDSObject_t *obj;
+	AddRequest_get_object(msg, &obj);
+	DNDSObject_printf(obj);
+
+
+	DNDSObject_PR objType;
+	AddRequest_get_objectType(msg, &objType);
+
+	if (objType == DNDSObject_PR_client) {
+		printf("add new client !\n");
+	}
+
+	size_t length;
+
+        uint32_t id;
+        Client_get_id(obj, &id);
+
+        char *username;
+        Client_get_username(obj, &username, &length);
+
+        char *password;
+        Client_get_password(obj, &password, &length);
+
+        char *firstname;
+        Client_get_firstname(obj, &firstname, &length);
+
+        char *lastname;
+        Client_get_lastname(obj, &lastname, &length);
+
+        char *email;
+        Client_get_email(obj, &email, &length);
+
+        char *company;
+        Client_get_company(obj, &company, &length);
+
+        char *phone;
+        Client_get_phone(obj, &phone, &length);
+
+        char *country;
+        Client_get_country(obj, &country, &length);
+
+        char *stateProvince;
+        Client_get_stateProvince(obj, &stateProvince, &length);
+
+        char *city;
+        Client_get_city(obj, &city, &length);
+
+        char *postalCode;
+        Client_get_postalCode(obj, &postalCode, &length);
+
+        uint8_t status;
+        Client_get_status(obj, &status);
+
+	dao_add_client(firstname,
+			lastname,
+			email,
+			company,
+			phone,
+			country,
+			stateProvince,
+			city,
+			postalCode);
+
+
+	char *client_id = NULL;
+	dao_fetch_client_id(&client_id, firstname, lastname, email);
+
+	dao_add_webcredential(client_id, username, password);
 
 }
 
