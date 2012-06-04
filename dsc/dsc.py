@@ -26,18 +26,48 @@ print pprint.pformat(ssl_sock.getpeercert())
 msg = DNDSMessage()
 msg.setComponentByName('version', '1')
 msg.setComponentByName('channel', '0')
+
 pdu = msg.setComponentByName('pdu').getComponentByName('pdu')
 dsm = pdu.setComponentByName('dsm').getComponentByName('dsm')
 
 dsm.setComponentByName('seqNumber', '1')
 dsm.setComponentByName('ackNumber', '1')
+
 dsop = dsm.setComponentByName('dsop').getComponentByName('dsop')
 
-req = dsop.setComponentByName('searchRequest').getComponentByName('searchRequest')
-req.setComponentByName('searchtype', 'all')
-req.setComponentByName('objectname', 'context')
+obj = dsop.setComponentByName('addRequest').getComponentByName('addRequest')
+client = obj.setComponentByName('client').getComponentByName('client')
 
-ssl_sock.write(encoder.encode(msg))
+client.setComponentByName('id', '0')
+client.setComponentByName('username', 'test-username')
+client.setComponentByName('password', 'test-password')
+client.setComponentByName('firstname', 'test-firstname')
+client.setComponentByName('lastname', 'test-lastname')
+client.setComponentByName('email', 'test-email')
+client.setComponentByName('company', 'test-company')
+client.setComponentByName('phone', 'test-phone')
+client.setComponentByName('country', 'test-country')
+client.setComponentByName('stateProvince', 'test-stateProvince')
+client.setComponentByName('city', 'test-city')
+client.setComponentByName('postalCode', 'test-postalCode')
+client.setComponentByName('status', '0')
+
+print(msg.prettyPrint())
+
+"""
+f = open('dnds.ber', 'wb')
+f.write(encoder.encode(msg))
+f.close()
+
+f = open('dnds.ber', 'rb')
+substrate = f.read()
+f.close()
+my_msg, substrate = decoder.decode(substrate, asn1Spec=DNDSMessage())
+
+print(my_msg.prettyPrint())
+"""
+
+print ssl_sock.write(encoder.encode(msg))
 
 time.sleep(3)
 
@@ -48,3 +78,19 @@ f.write(data)
 f.close()
 
 ssl_sock.close()
+
+"""
+msg = DNDSMessage()
+msg.setComponentByName('version', '1')
+msg.setComponentByName('channel', '0')
+pdu = msg.setComponentByName('pdu').getComponentByName('pdu')
+dsm = pdu.setComponentByName('dsm').getComponentByName('dsm')
+
+dsm.setComponentByName('seqNumber', '1')
+dsm.setComponentByName('ackNumber', '1')
+dsop = dsm.setComponentByName('dsop').getComponentByName('dsop')
+
+req = dsop.setComponentByName('searchRequest').getComponentByName('searchRequest')
+req.setComponentByName('searchtype', 'all')
+req.setComponentByName('objectname', 'context')
+"""

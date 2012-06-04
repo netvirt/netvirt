@@ -14,6 +14,28 @@ class SearchType(univ.Enumerated):
         ('object', 3)
     )
 
+class Client(univ.Sequence):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('id', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0))),
+        namedtype.NamedType('username', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1))),
+        namedtype.NamedType('password', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 2))),
+        namedtype.NamedType('firstname', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 3))),
+        namedtype.NamedType('lastname', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 4))),
+        namedtype.NamedType('email', char.IA5String().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 5))),
+        namedtype.NamedType('company', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 6))),
+        namedtype.NamedType('phone', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 7))),
+        namedtype.NamedType('country', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 8))),
+        namedtype.NamedType('stateProvince', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 9))),
+        namedtype.NamedType('city', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 10))),
+        namedtype.NamedType('postalCode', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 11))),
+        namedtype.NamedType('status', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 12))),
+    )
+
+class DNDSObject(univ.Choice):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('client', Client().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 8)))
+    )
+
 class ObjectName(univ.Enumerated):
     namedValues = namedval.NamedValues(
         ('acl', 1),
@@ -24,7 +46,7 @@ class ObjectName(univ.Enumerated):
         ('node', 6),
         ('peer', 7),
         ('permission', 8),
-        ('user', 9)
+        ('client', 9)
     )
 
 class SearchRequest(univ.Sequence):
@@ -53,6 +75,7 @@ class Topology(univ.Enumerated):
 
 class DSop(univ.Choice):
     componentType = namedtype.NamedTypes(
+        namedtype.NamedType('addRequest', DNDSObject().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 3))),
         namedtype.NamedType('searchRequest', SearchRequest().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 9)))
         )
 
@@ -76,29 +99,48 @@ class DNDSMessage(univ.Sequence):
         namedtype.NamedType('channel', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1))),
         namedtype.NamedType('pdu', Pdu().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 2)))
         )
+
 """
-req = SearchRequest()
-req.setComponentByName('searchtype', 'all')
-req.setComponentByName('objectname', 'context')
-
-dsop = DSop()
-dsop.setComponentByName('searchRequest', req)
-
-dsm = DSMessage()
-dsm.setComponentByName('seqNumber', '1')
-dsm.setComponentByName('ackNumber', '1')
-dsm.setComponentByName('dsop', dsop)
-
-pdu = Pdu()
-pdu.setComponentByName('dsm', dsm)
-
 msg = DNDSMessage()
 msg.setComponentByName('version', '1')
 msg.setComponentByName('channel', '0')
-msg.setComponentByName('pdu', pdu)
+
+pdu = msg.setComponentByName('pdu').getComponentByName('pdu')
+dsm = pdu.setComponentByName('dsm').getComponentByName('dsm')
+
+dsm.setComponentByName('seqNumber', '1')
+dsm.setComponentByName('ackNumber', '1')
+
+dsop = dsm.setComponentByName('dsop').getComponentByName('dsop')
+
+obj = dsop.setComponentByName('addRequest').getComponentByName('addRequest')
+client = obj.setComponentByName('client').getComponentByName('client')
+
+client.setComponentByName('id', '0')
+client.setComponentByName('username', 'test-username')
+client.setComponentByName('password', 'test-password')
+client.setComponentByName('firstname', 'test-firstname')
+client.setComponentByName('lastname', 'test-lastname')
+client.setComponentByName('email', 'test-email')
+client.setComponentByName('company', 'test-company')
+client.setComponentByName('phone', 'test-phone')
+client.setComponentByName('country', 'test-country')
+client.setComponentByName('stateProvince', 'test-stateProvince')
+client.setComponentByName('city', 'test-city')
+client.setComponentByName('postalCode', 'test-postalCode')
+client.setComponentByName('status', '0')
+
+print(msg.prettyPrint())
+
+f = open('dnds.ber', 'wb')
+f.write(encoder.encode(msg))
+f.close()
 
 f = open('dnds.ber', 'rb')
 substrate = f.read()
 f.close()
 my_msg, substrate = decoder.decode(substrate, asn1Spec=DNDSMessage())
+
+print(my_msg.prettyPrint())
+
 """
