@@ -1416,7 +1416,12 @@ int SearchRequest_set_objectName(DNDSMessage_t *msg, e_ObjectName ObjectName)
 		return DNDS_invalid_op;
 	}
 
-	msg->pdu.choice.dsm.dsop.choice.searchRequest.objectname = ObjectName;
+	msg->pdu.choice.dsm.dsop.choice.searchRequest.objectname = (ObjectName_t *)calloc(1, sizeof(ObjectName_t));
+	if (msg->pdu.choice.dsm.dsop.choice.searchRequest.objectname == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	*msg->pdu.choice.dsm.dsop.choice.searchRequest.objectname = (ObjectName_t)ObjectName;
 
 	return DNDS_success;
 }
@@ -1435,10 +1440,54 @@ int SearchRequest_get_objectName(DNDSMessage_t *msg, e_ObjectName *ObjectName)
 		return DNDS_invalid_op;
 	}
 
-	*ObjectName = msg->pdu.choice.dsm.dsop.choice.searchRequest.objectname;
+	if (msg->pdu.choice.dsm.dsop.choice.searchRequest.objectname == NULL) {
+		*ObjectName = 0;
+	}
+	else {
+		*ObjectName = (e_ObjectName)*msg->pdu.choice.dsm.dsop.choice.searchRequest.objectname;
+	}
 
 	return DNDS_success;
 }
+
+int SearchRequest_set_object(DNDSMessage_t *msg, DNDSObject_t *object)
+{
+	if (msg == NULL || object == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_searchRequest) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.searchRequest.object = object;
+
+	return DNDS_success;
+}
+
+int SearchRequest_get_object(DNDSMessage_t *msg, DNDSObject_t **object)
+{
+	if (msg == NULL || object == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_searchRequest) {
+		return DNDS_invalid_op;
+	}
+
+	*object = msg->pdu.choice.dsm.dsop.choice.searchRequest.object;
+
+	return DNDS_success;
+}
+
 #if 0
 int SearchRequest_set_objectType(DNDSMessage_t *msg, DNDSObject_PR objType, DNDSObject_t **object)
 {
@@ -2214,7 +2263,6 @@ int Context_get_description(DNDSObject_t *object, char **description, size_t *le
 	return DNDS_success;
 }
 
-
 int Context_set_network(DNDSObject_t *object, char *network)
 {
 	if (object == NULL || network == NULL) {
@@ -2941,36 +2989,6 @@ int Permission_set_matrix()
 }
 
 // Peer
-int Peer_set_id(DNDSObject_t *object, uint32_t id)
-{
-	if (object == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_peer) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.peer.id = id;
-
-	return DNDS_success;
-}
-
-int Peer_get_id(DNDSObject_t *object, uint32_t *id)
-{
-	if (object == NULL || id == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_peer) {
-		return DNDS_invalid_object_type;
-	}
-
-	*id = object->choice.peer.id;
-
-	return DNDS_success;
-}
-
 int Peer_set_contextId(DNDSObject_t *object, uint32_t contextId)
 {
 	if (object == NULL) {
@@ -2997,60 +3015,6 @@ int Peer_get_contextId(DNDSObject_t *object, uint32_t *contextId)
 	}
 
 	*contextId = object->choice.peer.contextId;
-
-	return DNDS_success;
-}
-
-int Peer_set_ipAddress(DNDSObject_t *object, char *ipAddress)
-{
-	if (object == NULL || ipAddress == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_peer) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.peer.ipAddress = (OCTET_STRING_t *)calloc(1, sizeof(OCTET_STRING_t));
-	if (object->choice.peer.ipAddress == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.peer.ipAddress->buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
-	if (object->choice.peer.ipAddress->buf == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	int ret;
-	ret = inet_pton(AF_INET, ipAddress, object->choice.peer.ipAddress->buf);
-	if (ret != 1) {
-		return DNDS_conversion_failed;
-	}
-
-	object->choice.peer.ipAddress->size = sizeof(struct in_addr);
-
-	return DNDS_success;
-}
-
-int Peer_get_ipAddress(DNDSObject_t *object, char *ipAddress)
-{
-	if (object == NULL || ipAddress == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_peer) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.peer.ipAddress == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	const char *ret;
-	ret = inet_ntop(AF_INET, object->choice.peer.ipAddress->buf, ipAddress, INET_ADDRSTRLEN);
-	if (ret == NULL) {
-		return DNDS_conversion_failed;
-	}
 
 	return DNDS_success;
 }
@@ -3702,6 +3666,118 @@ int Client_get_status(DNDSObject_t *object, uint8_t *status)
 	return DNDS_success;
 }
 
+// WebCredential
+int WebCredential_set_clientId(DNDSObject_t *object, uint32_t id)
+{
+	if (object == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_webcredential) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.webcredential.clientId = id;
+
+	return DNDS_success;
+}
+
+int WebCredential_get_clientId(DNDSObject_t *object, uint32_t *id)
+{
+	if (object == NULL || id == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_webcredential) {
+		return DNDS_invalid_object_type;
+	}
+
+	*id = object->choice.webcredential.clientId;
+
+	return DNDS_success;
+}
+
+int WebCredential_set_username(DNDSObject_t *object, char *username, size_t length)
+{
+	if (object == NULL || username == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_webcredential) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.webcredential.username = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.webcredential.username == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.webcredential.username->buf = (uint8_t *)strdup(username);
+	object->choice.webcredential.username->size = length;
+
+	return DNDS_success;
+}
+int WebCredential_get_username(DNDSObject_t *object, char **username, size_t *length)
+{
+	if (object == NULL || username == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_webcredential) {
+		return DNDS_invalid_object_type;
+	}
+
+	if (object->choice.webcredential.username == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*username = (char *)object->choice.webcredential.username->buf;
+	*length = object->choice.webcredential.username->size;
+
+	return DNDS_success;
+}
+
+int WebCredential_set_password(DNDSObject_t *object, char *password, size_t length)
+{
+	if (object == NULL || password == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_webcredential) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.webcredential.password = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.webcredential.password == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.webcredential.password->buf = (uint8_t *)strdup(password);
+	object->choice.webcredential.password->size = length;
+
+	return DNDS_success;
+}
+
+int WebCredential_get_password(DNDSObject_t *object, char **password, size_t *length)
+{
+	if (object == NULL || password == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_webcredential) {
+		return DNDS_invalid_object_type;
+	}
+
+	if (object->choice.webcredential.password == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*password = (char *)object->choice.webcredential.password->buf;
+	*length = object->choice.webcredential.password->size;
+
+	return DNDS_success;
+}
+
 char *ObjectName_str(e_ObjectName objectname)
 {
 	switch (objectname) {
@@ -4213,17 +4289,9 @@ void Node_printf(DNDSObject_t *object)
 
 void Peer_printf(DNDSObject_t *object)
 {
-	uint32_t id;
-	Peer_get_id(object, &id);
-	printf("Peer> id: %i\n", id);
-
 	uint32_t contextId;
 	Peer_get_contextId(object, &contextId);
 	printf("Peer> contextId: %i\n", contextId);
-
-	char ipAddress[INET_ADDRSTRLEN];
-	Peer_get_ipAddress(object, ipAddress);
-	printf("Peer> ipAddress: %s\n", ipAddress);
 
 	char *certificate; size_t length;
 	Peer_get_certificate(object, &certificate, &length);

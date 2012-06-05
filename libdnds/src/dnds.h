@@ -169,8 +169,7 @@ int SearchRequest_set_searchType(DNDSMessage_t *msg, e_SearchType SearchType);
 int SearchRequest_get_searchType(DNDSMessage_t *msg, e_SearchType *SearchType);
 int SearchRequest_set_objectName(DNDSMessage_t *msg, e_ObjectName ObjectName);
 int SearchRequest_get_objectName(DNDSMessage_t *msg, e_ObjectName *ObjectName);
-int SearchRequest_set_objectType(DNDSMessage_t *msg, DNDSObject_PR objType, DNDSObject_t **object);
-int SearchRequest_get_objectType(DNDSMessage_t *msg, DNDSObject_PR *objType);
+int SearchRequest_set_object(DNDSMessage_t *msg, DNDSObject_t *object);
 int SearchRequest_get_object(DNDSMessage_t *msg, DNDSObject_t **object);
 
 // SearchResponse
@@ -234,6 +233,14 @@ int Context_get_serverPrivkey(DNDSObject_t *object, char **serverPrivkey, size_t
 int Context_set_trustedCert(DNDSObject_t *object, char *trustedCert, size_t length);
 int Context_get_trustedCert(DNDSObject_t *object, char **trustedCert, size_t *length);
 
+// WebCredential
+int WebCredential_set_clientId(DNDSObject_t *object, uint32_t id);
+int WebCredential_get_clientId(DNDSObject_t *object, uint32_t *id);
+int WebCredential_set_username(DNDSObject_t *object, char *username, size_t length);
+int WebCredential_get_username(DNDSObject_t *object, char **username, size_t *length);
+int WebCredential_set_password(DNDSObject_t *object, char *password, size_t length);
+int WebCredential_get_password(DNDSObject_t *object, char **password, size_t *length);
+
 // Host
 int Host_set_id(DNDSObject_t *HostObject, uint32_t id);
 int Host_get_id(DNDSObject_t *HostObject, uint32_t *id);
@@ -271,12 +278,8 @@ int Permission_set_name();
 int Permission_set_matrix();
 
 // Peer
-int Peer_set_id(DNDSObject_t *PeerObject, uint32_t id);
-int Peer_get_id(DNDSObject_t *PeerObject, uint32_t *id);
 int Peer_set_contextId(DNDSObject_t *PeerObject, uint32_t contextId);
 int Peer_get_contextId(DNDSObject_t *PeerObject, uint32_t *contextId);
-int Peer_set_ipAddress(DNDSObject_t *PeerObject, char *ipAddress);
-int Peer_get_ipAddress(DNDSObject_t *PeerObject, char *ipAddress);
 int Peer_set_certificate(DNDSObject_t *PeerObject, char *certificate, size_t length);
 int Peer_get_certificate(DNDSObject_t *PeerObject, char **certificate, size_t *length);
 int Peer_set_certificateKey(DNDSObject_t *PeerObject, uint8_t *certificateKey, size_t length);
