@@ -47,7 +47,7 @@ DNDSMessage_t *decode()
 	size_t errlen = sizeof(errbuf);
 
 	ret = asn_check_constraints(&asn_DEF_DNDSMessage, msg, errbuf, &errlen);
-	printf("decode ret:(%i) errbuf:(%s)\n", ret, errbuf);
+	printf("\ndecode ret:(%i) errbuf:(%s)\n", ret, errbuf);
 
 	return msg;
 }
@@ -99,6 +99,8 @@ void show_AddRequest()
 	DNDSObject_t *obj;
 	AddRequest_get_object(msg, &obj);
 	DNDSObject_printf(obj);
+
+	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
 }
 
 void test_AddRequest()
@@ -248,6 +250,116 @@ void test_SearchResponse_context()
 	DNDSMessage_del(msg);
 
 
+}
+
+void show_SearchResponse_WebCredential()
+{
+	DNDSMessage_t *msg;
+
+	msg = decode();
+	DNDSMessage_printf(msg);
+	DSMessage_printf(msg);
+	SearchRequest_printf(msg);
+
+	DNDSObject_t *obj;
+	uint32_t count; int ret;
+
+	SearchResponse_get_object_count(msg, &count);
+
+	while (count-- > 0) {
+
+		ret = SearchResponse_get_object(msg, &obj);
+		if (ret == DNDS_success && obj != NULL) {
+			DNDSObject_printf(obj);
+		}
+	}
+}
+
+void test_SearchResponse_WebCredential()
+{
+	/// Building a SearchResponse
+
+	DNDSMessage_t *msg;	// A DNDS Message
+
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+
+	DSMessage_set_seqNumber(msg, 0);
+	DSMessage_set_ackNumber(msg, 400);
+	DSMessage_set_operation(msg, dsop_PR_searchResponse);
+
+	SearchResponse_set_result(msg, DNDSResult_success);
+
+	DNDSObject_t *objWebCred;
+	DNDSObject_new(&objWebCred);
+	DNDSObject_set_objectType(objWebCred, DNDSObject_PR_webcredential);
+
+	WebCredential_set_clientId(objWebCred, 1060);
+	WebCredential_set_username(objWebCred, "test-username", 13);
+
+	SearchResponse_add_object(msg, objWebCred);
+
+	/// Encoding part
+
+	asn_enc_rval_t ec;	// Encoder return value
+	FILE *fp = fopen("dnds.ber", "wb"); // BER output
+	ec = der_encode(&asn_DEF_DNDSMessage, msg, write_out, fp);
+	fclose(fp);
+
+	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
+
+	DNDSMessage_del(msg);
+}
+
+void show_SearchRequest_WebCredential()
+{
+	DNDSMessage_t *msg;
+
+	msg = decode();
+	DNDSMessage_printf(msg);
+	DSMessage_printf(msg);
+	SearchRequest_printf(msg);
+
+	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
+}
+
+void test_SearchRequest_WebCredential()
+{
+	/// Building a SearchRequest WebCredential ///
+	int ret;
+
+	DNDSMessage_t *msg;	// a DNDS Message
+
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dsm);	// Directory Service Message
+
+	DSMessage_set_seqNumber(msg, 800);
+	DSMessage_set_ackNumber(msg, 0);
+	DSMessage_set_operation(msg, dsop_PR_searchRequest);
+
+	SearchRequest_set_searchType(msg, SearchType_object);
+
+	DNDSObject_t *objWebCred;
+	DNDSObject_new(&objWebCred);
+	DNDSObject_set_objectType(objWebCred, DNDSObject_PR_webcredential);
+
+	WebCredential_set_username(objWebCred, "test-username", 13);
+	WebCredential_set_password(objWebCred, "test-password", 13);
+
+	SearchRequest_set_object(msg, objWebCred);
+
+	/// Encoding part
+
+	asn_enc_rval_t ec;	// Encoder return value
+	FILE *fp = fopen("dnds.ber", "wb"); // BER output
+	ec = der_encode(&asn_DEF_DNDSMessage, msg, write_out, fp);
+	fclose(fp);
+
+	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
+
+	DNDSMessage_del(msg);
 }
 
 void show_SearchRequest_context()
@@ -1001,9 +1113,7 @@ void test_SearchResponse()
 	DNDSObject_new(&objPeer);
 	DNDSObject_set_objectType(objPeer, DNDSObject_PR_peer);
 
-	Peer_set_id(objPeer, 4);
 	Peer_set_contextId(objPeer, 10);
-	Peer_set_ipAddress(objPeer, "10.0.3.1");
 	Peer_set_certificate(objPeer, "certificate", 11);
 	Peer_set_certificateKey(objPeer, "key", 3);
 	Peer_set_status(objPeer, 2);
@@ -1084,14 +1194,18 @@ void test_TerminateRequest()
 
 int main()
 {
+	test_SearchRequest_WebCredential();
+	show_SearchRequest_WebCredential();
 
-/*
-	test_SearchRequest_context();
-	show_SearchRequest_context();
+	test_SearchResponse_WebCredential();
+	show_SearchResponse_WebCredential();
 
-	test_SearchResponse_context();
-	show_SearchResponse_context();
-*/
+//	test_SearchRequest_context();
+//	show_SearchRequest_context();
+
+//	test_SearchResponse_context();
+//	show_SearchResponse_context();
+
 
 /*
 	test_PeerConnectInfo();
@@ -1101,11 +1215,13 @@ int main()
 /*	test_DNDS_ethernet();
 	show_DNDS_ethernet();
 */
-	test_AddRequest();
-	show_AddRequest();
 
-	test_AddResponse();
-	show_AddResponse();
+
+//	test_AddRequest();
+//	show_AddRequest();
+
+//	test_AddResponse();
+//	show_AddResponse();
 /*
 	test_P2pRequest_dnm();
 	show_P2pRequest_dnm();
