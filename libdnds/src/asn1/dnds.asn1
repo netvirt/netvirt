@@ -78,6 +78,7 @@ DNDSObject ::= CHOICE {
 	peer		Peer,
 	permission	Permission,
 	client		Client,
+	webcredential	WebCredential,
 	...
 }
 
@@ -91,6 +92,7 @@ ObjectName ::= ENUMERATED {
 	peer		(7),
 	permission	(8),
 	client		(9),
+	webcredential	(10),
 	...
 }
 
@@ -114,7 +116,7 @@ P2pRequest ::= SEQUENCE {
 	side		P2pSide,
 	...
 }
-	
+
 P2pResponse ::= SEQUENCE {
 	macAddrDst	OCTET STRING (SIZE(6)),
 	result		DNDSResult,
@@ -165,8 +167,8 @@ SearchType ::= ENUMERATED {
 
 SearchRequest ::= SEQUENCE {
 	searchtype	SearchType,
-	objectname	ObjectName,
---	object		DNDSObject OPTIONAL,
+	objectname	ObjectName OPTIONAL,
+	object		DNDSObject OPTIONAL,
 --	from		INTEGER (0..uint32max) OPTIONAL,
 --	to		INTEGER (0..uint32max) OPTIONAL,
 	...
@@ -213,13 +215,14 @@ Topology ::= ENUMERATED {
 
 Context ::= SEQUENCE {
 	id		INTEGER (0..uint32max),
+	clientId	INTEGER (0..uint32max),
 	topology	Topology,
 	description	PrintableString SIZE((1..256)) OPTIONAL,
-	network		OCTET STRING SIZE((4..16)),
-	netmask		OCTET STRING SIZE((4..16)),
-	serverCert	PrintableString,
-	serverPrivkey	PrintableString,
-	trustedCert	PrintableString,
+	network         OCTET STRING SIZE((4..16)),
+	netmask         OCTET STRING SIZE((4..16)),
+	serverCert      PrintableString,
+	serverPrivkey   PrintableString,
+	trustedCert     PrintableString,
 	...
 }
 
@@ -254,13 +257,18 @@ Permission ::= SEQUENCE {
 }
 
 Peer ::= SEQUENCE {
-	id		INTEGER (0..uint32max),
-        contextId	INTEGER (0..uint32max),
-        name		PrintableString (SIZE(1..64)) OPTIONAL,
-        ipAddress	OCTET STRING (SIZE(4..16)) OPTIONAL,
+	contextId	INTEGER (0..uint32max),
+	uuid		PrintableString OPTIONAL,
 	certificate	PrintableString OPTIONAL,
 	certificateKey	BIT STRING OPTIONAL,
-        status		INTEGER (0..127) OPTIONAL,
+	status		INTEGER (0..127) OPTIONAL,
+	...
+}
+
+WebCredential ::= SEQUENCE {
+	clientId	INTEGER (0..uint32max),
+	username	PrintableString OPTIONAL,
+	password	PrintableString OPTIONAL,
 	...
 }
 
