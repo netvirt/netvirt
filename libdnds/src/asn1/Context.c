@@ -88,7 +88,104 @@ id_2_encode_xer(asn_TYPE_descriptor_t *td, void *structure,
 }
 
 static int
+clientId_3_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
+			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
+	
+	if(!sptr) {
+		_ASN_CTFAIL(app_key, td, sptr,
+			"%s: value not given (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+	
+	
+	/* Constraint check succeeded */
+	return 0;
+}
+
+/*
+ * This type is implemented using NativeInteger,
+ * so here we adjust the DEF accordingly.
+ */
+static void
+clientId_3_inherit_TYPE_descriptor(asn_TYPE_descriptor_t *td) {
+	td->free_struct    = asn_DEF_NativeInteger.free_struct;
+	td->print_struct   = asn_DEF_NativeInteger.print_struct;
+	td->ber_decoder    = asn_DEF_NativeInteger.ber_decoder;
+	td->der_encoder    = asn_DEF_NativeInteger.der_encoder;
+	td->xer_decoder    = asn_DEF_NativeInteger.xer_decoder;
+	td->xer_encoder    = asn_DEF_NativeInteger.xer_encoder;
+	td->uper_decoder   = asn_DEF_NativeInteger.uper_decoder;
+	td->uper_encoder   = asn_DEF_NativeInteger.uper_encoder;
+	if(!td->per_constraints)
+		td->per_constraints = asn_DEF_NativeInteger.per_constraints;
+	td->elements       = asn_DEF_NativeInteger.elements;
+	td->elements_count = asn_DEF_NativeInteger.elements_count;
+     /* td->specifics      = asn_DEF_NativeInteger.specifics;	// Defined explicitly */
+}
+
+static void
+clientId_3_free(asn_TYPE_descriptor_t *td,
+		void *struct_ptr, int contents_only) {
+	clientId_3_inherit_TYPE_descriptor(td);
+	td->free_struct(td, struct_ptr, contents_only);
+}
+
+static int
+clientId_3_print(asn_TYPE_descriptor_t *td, const void *struct_ptr,
+		int ilevel, asn_app_consume_bytes_f *cb, void *app_key) {
+	clientId_3_inherit_TYPE_descriptor(td);
+	return td->print_struct(td, struct_ptr, ilevel, cb, app_key);
+}
+
+static asn_dec_rval_t
+clientId_3_decode_ber(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
+		void **structure, const void *bufptr, size_t size, int tag_mode) {
+	clientId_3_inherit_TYPE_descriptor(td);
+	return td->ber_decoder(opt_codec_ctx, td, structure, bufptr, size, tag_mode);
+}
+
+static asn_enc_rval_t
+clientId_3_encode_der(asn_TYPE_descriptor_t *td,
+		void *structure, int tag_mode, ber_tlv_tag_t tag,
+		asn_app_consume_bytes_f *cb, void *app_key) {
+	clientId_3_inherit_TYPE_descriptor(td);
+	return td->der_encoder(td, structure, tag_mode, tag, cb, app_key);
+}
+
+static asn_dec_rval_t
+clientId_3_decode_xer(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
+		void **structure, const char *opt_mname, const void *bufptr, size_t size) {
+	clientId_3_inherit_TYPE_descriptor(td);
+	return td->xer_decoder(opt_codec_ctx, td, structure, opt_mname, bufptr, size);
+}
+
+static asn_enc_rval_t
+clientId_3_encode_xer(asn_TYPE_descriptor_t *td, void *structure,
+		int ilevel, enum xer_encoder_flags_e flags,
+		asn_app_consume_bytes_f *cb, void *app_key) {
+	clientId_3_inherit_TYPE_descriptor(td);
+	return td->xer_encoder(td, structure, ilevel, flags, cb, app_key);
+}
+
+static int
 memb_id_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
+			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
+	
+	if(!sptr) {
+		_ASN_CTFAIL(app_key, td, sptr,
+			"%s: value not given (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+	
+	
+	/* Constraint check succeeded */
+	return 0;
+}
+
+static int
+memb_clientId_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
 	
 	if(!sptr) {
@@ -214,6 +311,39 @@ asn_TYPE_descriptor_t asn_DEF_id_2 = {
 	&asn_SPC_id_specs_2	/* Additional specs */
 };
 
+static asn_INTEGER_specifics_t asn_SPC_clientId_specs_3 = {
+	0,	0,	0,	0,	0,
+	0,	/* Native long size */
+	1	/* Unsigned representation */
+};
+static ber_tlv_tag_t asn_DEF_clientId_tags_3[] = {
+	(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
+	(ASN_TAG_CLASS_UNIVERSAL | (2 << 2))
+};
+static /* Use -fall-defs-global to expose */
+asn_TYPE_descriptor_t asn_DEF_clientId_3 = {
+	"clientId",
+	"clientId",
+	clientId_3_free,
+	clientId_3_print,
+	clientId_3_constraint,
+	clientId_3_decode_ber,
+	clientId_3_encode_der,
+	clientId_3_decode_xer,
+	clientId_3_encode_xer,
+	0, 0,	/* No PER support, use "-gen-PER" to enable */
+	0,	/* Use generic outmost tag fetcher */
+	asn_DEF_clientId_tags_3,
+	sizeof(asn_DEF_clientId_tags_3)
+		/sizeof(asn_DEF_clientId_tags_3[0]) - 1, /* 1 */
+	asn_DEF_clientId_tags_3,	/* Same as above */
+	sizeof(asn_DEF_clientId_tags_3)
+		/sizeof(asn_DEF_clientId_tags_3[0]), /* 2 */
+	0,	/* No PER visible constraints */
+	0, 0,	/* No members */
+	&asn_SPC_clientId_specs_3	/* Additional specs */
+};
+
 static asn_TYPE_member_t asn_MBR_Context_1[] = {
 	{ ATF_NOFLAGS, 0, offsetof(struct Context, id),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
@@ -224,8 +354,17 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		0,
 		"id"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct Context, topology),
+	{ ATF_NOFLAGS, 0, offsetof(struct Context, clientId),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_clientId_3,
+		memb_clientId_constraint_1,
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"clientId"
+		},
+	{ ATF_NOFLAGS, 0, offsetof(struct Context, topology),
+		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_Topology,
 		0,	/* Defer constraints checking to the member type */
@@ -234,7 +373,7 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		"topology"
 		},
 	{ ATF_POINTER, 1, offsetof(struct Context, description),
-		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
 		memb_description_constraint_1,
@@ -243,7 +382,7 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		"description"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct Context, network),
-		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_OCTET_STRING,
 		memb_network_constraint_1,
@@ -252,7 +391,7 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		"network"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct Context, netmask),
-		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_OCTET_STRING,
 		memb_netmask_constraint_1,
@@ -261,7 +400,7 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		"netmask"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct Context, serverCert),
-		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
 		0,	/* Defer constraints checking to the member type */
@@ -270,7 +409,7 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		"serverCert"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct Context, serverPrivkey),
-		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
 		0,	/* Defer constraints checking to the member type */
@@ -279,7 +418,7 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		"serverPrivkey"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct Context, trustedCert),
-		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
 		0,	/* Defer constraints checking to the member type */
@@ -292,23 +431,24 @@ static ber_tlv_tag_t asn_DEF_Context_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
 static asn_TYPE_tag2member_t asn_MAP_Context_tag2el_1[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* id at 215 */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* topology at 216 */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* description at 217 */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* network at 218 */
-    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* netmask at 219 */
-    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* serverCert at 220 */
-    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* serverPrivkey at 221 */
-    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 } /* trustedCert at 222 */
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* id at 217 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* clientId at 218 */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* topology at 219 */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* description at 220 */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* network at 221 */
+    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* netmask at 222 */
+    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* serverCert at 223 */
+    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* serverPrivkey at 224 */
+    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 } /* trustedCert at 225 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_Context_specs_1 = {
 	sizeof(struct Context),
 	offsetof(struct Context, _asn_ctx),
 	asn_MAP_Context_tag2el_1,
-	8,	/* Count of tags in the map */
+	9,	/* Count of tags in the map */
 	0, 0, 0,	/* Optional elements (not needed) */
-	7,	/* Start extensions */
-	9	/* Stop extensions */
+	8,	/* Start extensions */
+	10	/* Stop extensions */
 };
 asn_TYPE_descriptor_t asn_DEF_Context = {
 	"Context",
@@ -330,7 +470,7 @@ asn_TYPE_descriptor_t asn_DEF_Context = {
 		/sizeof(asn_DEF_Context_tags_1[0]), /* 1 */
 	0,	/* No PER visible constraints */
 	asn_MBR_Context_1,
-	8,	/* Elements count */
+	9,	/* Elements count */
 	&asn_SPC_Context_specs_1	/* Additional specs */
 };
 

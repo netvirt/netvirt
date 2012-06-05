@@ -4,29 +4,26 @@
  * 	found in "dnds.asn1"
  */
 
-#ifndef	_SearchRequest_H_
-#define	_SearchRequest_H_
+#ifndef	_WebCredential_H_
+#define	_WebCredential_H_
 
 
 #include <asn_application.h>
 
 /* Including external dependencies */
-#include "SearchType.h"
-#include "ObjectName.h"
+#include <NativeInteger.h>
+#include <PrintableString.h>
 #include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Forward declarations */
-struct DNDSObject;
-
-/* SearchRequest */
-typedef struct SearchRequest {
-	SearchType_t	 searchtype;
-	ObjectName_t	*objectname	/* OPTIONAL */;
-	struct DNDSObject	*object	/* OPTIONAL */;
+/* WebCredential */
+typedef struct WebCredential {
+	unsigned long	 clientId;
+	PrintableString_t	*username	/* OPTIONAL */;
+	PrintableString_t	*password	/* OPTIONAL */;
 	/*
 	 * This type is extensible,
 	 * possible extensions are below.
@@ -34,17 +31,15 @@ typedef struct SearchRequest {
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
-} SearchRequest_t;
+} WebCredential_t;
 
 /* Implementation */
-extern asn_TYPE_descriptor_t asn_DEF_SearchRequest;
+/* extern asn_TYPE_descriptor_t asn_DEF_clientId_2;	// (Use -fall-defs-global to expose) */
+extern asn_TYPE_descriptor_t asn_DEF_WebCredential;
 
 #ifdef __cplusplus
 }
 #endif
 
-/* Referred external types */
-#include "DNDSObject.h"
-
-#endif	/* _SearchRequest_H_ */
+#endif	/* _WebCredential_H_ */
 #include <asn_internal.h>

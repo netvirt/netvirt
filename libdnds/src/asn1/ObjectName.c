@@ -88,7 +88,8 @@ static asn_INTEGER_enum_map_t asn_MAP_ObjectName_value2enum_1[] = {
 	{ 6,	4,	"node" },
 	{ 7,	4,	"peer" },
 	{ 8,	10,	"permission" },
-	{ 9,	6,	"client" }
+	{ 9,	6,	"client" },
+	{ 10,	13,	"webcredential" }
 	/* This list is extensible */
 };
 static unsigned int asn_MAP_ObjectName_enum2value_1[] = {
@@ -100,14 +101,15 @@ static unsigned int asn_MAP_ObjectName_enum2value_1[] = {
 	2,	/* ippool(3) */
 	5,	/* node(6) */
 	6,	/* peer(7) */
-	7	/* permission(8) */
+	7,	/* permission(8) */
+	9	/* webcredential(10) */
 	/* This list is extensible */
 };
 static asn_INTEGER_specifics_t asn_SPC_ObjectName_specs_1 = {
 	asn_MAP_ObjectName_value2enum_1,	/* "tag" => N; sorted by tag */
 	asn_MAP_ObjectName_enum2value_1,	/* N => "tag"; sorted by N */
-	9,	/* Number of elements in the maps */
-	10,	/* Extensions before this member */
+	10,	/* Number of elements in the maps */
+	11,	/* Extensions before this member */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0

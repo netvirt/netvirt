@@ -13,7 +13,6 @@
 /* Including external dependencies */
 #include <NativeInteger.h>
 #include <PrintableString.h>
-#include <OCTET_STRING.h>
 #include <BIT_STRING.h>
 #include <constr_SEQUENCE.h>
 
@@ -23,10 +22,8 @@ extern "C" {
 
 /* Peer */
 typedef struct Peer {
-	unsigned long	 id;
 	unsigned long	 contextId;
-	PrintableString_t	*name	/* OPTIONAL */;
-	OCTET_STRING_t	*ipAddress	/* OPTIONAL */;
+	PrintableString_t	*uuid	/* OPTIONAL */;
 	PrintableString_t	*certificate	/* OPTIONAL */;
 	BIT_STRING_t	*certificateKey	/* OPTIONAL */;
 	long	*status	/* OPTIONAL */;
@@ -40,8 +37,7 @@ typedef struct Peer {
 } Peer_t;
 
 /* Implementation */
-/* extern asn_TYPE_descriptor_t asn_DEF_id_2;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_contextId_3;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_contextId_2;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_Peer;
 
 #ifdef __cplusplus

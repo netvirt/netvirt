@@ -24,6 +24,7 @@ extern "C" {
 /* Context */
 typedef struct Context {
 	unsigned long	 id;
+	unsigned long	 clientId;
 	Topology_t	 topology;
 	PrintableString_t	*description	/* OPTIONAL */;
 	OCTET_STRING_t	 network;
@@ -42,6 +43,7 @@ typedef struct Context {
 
 /* Implementation */
 /* extern asn_TYPE_descriptor_t asn_DEF_id_2;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_clientId_3;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_Context;
 
 #ifdef __cplusplus

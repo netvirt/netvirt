@@ -20,6 +20,7 @@
 #include "Peer.h"
 #include "Permission.h"
 #include "Client.h"
+#include "WebCredential.h"
 #include <constr_CHOICE.h>
 
 #ifdef __cplusplus
@@ -38,6 +39,7 @@ typedef enum DNDSObject_PR {
 	DNDSObject_PR_peer,
 	DNDSObject_PR_permission,
 	DNDSObject_PR_client,
+	DNDSObject_PR_webcredential,
 	/* Extensions may appear below */
 	
 } DNDSObject_PR;
@@ -55,6 +57,7 @@ typedef struct DNDSObject {
 		Peer_t	 peer;
 		Permission_t	 permission;
 		Client_t	 client;
+		WebCredential_t	 webcredential;
 		/*
 		 * This type is extensible,
 		 * possible extensions are below.

@@ -88,6 +88,15 @@ static asn_TYPE_member_t asn_MBR_DNDSObject_1[] = {
 		0,
 		"client"
 		},
+	{ ATF_NOFLAGS, 0, offsetof(struct DNDSObject, choice.webcredential),
+		(ASN_TAG_CLASS_CONTEXT | (9 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_WebCredential,
+		0,	/* Defer constraints checking to the member type */
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"webcredential"
+		},
 };
 static asn_TYPE_tag2member_t asn_MAP_DNDSObject_tag2el_1[] = {
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* acl at 72 */
@@ -98,7 +107,8 @@ static asn_TYPE_tag2member_t asn_MAP_DNDSObject_tag2el_1[] = {
     { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* node at 77 */
     { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* peer at 78 */
     { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* permission at 79 */
-    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 } /* client at 80 */
+    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* client at 80 */
+    { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 } /* webcredential at 81 */
 };
 static asn_CHOICE_specifics_t asn_SPC_DNDSObject_specs_1 = {
 	sizeof(struct DNDSObject),
@@ -106,9 +116,9 @@ static asn_CHOICE_specifics_t asn_SPC_DNDSObject_specs_1 = {
 	offsetof(struct DNDSObject, present),
 	sizeof(((struct DNDSObject *)0)->present),
 	asn_MAP_DNDSObject_tag2el_1,
-	9,	/* Count of tags in the map */
+	10,	/* Count of tags in the map */
 	0,
-	9	/* Extensions start */
+	10	/* Extensions start */
 };
 asn_TYPE_descriptor_t asn_DEF_DNDSObject = {
 	"DNDSObject",
@@ -128,7 +138,7 @@ asn_TYPE_descriptor_t asn_DEF_DNDSObject = {
 	0,	/* No tags (count) */
 	0,	/* No PER visible constraints */
 	asn_MBR_DNDSObject_1,
-	9,	/* Elements count */
+	10,	/* Elements count */
 	&asn_SPC_DNDSObject_specs_1	/* Additional specs */
 };
 
