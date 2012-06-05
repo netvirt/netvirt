@@ -53,23 +53,32 @@ client.setComponentByName('postalCode', 'test-postalCode')
 client.setComponentByName('status', '0')
 
 print(msg.prettyPrint())
-
-"""
-f = open('dnds.ber', 'wb')
-f.write(encoder.encode(msg))
-f.close()
-
-f = open('dnds.ber', 'rb')
-substrate = f.read()
-f.close()
-my_msg, substrate = decoder.decode(substrate, asn1Spec=DNDSMessage())
-
-print(my_msg.prettyPrint())
-"""
-
 print ssl_sock.write(encoder.encode(msg))
 
-time.sleep(3)
+time.sleep(2)
+
+msg = DNDSMessage()
+msg.setComponentByName('version', '1')
+msg.setComponentByName('channel', '0')
+pdu = msg.setComponentByName('pdu').getComponentByName('pdu')
+dsm = pdu.setComponentByName('dsm').getComponentByName('dsm')
+
+dsm.setComponentByName('seqNumber', '1')
+dsm.setComponentByName('ackNumber', '1')
+dsop = dsm.setComponentByName('dsop').getComponentByName('dsop')
+
+req = dsop.setComponentByName('searchRequest').getComponentByName('searchRequest')
+req.setComponentByName('searchtype', 'object')
+
+obj = req.setComponentByName('object').getComponentByName('object')
+webcred = obj.setComponentByName('webcredential').getComponentByName('webcredential')
+
+webcred.setComponentByName('clientId', '0')
+webcred.setComponentByName('username', 'test-username')
+webcred.setComponentByName('password', 'test-password')
+
+print(msg.prettyPrint())
+print ssl_sock.write(encoder.encode(msg))
 
 data = ssl_sock.read()
 
@@ -93,4 +102,17 @@ dsop = dsm.setComponentByName('dsop').getComponentByName('dsop')
 req = dsop.setComponentByName('searchRequest').getComponentByName('searchRequest')
 req.setComponentByName('searchtype', 'all')
 req.setComponentByName('objectname', 'context')
+"""
+
+"""
+f = open('dnds.ber', 'wb')
+f.write(encoder.encode(msg))
+f.close()
+
+f = open('dnds.ber', 'rb')
+substrate = f.read()
+f.close()
+my_msg, substrate = decoder.decode(substrate, asn1Spec=DNDSMessage())
+
+print(my_msg.prettyPrint())
 """

@@ -14,6 +14,13 @@ class SearchType(univ.Enumerated):
         ('object', 3)
     )
 
+class WebCredential(univ.Sequence):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('clientId', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0))),
+        namedtype.NamedType('username', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1))),
+        namedtype.NamedType('password', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 2))),
+    )
+
 class Client(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('id', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0))),
@@ -33,7 +40,8 @@ class Client(univ.Sequence):
 
 class DNDSObject(univ.Choice):
     componentType = namedtype.NamedTypes(
-        namedtype.NamedType('client', Client().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 8)))
+        namedtype.NamedType('client', Client().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 8))),
+        namedtype.NamedType('webcredential', WebCredential().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 9)))
     )
 
 class ObjectName(univ.Enumerated):
@@ -52,7 +60,8 @@ class ObjectName(univ.Enumerated):
 class SearchRequest(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('searchtype', SearchType().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0))),
-        namedtype.NamedType('objectname', ObjectName().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1)))
+        namedtype.OptionalNamedType('objectname', ObjectName().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1))),
+        namedtype.NamedType('object', DNDSObject().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 2)))
         )
 
 class DNDSResult(univ.Enumerated):
