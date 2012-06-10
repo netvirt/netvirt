@@ -142,10 +142,8 @@ void modifyRequest(struct session *session, DNDSMessage_t *msg)
 
 }
 
-/* XXX This is a prototype, it only handle context object,
- * with a request type set to all. Will be expanded in near future...
- */
-void searchRequest(struct session *session, DNDSMessage_t *req_msg)
+void searchRequest_context(struct session *session, DNDSMessage_t *req_msg)
+
 {
 	char *id;
 	char *topology_id;
@@ -193,4 +191,73 @@ void searchRequest(struct session *session, DNDSMessage_t *req_msg)
         SearchResponse_add_object(msg, objContext);
 
 	net_send_msg(session->netc, msg);
+
+}
+
+void searchRequest_webcredential(struct session *session, DNDSMessage_t *req_msg)
+{
+	DNDSObject_t *object;
+
+	SearchRequest_get_object(req_msg, &object);
+	DNDSObject_printf(object);
+
+        size_t length;
+
+	char *id = NULL;
+
+        char *username;
+        WebCredential_get_username(object, &username, &length);
+        printf("WebCredential> username: %s\n", username);
+
+        char *password;
+        WebCredential_get_password(object, &password, &length);
+        printf("WebCredential> password: %s\n", password);
+
+	dao_fetch_webcredential_client_id(&id, username, password);
+
+
+
+        DNDSMessage_t *msg;
+
+        DNDSMessage_new(&msg);
+        DNDSMessage_set_channel(msg, 0);
+        DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+
+        DSMessage_set_seqNumber(msg, 0);
+        DSMessage_set_ackNumber(msg, 1);
+        DSMessage_set_operation(msg, dsop_PR_searchResponse);
+
+        SearchResponse_set_result(msg, DNDSResult_success);
+
+        DNDSObject_t *objWebCred;
+        DNDSObject_new(&objWebCred);
+        DNDSObject_set_objectType(objWebCred, DNDSObject_PR_webcredential);
+
+        WebCredential_set_clientId(objWebCred, atoi(id));
+
+        SearchResponse_add_object(msg, objWebCred);
+
+	net_send_msg(session->netc, msg);
+}
+
+/* XXX This is a prototype, it only handle context object,
+ * with a request type set to all. Will be expanded in near future...
+ */
+void searchRequest(struct session *session, DNDSMessage_t *req_msg)
+{
+	e_SearchType SearchType;
+
+	SearchRequest_get_searchType(req_msg, &SearchType);
+
+	printf("SearchType: %s\n", SearchType_str(SearchType));
+
+	if (SearchType == SearchType_all) {
+
+		searchRequest_context(session, req_msg);
+	}
+
+	if (SearchType == SearchType_object) {
+		searchRequest_webcredential(session, req_msg);
+	}
+
 }
