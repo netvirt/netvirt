@@ -249,7 +249,6 @@ void test_SearchResponse_context()
 
 	DNDSMessage_del(msg);
 
-
 }
 
 void show_SearchResponse_WebCredential()
@@ -259,9 +258,9 @@ void show_SearchResponse_WebCredential()
 	msg = decode();
 	DNDSMessage_printf(msg);
 	DSMessage_printf(msg);
-	SearchRequest_printf(msg);
+	SearchResponse_printf(msg);
 
-	DNDSObject_t *obj;
+	DNDSObject_t *obj = NULL;
 	uint32_t count; int ret;
 
 	SearchResponse_get_object_count(msg, &count);
@@ -273,6 +272,7 @@ void show_SearchResponse_WebCredential()
 			DNDSObject_printf(obj);
 		}
 	}
+
 }
 
 void test_SearchResponse_WebCredential()
@@ -321,7 +321,7 @@ void show_SearchRequest_WebCredential()
 	DSMessage_printf(msg);
 	SearchRequest_printf(msg);
 
-	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
+//	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
 }
 
 void test_SearchRequest_WebCredential()
@@ -345,6 +345,7 @@ void test_SearchRequest_WebCredential()
 	DNDSObject_new(&objWebCred);
 	DNDSObject_set_objectType(objWebCred, DNDSObject_PR_webcredential);
 
+	WebCredential_set_clientId(objWebCred, 1024);
 	WebCredential_set_username(objWebCred, "test-username", 13);
 	WebCredential_set_password(objWebCred, "test-password", 13);
 
@@ -1194,8 +1195,8 @@ void test_TerminateRequest()
 
 int main()
 {
-	test_SearchRequest_WebCredential();
-	show_SearchRequest_WebCredential();
+//	test_SearchRequest_WebCredential();
+//	show_SearchRequest_WebCredential();
 
 	test_SearchResponse_WebCredential();
 	show_SearchResponse_WebCredential();

@@ -4124,6 +4124,10 @@ void SearchRequest_printf(DNDSMessage_t *msg)
 	e_ObjectName ObjectName;
 	SearchRequest_get_objectName(msg, &ObjectName);
 	printf("SearchRequest> objectName(%i): %s\n", ret, ObjectName_str(ObjectName));
+
+	DNDSObject_t *object = NULL;
+	SearchRequest_get_object(msg, &object);
+	DNDSObject_printf(object);
 }
 
 void SearchResponse_printf(DNDSMessage_t *msg)
@@ -4311,6 +4315,23 @@ void Permission_printf(DNDSObject_t *object)
 {
 }
 
+void WebCredential_printf(DNDSObject_t *object)
+{
+	size_t length;
+
+	uint32_t id;
+	WebCredential_get_clientId(object, &id);
+	printf("WebCredential> id: %i\n", id);
+
+	char *username;
+	WebCredential_get_username(object, &username, &length);
+	printf("WebCredential> username: %s\n", username);
+
+	char *password;
+	WebCredential_get_password(object, &password, &length);
+	printf("WebCredential> password: %s\n", password);
+}
+
 void Client_printf(DNDSObject_t *object)
 {
 	size_t length;
@@ -4408,6 +4429,10 @@ void DNDSObject_printf(DNDSObject_t *obj)
 
 		case DNDSObject_PR_client:
 			Client_printf(obj);
+			break;
+
+		case DNDSObject_PR_webcredential:
+			WebCredential_printf(obj);
 			break;
 
 		case DNDSObject_PR_NOTHING:
