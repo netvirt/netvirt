@@ -17,8 +17,8 @@ class SearchType(univ.Enumerated):
 class WebCredential(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('clientId', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0))),
-        namedtype.NamedType('username', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1))),
-        namedtype.NamedType('password', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 2))),
+        namedtype.OptionalNamedType('username', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1))),
+        namedtype.OptionalNamedType('password', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 2))),
     )
 
 class Client(univ.Sequence):
@@ -64,6 +64,26 @@ class SearchRequest(univ.Sequence):
         namedtype.NamedType('object', DNDSObject().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 2)))
         )
 
+class objects(univ.SequenceOf):
+    componentType = DNDSObject()
+
+class DNDSResult(univ.Enumerated):
+    namedValues = namedval.NamedValues(
+        ('success', 1),
+        ('operationError', 2),
+        ('protocolError', 3),
+        ('noSuchObject', 4),
+        ('busy', 5),
+        ('secureStepUp', 6),
+        ('insufficientAccessRights', 7)
+    )
+
+class SearchResponse(univ.Sequence):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('result', DNDSResult().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 0))),
+        namedtype.NamedType('objects', objects().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 1)))
+        )
+
 class DNDSResult(univ.Enumerated):
     namedValues = namedval.NamedValues(
         ('success', 1),
@@ -85,7 +105,8 @@ class Topology(univ.Enumerated):
 class DSop(univ.Choice):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('addRequest', DNDSObject().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 3))),
-        namedtype.NamedType('searchRequest', SearchRequest().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 9)))
+        namedtype.NamedType('searchRequest', SearchRequest().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 9))),
+        namedtype.NamedType('searchResponse', SearchResponse().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 10)))
         )
 
 class DSMessage(univ.Sequence):
@@ -108,6 +129,7 @@ class DNDSMessage(univ.Sequence):
         namedtype.NamedType('channel', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1))),
         namedtype.NamedType('pdu', Pdu().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 2)))
         )
+
 
 """
 msg = DNDSMessage()

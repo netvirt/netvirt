@@ -82,6 +82,10 @@ print ssl_sock.write(encoder.encode(msg))
 
 data = ssl_sock.read()
 
+substrate = data
+a_msg, substrate = decoder.decode(substrate, asn1Spec=DNDSMessage())
+print(a_msg.prettyPrint())
+
 f = open('data.bin', 'wb')
 f.write(data)
 f.close()
