@@ -346,6 +346,57 @@ int dao_add_client(char *firstname,
 	return 0;
 }
 
+int dao_fetch_webcredential_client_id(char **client_id, char *username, char *password)
+{
+	PGresult *result;
+	char fetch_req[512];
+
+	snprintf(fetch_req, 512, "SELECT client_id "
+				"FROM WEBCREDENTIAL "
+				"WHERE username = '%s' "
+				"AND password = crypt('%s', password);",
+				username, password);
+
+	printf("fetch_req: %s\n", fetch_req);
+
+	result = PQexec(dbconn, fetch_req);
+
+	if (!result) {
+		printf("PQexec command failed, no error code\n");
+	}
+
+	switch (PQresultStatus(result)) {
+	case PGRES_COMMAND_OK:
+		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		break;
+	case PGRES_TUPLES_OK:
+		printf("query may have returned data\n");
+		break;
+	default:
+		printf("command failed with code %s, error message %s\n",
+			PQresStatus(PQresultStatus(result)),
+			PQresultErrorMessage(result));
+		break;
+	}
+
+	int tuples, fields;
+	tuples = PQntuples(result);
+
+	if (tuples > 0) {
+		*client_id = strdup(PQgetvalue(result, 0, 0));
+	}
+
+	fields = PQnfields(result);
+
+	printf("Tuples %d\n", tuples);
+	printf("Fields %d\n", fields);
+
+	int i;
+	for (i = 0; i<fields; i++) {
+		printf("%s | %s\n", PQfname(result, i), PQgetvalue(result, 0, i));
+	}
+}
+
 int dao_fetch_context_id(char **context_id, char *client_id, char *description)
 {
 	PGresult *result;
@@ -575,7 +626,14 @@ int dao_fetch_context(char **id,
 #if 0
 int main(int argc, char *argv[])
 {
+	char *client_id = NULL;
+
 	dao_connect(argv[1], argv[2], argv[3], argv[4]);
+	dao_fetch_webcredential_client_id(&client_id, "test-username", "ttest-password");
+	printf("client_id: %s\n", client_id);
+
+	return 0;
+
 //	dao_fetch_context();
 
 	dao_add_client("firstname",
@@ -588,7 +646,6 @@ int main(int argc, char *argv[])
 			"city",
 			"postal_code");
 
-	char *client_id = NULL;
 	dao_fetch_client_id(&client_id, "firstname", "lastname", "email");
 
 	printf("client_id: %s\n", client_id);
