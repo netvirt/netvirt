@@ -86,6 +86,18 @@ substrate = data
 a_msg, substrate = decoder.decode(substrate, asn1Spec=DNDSMessage())
 print(a_msg.prettyPrint())
 
+recv_pdu = a_msg.getComponentByName('pdu')
+recv_dsm = recv_pdu.getComponentByName('dsm')
+recv_dsop = recv_dsm.getComponentByName('dsop')
+recv_req = recv_dsop.getComponentByName('searchResponse')
+recv_objs = recv_req.getComponentByName('objects')
+
+for idx in range(len(recv_objs)):
+    recv_obj =  recv_objs.getComponentByPosition(idx)
+    recv_web = recv_obj.getComponentByName('webcredential')
+    recv_clientId = recv_web.getComponentByName('clientId')
+    print "the client id is " + str(recv_clientId)
+
 f = open('data.bin', 'wb')
 f.write(data)
 f.close()
