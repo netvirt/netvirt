@@ -14,11 +14,24 @@ class SearchType(univ.Enumerated):
         ('object', 3)
     )
 
-class WebCredential(univ.Sequence):
+class Topology(univ.Enumerated):
+    namedValues = namedval.NamedValues(
+        ('mesh', 1),
+        ('hubspoke', 2),
+        ('gateway', 3)
+    )
+
+class Context(univ.Sequence):
     componentType = namedtype.NamedTypes(
-        namedtype.NamedType('clientId', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0))),
-        namedtype.OptionalNamedType('username', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1))),
-        namedtype.OptionalNamedType('password', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 2))),
+        namedtype.OptionalNamedType('id', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0))),
+        namedtype.NamedType('clientId', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1))),
+        namedtype.NamedType('topology', Topology().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 2))),
+        namedtype.OptionalNamedType('description', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 3))),
+        namedtype.NamedType('network', univ.OctetString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 4))),
+        namedtype.NamedType('netmask', univ.OctetString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 5))),
+        namedtype.OptionalNamedType('serverCert',char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 6))),
+        namedtype.OptionalNamedType('serverPrivkey', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 7))),
+        namedtype.OptionalNamedType('trustedCert', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 8))),
     )
 
 class Client(univ.Sequence):
@@ -38,8 +51,16 @@ class Client(univ.Sequence):
         namedtype.NamedType('status', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 12))),
     )
 
+class WebCredential(univ.Sequence):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('clientId', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0))),
+        namedtype.OptionalNamedType('username', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1))),
+        namedtype.OptionalNamedType('password', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 2))),
+    )
+
 class DNDSObject(univ.Choice):
     componentType = namedtype.NamedTypes(
+        namedtype.NamedType('context', Context().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 3))),
         namedtype.NamedType('client', Client().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 8))),
         namedtype.NamedType('webcredential', WebCredential().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 9)))
     )
@@ -129,6 +150,13 @@ class DNDSMessage(univ.Sequence):
         namedtype.NamedType('channel', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1))),
         namedtype.NamedType('pdu', Pdu().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 2)))
         )
+
+f = open('dnds.ber', 'rb')
+substrate = f.read()
+f.close()
+my_msg, substrate = decoder.decode(substrate, asn1Spec=DNDSMessage())
+
+print(my_msg.prettyPrint())
 
 
 """

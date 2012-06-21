@@ -98,9 +98,34 @@ for idx in range(len(recv_objs)):
     recv_clientId = recv_web.getComponentByName('clientId')
     print "the client id is " + str(recv_clientId)
 
-f = open('data.bin', 'wb')
-f.write(data)
-f.close()
+
+time.sleep(2)
+
+msg = DNDSMessage()
+msg.setComponentByName('version', '1')
+msg.setComponentByName('channel', '0')
+
+pdu = msg.setComponentByName('pdu').getComponentByName('pdu')
+dsm = pdu.setComponentByName('dsm').getComponentByName('dsm')
+
+dsm.setComponentByName('seqNumber', '1')
+dsm.setComponentByName('ackNumber', '1')
+
+dsop = dsm.setComponentByName('dsop').getComponentByName('dsop')
+
+obj = dsop.setComponentByName('addRequest').getComponentByName('addRequest')
+context = obj.setComponentByName('context').getComponentByName('context')
+
+context.setComponentByName('clientId', str(recv_clientId))
+context.setComponentByName('topology', 'mesh')
+context.setComponentByName('description', 'home network1')
+context.setComponentByName('network', '0x2c800000')
+context.setComponentByName('netmask', '0xffffff00')
+
+print(msg.prettyPrint())
+print ssl_sock.write(encoder.encode(msg))
+
+time.sleep(3)
 
 ssl_sock.close()
 
