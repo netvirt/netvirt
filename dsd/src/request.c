@@ -48,14 +48,9 @@ void authRequest(struct session *session, DNDSMessage_t *req_msg)
 	net_send_msg(session->netc, msg);
 }
 
-void addRequest(struct session *session, DNDSMessage_t *msg)
+void AddRequest_client(struct session *session, DNDSMessage_t *msg)
 {
-	/* XXX This is a prototype, it only handle client object
-		and doesn't handle any error yet ... */
-
-	/* XXX dispatch per object type */
-
-	printf("add request!\n");
+	printf("Add Request !\n");
 
 	DNDSMessage_printf(msg);
 	DSMessage_printf(msg);
@@ -65,13 +60,6 @@ void addRequest(struct session *session, DNDSMessage_t *msg)
 	AddRequest_get_object(msg, &obj);
 	DNDSObject_printf(obj);
 
-
-	DNDSObject_PR objType;
-	AddRequest_get_objectType(msg, &objType);
-
-	if (objType == DNDSObject_PR_client) {
-		printf("add new client !\n");
-	}
 
 	size_t length;
 
@@ -129,7 +117,52 @@ void addRequest(struct session *session, DNDSMessage_t *msg)
 	dao_fetch_client_id(&client_id, firstname, lastname, email);
 
 	dao_add_webcredential(client_id, username, password);
+}
 
+void AddRequest_context(struct session *session, DNDSMessage_t *msg)
+{
+	printf("Add context!\n");
+
+
+	DNDSObject_t *obj;
+	AddRequest_get_object(msg, &obj);
+	DNDSObject_printf(obj);
+
+	size_t length;
+
+	uint32_t clientId;
+	Context_get_clientId(obj, &clientId);
+
+	char *description = NULL;
+	Context_get_description(obj, &description, &length);
+
+	printf("description: %s\n", description);
+
+	char str_id[10];
+	snprintf(str_id, 10, "%d", clientId);
+
+	printf("str_id: %s\n", str_id);
+
+	dao_add_context(str_id, 1, description);
+
+//	char *context_id = NULL;
+//	dao_fetch_context_id(&context_id, client_id, "description");
+//	dao_add_subnet(context_id, "44.128.0.0/16");
+}
+
+void addRequest(struct session *session, DNDSMessage_t *msg)
+{
+
+	DNDSObject_PR objType;
+	AddRequest_get_objectType(msg, &objType);
+
+	if (objType == DNDSObject_PR_client) {
+		AddRequest_client(session, msg);
+	}
+
+	if (objType == DNDSObject_PR_context) {
+		AddRequest_context(session, msg);
+	}
 }
 
 void delRequest(struct session *session, DNDSMessage_t *msg)
