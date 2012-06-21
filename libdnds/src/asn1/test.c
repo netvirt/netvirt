@@ -363,6 +363,57 @@ void test_SearchRequest_WebCredential()
 	DNDSMessage_del(msg);
 }
 
+show_AddRequest_context()
+{
+	DNDSMessage_t *msg;
+
+	msg = decode();
+	DNDSMessage_printf(msg);
+	DSMessage_printf(msg);
+	AddRequest_printf(msg);
+
+	DNDSObject_t *obj;
+	AddRequest_get_object(msg, &obj);
+	DNDSObject_printf(obj);
+
+	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
+}
+
+test_AddRequest_context()
+{
+	/// Building context AddRequest ///
+
+	DNDSMessage_t *msg;
+	DNDSObject_t *obj;
+
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+
+	DSMessage_set_seqNumber(msg, 0);
+	DSMessage_set_ackNumber(msg, 0);
+	DSMessage_set_operation(msg, dsop_PR_addRequest);
+
+	AddRequest_set_objectType(msg, DNDSObject_PR_context, &obj);
+
+	Context_set_clientId(obj, 100);
+	Context_set_topology(obj, Topology_mesh);
+	Context_set_description(obj, "home network1", 13);
+	Context_set_network(obj, "44.128.0.0");
+	Context_set_netmask(obj, "255.255.255.0");
+
+	/// Encoding part
+
+	asn_enc_rval_t ec;	// Encoder return value
+	FILE *fp = fopen("dnds.ber", "wb"); // BER output
+	ec = der_encode(&asn_DEF_DNDSMessage, msg, write_out, fp);
+	fclose(fp);
+
+	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
+
+	DNDSMessage_del(msg);
+}
+
 void show_SearchRequest_context()
 {
 	DNDSMessage_t *msg;
@@ -1195,35 +1246,40 @@ void test_TerminateRequest()
 
 int main()
 {
-//	test_SearchRequest_WebCredential();
-//	show_SearchRequest_WebCredential();
+/*
+	test_SearchRequest_WebCredential();
+	show_SearchRequest_WebCredential();
 
 	test_SearchResponse_WebCredential();
 	show_SearchResponse_WebCredential();
 
-//	test_SearchRequest_context();
-//	show_SearchRequest_context();
+	test_SearchRequest_context();
+	show_SearchRequest_context();
 
-//	test_SearchResponse_context();
-//	show_SearchResponse_context();
+	test_SearchResponse_context();
+	show_SearchResponse_context();
 
+*/
+
+	test_AddRequest_context();
+	show_AddRequest_context();
 
 /*
+
 	test_PeerConnectInfo();
 	show_PeerConnectInfo();
-*/
 
-/*	test_DNDS_ethernet();
+
+	test_DNDS_ethernet();
 	show_DNDS_ethernet();
-*/
 
 
-//	test_AddRequest();
-//	show_AddRequest();
+	test_AddRequest();
+	show_AddRequest();
 
-//	test_AddResponse();
-//	show_AddResponse();
-/*
+	test_AddResponse();
+	show_AddResponse();
+
 	test_P2pRequest_dnm();
 	show_P2pRequest_dnm();
 
@@ -1260,12 +1316,14 @@ int main()
 	test_NetinfoResponse();
 	show_NetinfoResponse();
 
+	test_TerminateRequest();
+*/
+/*
 	test_SearchRequest();
 	show_SearchRequest();
 
 	test_SearchResponse();
 	show_SearchResponse();
 */
-//	test_TerminateRequest();
 
 }

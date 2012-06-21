@@ -218,6 +218,8 @@ int IpPool_get_netmask(DNDSObject_t *IpPoolObject, char *netmask);
 
 int Context_set_id(DNDSObject_t *object, uint32_t id);
 int Context_get_id(DNDSObject_t *object, uint32_t *id);
+int Context_set_clientId(DNDSObject_t *object, uint32_t clientId);
+int Context_get_clientId(DNDSObject_t *object, uint32_t *clientId);
 int Context_set_topology(DNDSObject_t *object, e_Topology topology);
 int Context_get_topology(DNDSObject_t *object, e_Topology *topology);
 int Context_set_description(DNDSObject_t *object, char *description, size_t length);

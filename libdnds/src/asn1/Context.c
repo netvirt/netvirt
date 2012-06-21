@@ -345,7 +345,7 @@ asn_TYPE_descriptor_t asn_DEF_clientId_3 = {
 };
 
 static asn_TYPE_member_t asn_MBR_Context_1[] = {
-	{ ATF_NOFLAGS, 0, offsetof(struct Context, id),
+	{ ATF_POINTER, 1, offsetof(struct Context, id),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_id_2,
@@ -399,7 +399,7 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		0,
 		"netmask"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct Context, serverCert),
+	{ ATF_POINTER, 3, offsetof(struct Context, serverCert),
 		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
@@ -408,7 +408,7 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		0,
 		"serverCert"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct Context, serverPrivkey),
+	{ ATF_POINTER, 2, offsetof(struct Context, serverPrivkey),
 		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
@@ -417,7 +417,7 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		0,
 		"serverPrivkey"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct Context, trustedCert),
+	{ ATF_POINTER, 1, offsetof(struct Context, trustedCert),
 		(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,

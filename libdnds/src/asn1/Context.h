@@ -23,15 +23,15 @@ extern "C" {
 
 /* Context */
 typedef struct Context {
-	unsigned long	 id;
+	unsigned long	*id	/* OPTIONAL */;
 	unsigned long	 clientId;
 	Topology_t	 topology;
 	PrintableString_t	*description	/* OPTIONAL */;
 	OCTET_STRING_t	 network;
 	OCTET_STRING_t	 netmask;
-	PrintableString_t	 serverCert;
-	PrintableString_t	 serverPrivkey;
-	PrintableString_t	 trustedCert;
+	PrintableString_t	*serverCert	/* OPTIONAL */;
+	PrintableString_t	*serverPrivkey	/* OPTIONAL */;
+	PrintableString_t	*trustedCert	/* OPTIONAL */;
 	/*
 	 * This type is extensible,
 	 * possible extensions are below.

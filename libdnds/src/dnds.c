@@ -1765,6 +1765,10 @@ int Acl_get_description(DNDSObject_t *object, char **description, size_t *length
 		return DNDS_value_not_present;
 	}
 
+	if (object->choice.acl.description == NULL) {
+		return DNDS_value_not_present;
+	}
+
 	*description = (char *)object->choice.acl.description->buf;
 	*length = object->choice.acl.description->size;
 
@@ -2172,7 +2176,12 @@ int Context_set_id(DNDSObject_t *object, uint32_t id)
 		return DNDS_invalid_object_type;
 	}
 
-	object->choice.context.id = id;
+	object->choice.context.id = calloc(1, sizeof(uint32_t));
+	if (object->choice.context.id == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	*object->choice.context.id = id;
 
 	return DNDS_success;
 }
@@ -2187,7 +2196,33 @@ int Context_get_id(DNDSObject_t *object, uint32_t *id)
 		return DNDS_invalid_object_type;
 	}
 
-	*id = object->choice.context.id;
+	*id = (uint32_t)object->choice.context.id;
+
+	return DNDS_success;
+}
+
+int Context_set_clientId(DNDSObject_t *object, uint32_t clientId)
+{
+	if (object == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_context) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.context.clientId = clientId;
+
+	return DNDS_success;
+}
+
+int Context_get_clientId(DNDSObject_t *object, uint32_t *clientId)
+{
+	if (object == NULL || clientId == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	*clientId = (uint32_t)object->choice.context.clientId;
 
 	return DNDS_success;
 }
@@ -2363,8 +2398,13 @@ int Context_set_serverCert(DNDSObject_t *object, char *serverCert, size_t length
 		return DNDS_invalid_object_type;
 	}
 
-	object->choice.context.serverCert.buf = (uint8_t *)strdup(serverCert);
-	object->choice.context.serverCert.size = length;
+	object->choice.context.serverCert = (OCTET_STRING_t *)calloc(1, sizeof(OCTET_STRING_t));
+	if (object->choice.context.serverCert == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.context.serverCert->buf = (uint8_t *)strdup(serverCert);
+	object->choice.context.serverCert->size = length;
 
 	return DNDS_success;
 }
@@ -2379,8 +2419,16 @@ int Context_get_serverCert(DNDSObject_t *object, char **serverCert, size_t *leng
 		return DNDS_invalid_object_type;
 	}
 
-	*serverCert = (char *)object->choice.context.serverCert.buf;
-	*length = object->choice.context.serverCert.size;
+	if (object->choice.context.serverCert == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	if (object->choice.context.serverCert == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*serverCert = (char *)object->choice.context.serverCert->buf;
+	*length = object->choice.context.serverCert->size;
 
 	return DNDS_success;
 }
@@ -2395,8 +2443,13 @@ int Context_set_serverPrivkey(DNDSObject_t *object, char *serverPrivkey, size_t 
 		return DNDS_invalid_object_type;
 	}
 
-	object->choice.context.serverPrivkey.buf = (uint8_t *)strdup(serverPrivkey);
-	object->choice.context.serverPrivkey.size = length;
+	object->choice.context.serverPrivkey = (OCTET_STRING_t *)calloc(1, sizeof(OCTET_STRING_t));
+	if (object->choice.context.serverPrivkey == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.context.serverPrivkey->buf = (uint8_t *)strdup(serverPrivkey);
+	object->choice.context.serverPrivkey->size = length;
 
 	return DNDS_success;
 }
@@ -2411,8 +2464,16 @@ int Context_get_serverPrivkey(DNDSObject_t *object, char **serverPrivkey, size_t
 		return DNDS_invalid_object_type;
 	}
 
-	*serverPrivkey = (char *)object->choice.context.serverPrivkey.buf;
-	*length = object->choice.context.serverPrivkey.size;
+	if (object->choice.context.serverPrivkey == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	if (object->choice.context.serverPrivkey == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*serverPrivkey = (char *)object->choice.context.serverPrivkey->buf;
+	*length = object->choice.context.serverPrivkey->size;
 
 	return DNDS_success;
 }
@@ -2427,8 +2488,13 @@ int Context_set_trustedCert(DNDSObject_t *object, char *trustedCert, size_t leng
 		return DNDS_invalid_object_type;
 	}
 
-	object->choice.context.trustedCert.buf = (uint8_t *)strdup(trustedCert);
-	object->choice.context.trustedCert.size = length;
+	object->choice.context.trustedCert = (OCTET_STRING_t *)calloc(1, sizeof(OCTET_STRING_t));
+	if (object->choice.context.trustedCert == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.context.trustedCert->buf = (uint8_t *)strdup(trustedCert);
+	object->choice.context.trustedCert->size = length;
 
 	return DNDS_success;
 }
@@ -2443,8 +2509,12 @@ int Context_get_trustedCert(DNDSObject_t *object, char **trustedCert, size_t *le
 		return DNDS_invalid_object_type;
 	}
 
-	*trustedCert = (char *)object->choice.context.trustedCert.buf;
-	*length = object->choice.context.trustedCert.size;
+	if (object->choice.context.trustedCert == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*trustedCert = (char *)object->choice.context.trustedCert->buf;
+	*length = object->choice.context.trustedCert->size;
 
 	return DNDS_success;
 }
@@ -3799,6 +3869,8 @@ char *ObjectName_str(e_ObjectName objectname)
 		return "permission";
 	case ObjectName_client:
 		return "client";
+	case ObjectName_webcredential:
+		return "webcredential";
 	}
 	return "Unknown";
 }
@@ -4219,15 +4291,15 @@ void Context_printf(DNDSObject_t *object)
         ret = Context_get_netmask(object, netmask);
 	printf("Context> netmask(%i): %s\n", ret, netmask);
 
-	char *serverCert;
+	char *serverCert = NULL;
         ret = Context_get_serverCert(object, &serverCert, &length);
 	printf("Context> serverCert(%i): %s\n", ret, serverCert);
 
-	char *serverPrivkey;
+	char *serverPrivkey = NULL;
         ret = Context_get_serverPrivkey(object, &serverPrivkey, &length);
 	printf("Context> serverPrivkey(%i): %s\n", ret, serverPrivkey);
 
-	char *trustedCert;
+	char *trustedCert = NULL;
         ret = Context_get_trustedCert(object, &trustedCert, &length);
 	printf("Context> trustedCert(%i): %s\n", ret, trustedCert);
 }
