@@ -148,8 +148,9 @@ static X509 *pki_certificate(X509_NAME *issuer, EVP_PKEY *keyring, X509_REQ *cer
 	// set certificate public key
 	X509_set_pubkey(certificate, keyring);
 
+	// set the 'notBefore' to yersterday
+	X509_gmtime_adj(X509_get_notBefore(certificate), -(24*60*60));
 	// set certificate expiration delay
-	X509_gmtime_adj(X509_get_notBefore(certificate), 0);
 	X509_gmtime_adj(X509_get_notAfter(certificate), expiration_delay);
 
 	return certificate;
