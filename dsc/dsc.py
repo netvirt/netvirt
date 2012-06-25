@@ -98,7 +98,6 @@ for idx in range(len(recv_objs)):
     recv_clientId = recv_web.getComponentByName('clientId')
     print "the client id is " + str(recv_clientId)
 
-
 time.sleep(2)
 
 msg = DNDSMessage()
@@ -125,8 +124,32 @@ context.setComponentByName('netmask', '0xffffff00')
 print(msg.prettyPrint())
 print ssl_sock.write(encoder.encode(msg))
 
-time.sleep(3)
+time.sleep(2)
 
+msg = DNDSMessage()
+msg.setComponentByName('version', '1')
+msg.setComponentByName('channel', '0')
+
+pdu = msg.setComponentByName('pdu').getComponentByName('pdu')
+dsm = pdu.setComponentByName('dsm').getComponentByName('dsm')
+
+dsm.setComponentByName('seqNumber', '1')
+dsm.setComponentByName('ackNumber', '1')
+
+dsop = dsm.setComponentByName('dsop').getComponentByName('dsop')
+
+obj = dsop.setComponentByName('addRequest').getComponentByName('addRequest')
+peer = obj.setComponentByName('peer').getComponentByName('peer')
+
+peer.setComponentByName('contextId', '75')
+peer.setComponentByName('description', 'VoIP network - business')
+
+
+print(msg.prettyPrint())
+print ssl_sock.write(encoder.encode(msg))
+
+
+time.sleep(5)
 ssl_sock.close()
 
 """
