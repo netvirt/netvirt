@@ -58,15 +58,22 @@ int dao_connect(char *host, char *username, char *password, char *dbname)
 	return 0;
 }
 
-int dao_add_subnet(char *context_id, char *network)
+/*
+create or replace function inet_mask(inet,inet) returns inet language sql
+immutable as $f$ select set_masklen($1,i)
+from generate_series(0, case when family($2)=4 then 32 else 128 end) i
+where netmask(set_masklen($1::cidr, i)) = $2; $f$;
+*/
+
+int dao_add_subnet(char *context_id, char *network, char *netmask)
 {
 	PGresult *result;
 	char insert_req[128];
 
 	snprintf(insert_req, 128, "INSERT INTO SUBNET "
 				"(context_id, network) "
-				"VALUES ('%s', '%s');",
-				context_id, network);
+				"VALUES ('%s', inet_mask('%s', '%s'));",
+				context_id, network, netmask);
 
 	printf("insert_req: %s\n", insert_req);
 
