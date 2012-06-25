@@ -34,6 +34,16 @@ class Context(univ.Sequence):
         namedtype.OptionalNamedType('trustedCert', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 8))),
     )
 
+class Peer(univ.Sequence):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('contextId', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0))),
+        namedtype.OptionalNamedType('description', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1))),
+        namedtype.OptionalNamedType('uuid', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 2))),
+        namedtype.OptionalNamedType('certificate', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 3))),
+        namedtype.OptionalNamedType('certificateKey', univ.BitString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 4))),
+        namedtype.OptionalNamedType('status', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 5))),
+    )
+
 class Client(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('id', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0))),
@@ -61,6 +71,7 @@ class WebCredential(univ.Sequence):
 class DNDSObject(univ.Choice):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('context', Context().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 3))),
+        namedtype.NamedType('peer', Peer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 6))),
         namedtype.NamedType('client', Client().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 8))),
         namedtype.NamedType('webcredential', WebCredential().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 9)))
     )
