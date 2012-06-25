@@ -9,6 +9,8 @@
  *
  */
 
+#include <stdlib.h>
+
 #include <dnds/dnds.h>
 
 #include "dao.h"
@@ -46,6 +48,73 @@ void authRequest(struct session *session, DNDSMessage_t *req_msg)
 	AuthResponse_set_result(msg, DNDSResult_success);
 
 	net_send_msg(session->netc, msg);
+}
+
+void AddRequest_peer(struct session *session, DNDSMessage_t *msg)
+{
+	printf("Add Peer !\n");
+
+	DNDSMessage_printf(msg);
+	DSMessage_printf(msg);
+	AddRequest_printf(msg);
+
+	DNDSObject_t *obj;
+	AddRequest_get_object(msg, &obj);
+	DNDSObject_printf(obj);
+
+	size_t length = 0;
+
+	uint32_t contextId = 0;
+	Peer_get_contextId(obj, &contextId);
+
+	char *description = NULL;
+	Peer_get_description(obj, &description, &length);
+
+	char str_ctxid[10];
+	snprintf(str_ctxid, 10, "%d", contextId);
+
+	/* DNC certificate */
+
+	pki_init();
+
+	int exp_delay;
+	exp_delay = pki_expiration_delay(50);
+
+	char *cert_ptr; long size;
+	char *pvkey_ptr;
+
+
+
+	// fetch embassy
+	char *certificate, *private_key, *serial;
+	embassy_t *f_emb;
+	dao_fetch_embassy(str_ctxid, &certificate, &private_key, &serial);
+
+	f_emb = pki_embassy_load_from_memory(certificate, private_key, atoi(serial));
+
+
+	char *uuid;
+	uuid = uuid_v4();
+
+	char common_name[256];
+	snprintf(common_name, sizeof(common_name), "dnc-%s@%s", uuid, str_ctxid);
+	printf("common_name: %s\n", common_name);
+
+	digital_id_t *dnc_id;
+	dnc_id = pki_digital_id(common_name, "CA", "Quebec", "Levis", "info@demo.com", "DNDS");
+
+	passport_t *dnc_passport;
+	dnc_passport = pki_embassy_deliver_passport(f_emb, dnc_id, exp_delay);
+
+	pki_write_certificate_in_mem(dnc_passport->certificate, &cert_ptr, &size);
+	pki_write_privatekey_in_mem(dnc_passport->keyring, &pvkey_ptr, &size);
+
+	dao_add_passport_client(str_ctxid, uuid, cert_ptr, pvkey_ptr);
+
+	dao_update_embassy_issue_serial(str_ctxid, f_emb->serial);
+
+	free(cert_ptr);
+	free(pvkey_ptr);
 }
 
 void AddRequest_client(struct session *session, DNDSMessage_t *msg)
@@ -145,9 +214,66 @@ void AddRequest_context(struct session *session, DNDSMessage_t *msg)
 
 	dao_add_context(str_id, 1, description);
 
-//	char *context_id = NULL;
-//	dao_fetch_context_id(&context_id, client_id, "description");
-//	dao_add_subnet(context_id, "44.128.0.0/16");
+	char *context_id = NULL;
+	dao_fetch_context_id(&context_id, str_id, description);
+
+	char network[INET_ADDRSTRLEN];
+	Context_get_network(obj, network);
+
+	char netmask[INET_ADDRSTRLEN];
+	Context_get_netmask(obj, netmask);
+
+	printf("network || netmask: %s || %s \n", network, netmask);
+
+	/* XXX the network/netmask we receive is buggy..
+	 * DSC python code has a problem...
+	 * use default values for now
+	 */
+	dao_add_subnet(context_id, "44.128.0.0", "255.255.0.0");
+
+	/* DSD certificate */
+
+	pki_init();
+
+	int exp_delay;
+	exp_delay = pki_expiration_delay(50);
+
+	digital_id_t *dsd_id;
+
+	dsd_id = pki_digital_id("embassy", "CA", "Quebec", "Levis", "info@demo.com", "DNDS");
+
+	embassy_t *emb;
+	emb = pki_embassy_new(dsd_id, exp_delay);
+
+	char *cert_ptr; long size;
+	char *pvkey_ptr;
+
+	pki_write_certificate_in_mem(emb->certificate, &cert_ptr, &size);
+	pki_write_privatekey_in_mem(emb->keyring, &pvkey_ptr, &size);
+
+	dao_add_embassy(context_id, cert_ptr, pvkey_ptr);
+
+	free(cert_ptr);
+	free(pvkey_ptr);
+
+	/* DND certificate */
+
+	digital_id_t *dnd_id;
+	dnd_id = pki_digital_id("dnd", "CA", "Quebec", "Levis", "info@demo.com", "DNDS");
+
+	passport_t *dnd_passport;
+	dnd_passport = pki_embassy_deliver_passport(emb, dnd_id, exp_delay);
+
+	pki_write_certificate_in_mem(dnd_passport->certificate, &cert_ptr, &size);
+	pki_write_privatekey_in_mem(dnd_passport->keyring, &pvkey_ptr, &size);
+
+	char common_name[20];
+	snprintf(common_name, 20, "dnd@%s", context_id);
+
+	dao_add_passport_server(context_id, common_name, cert_ptr, pvkey_ptr);
+
+	free(cert_ptr);
+	free(pvkey_ptr);
 }
 
 void addRequest(struct session *session, DNDSMessage_t *msg)
@@ -162,6 +288,10 @@ void addRequest(struct session *session, DNDSMessage_t *msg)
 
 	if (objType == DNDSObject_PR_context) {
 		AddRequest_context(session, msg);
+	}
+
+	if (objType == DNDSObject_PR_peer) {
+		AddRequest_peer(session, msg);
 	}
 }
 
@@ -211,6 +341,8 @@ void searchRequest_context(struct session *session, DNDSMessage_t *req_msg)
         DNDSObject_t *objContext;
         DNDSObject_new(&objContext);
         DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
+
+	printf("id: %s:%d\n", id, atoi(id));
 
         Context_set_id(objContext, atoi(id));
         Context_set_topology(objContext, Topology_mesh);
