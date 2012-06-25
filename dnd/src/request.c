@@ -47,7 +47,8 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 	AuthRequest_get_certName(req_msg, &certName, &length);
 
 	/* something@id */
-	context_id = atoi(strchr(certName,'@')+1);
+	printf("certName: %s\n", certName);
+	context_id = atoi(strchr(certName,'@')+1); //XXX atoi(NULL) doesn't like it
 	printf("contextid %i\n", context_id);
 	session->context = context_lookup(context_id);
 
