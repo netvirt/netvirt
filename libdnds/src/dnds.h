@@ -282,6 +282,8 @@ int Permission_set_matrix();
 // Peer
 int Peer_set_contextId(DNDSObject_t *PeerObject, uint32_t contextId);
 int Peer_get_contextId(DNDSObject_t *PeerObject, uint32_t *contextId);
+int Peer_set_description(DNDSObject_t *object, char *description, size_t length);
+int Peer_get_description(DNDSObject_t *object, char **description, size_t *length);
 int Peer_set_certificate(DNDSObject_t *PeerObject, char *certificate, size_t length);
 int Peer_get_certificate(DNDSObject_t *PeerObject, char **certificate, size_t *length);
 int Peer_set_certificateKey(DNDSObject_t *PeerObject, uint8_t *certificateKey, size_t length);

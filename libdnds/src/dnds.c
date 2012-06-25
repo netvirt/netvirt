@@ -2196,7 +2196,11 @@ int Context_get_id(DNDSObject_t *object, uint32_t *id)
 		return DNDS_invalid_object_type;
 	}
 
-	*id = (uint32_t)object->choice.context.id;
+	if (object->choice.context.id == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*id = (uint32_t)*object->choice.context.id;
 
 	return DNDS_success;
 }
@@ -3085,6 +3089,47 @@ int Peer_get_contextId(DNDSObject_t *object, uint32_t *contextId)
 	}
 
 	*contextId = object->choice.peer.contextId;
+
+	return DNDS_success;
+}
+
+int Peer_set_description(DNDSObject_t *object, char *description, size_t length)
+{
+	if (object == NULL || description == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_peer) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.peer.description = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.peer.description == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.peer.description->buf = (uint8_t *)strdup(description);
+	object->choice.peer.description->size = length;
+
+	return DNDS_success;
+}
+
+int Peer_get_description(DNDSObject_t *object, char **description, size_t *length)
+{
+	if (object == NULL || description == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_peer) {
+		return DNDS_invalid_object_type;
+	}
+
+	if (object->choice.peer.description == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*description = (char *)object->choice.peer.description->buf;
+	*length = object->choice.peer.description->size;
 
 	return DNDS_success;
 }
@@ -4279,7 +4324,7 @@ void Context_printf(DNDSObject_t *object)
         ret = Context_get_topology(object, &topology);
 	printf("Context> topology(%i): %s\n", ret, Topology_str(topology));
 
-	char *desc;
+	char *desc = NULL;
         ret = Context_get_description(object, &desc, &length);
 	printf("Context> description(%i): %s\n", ret, desc);
 
@@ -4369,11 +4414,12 @@ void Peer_printf(DNDSObject_t *object)
 	Peer_get_contextId(object, &contextId);
 	printf("Peer> contextId: %i\n", contextId);
 
-	char *certificate; size_t length;
+	char *certificate = NULL; size_t length = 0;
 	Peer_get_certificate(object, &certificate, &length);
 	printf("Peer> certficiate: %s\n", certificate);
 
-	uint8_t *certificateKey;
+	uint8_t *certificateKey = NULL;
+	length = 0;
 	Peer_get_certificateKey(object, &certificateKey, &length);
 	printf("Peer> certificateKey: ");
 	int i; for (i = 0; i < length; i++) { printf("%x", certificateKey[i]); }; printf("\n");
