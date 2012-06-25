@@ -23,6 +23,7 @@ extern "C" {
 /* Peer */
 typedef struct Peer {
 	unsigned long	 contextId;
+	PrintableString_t	*description	/* OPTIONAL */;
 	PrintableString_t	*uuid	/* OPTIONAL */;
 	PrintableString_t	*certificate	/* OPTIONAL */;
 	BIT_STRING_t	*certificateKey	/* OPTIONAL */;
