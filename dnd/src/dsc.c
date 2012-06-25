@@ -162,7 +162,7 @@ static void on_disconnect(netc_t *netc)
 		sleep(5);
 		printf("connection retry...\n");
 		retry_netc = net_client(dsc_address, dsc_port,
-		    NET_PROTO_UDT, NET_SECURE_RSA, dnd_passport,
+		    NET_PROTO_TCP, NET_SECURE_RSA, dnd_passport,
 		    on_disconnect, on_input, on_secure);
 	} while (retry_netc == NULL);
 
@@ -180,7 +180,7 @@ int dsc_init(char *ip_address, char *port, char *certificate, char *privatekey, 
 	dsc_address = ip_address;
 	dsc_port = port;
 
-	dsc_netc = net_client(ip_address, port, NET_PROTO_UDT, NET_SECURE_RSA, dnd_passport,
+	dsc_netc = net_client(ip_address, port, NET_PROTO_TCP, NET_SECURE_RSA, dnd_passport,
 				on_disconnect, on_input, on_secure);
 
 	if (dsc_netc == NULL) {
