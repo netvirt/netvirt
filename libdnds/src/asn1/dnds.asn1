@@ -258,6 +258,7 @@ Permission ::= SEQUENCE {
 
 Peer ::= SEQUENCE {
 	contextId	INTEGER (0..uint32max),
+	description	PrintableString (SIZE(1..256)) OPTIONAL,
 	uuid		PrintableString OPTIONAL,
 	certificate	PrintableString OPTIONAL,
 	certificateKey	BIT STRING OPTIONAL,
