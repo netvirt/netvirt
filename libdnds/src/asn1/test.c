@@ -363,6 +363,54 @@ void test_SearchRequest_WebCredential()
 	DNDSMessage_del(msg);
 }
 
+show_AddRequest_peer()
+{
+	DNDSMessage_t *msg;
+
+	msg = decode();
+	DNDSMessage_printf(msg);
+	DSMessage_printf(msg);
+	AddRequest_printf(msg);
+
+	DNDSObject_t *obj;
+	AddRequest_get_object(msg, &obj);
+	DNDSObject_printf(obj);
+
+	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
+}
+
+test_AddRequest_peer()
+{
+	/// Building peer AddRequest ///
+
+	DNDSMessage_t *msg;
+	DNDSObject_t *obj;
+
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+
+	DSMessage_set_seqNumber(msg, 0);
+	DSMessage_set_ackNumber(msg, 0);
+	DSMessage_set_operation(msg, dsop_PR_addRequest);
+
+	AddRequest_set_objectType(msg, DNDSObject_PR_peer, &obj);
+
+	Peer_set_contextId(obj, 100);
+	Peer_set_description(obj, "voip node 1", 11);
+
+	/// Encoding part
+
+	asn_enc_rval_t ec;	// Encoder return value
+	FILE *fp = fopen("dnds.ber", "wb"); // BER output
+	ec = der_encode(&asn_DEF_DNDSMessage, msg, write_out, fp);
+	fclose(fp);
+
+	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
+
+	DNDSMessage_del(msg);
+}
+
 show_AddRequest_context()
 {
 	DNDSMessage_t *msg;
@@ -1259,13 +1307,12 @@ int main()
 	test_SearchResponse_context();
 	show_SearchResponse_context();
 
-*/
-
 	test_AddRequest_context();
 	show_AddRequest_context();
-
+*/
+	test_AddRequest_peer();
+	show_AddRequest_peer();
 /*
-
 	test_PeerConnectInfo();
 	show_PeerConnectInfo();
 
@@ -1318,12 +1365,12 @@ int main()
 
 	test_TerminateRequest();
 */
-/*
+
 	test_SearchRequest();
 	show_SearchRequest();
 
 	test_SearchResponse();
 	show_SearchResponse();
-*/
+
 
 }
