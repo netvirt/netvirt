@@ -16,6 +16,8 @@
 #include "AuthResponse.h"
 #include "NetinfoRequest.h"
 #include "NetinfoResponse.h"
+#include "ProvRequest.h"
+#include "ProvResponse.h"
 #include "P2pRequest.h"
 #include "P2pResponse.h"
 #include "TerminateRequest.h"
@@ -33,6 +35,8 @@ typedef enum dnop_PR {
 	dnop_PR_authResponse,
 	dnop_PR_netinfoRequest,
 	dnop_PR_netinfoResponse,
+	dnop_PR_provRequest,
+	dnop_PR_provResponse,
 	dnop_PR_p2pRequest,
 	dnop_PR_p2pResponse,
 	dnop_PR_terminateRequest,
@@ -51,6 +55,8 @@ typedef struct DNMessage {
 			AuthResponse_t	 authResponse;
 			NetinfoRequest_t	 netinfoRequest;
 			NetinfoResponse_t	 netinfoResponse;
+			ProvRequest_t	 provRequest;
+			ProvResponse_t	 provResponse;
 			P2pRequest_t	 p2pRequest;
 			P2pResponse_t	 p2pResponse;
 			TerminateRequest_t	 terminateRequest;

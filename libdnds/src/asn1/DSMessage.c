@@ -377,18 +377,18 @@ static asn_TYPE_member_t asn_MBR_dsop_4[] = {
 		},
 };
 static asn_TYPE_tag2member_t asn_MAP_dsop_tag2el_4[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* peerConnectInfo at 55 */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* authRequest at 56 */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* authResponse at 57 */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* addRequest at 58 */
-    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* addResponse at 59 */
-    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* delRequest at 60 */
-    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* delResponse at 61 */
-    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* modifyRequest at 62 */
-    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* modifyResponse at 63 */
-    { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 }, /* searchRequest at 64 */
-    { (ASN_TAG_CLASS_CONTEXT | (10 << 2)), 10, 0, 0 }, /* searchResponse at 65 */
-    { (ASN_TAG_CLASS_CONTEXT | (11 << 2)), 11, 0, 0 } /* terminateRequest at 66 */
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* peerConnectInfo at 57 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* authRequest at 58 */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* authResponse at 59 */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* addRequest at 60 */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* addResponse at 61 */
+    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* delRequest at 62 */
+    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* delResponse at 63 */
+    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* modifyRequest at 64 */
+    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* modifyResponse at 65 */
+    { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 }, /* searchRequest at 66 */
+    { (ASN_TAG_CLASS_CONTEXT | (10 << 2)), 10, 0, 0 }, /* searchResponse at 67 */
+    { (ASN_TAG_CLASS_CONTEXT | (11 << 2)), 11, 0, 0 } /* terminateRequest at 68 */
 };
 static asn_CHOICE_specifics_t asn_SPC_dsop_specs_4 = {
 	sizeof(struct dsop),
@@ -456,9 +456,9 @@ static ber_tlv_tag_t asn_DEF_DSMessage_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
 static asn_TYPE_tag2member_t asn_MAP_DSMessage_tag2el_1[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* seqNumber at 52 */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* ackNumber at 53 */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 } /* dsop at 55 */
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* seqNumber at 54 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* ackNumber at 55 */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 } /* dsop at 57 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_DSMessage_specs_1 = {
 	sizeof(struct DSMessage),

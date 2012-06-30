@@ -303,8 +303,26 @@ static asn_TYPE_member_t asn_MBR_dnop_4[] = {
 		0,
 		"netinfoResponse"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct dnop, choice.p2pRequest),
+	{ ATF_NOFLAGS, 0, offsetof(struct dnop, choice.provRequest),
 		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_ProvRequest,
+		0,	/* Defer constraints checking to the member type */
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"provRequest"
+		},
+	{ ATF_NOFLAGS, 0, offsetof(struct dnop, choice.provResponse),
+		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_ProvResponse,
+		0,	/* Defer constraints checking to the member type */
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"provResponse"
+		},
+	{ ATF_NOFLAGS, 0, offsetof(struct dnop, choice.p2pRequest),
+		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_P2pRequest,
 		0,	/* Defer constraints checking to the member type */
@@ -313,7 +331,7 @@ static asn_TYPE_member_t asn_MBR_dnop_4[] = {
 		"p2pRequest"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct dnop, choice.p2pResponse),
-		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_P2pResponse,
 		0,	/* Defer constraints checking to the member type */
@@ -322,7 +340,7 @@ static asn_TYPE_member_t asn_MBR_dnop_4[] = {
 		"p2pResponse"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct dnop, choice.terminateRequest),
-		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_TerminateRequest,
 		0,	/* Defer constraints checking to the member type */
@@ -336,9 +354,11 @@ static asn_TYPE_tag2member_t asn_MAP_dnop_tag2el_4[] = {
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* authResponse at 41 */
     { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* netinfoRequest at 42 */
     { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* netinfoResponse at 43 */
-    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* p2pRequest at 44 */
-    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* p2pResponse at 45 */
-    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 } /* terminateRequest at 46 */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* provRequest at 44 */
+    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* provResponse at 45 */
+    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* p2pRequest at 46 */
+    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* p2pResponse at 47 */
+    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 } /* terminateRequest at 48 */
 };
 static asn_CHOICE_specifics_t asn_SPC_dnop_specs_4 = {
 	sizeof(struct dnop),
@@ -346,9 +366,9 @@ static asn_CHOICE_specifics_t asn_SPC_dnop_specs_4 = {
 	offsetof(struct dnop, present),
 	sizeof(((struct dnop *)0)->present),
 	asn_MAP_dnop_tag2el_4,
-	7,	/* Count of tags in the map */
+	9,	/* Count of tags in the map */
 	0,
-	7	/* Extensions start */
+	9	/* Extensions start */
 };
 static /* Use -fall-defs-global to expose */
 asn_TYPE_descriptor_t asn_DEF_dnop_4 = {
@@ -369,7 +389,7 @@ asn_TYPE_descriptor_t asn_DEF_dnop_4 = {
 	0,	/* No tags (count) */
 	0,	/* No PER visible constraints */
 	asn_MBR_dnop_4,
-	7,	/* Elements count */
+	9,	/* Elements count */
 	&asn_SPC_dnop_specs_4	/* Additional specs */
 };
 

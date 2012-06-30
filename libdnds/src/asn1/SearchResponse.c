@@ -6,7 +6,7 @@
 
 #include "SearchResponse.h"
 
-static asn_TYPE_member_t asn_MBR_objects_3[] = {
+static asn_TYPE_member_t asn_MBR_objects_4[] = {
 	{ ATF_POINTER, 0, 0,
 		-1 /* Ambiguous tag (CHOICE?) */,
 		0,
@@ -17,17 +17,17 @@ static asn_TYPE_member_t asn_MBR_objects_3[] = {
 		""
 		},
 };
-static ber_tlv_tag_t asn_DEF_objects_tags_3[] = {
-	(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
+static ber_tlv_tag_t asn_DEF_objects_tags_4[] = {
+	(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
-static asn_SET_OF_specifics_t asn_SPC_objects_specs_3 = {
+static asn_SET_OF_specifics_t asn_SPC_objects_specs_4 = {
 	sizeof(struct objects),
 	offsetof(struct objects, _asn_ctx),
 	2,	/* XER encoding is XMLValueList */
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_objects_3 = {
+asn_TYPE_descriptor_t asn_DEF_objects_4 = {
 	"objects",
 	"objects",
 	SEQUENCE_OF_free,
@@ -39,21 +39,30 @@ asn_TYPE_descriptor_t asn_DEF_objects_3 = {
 	SEQUENCE_OF_encode_xer,
 	0, 0,	/* No PER support, use "-gen-PER" to enable */
 	0,	/* Use generic outmost tag fetcher */
-	asn_DEF_objects_tags_3,
-	sizeof(asn_DEF_objects_tags_3)
-		/sizeof(asn_DEF_objects_tags_3[0]) - 1, /* 1 */
-	asn_DEF_objects_tags_3,	/* Same as above */
-	sizeof(asn_DEF_objects_tags_3)
-		/sizeof(asn_DEF_objects_tags_3[0]), /* 2 */
+	asn_DEF_objects_tags_4,
+	sizeof(asn_DEF_objects_tags_4)
+		/sizeof(asn_DEF_objects_tags_4[0]) - 1, /* 1 */
+	asn_DEF_objects_tags_4,	/* Same as above */
+	sizeof(asn_DEF_objects_tags_4)
+		/sizeof(asn_DEF_objects_tags_4[0]), /* 2 */
 	0,	/* No PER visible constraints */
-	asn_MBR_objects_3,
+	asn_MBR_objects_4,
 	1,	/* Single element */
-	&asn_SPC_objects_specs_3	/* Additional specs */
+	&asn_SPC_objects_specs_4	/* Additional specs */
 };
 
 static asn_TYPE_member_t asn_MBR_SearchResponse_1[] = {
-	{ ATF_NOFLAGS, 0, offsetof(struct SearchResponse, dndsResult),
+	{ ATF_NOFLAGS, 0, offsetof(struct SearchResponse, searchtype),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_SearchType,
+		0,	/* Defer constraints checking to the member type */
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"searchtype"
+		},
+	{ ATF_NOFLAGS, 0, offsetof(struct SearchResponse, dndsResult),
+		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_DNDSResult,
 		0,	/* Defer constraints checking to the member type */
@@ -62,9 +71,9 @@ static asn_TYPE_member_t asn_MBR_SearchResponse_1[] = {
 		"dndsResult"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct SearchResponse, objects),
-		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		0,
-		&asn_DEF_objects_3,
+		&asn_DEF_objects_4,
 		0,	/* Defer constraints checking to the member type */
 		0,	/* PER is not compiled, use -gen-PER */
 		0,
@@ -75,17 +84,18 @@ static ber_tlv_tag_t asn_DEF_SearchResponse_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
 static asn_TYPE_tag2member_t asn_MAP_SearchResponse_tag2el_1[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* dndsResult at 178 */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 } /* objects at 179 */
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* searchtype at 193 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* dndsResult at 194 */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 } /* objects at 195 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_SearchResponse_specs_1 = {
 	sizeof(struct SearchResponse),
 	offsetof(struct SearchResponse, _asn_ctx),
 	asn_MAP_SearchResponse_tag2el_1,
-	2,	/* Count of tags in the map */
+	3,	/* Count of tags in the map */
 	0, 0, 0,	/* Optional elements (not needed) */
-	1,	/* Start extensions */
-	3	/* Stop extensions */
+	2,	/* Start extensions */
+	4	/* Stop extensions */
 };
 asn_TYPE_descriptor_t asn_DEF_SearchResponse = {
 	"SearchResponse",
@@ -107,7 +117,7 @@ asn_TYPE_descriptor_t asn_DEF_SearchResponse = {
 		/sizeof(asn_DEF_SearchResponse_tags_1[0]), /* 1 */
 	0,	/* No PER visible constraints */
 	asn_MBR_SearchResponse_1,
-	2,	/* Elements count */
+	3,	/* Elements count */
 	&asn_SPC_SearchResponse_specs_1	/* Additional specs */
 };
 

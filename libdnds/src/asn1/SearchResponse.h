@@ -11,6 +11,7 @@
 #include <asn_application.h>
 
 /* Including external dependencies */
+#include "SearchType.h"
 #include "DNDSResult.h"
 #include <asn_SEQUENCE_OF.h>
 #include <constr_SEQUENCE_OF.h>
@@ -25,6 +26,7 @@ struct DNDSObject;
 
 /* SearchResponse */
 typedef struct SearchResponse {
+	SearchType_t	 searchtype;
 	DNDSResult_t	 dndsResult;
 	struct objects {
 		A_SEQUENCE_OF(struct DNDSObject) list;

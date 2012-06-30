@@ -223,7 +223,7 @@ static asn_TYPE_member_t asn_MBR_Peer_1[] = {
 		0,
 		"contextId"
 		},
-	{ ATF_POINTER, 5, offsetof(struct Peer, description),
+	{ ATF_POINTER, 7, offsetof(struct Peer, description),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
@@ -232,7 +232,7 @@ static asn_TYPE_member_t asn_MBR_Peer_1[] = {
 		0,
 		"description"
 		},
-	{ ATF_POINTER, 4, offsetof(struct Peer, uuid),
+	{ ATF_POINTER, 6, offsetof(struct Peer, uuid),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
@@ -241,8 +241,17 @@ static asn_TYPE_member_t asn_MBR_Peer_1[] = {
 		0,
 		"uuid"
 		},
-	{ ATF_POINTER, 3, offsetof(struct Peer, certificate),
+	{ ATF_POINTER, 5, offsetof(struct Peer, provCode),
 		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PrintableString,
+		0,	/* Defer constraints checking to the member type */
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"provCode"
+		},
+	{ ATF_POINTER, 4, offsetof(struct Peer, certificate),
+		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
 		0,	/* Defer constraints checking to the member type */
@@ -250,8 +259,8 @@ static asn_TYPE_member_t asn_MBR_Peer_1[] = {
 		0,
 		"certificate"
 		},
-	{ ATF_POINTER, 2, offsetof(struct Peer, certificateKey),
-		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
+	{ ATF_POINTER, 3, offsetof(struct Peer, certificateKey),
+		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_BIT_STRING,
 		0,	/* Defer constraints checking to the member type */
@@ -259,8 +268,17 @@ static asn_TYPE_member_t asn_MBR_Peer_1[] = {
 		0,
 		"certificateKey"
 		},
+	{ ATF_POINTER, 2, offsetof(struct Peer, trustedCert),
+		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PrintableString,
+		0,	/* Defer constraints checking to the member type */
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"trustedCert"
+		},
 	{ ATF_POINTER, 1, offsetof(struct Peer, status),
-		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_NativeInteger,
 		memb_status_constraint_1,
@@ -273,21 +291,23 @@ static ber_tlv_tag_t asn_DEF_Peer_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
 static asn_TYPE_tag2member_t asn_MAP_Peer_tag2el_1[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* contextId at 260 */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* description at 261 */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* uuid at 262 */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* certificate at 263 */
-    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* certificateKey at 264 */
-    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 } /* status at 265 */
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* contextId at 276 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* description at 277 */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* uuid at 278 */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* provCode at 279 */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* certificate at 280 */
+    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* certificateKey at 281 */
+    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* trustedCert at 282 */
+    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 } /* status at 283 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_Peer_specs_1 = {
 	sizeof(struct Peer),
 	offsetof(struct Peer, _asn_ctx),
 	asn_MAP_Peer_tag2el_1,
-	6,	/* Count of tags in the map */
+	8,	/* Count of tags in the map */
 	0, 0, 0,	/* Optional elements (not needed) */
-	5,	/* Start extensions */
-	7	/* Stop extensions */
+	7,	/* Start extensions */
+	9	/* Stop extensions */
 };
 asn_TYPE_descriptor_t asn_DEF_Peer = {
 	"Peer",
@@ -309,7 +329,7 @@ asn_TYPE_descriptor_t asn_DEF_Peer = {
 		/sizeof(asn_DEF_Peer_tags_1[0]), /* 1 */
 	0,	/* No PER visible constraints */
 	asn_MBR_Peer_1,
-	6,	/* Elements count */
+	8,	/* Elements count */
 	&asn_SPC_Peer_specs_1	/* Additional specs */
 };
 

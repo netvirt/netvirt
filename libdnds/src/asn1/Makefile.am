@@ -40,7 +40,9 @@ libasn1_la_SOURCES=	\
 	Permission.c	\
 	Peer.c	\
 	Client.c	\
-	WebCredential.c
+	WebCredential.c	\
+	ProvRequest.c	\
+	ProvResponse.c
 
 libasn1_include_HEADERS=	\
 	DNDSMessage.h	\
@@ -78,7 +80,9 @@ libasn1_include_HEADERS=	\
 	Permission.h	\
 	Peer.h	\
 	Client.h	\
-	WebCredential.h
+	WebCredential.h	\
+	ProvRequest.h	\
+	ProvResponse.h
 
 libasn1_include_HEADERS+=BOOLEAN.h
 libasn1_la_SOURCES+=BOOLEAN.c
