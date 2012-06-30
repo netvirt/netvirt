@@ -62,8 +62,8 @@ int main(int argc, char *argv[])
 	int opt, D_FLAG = 0;
 
 	if (getuid() != 0) {
-		JOURNAL_NOTICE("%s must be run as root", argv[0]);
-		_exit(EXIT_ERR);
+		jlog(L_NOTICE, "%s must be run as root", argv[0]);
+		exit(EXIT_FAILURE);
 	}
 
 	while ((opt = getopt(argc, argv, "dv")) != -1) {
@@ -76,50 +76,55 @@ int main(int argc, char *argv[])
 				exit(EXIT_SUCCESS);
 	    		default:
 				printf("-d , -v\n");
-				JOURNAL_NOTICE("dsd]> getopt() failed :: %s:%i", __FILE__, __LINE__);
-				_exit(EXIT_ERR);
+				jlog(L_NOTICE, "dsd]> getopt() failed :: %s:%i", __FILE__, __LINE__);
+				exit(EXIT_FAILURE);
 		}
 	}
 
+	/* State initialization */
 	if (option_parse(opts, CONFIG_FILE)) {
-		JOURNAL_NOTICE("dsd]> option_parse() failed :: %s:%i", __FILE__, __LINE__);
-		_exit(EXIT_ERR);
+		jlog(L_NOTICE, "dsd]> option_parse() failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
 	}
 
 	option_dump(opts);
 
-	/* Subsystems initialization */
-
+	/* System initialization */
 	if (event_init()) {
-		JOURNAL_NOTICE("dsd]> event_init() failed :: %s:%i", __FILE__, __LINE__);
-		_exit(EXIT_ERR);
+		jlog(L_NOTICE, "dsd]> event_init() failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
 	}
 
 	if (scheduler_init()) {
-		JOURNAL_NOTICE("dsd]> scheduler_init() failed :: %s:%i\n", __FILE__, __LINE__);
-		_exit(EXIT_ERR);
+		jlog(L_NOTICE, "dsd]> scheduler_init() failed :: %s:%i\n", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
 	}
 
 	if (netbus_init()) {
-		JOURNAL_NOTICE("dsd]> netbus_init() failed. :: %s:%i\n", __FILE__, __LINE__);
-		_exit(EXIT_ERR);
+		jlog(L_NOTICE, "dsd]> netbus_init() failed. :: %s:%i\n", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
 	}
 
-	krypt_init();
-	pki_init();
+	if (krypt_init()) {
+		jlog(L_ERROR, "dnd]> krypt_init() failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
+	}
 
+	/* TODO handle errors */
+	pki_init();
 	dao_connect(database_host, database_username, database_password, database_name);
 
+	/* Server initialization */
 	if (dsd_init(listen_address, port, certificate, privatekey, trusted_authority)) {
-		JOURNAL_NOTICE("dsd]> dnds_init() failed. :: %s:%i\n", __FILE__, __LINE__);
-		_exit(EXIT_ERR);
+		jlog(L_NOTICE, "dsd]> dnds_init() failed. :: %s:%i\n", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
 	}
 
 	if (D_FLAG) {
 		daemonize();
-		journal_set_lvl(1);
 	}
 
+	/* Now... run ! */
 	scheduler();
 
 	return 0;

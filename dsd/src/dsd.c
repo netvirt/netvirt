@@ -44,7 +44,7 @@ static int validate_msg(DNDSMessage_t *msg)
 	DNDSMessage_get_pdu(msg, &pdu);
 
 	if (pdu != pdu_PR_dsm) {
-		JOURNAL_NOTICE("dsd]> not a valid DSM data unit");
+		jlog(L_NOTICE, "dsd]> not a valid DSM data unit");
 		return -1;
 	}
 
@@ -88,7 +88,7 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 		 */
 		case dsop_PR_NOTHING:
 		default:
-			JOURNAL_NOTICE("dsd]> not a valid DSM operation");
+			jlog(L_NOTICE, "dsd]> not a valid DSM operation");
 		case dsop_PR_terminateRequest:
 			terminate(session);
 			break;
@@ -97,7 +97,7 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 
 static void on_secure(netc_t *netc)
 {
-	printf("on secure!\n");
+	jlog(L_DEBUG, "on secure!\n");
 }
 
 static void on_input(netc_t *netc)
@@ -135,9 +135,9 @@ static void on_disconnect(netc_t *netc)
 	session_free(session);
 }
 
+/* TODO having a timeout per session */
 static void timeout_session(struct session *session)
 {
-	printf("time out sess\n");
 	terminate(session);
 }
 
@@ -173,7 +173,7 @@ int dsd_init(char *ip_address, char *port, char *certificate, char *privatekey, 
 			on_connect, on_disconnect, on_input, on_secure);
 
 	if (ret < 0) {
-		JOURNAL_NOTICE("dsd]> net_server failed :: %s:%i\n", __FILE__, __LINE__);
+		jlog(L_NOTICE, "dsd]> net_server failed :: %s:%i\n", __FILE__, __LINE__);
 		return -1;
 	}
 

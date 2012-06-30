@@ -16,6 +16,10 @@
 #include "dao.h"
 #include "request.h"
 
+
+/* TODO this prototype is highly fragile,
+ * we must handle all errors */
+
 void peerConnectInfo(struct session *session, DNDSMessage_t *req_msg)
 {
 	PeerConnectInfo_printf(req_msg);
@@ -92,9 +96,11 @@ void AddRequest_peer(struct session *session, DNDSMessage_t *msg)
 
 	f_emb = pki_embassy_load_from_memory(certificate, private_key, atoi(serial));
 
-
 	char *uuid;
 	uuid = uuid_v4();
+
+	char *provcode;
+	provcode = uuid_v4();
 
 	char common_name[256];
 	snprintf(common_name, sizeof(common_name), "dnc-%s@%s", uuid, str_ctxid);
@@ -109,7 +115,7 @@ void AddRequest_peer(struct session *session, DNDSMessage_t *msg)
 	pki_write_certificate_in_mem(dnc_passport->certificate, &cert_ptr, &size);
 	pki_write_privatekey_in_mem(dnc_passport->keyring, &pvkey_ptr, &size);
 
-	dao_add_passport_client(str_ctxid, uuid, cert_ptr, pvkey_ptr);
+	dao_add_passport_client(str_ctxid, uuid, cert_ptr, pvkey_ptr, provcode);
 
 	dao_update_embassy_issue_serial(str_ctxid, f_emb->serial);
 
@@ -353,10 +359,57 @@ void searchRequest_context(struct session *session, DNDSMessage_t *req_msg)
         Context_set_serverPrivkey(objContext, serverPrivkey, strlen(serverPrivkey));
         Context_set_trustedCert(objContext, trustedCert, strlen(trustedCert));
 
+	SearchResponse_set_searchType(msg, SearchType_all);
         SearchResponse_add_object(msg, objContext);
 
 	net_send_msg(session->netc, msg);
 
+}
+
+void searchRequest_peer(struct session *session, DNDSMessage_t *req_msg)
+{
+	printf("searchRequest peer for provisioning !\n");
+
+
+	char *provcode = NULL;
+	uint32_t length;
+
+	DNDSObject_t *obj;
+        SearchRequest_get_object(req_msg, &obj);
+	Peer_get_provCode(obj, &provcode, &length);
+	printf("provcode to search: %s\n", provcode);
+
+
+	//// answer ////
+	DNDSMessage_t *msg;
+
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+
+	DSMessage_set_seqNumber(msg, 0);
+	DSMessage_set_ackNumber(msg, 0);
+	DSMessage_set_operation(msg, dsop_PR_searchResponse);
+
+	SearchResponse_set_result(msg, DNDSResult_success);
+
+	DNDSObject_t *objPeer;
+	DNDSObject_new(&objPeer);
+	DNDSObject_set_objectType(objPeer, DNDSObject_PR_peer);
+
+	char *certificate = NULL;
+	char *private_key = NULL;
+	char *trustedcert = NULL;
+
+	dao_fetch_peer_from_provcode(provcode, &certificate, &private_key, &trustedcert);
+
+	Peer_set_certificate(objPeer, certificate, strlen(certificate));
+	Peer_set_certificateKey(objPeer, private_key, strlen(private_key));
+	Peer_set_trustedCert(objPeer, trustedcert, strlen(trustedcert));
+
+	SearchResponse_set_searchType(msg, SearchType_object);
+	SearchResponse_add_object(msg, objPeer);
+	net_send_msg(session->netc, msg);
 }
 
 void searchRequest_webcredential(struct session *session, DNDSMessage_t *req_msg)
@@ -381,7 +434,6 @@ void searchRequest_webcredential(struct session *session, DNDSMessage_t *req_msg
 	dao_fetch_webcredential_client_id(&id, username, password);
 
 
-
         DNDSMessage_t *msg;
 
         DNDSMessage_new(&msg);
@@ -392,6 +444,7 @@ void searchRequest_webcredential(struct session *session, DNDSMessage_t *req_msg
         DSMessage_set_ackNumber(msg, 1);
         DSMessage_set_operation(msg, dsop_PR_searchResponse);
 
+	SearchResponse_set_searchType(msg, SearchType_all);
         SearchResponse_set_result(msg, DNDSResult_success);
 
         DNDSObject_t *objWebCred;
@@ -411,6 +464,9 @@ void searchRequest_webcredential(struct session *session, DNDSMessage_t *req_msg
 void searchRequest(struct session *session, DNDSMessage_t *req_msg)
 {
 	e_SearchType SearchType;
+	DNDSObject_t *object;
+	DNDSObject_PR objType;
+
 
 	SearchRequest_get_searchType(req_msg, &SearchType);
 
@@ -422,7 +478,17 @@ void searchRequest(struct session *session, DNDSMessage_t *req_msg)
 	}
 
 	if (SearchType == SearchType_object) {
-		searchRequest_webcredential(session, req_msg);
-	}
 
+		SearchRequest_get_object(req_msg, &object);
+	        DNDSObject_get_objectType(object, &objType);
+
+		switch (objType) {
+		case DNDSObject_PR_webcredential:
+			searchRequest_webcredential(session, req_msg);
+			break;
+		case DNDSObject_PR_peer:
+			searchRequest_peer(session, req_msg);
+			break;
+		}
+	}
 }
