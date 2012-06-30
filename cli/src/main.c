@@ -9,6 +9,7 @@
  *
  */
 #include <signal.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -45,8 +46,8 @@ int main(int argc, char *argv[])
 	int c, args;
 
 	if (option_parse(opts, CONFIG_FILE)) {
-		JOURNAL_ERR("cannot parse configuration file");
-		_exit(EXIT_ERR);
+		jlog(L_ERROR, "cannot parse configuration file");
+		exit(EXIT_FAILURE);
 	}
 
 	while ((c = getopt(argc, argv, "at:")) != -1) {
@@ -68,13 +69,13 @@ int main(int argc, char *argv[])
 	}
 
 	if (!unix_socket) {
-		JOURNAL_ERR("no socket specified; use -t <target>");
-		_exit(EXIT_ERR);
+		jlog(L_ERROR, "no socket specified; use -t <target>");
+		exit(EXIT_FAILURE);
 	}
 
 	if (scheduler_init()) {
-		JOURNAL_ERR("initializing scheduler failed");
-		_exit(EXIT_ERR);
+		jlog(L_ERROR, "initializing scheduler failed");
+		exit(EXIT_FAILURE);
 	}
 
 	/* ignore broken pipe signal */
@@ -82,18 +83,18 @@ int main(int argc, char *argv[])
 
 	console = cli_console_init(unix_socket);
 	if (!console) {
-		JOURNAL_ERR("unable to connect to specified socket");
-		_exit(EXIT_ERR);
+		jlog(L_ERROR, "unable to connect to specified socket");
+		exit(EXIT_FAILURE);
 	}
 
 	command_init(console->socket);
 
 	if (command_list_fetch(console->socket)) {
-		JOURNAL_NOTICE("cannot get command list from target");
+		jlog(L_NOTICE, "cannot get command list from target");
 	}
 
 	if (args & ARGS_NOCOMPLETE) {
-		JOURNAL_NOTICE("command completion is off");
+		jlog(L_NOTICE, "command completion is off");
 	} else
 		command_set_completion();
 

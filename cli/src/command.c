@@ -50,7 +50,7 @@ static void register_command(char *cmd, size_t len)
 
 	entry = calloc(1, sizeof(struct command_list));
 	if (!entry) {
-		JOURNAL_ERR("could not create entry for `%s'", cmd);
+		jlog(L_ERROR, "could not create entry for `%s'", cmd);
 		return;
 	}
 	strncpy(entry->command, cmd, CLICMDSIZ);
@@ -76,10 +76,10 @@ static void process_command_list(usocket_t *sck)
 	cs = cli_read_summary(sck->buf);
 	if (cs) {
 		if (cs->retval != CLI_RETURN_SUCCESS)
-			JOURNAL_ERR("server failed to send command list");
+			jlog(L_ERROR, "server failed to send command list");
 		free(cs);
 	} else
-		JOURNAL_ERR("unexpected error while fetching commands");
+		jlog(L_ERROR, "unexpected error while fetching commands");
 
 	command_socket_handler.recv = read_socket;
 	prompt_wait--;
@@ -144,7 +144,7 @@ static void prompt(void *udata)
 		linenoiseHistoryAdd(line);
 		if (!local_command(line)
 		    && remote_command(line, cli_socket)) {
-			JOURNAL_ERR("unable to send command to remote target");
+			jlog(L_ERROR, "unable to send command to remote target");
 			free(line);
 			return;
 		}
@@ -168,7 +168,7 @@ static void read_socket(usocket_t *sck)
 	if (cs) {
 		switch (cs->retval) {
 		case CLI_RETURN_INVALID:
-			JOURNAL_ERR("unknown command `%s'", cs->command);
+			jlog(L_ERROR, "unknown command `%s'", cs->command);
 			break;
 		case CLI_RETURN_SHUTDOWN:
 			prompt_wait++;
