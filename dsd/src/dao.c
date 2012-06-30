@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <dnds/journal.h>
 #include <dnds/pki.h>
 #include <postgresql/libpq-fe.h>
 
@@ -23,6 +24,9 @@
 
 #include "dao.h"
 
+
+/* TODO This prototype is highly fragile,
+ * we must ensre all errors possible are handled ! */
 char *uuid_v4(void)
 {
 	uuid_t *uuid = NULL;
@@ -52,7 +56,7 @@ int dao_connect(char *host, char *username, char *password, char *dbname)
 
 		return -1;
 	} else {
-		printf("connected ok\n");
+		jlog(L_DEBUG, "connected ok\n");
 	}
 
 	return 0;
@@ -75,23 +79,23 @@ int dao_add_subnet(char *context_id, char *network, char *netmask)
 				"VALUES ('%s', inet_mask('%s', '%s'));",
 				context_id, network, netmask);
 
-	printf("insert_req: %s\n", insert_req);
+	jlog(L_DEBUG, "insert_req: %s\n", insert_req);
 
 	result = PQexec(dbconn, insert_req);
 
 	if (!result) {
-		printf("PQexec command failed, no error code\n");
+		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
-		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
 		break;
 	case PGRES_TUPLES_OK:
-		printf("query may have returned data\n");
+		jlog(L_DEBUG, "query may have returned data\n");
 		break;
 	default:
-		printf("command failed with code %s, error message %s\n",
+		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
 			PQresStatus(PQresultStatus(result)),
 			PQresultErrorMessage(result));
 		break;
@@ -100,33 +104,33 @@ int dao_add_subnet(char *context_id, char *network, char *netmask)
 	return 0;
 }
 
-int dao_add_passport_client(char *context_id, char *uuid, char *certificate, char *private_key)
+int dao_add_passport_client(char *context_id, char *uuid, char *certificate, char *private_key, char *provcode)
 {
 	PGresult *result;
 	char insert_req[4000];
 
 	snprintf(insert_req, 4000, "INSERT INTO PASSPORT_CLIENT "
-				"(context_id, uuid, certificate, private_key, status) "
-				"VALUES ('%s', '%s', '%s', '%s', 0);",
-				context_id, uuid, certificate, private_key);
+				"(context_id, uuid, certificate, private_key, status, provcode) "
+				"VALUES ('%s', '%s', '%s', '%s', 0, '%s');",
+				context_id, uuid, certificate, private_key, provcode);
 
-//	printf("insert_req: %s\n", insert_req);
+//	jlog(L_DEBUG, "insert_req: %s\n", insert_req);
 
 	result = PQexec(dbconn, insert_req);
 
 	if (!result) {
-		printf("PQexec command failed, no error code\n");
+		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
-		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
 		break;
 	case PGRES_TUPLES_OK:
-		printf("query may have returned data\n");
+		jlog(L_DEBUG, "query may have returned data\n");
 		break;
 	default:
-		printf("command failed with code %s, error message %s\n",
+		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
 			PQresStatus(PQresultStatus(result)),
 			PQresultErrorMessage(result));
 		break;
@@ -145,23 +149,23 @@ int dao_add_passport_server(char *context_id, char *common_name, char *certifica
 				"VALUES ('%s', '%s', '%s', '%s', 0);",
 				context_id, common_name, certificate, private_key);
 
-//	printf("insert_req: %s\n", insert_req);
+//	jlog(L_DEBUG, "insert_req: %s\n", insert_req);
 
 	result = PQexec(dbconn, insert_req);
 
 	if (!result) {
-		printf("PQexec command failed, no error code\n");
+		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
-		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
 		break;
 	case PGRES_TUPLES_OK:
-		printf("query may have returned data\n");
+		jlog(L_DEBUG, "query may have returned data\n");
 		break;
 	default:
-		printf("command failed with code %s, error message %s\n",
+		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
 			PQresStatus(PQresultStatus(result)),
 			PQresultErrorMessage(result));
 		break;
@@ -180,23 +184,23 @@ int dao_add_embassy(char *context_id, char *certificate, char *private_key)
 				"VALUES ('%s', '%s', '%s', 0);",
 				context_id, certificate, private_key);
 
-//	printf("insert_req: %s\n", insert_req);
+//	jlog(L_DEBUG, "insert_req: %s\n", insert_req);
 
 	result = PQexec(dbconn, insert_req);
 
 	if (!result) {
-		printf("PQexec command failed, no error code\n");
+		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
-		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
 		break;
 	case PGRES_TUPLES_OK:
-		printf("query may have returned data\n");
+		jlog(L_DEBUG, "query may have returned data\n");
 		break;
 	default:
-		printf("command failed with code %s, error message %s\n",
+		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
 			PQresStatus(PQresultStatus(result)),
 			PQresultErrorMessage(result));
 		break;
@@ -214,23 +218,23 @@ int dao_add_network(int client_id, int context_id)
 				"(client_id, context_id) "
 				"VALUES ('%d', '%d');",
 				client_id, context_id);
-	printf("insert_req: %s\n", insert_req);
+	jlog(L_DEBUG, "insert_req: %s\n", insert_req);
 
 	result = PQexec(dbconn, insert_req);
 
 	if (!result) {
-		printf("PQexec command failed, no error code\n");
+		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
-		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
 		break;
 	case PGRES_TUPLES_OK:
-		printf("query may have returned data\n");
+		jlog(L_DEBUG, "query may have returned data\n");
 		break;
 	default:
-		printf("command failed with code %s, error message %s\n",
+		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
 			PQresStatus(PQresultStatus(result)),
 			PQresultErrorMessage(result));
 		break;
@@ -249,23 +253,23 @@ int dao_add_context(char *client_id, int topology_id, char *description)
 				"VALUES ('%s', '%d', '%s');",
 				client_id, topology_id, description);
 
-	printf("insert_req: %s\n", insert_req);
+	jlog(L_DEBUG, "insert_req: %s\n", insert_req);
 
 	result = PQexec(dbconn, insert_req);
 
 	if (!result) {
-		printf("PQexec command failed, no error code\n");
+		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
-		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
 		break;
 	case PGRES_TUPLES_OK:
-		printf("query may have returned data\n");
+		jlog(L_DEBUG, "query may have returned data\n");
 		break;
 	default:
-		printf("command failed with code %s, error message %s\n",
+		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
 			PQresStatus(PQresultStatus(result)),
 			PQresultErrorMessage(result));
 		break;
@@ -284,23 +288,23 @@ int dao_add_webcredential(char *client_id, char *username, char *password)
 				"VALUES ('%s', '%s', crypt('%s', gen_salt('bf')));",
 				client_id, username, password);
 
-	printf("insert_req: %s\n", insert_req);
+	jlog(L_DEBUG, "insert_req: %s\n", insert_req);
 
 	result = PQexec(dbconn, insert_req);
 
 	if (!result) {
-		printf("PQexec command failed, no error code\n");
+		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
-		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
 		break;
 	case PGRES_TUPLES_OK:
-		printf("query may have returned data\n");
+		jlog(L_DEBUG, "query may have returned data\n");
 		break;
 	default:
-		printf("command failed with code %s, error message %s\n",
+		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
 			PQresStatus(PQresultStatus(result)),
 			PQresultErrorMessage(result));
 		break;
@@ -328,23 +332,23 @@ int dao_add_client(char *firstname,
 				"VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', 1);",
 				firstname, lastname, email, company, phone, country, state_province, city, postal_code);
 
-	printf("insert_req: %s\n", insert_req);
+	jlog(L_DEBUG, "insert_req: %s\n", insert_req);
 
 	result = PQexec(dbconn, insert_req);
 
 	if (!result) {
-		printf("PQexec command failed, no error code\n");
+		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
-		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
 		break;
 	case PGRES_TUPLES_OK:
-		printf("query may have returned data\n");
+		jlog(L_DEBUG, "query may have returned data\n");
 		break;
 	default:
-		printf("command failed with code %s, error message %s\n",
+		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
 			PQresStatus(PQresultStatus(result)),
 			PQresultErrorMessage(result));
 		break;
@@ -364,23 +368,23 @@ int dao_fetch_webcredential_client_id(char **client_id, char *username, char *pa
 				"AND password = crypt('%s', password);",
 				username, password);
 
-	printf("fetch_req: %s\n", fetch_req);
+	jlog(L_DEBUG, "fetch_req: %s\n", fetch_req);
 
 	result = PQexec(dbconn, fetch_req);
 
 	if (!result) {
-		printf("PQexec command failed, no error code\n");
+		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
-		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
 		break;
 	case PGRES_TUPLES_OK:
-		printf("query may have returned data\n");
+		jlog(L_DEBUG, "query may have returned data\n");
 		break;
 	default:
-		printf("command failed with code %s, error message %s\n",
+		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
 			PQresStatus(PQresultStatus(result)),
 			PQresultErrorMessage(result));
 		break;
@@ -395,12 +399,12 @@ int dao_fetch_webcredential_client_id(char **client_id, char *username, char *pa
 
 	fields = PQnfields(result);
 
-	printf("Tuples %d\n", tuples);
-	printf("Fields %d\n", fields);
+	jlog(L_DEBUG, "Tuples %d\n", tuples);
+	jlog(L_DEBUG, "Fields %d\n", fields);
 
 	int i;
 	for (i = 0; i<fields; i++) {
-		printf("%s | %s\n", PQfname(result, i), PQgetvalue(result, 0, i));
+		jlog(L_DEBUG, "%s | %s\n", PQfname(result, i), PQgetvalue(result, 0, i));
 	}
 }
 
@@ -419,18 +423,18 @@ int dao_fetch_context_id(char **context_id, char *client_id, char *description)
 	*context_id = strdup(PQgetvalue(result, 0, 0));
 
 	if (!result) {
-		printf("PQexec command failed, no error code\n");
+		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
-		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
 		break;
 	case PGRES_TUPLES_OK:
-		printf("query may have returned data\n");
+		jlog(L_DEBUG, "query may have returned data\n");
 		break;
 	default:
-		printf("command failed with code %s, error message %s\n",
+		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
 			PQresStatus(PQresultStatus(result)),
 			PQresultErrorMessage(result));
 		break;
@@ -440,12 +444,12 @@ int dao_fetch_context_id(char **context_id, char *client_id, char *description)
 	tuples = PQntuples(result);
 	fields = PQnfields(result);
 
-	printf("Tuples %d\n", tuples);
-	printf("Fields %d\n", fields);
+	jlog(L_DEBUG, "Tuples %d\n", tuples);
+	jlog(L_DEBUG, "Fields %d\n", fields);
 
 	int i;
 	for (i = 0; i<fields; i++) {
-		printf("%s | %s\n", PQfname(result, i), PQgetvalue(result, 0, i));
+		jlog(L_DEBUG, "%s | %s\n", PQfname(result, i), PQgetvalue(result, 0, i));
 	}
 }
 
@@ -465,18 +469,18 @@ int dao_fetch_client_id(char **client_id, char *firstname, char *lastname, char 
 	*client_id = strdup(PQgetvalue(result, 0, 0));
 
 	if (!result) {
-		printf("PQexec command failed, no error code\n");
+		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
-		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
 		break;
 	case PGRES_TUPLES_OK:
-		printf("query may have returned data\n");
+		jlog(L_DEBUG, "query may have returned data\n");
 		break;
 	default:
-		printf("command failed with code %s, error message %s\n",
+		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
 			PQresStatus(PQresultStatus(result)),
 			PQresultErrorMessage(result));
 		break;
@@ -486,12 +490,12 @@ int dao_fetch_client_id(char **client_id, char *firstname, char *lastname, char 
 	tuples = PQntuples(result);
 	fields = PQnfields(result);
 
-	printf("Tuples %d\n", tuples);
-	printf("Fields %d\n", fields);
+	jlog(L_DEBUG, "Tuples %d\n", tuples);
+	jlog(L_DEBUG, "Fields %d\n", fields);
 
 	int i;
 	for (i = 0; i<fields; i++) {
-		printf("%s | %s\n", PQfname(result, i), PQgetvalue(result, 0, i));
+		jlog(L_DEBUG, "%s | %s\n", PQfname(result, i), PQgetvalue(result, 0, i));
 	}
 
 }
@@ -506,23 +510,23 @@ int dao_update_embassy_issue_serial(char *context_id, uint32_t issue_serial)
 				"WHERE context_id = '%s';",
 				issue_serial, context_id);
 
-	printf("update_req: %s\n", update_req);
+	jlog(L_DEBUG, "update_req: %s\n", update_req);
 
 	result = PQexec(dbconn, update_req);
 
 	if (!result) {
-		printf("PQexec command failed, no error code\n");
+		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
-		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
 		break;
 	case PGRES_TUPLES_OK:
-		printf("query may have returned data\n");
+		jlog(L_DEBUG, "query may have returned data\n");
 		break;
 	default:
-		printf("command failed with code %s, error message %s\n",
+		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
 			PQresStatus(PQresultStatus(result)),
 			PQresultErrorMessage(result));
 		break;
@@ -530,6 +534,47 @@ int dao_update_embassy_issue_serial(char *context_id, uint32_t issue_serial)
 
 }
 
+int dao_fetch_peer_from_provcode(char *provcode,
+					char **certificate,
+					char **private_key,
+					char **trustedcert)
+{
+	PGresult *result;
+	char fetch_req[1024];
+
+	snprintf(fetch_req, 1025, 	"SELECT passport_client.certificate, "
+						"passport_client.private_key, "
+						"embassy.certificate as trustedcert "
+					"FROM	passport_client, embassy "
+					"WHERE	provcode = '%s' "
+					"AND	passport_client.context_id = embassy.context_id;",
+					provcode);
+
+	jlog(L_DEBUG, "fetch_req: %s\n", fetch_req);
+
+	result = PQexec(dbconn, fetch_req);
+	*certificate = strdup(PQgetvalue(result, 0, 0));
+	*private_key = strdup(PQgetvalue(result, 0, 1));
+	*trustedcert = strdup(PQgetvalue(result, 0, 2));
+
+	if (!result) {
+		jlog(L_DEBUG, "PQexec command failed, no error code\n");
+	}
+
+	switch (PQresultStatus(result)) {
+	case PGRES_COMMAND_OK:
+		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
+		break;
+	case PGRES_TUPLES_OK:
+		jlog(L_DEBUG, "query may have returned data\n");
+		break;
+	default:
+		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
+			PQresStatus(PQresultStatus(result)),
+			PQresultErrorMessage(result));
+		break;
+	}
+}
 
 int dao_fetch_embassy(char *context_id,
 			char **certificate,
@@ -544,7 +589,7 @@ int dao_fetch_embassy(char *context_id,
 				"WHERE context_id = '%s';",
 				context_id);
 
-	printf("fetch_req: %s\n", fetch_req);
+	jlog(L_DEBUG, "fetch_req: %s\n", fetch_req);
 
 	result = PQexec(dbconn, fetch_req);
 	*certificate = strdup(PQgetvalue(result, 0, 0));
@@ -552,18 +597,18 @@ int dao_fetch_embassy(char *context_id,
 	*issue_serial = strdup(PQgetvalue(result, 0, 2));
 
 	if (!result) {
-		printf("PQexec command failed, no error code\n");
+		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
-		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
 		break;
 	case PGRES_TUPLES_OK:
-		printf("query may have returned data\n");
+		jlog(L_DEBUG, "query may have returned data\n");
 		break;
 	default:
-		printf("command failed with code %s, error message %s\n",
+		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
 			PQresStatus(PQresultStatus(result)),
 			PQresultErrorMessage(result));
 		break;
@@ -589,18 +634,18 @@ int dao_fetch_context(char **id,
 				AND id = passport_server.context_id;");
 
 	if (!result) {
-		printf("PQexec command failed, no error code\n");
+		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
-		printf("command executed ok, %s rows affected\n", PQcmdTuples(result));
+		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
 		break;
 	case PGRES_TUPLES_OK:
-		printf("query may have returned data\n");
+		jlog(L_DEBUG, "query may have returned data\n");
 		break;
 	default:
-		printf("command failed with code %s, error message %s\n",
+		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
 			PQresStatus(PQresultStatus(result)),
 			PQresultErrorMessage(result));
 		break;
@@ -610,12 +655,12 @@ int dao_fetch_context(char **id,
 	tuples = PQntuples(result);
 	fields = PQnfields(result);
 
-	printf("Tuples %d\n", tuples);
-	printf("Fields %d\n", fields);
+	jlog(L_DEBUG, "Tuples %d\n", tuples);
+	jlog(L_DEBUG, "Fields %d\n", fields);
 
 	int i;
 	for (i = 0; i<fields; i++) {
-		printf("%s | %s\n", PQfname(result, i), PQgetvalue(result, 0, i));
+		jlog(L_DEBUG, "%s | %s\n", PQfname(result, i), PQgetvalue(result, 0, i));
 	}
 
 	*id = strdup(PQgetvalue(result, 0, 0));
@@ -637,7 +682,7 @@ int main(int argc, char *argv[])
 
 	dao_connect(argv[1], argv[2], argv[3], argv[4]);
 	dao_fetch_webcredential_client_id(&client_id, "test-username", "ttest-password");
-	printf("client_id: %s\n", client_id);
+	jlog(L_DEBUG, "client_id: %s\n", client_id);
 
 	return 0;
 
@@ -655,14 +700,14 @@ int main(int argc, char *argv[])
 
 	dao_fetch_client_id(&client_id, "firstname", "lastname", "email");
 
-	printf("client_id: %s\n", client_id);
+	jlog(L_DEBUG, "client_id: %s\n", client_id);
 
 	dao_add_context(client_id, 1, "description");
 
 	char *context_id = NULL;
 	dao_fetch_context_id(&context_id, client_id, "description");
 
-	printf("context_id: %s\n", context_id);
+	jlog(L_DEBUG, "context_id: %s\n", context_id);
 
 	//dao_add_network(1008, 3);
 
@@ -720,9 +765,12 @@ int main(int argc, char *argv[])
 	char *uuid;
 	uuid = uuid_v4();
 
+	char *provcode;
+	provcode = uuid_v4();
+
 	char common_name[256];
 	snprintf(common_name, sizeof(common_name), "dnc-%s@4", uuid);
-	printf("common_name: %s\n", common_name);
+	jlog(L_DEBUG, "common_name: %s\n", common_name);
 
 	digital_id_t *dnc_id;
 	dnc_id = pki_digital_id(common_name, "CA", "Quebec", "Levis", "info@demo.com", "DNDS");
@@ -733,7 +781,7 @@ int main(int argc, char *argv[])
 	pki_write_certificate_in_mem(dnc_passport->certificate, &cert_ptr, &size);
 	pki_write_privatekey_in_mem(dnc_passport->keyring, &pvkey_ptr, &size);
 
-	dao_add_passport_client(context_id, uuid, cert_ptr, pvkey_ptr);
+	dao_add_passport_client(context_id, uuid, cert_ptr, pvkey_ptr, provcode);
 
 	dao_update_embassy_issue_serial(context_id, f_emb->serial);
 
