@@ -41,6 +41,8 @@ DNMessage ::= SEQUENCE {
 		authResponse		AuthResponse,
 		netinfoRequest		NetinfoRequest,
 		netinfoResponse		NetinfoResponse,
+		provRequest		ProvRequest,
+		provResponse		ProvResponse,
 		p2pRequest		P2pRequest,
 		p2pResponse		P2pResponse,
 		terminateRequest	TerminateRequest,
@@ -109,6 +111,19 @@ P2pSide ::= ENUMERATED {
 	...
 }
 
+ProvRequest ::= SEQUENCE {
+	provCode	PrintableString OPTIONAL,
+	...
+}
+
+ProvResponse ::= SEQUENCE {
+	certificate	PrintableString OPTIONAL,
+	certificateKey	PrintableString OPTIONAL,
+	trustedCert     PrintableString OPTIONAL,
+	...
+}
+
+
 P2pRequest ::= SEQUENCE {
 	macAddrDst	OCTET STRING (SIZE(6)),
 	ipAddrDst	OCTET STRING (SIZE(4..16)),
@@ -175,6 +190,7 @@ SearchRequest ::= SEQUENCE {
 }
 
 SearchResponse ::= SEQUENCE {
+	searchtype	SearchType,
 	dndsResult	DNDSResult,
 	objects		SEQUENCE OF DNDSObject,
 	...
@@ -260,8 +276,10 @@ Peer ::= SEQUENCE {
 	contextId	INTEGER (0..uint32max),
 	description	PrintableString (SIZE(1..256)) OPTIONAL,
 	uuid		PrintableString OPTIONAL,
+	provCode	PrintableString OPTIONAL,
 	certificate	PrintableString OPTIONAL,
 	certificateKey	BIT STRING OPTIONAL,
+	trustedCert     PrintableString OPTIONAL,
 	status		INTEGER (0..127) OPTIONAL,
 	...
 }
