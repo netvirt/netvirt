@@ -1115,6 +1115,173 @@ int NetinfoResponse_get_result(DNDSMessage_t *msg, e_DNDSResult *result)
 	return DNDS_success;
 }
 
+// ProvRequest
+int ProvRequest_set_provCode(DNDSMessage_t *msg, char *provCode, size_t length)
+{
+	if (msg == NULL || provCode == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_provRequest) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.provRequest.provCode = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (msg->pdu.choice.dnm.dnop.choice.provRequest.provCode == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.provRequest.provCode->buf = (uint8_t *)strdup(provCode);
+	msg->pdu.choice.dnm.dnop.choice.provRequest.provCode->size = length;
+
+	return DNDS_success;
+}
+
+int ProvRequest_get_provCode(DNDSMessage_t *msg, char **provCode, size_t *length)
+{
+	if (msg == NULL || provCode == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_provRequest) {
+		return DNDS_invalid_op;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.choice.provRequest.provCode == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*provCode = (char *)msg->pdu.choice.dnm.dnop.choice.provRequest.provCode->buf;
+	*length = msg->pdu.choice.dnm.dnop.choice.provRequest.provCode->size;
+
+	return DNDS_success;
+}
+
+// ProvResponse
+int ProvResponse_set_certificate(DNDSMessage_t *msg, char *certificate, size_t length)
+{
+	if (msg == NULL || certificate == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_provResponse) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.provResponse.certificate = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (msg->pdu.choice.dnm.dnop.choice.provResponse.certificate == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.provResponse.certificate->buf = (uint8_t *)strdup(certificate);
+	msg->pdu.choice.dnm.dnop.choice.provResponse.certificate->size = length;
+
+	return DNDS_success;
+}
+
+int ProvResponse_get_certificate(DNDSMessage_t *msg, char **certificate, size_t *length)
+{
+	if (msg == NULL || certificate == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+        if (msg->pdu.choice.dnm.dnop.present != dnop_PR_provResponse) {
+                return DNDS_invalid_op;
+        }
+
+	if (msg->pdu.choice.dnm.dnop.choice.provResponse.certificate == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*certificate = (char *)msg->pdu.choice.dnm.dnop.choice.provResponse.certificate->buf;
+	*length = msg->pdu.choice.dnm.dnop.choice.provResponse.certificate->size;
+
+	return DNDS_success;
+}
+
+int ProvResponse_set_certificateKey(DNDSMessage_t *msg, char *certificateKey, size_t length)
+{
+	if (msg == NULL || certificateKey == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_provResponse) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.provResponse.certificateKey = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (msg->pdu.choice.dnm.dnop.choice.provResponse.certificateKey == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.provResponse.certificateKey->buf = (uint8_t *)strdup(certificateKey);
+	msg->pdu.choice.dnm.dnop.choice.provResponse.certificateKey->size = length;
+
+	return DNDS_success;
+}
+
+int ProvResponse_get_certificateKey(DNDSMessage_t *msg, char **certificateKey, size_t *length)
+{
+	if (msg == NULL || certificateKey == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+        if (msg->pdu.choice.dnm.dnop.present != dnop_PR_provResponse) {
+                return DNDS_invalid_op;
+        }
+
+	if (msg->pdu.choice.dnm.dnop.choice.provResponse.certificateKey == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*certificateKey = (char *)msg->pdu.choice.dnm.dnop.choice.provResponse.certificateKey->buf;
+	*length = msg->pdu.choice.dnm.dnop.choice.provResponse.certificateKey->size;
+
+	return DNDS_success;
+}
+
+int ProvResponse_set_trustedCert(DNDSMessage_t *msg, char *trustedCert, size_t length)
+{
+	if (msg == NULL || trustedCert == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_provResponse) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.provResponse.trustedCert = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (msg->pdu.choice.dnm.dnop.choice.provResponse.trustedCert == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.provResponse.trustedCert->buf = (uint8_t *)strdup(trustedCert);
+	msg->pdu.choice.dnm.dnop.choice.provResponse.trustedCert->size = length;
+
+	return DNDS_success;
+
+}
+
+int ProvResponse_get_trustedCert(DNDSMessage_t *msg, char **trustedCert, size_t *length)
+{
+	if (msg == NULL || trustedCert == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+        if (msg->pdu.choice.dnm.dnop.present != dnop_PR_provResponse) {
+                return DNDS_invalid_op;
+        }
+
+	if (msg->pdu.choice.dnm.dnop.choice.provResponse.trustedCert == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*trustedCert = (char *)msg->pdu.choice.dnm.dnop.choice.provResponse.trustedCert->buf;
+	*length = msg->pdu.choice.dnm.dnop.choice.provResponse.trustedCert->size;
+
+	return DNDS_success;
+}
+
 // P2pRequest
 int P2pRequest_set_macAddrDst(DNDSMessage_t *msg, uint8_t *macAddrDst)
 {
@@ -1549,6 +1716,45 @@ int SearchRequest_get_object(DNDSMessage_t *msg, DNDSObject_t **object)
 #endif
 
 // SearchResponse
+
+int SearchResponse_set_searchType(DNDSMessage_t *msg, e_SearchType SearchType)
+{
+	if (msg == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_searchResponse) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dsm.dsop.choice.searchResponse.searchtype = SearchType;
+
+	return DNDS_success;
+}
+
+int SearchResponse_get_searchType(DNDSMessage_t *msg, e_SearchType *SearchType)
+{
+	if (msg == NULL || SearchType == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_searchResponse) {
+		return DNDS_invalid_op;
+	}
+
+	*SearchType = msg->pdu.choice.dsm.dsop.choice.searchResponse.searchtype;
+
+	return DNDS_success;
+}
+
 int SearchResponse_set_result(DNDSMessage_t *msg, e_DNDSResult result)
 {
 	if (msg == NULL) {
@@ -3128,8 +3334,53 @@ int Peer_get_description(DNDSObject_t *object, char **description, size_t *lengt
 		return DNDS_value_not_present;
 	}
 
+	if (object->choice.peer.description == NULL) {
+		return DNDS_value_not_present;
+	}
+
 	*description = (char *)object->choice.peer.description->buf;
 	*length = object->choice.peer.description->size;
+
+	return DNDS_success;
+}
+
+int Peer_set_provCode(DNDSObject_t *object, char *provCode, size_t length)
+{
+	if (object == NULL || provCode == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_peer) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.peer.provCode = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.peer.provCode == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.peer.provCode->buf = (uint8_t *)strdup(provCode);
+	object->choice.peer.provCode->size = length;
+
+	return DNDS_success;
+}
+
+int Peer_get_provCode(DNDSObject_t *object, char **provCode, size_t *length)
+{
+	if (object == NULL || provCode == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_peer) {
+		return DNDS_invalid_object_type;
+	}
+
+	if (object->choice.peer.provCode == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*provCode = object->choice.peer.provCode->buf;
+	*length = object->choice.peer.provCode->size;
 
 	return DNDS_success;
 }
@@ -3217,6 +3468,52 @@ int Peer_get_certificateKey(DNDSObject_t *object, uint8_t **certificateKey, size
 
 	*certificateKey = object->choice.peer.certificateKey->buf;
 	*length = object->choice.peer.certificateKey->size;
+
+	return DNDS_success;
+}
+
+int Peer_set_trustedCert(DNDSObject_t *object, uint8_t *trustedCert, size_t length)
+{
+	if (object == NULL || trustedCert == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_peer) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.peer.trustedCert = (BIT_STRING_t *)calloc(1, sizeof(BIT_STRING_t));
+	if (object->choice.peer.trustedCert == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.peer.trustedCert->buf = (uint8_t *)calloc(1, length);
+	if (object->choice.peer.trustedCert->buf == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	memmove(object->choice.peer.trustedCert->buf, trustedCert, length);
+	object->choice.peer.trustedCert->size = length;
+
+	return DNDS_success;
+}
+
+int Peer_get_trustedCert(DNDSObject_t *object, uint8_t **trustedCert, size_t *length)
+{
+	if (object == NULL || trustedCert == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_peer) {
+		return DNDS_invalid_object_type;
+	}
+
+	if (object->choice.peer.trustedCert == NULL) {
+		return	DNDS_value_not_present;
+	}
+
+	*trustedCert = object->choice.peer.trustedCert->buf;
+	*length = object->choice.peer.trustedCert->size;
 
 	return DNDS_success;
 }
