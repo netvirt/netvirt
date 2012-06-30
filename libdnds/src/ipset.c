@@ -17,10 +17,7 @@
 
 #include "jsw_rbtree.h"
 #include "ipset.h"
-
-/* TODO
- * replace all printf() with journal
- */
+#include "journal.h"
 
 static int ipset_cmp(const void *p1, const void *p2)
 {
@@ -64,14 +61,14 @@ int ipset_insert(ipset_t *ipset, const char *ip)
 	ret = inet_pton(AF_INET, ip, in);
 
 	if (ret != 1) {
-		printf("ipset]> insert invalid ip %s\n", ip);
+		jlog(L_WARNING, "ipset]> insert invalid ip %s\n", ip);
 		free(in);
 		return -1;
 	}
 
 	ret = jsw_rbinsert(ipset, (void*)in);
 	if (ret == 0) {
-		printf("ipset]> insert failed on ip %s\n", ip);
+		jlog(L_WARNING, "ipset]> insert failed on ip %s\n", ip);
 		free(in);
 		return -1;
 	}
@@ -88,14 +85,14 @@ int ipset_erase(ipset_t *ipset, const char *ip)
 	ret = inet_pton(AF_INET, ip, in);
 
 	if (ret != 1) {
-		printf("ipset]> delete invalid ip %s\n", ip);
+		jlog(L_WARNING, "ipset]> delete invalid ip %s\n", ip);
 		free(in);
 		return -1;
 	}
 
 	ret = jsw_rberase(ipset, (void*)in);
 	if (ret == 0) {
-		printf("ipset]> erase failed on ip %s\n", ip);
+		jlog(L_WARNING, "ipset]> erase failed on ip %s\n", ip);
 		free(in);
 		return -1;
 	}
@@ -111,7 +108,7 @@ int ipset_find(ipset_t *ipset, const char *ip)
 	ret = inet_pton(AF_INET, ip, in);
 
 	if (ret != 1) {
-		printf("ipset]> find invalid ip\n");
+		jlog(L_WARNING, "ipset]> find invalid ip\n");
 		free(in);
 		return -1;
 	}
@@ -130,10 +127,10 @@ void ipset_printset(ipset_t *ipset)
 	rbtrav = jsw_rbtnew();
 
 	iptrav = jsw_rbtfirst(rbtrav, ipset);
-	printf("ip %s\n", inet_ntoa(*iptrav));
+	jlog(L_NOTICE, "ip %s\n", inet_ntoa(*iptrav));
 
 	while ((iptrav = jsw_rbtnext(rbtrav)) != NULL) {
-		printf("ip %s\n", inet_ntoa(*iptrav));
+		jlog(L_NOTICE, "ip %s\n", inet_ntoa(*iptrav));
 	}
 }
 

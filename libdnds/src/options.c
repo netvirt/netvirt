@@ -36,18 +36,18 @@ void option_dump(struct options *opts)
 	while (opts[i].tag != NULL) {
 
 		if (opts[i].type & OPT_STR)
-			JOURNAL_NOTICE("option]> %s == %s",
+			jlog(L_NOTICE, "option]> %s == %s",
 				opts[i].tag, *(char **)(opts[i].value) ? *(char **)(opts[i].value) : "(nil)");
 
 		else if (opts[i].type & OPT_INT) {
 
 			if (*(int **)(opts[i].value))
-				JOURNAL_NOTICE("option]> %s == %i", opts[i].tag, **(int **)(opts[i].value));
+				jlog(L_NOTICE, "option]> %s == %i", opts[i].tag, **(int **)(opts[i].value));
 			else
-				JOURNAL_NOTICE("option]> %s == (nil)", opts[i].tag);
+				jlog(L_NOTICE, "option]> %s == (nil)", opts[i].tag);
 		}
 		else
-			JOURNAL_NOTICE("option]> %s == err: invalid type", opts[i].tag);
+			jlog(L_NOTICE, "option]> %s == err: invalid type", opts[i].tag);
 
 		i++;
 	}
@@ -186,13 +186,13 @@ static int parse(struct options *opts, FILE *fp)
 	}
 
 	if (ret > MAX_LEN) {
-		JOURNAL_NOTICE("option]> the line %i is longer than %i :: %s:%i",
+		jlog(L_NOTICE, "option]> the line %i is longer than %i :: %s:%i",
 				line, MAX_LEN, __FILE__, __LINE__);
 		return ERR_ERRNO;
 	}
 
 	if (ret == EOF) {
-		JOURNAL_NOTICE("option]> unexpected error %s :: %s:%i",
+		jlog(L_NOTICE, "option]> unexpected error %s :: %s:%i",
 				strerror(errno), __FILE__, __LINE__);
 		return ERR_ERRNO;
 	}
@@ -209,7 +209,7 @@ static int sanity_check(const struct options *opts)
 	int i = 0;
 	for (; opts[i].tag != NULL; i++)
 		if ((opts[i].type & OPT_MAN) && *(void **)(opts[i].value) == NULL) {
-				JOURNAL_NOTICE("option]> '%s' is missing from configuration :: %s:%i",
+				jlog(L_NOTICE, "option]> '%s' is missing from configuration :: %s:%i",
 						opts[i].tag, __FILE__, __LINE__);
 
 				return ERR_MAN;
@@ -249,7 +249,7 @@ int option_parse(struct options *opts, char *path)
 	int i;
 
 	if ((fp = fopen(path, "r")) == NULL) {
-		JOURNAL_NOTICE("%s: %s", path, strerror(errno));
+		jlog(L_NOTICE, "%s: %s", path, strerror(errno));
 		return 1;
 	}
 
@@ -258,25 +258,25 @@ int option_parse(struct options *opts, char *path)
 
 	switch(parse(opts, fp)) {
 		case ERR_SYNTAX:
-			JOURNAL_NOTICE("option]> syntax error :: %s:%i", __FILE__, __LINE__);
+			jlog(L_NOTICE, "option]> syntax error :: %s:%i", __FILE__, __LINE__);
 			option_free(opts);
 			fclose(fp);
 			return ERR_SYNTAX;
 
 		case ERR_DUPLICATE:
-			JOURNAL_NOTICE("option]> duplicate :: %s:%i", __FILE__, __LINE__);
+			jlog(L_NOTICE, "option]> duplicate :: %s:%i", __FILE__, __LINE__);
 			option_free(opts);
 			fclose(fp);
 			return ERR_DUPLICATE;
 
 		case ERR_ERRNO:
-			JOURNAL_NOTICE("option]> unexpected error %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+			jlog(L_NOTICE, "option]> unexpected error %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 			option_free(opts);
 			fclose(fp);
 			return ERR_ERRNO;
 
 		case ERR_TYPE:
-			JOURNAL_NOTICE("option]> invalid option type :: %s:%i", __FILE__, __LINE__);
+			jlog(L_NOTICE, "option]> invalid option type :: %s:%i", __FILE__, __LINE__);
 			option_free(opts);
 			fclose(fp);
 			return ERR_TYPE;

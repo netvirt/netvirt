@@ -127,13 +127,13 @@ char *x509_get_cn(char *path)
 
 	f = fopen(path, "rb");
 	if (f == NULL) {
-		JOURNAL_NOTICE("utils]> fopen() no such file : %s :: %s %i \n", path, __FILE__, __LINE__);
+		jlog(L_NOTICE, "utils]> fopen() no such file : %s :: %s %i \n", path, __FILE__, __LINE__);
 		return NULL;
 	}
 
 	ret = fseek(f, 0, SEEK_END);
 	if (ret == -1) {
-		JOURNAL_NOTICE("utils]> fseek() %s :: %s:%i\n", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "utils]> fseek() %s :: %s:%i\n", strerror(errno), __FILE__, __LINE__);
 		return NULL;
 	}
 
@@ -141,13 +141,13 @@ char *x509_get_cn(char *path)
 
 	ret = fseek(f, 0, SEEK_SET);
 	if (ret == -1) {
-		JOURNAL_NOTICE("utils]> fseek() %s :: %s:%i\n", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "utils]> fseek() %s :: %s:%i\n", strerror(errno), __FILE__, __LINE__);
 		return NULL;
 	}
 
 	buf = (unsigned char *) malloc(n+1);
 	if (buf == NULL) {
-		JOURNAL_NOTICE("utils]> malloc() %s :: %s:%i\n", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "utils]> malloc() %s :: %s:%i\n", strerror(errno), __FILE__, __LINE__);
 		return NULL;
 	}
 
@@ -155,7 +155,7 @@ char *x509_get_cn(char *path)
 	if (ret != n) {
 		fclose(f);
 		free(buf);
-		JOURNAL_NOTICE("utils]> fread() %s :: %s:%i\n", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "utils]> fread() %s :: %s:%i\n", strerror(errno), __FILE__, __LINE__);
 		return NULL;
 	}
 
@@ -163,26 +163,26 @@ char *x509_get_cn(char *path)
 
 	needle = strstr((const char *)buf, "Subject:");
 	if (needle == NULL) {
-		JOURNAL_NOTICE("utils]> strstr() \"Subject\" substring not found :: %s:%i\n", __FILE__, __LINE__);
+		jlog(L_NOTICE, "utils]> strstr() \"Subject\" substring not found :: %s:%i\n", __FILE__, __LINE__);
 		return NULL;
 	}
 
 	needle = strstr(needle, "CN=");
 	if (needle == NULL) {
-		JOURNAL_NOTICE("utils]> strstr() \"CN=\" substring not found :: %s:%i\n", __FILE__, __LINE__);
+		jlog(L_NOTICE, "utils]> strstr() \"CN=\" substring not found :: %s:%i\n", __FILE__, __LINE__);
 		return NULL;
 	}
 
 	needle += strlen("CN=");
 	if (needle == NULL) {
-		JOURNAL_NOTICE("utils]> strstr() \"CN=\" substring not found :: %s:%i\n", __FILE__, __LINE__);
+		jlog(L_NOTICE, "utils]> strstr() \"CN=\" substring not found :: %s:%i\n", __FILE__, __LINE__);
 		return NULL;
 	}
 
 
 	end = strchr(needle, '/');
 	if (end == NULL) {
-		JOURNAL_NOTICE("utils]> strchr() \"/\" character not found :: %s:%i\n", __FILE__, __LINE__);
+		jlog(L_NOTICE, "utils]> strchr() \"/\" character not found :: %s:%i\n", __FILE__, __LINE__);
 		return NULL;
 	}
 
@@ -190,7 +190,7 @@ char *x509_get_cn(char *path)
 
 	cn = strdup(needle);
 	if (cn == NULL) {
-		JOURNAL_NOTICE("utils]> strdup() %s :: %s:%i\n", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "utils]> strdup() %s :: %s:%i\n", strerror(errno), __FILE__, __LINE__);
 		return NULL;
 	}
 

@@ -27,7 +27,7 @@ int ion_poke(int queue, void (*notify)(void *udata, int flag))
 
 	nfd = kevent(queue, 0, 0, kq_ev, NUM_EVENTS, &tmout);
 	if (nfd < 0) {
-		JOURNAL_NOTICE("ion]> kevent() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "ion]> kevent() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		return -1;
 	}
 
@@ -58,7 +58,7 @@ int ion_add(int queue, int fd, void *udata)
 
 	ret = kevent(queue, &chlist, 1, 0, 0, &tmout);
 	if (ret < 0)
-		JOURNAL_NOTICE("ion]> kevent() %s :: %s%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "ion]> kevent() %s :: %s%i", strerror(errno), __FILE__, __LINE__);
 
 	return ret;
 }
@@ -69,7 +69,7 @@ int ion_new()
 
 	kqueue_fd = kqueue();
 	if (kqueue_fd < 0)
-		JOURNAL_NOTICE("ion]> kqueue() %s :: %s%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "ion]> kqueue() %s :: %s%i", strerror(errno), __FILE__, __LINE__);
 
 	return kqueue_fd;
 }

@@ -29,13 +29,13 @@ extern int tun_destroy(iface_t *tun)
 
 	ret = close(tun->fd);
 	if (ret == -1) {
-		JOURNAL_WARN("tun_tuninfo]> failed closing iface fd [%i] :: %i:%s", __LINE__, __FILE__);
+		jlog(L_WARNING, "tun_tuninfo]> failed closing iface fd [%i] :: %i:%s", __LINE__, __FILE__);
 	}
 
 	snprintf(sys, 128, "ifconfig %s destroy",
 		tun->devname);
 
-	JOURNAL_DEBUG("tun_tuninfo]> sys:: %s", sys);
+	jlog(L_DEBUG, "tun_tuninfo]> sys:: %s", sys);
 
 	ret = system(sys);
 
@@ -51,7 +51,7 @@ extern int tun_up(char *devname, char *addr)
 		devname,
 		addr);
 
-	JOURNAL_DEBUG("tun_tuninfo]> sys:: %s", sys);
+	jlog(L_DEBUG, "tun_tuninfo]> sys:: %s", sys);
 	ret = system(sys);
 
 	return ret;
@@ -78,7 +78,7 @@ extern int tun_create(char *devname, int *fd)
 	/* Flags given will be set; flags omitted will be cleared; */
 	ret = ioctl(*fd, TUNGIFINFO, &info);
 	if (ret < 0) {
-		JOURNAL_ERR("tun_tuninfo]> ioctl TUNGIFINFO failed %s :: %s:%i", name, __FILE__, __LINE__);
+		jlog(L_ERROR, "tun_tuninfo]> ioctl TUNGIFINFO failed %s :: %s:%i", name, __FILE__, __LINE__);
 		close(*fd);
 		return -1;
 	}
@@ -87,7 +87,7 @@ extern int tun_create(char *devname, int *fd)
 	info.type = IFT_ETHER;
 	ret = ioctl(*fd, TUNSIFINFO, &info);
 	if (ret < 0) {
-		JOURNAL_ERR("tun_tuninfo]> ioctl TUNSIFINFO failed %s :: %s:%i", name, __FILE__, __LINE__);
+		jlog(L_ERROR, "tun_tuninfo]> ioctl TUNSIFINFO failed %s :: %s:%i", name, __FILE__, __LINE__);
 		close(*fd);
 		return -1;
 	}

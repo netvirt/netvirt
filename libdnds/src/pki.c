@@ -17,6 +17,7 @@
 #include <openssl/pem.h>
 #include <openssl/x509v3.h>
 
+#include "journal.h"
 #include "pki.h"
 
 // openssl x509 -in ./certificate.pem -text
@@ -34,13 +35,13 @@ static void openssl_error_stack()
 
 	do {
 		e = ERR_get_error_line(&file, &line);
-		printf("openssl]> %s", ERR_error_string(e, NULL));
+		jlog(L_ERROR, "openssl]> %s", ERR_error_string(e, NULL));
 	} while (e);
 }
 
 static EVP_PKEY *pki_generate_keyring()
 {
-	printf("pki_generate_keyring\n");
+	jlog(L_NOTICE, "pki_generate_keyring\n");
 
 	EVP_PKEY *keyring;
 	RSA *rsa_keys;
@@ -73,7 +74,7 @@ static EVP_PKEY *pki_generate_keyring()
 
 static X509_REQ *pki_certificate_request(EVP_PKEY *keyring, digital_id_t *digital_id)
 {
-	printf("pki_certificate_request\n");
+	jlog(L_NOTICE, "pki_certificate_request\n");
 
 	X509_REQ *cert_req;
 	X509_NAME *subject;
@@ -110,7 +111,7 @@ static X509_REQ *pki_certificate_request(EVP_PKEY *keyring, digital_id_t *digita
 static X509 *pki_certificate(X509_NAME *issuer, EVP_PKEY *keyring, X509_REQ *cert_req,
 				uint8_t is_cert_authority, uint32_t serial, uint32_t expiration_delay)
 {
-	printf("pki_certificate\n");
+	jlog(L_NOTICE, "pki_certificate\n");
 
 	X509 *certificate;
 	X509_NAME *subject;
@@ -158,7 +159,7 @@ static X509 *pki_certificate(X509_NAME *issuer, EVP_PKEY *keyring, X509_REQ *cer
 
 static void pki_sign_certificate(EVP_PKEY *keyring, X509 *certificate)
 {
-	printf("pki_sign_certificate\n");
+	jlog(L_NOTICE, "pki_sign_certificate\n");
 
 	X509_sign(certificate, keyring, EVP_sha1());
 }
@@ -182,7 +183,7 @@ digital_id_t *pki_digital_id(char *commonName,
 				char *emailAddress,
 				char *organizationName)
 {
-	printf("pki_digital_id\n");
+	jlog(L_NOTICE, "pki_digital_id\n");
 
 	digital_id_t *digital_id;
 	digital_id = calloc(1, sizeof(digital_id_t));
@@ -206,7 +207,7 @@ void pki_embassy_free(embassy_t *embassy)
 
 embassy_t *pki_embassy_new(digital_id_t *digital_id, uint32_t expiration_delay)
 {
-	printf("pki_embassy_new\n");
+	jlog(L_NOTICE, "pki_embassy_new\n");
 
 	embassy_t *embassy;
 	embassy = calloc(1, sizeof(embassy_t));
@@ -253,7 +254,7 @@ void pki_passport_free(passport_t *passport)
 
 passport_t *pki_embassy_deliver_passport(embassy_t *embassy, digital_id_t *digital_id, uint32_t expiration_delay)
 {
-	printf("pki_embassy_deliver_passport\n");
+	jlog(L_NOTICE, "pki_embassy_deliver_passport\n");
 
 	passport_t *passport;
 	passport = calloc(1, sizeof(passport_t));
@@ -357,28 +358,44 @@ passport_t *pki_passport_load_from_file(char *certificate_filename,
 					char *trusted_authority_filename)
 {
 	BIO *bio_file = NULL;
-	passport_t *passport;
+	passport_t *passport = NULL;
 	X509 *trusted_authority_certificate;
+
+	if (!certificate_filename || !privatekey_filename || !trusted_authority_filename) {
+		return NULL;
+	}
 
 	// create an empty passport
 	passport = calloc(1, sizeof(passport_t));
 
 	// fetch the certificate in PEM format and convert to X509
 	bio_file = BIO_new_file(certificate_filename, "r");
-	printf("bio_file %p\n", bio_file);
+	if (bio_file == NULL) {
+		free(passport);
+		return NULL;
+	}
+	jlog(L_NOTICE, "bio_file %p\n", bio_file);
 	passport->certificate = PEM_read_bio_X509(bio_file, NULL, NULL, NULL);
 	BIO_free(bio_file);
 
 	// fetch the private key in PEM format and convert to EVP
 	bio_file = BIO_new_file(privatekey_filename, "r");
-	printf("bio_file %p\n", bio_file);
+	if (bio_file == NULL) {
+		free(passport);
+		return NULL;
+	}
+	jlog(L_NOTICE, "bio_file %p\n", bio_file);
 	passport->keyring = PEM_read_bio_PrivateKey(bio_file, NULL, NULL, NULL);
 	BIO_free(bio_file);
 
 	// fetch the certificate authority in PEM format convert to X509
 	// and add to the trusted store
 	bio_file = BIO_new_file(trusted_authority_filename, "r");
-	printf("bio_file %p\n", bio_file);
+	if (bio_file == NULL) {
+		free(passport);
+		return NULL;
+	}
+	jlog(L_NOTICE, "bio_file %p\n", bio_file);
 	trusted_authority_certificate = PEM_read_bio_X509(bio_file, NULL, NULL, NULL);
 	passport->trusted_authority = X509_STORE_new();
 	X509_STORE_add_cert(passport->trusted_authority, trusted_authority_certificate);
@@ -473,8 +490,8 @@ int main()
 	pki_write_certificate_in_mem(dsd_embassy->certificate, &cert_ptr, &size);
 	pki_write_privatekey_in_mem(dsd_embassy->keyring, &pvkey_ptr, &size);
 
-	printf("cert %s\n", cert_ptr);
-	printf("pvkey %s\n", pvkey_ptr);
+	jlog(L_NOTICE, "cert %s\n", cert_ptr);
+	jlog(L_NOTICE, "pvkey %s\n", pvkey_ptr);
 
 	return 0;
 

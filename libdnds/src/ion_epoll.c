@@ -24,7 +24,7 @@ int ion_poke(int queue, void (*notify)(void *udata, int flag))
 
 	nfd = epoll_wait(queue, ep_ev, NUM_EVENTS, 1);
 	if (nfd < 0) {
-		JOURNAL_NOTICE("ion]> epoll_wait() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "ion]> epoll_wait() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		return -1;
 	}
 
@@ -55,7 +55,7 @@ int ion_add(int queue, int fd, void *udata)
 
 	ret = epoll_ctl(queue, EPOLL_CTL_ADD, fd, &nevent);
 	if (ret < 0)
-		JOURNAL_NOTICE("ion]> epoll_ctl() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "ion]> epoll_ctl() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 
 	return ret;
 }
@@ -66,7 +66,7 @@ int ion_new()
 
 	epoll_fd = epoll_create(BACKING_STORE);
 	if (epoll_fd <	0)
-		JOURNAL_NOTICE("ion]> epoll_create() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "ion]> epoll_create() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 
 	return epoll_fd;
 }

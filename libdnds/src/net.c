@@ -213,7 +213,7 @@ static int net_decode_msg(netc_t *netc)
 			return 0;
 		}
 		else if (dec.code == RC_FAIL) {
-			JOURNAL_NOTICE("net]> ber_decode returned RC_FAIL after consuming %i bytes", dec.consumed);
+			jlog(L_NOTICE, "net]> ber_decode returned RC_FAIL after consuming %i bytes", dec.consumed);
 
 			netc->buf_in_data_size = 0;
 			netc->buf_in_offset = 0;
@@ -346,13 +346,13 @@ static void net_on_disconnect(peer_t *peer)
 			netc->on_disconnect(netc);
 		}
 
-		JOURNAL_INFO("net]> on disconnect");
+		jlog(L_NOTICE, "net]> on disconnect");
 
 		peer->ext_ptr = NULL;
 		net_connection_free(netc);
 	}
 	else {
-		JOURNAL_ERR("net]> on disconnect: netc is NULL");
+		jlog(L_ERROR, "net]> on disconnect: netc is NULL");
 	}
 }
 
@@ -423,14 +423,14 @@ int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 	ec = der_encode(&asn_DEF_DNDSMessage, msg, serialize_buf_enc, netc);
 	if (ec.encoded == -1) {
 		netc->buf_enc_data_size = 0;	// mark the buffer as empty
-		JOURNAL_ERR("net]> DER encoder failed at field '%s'", ec.failed_type->name);
+		jlog(L_ERROR, "net]> DER encoder failed at field '%s'", ec.failed_type->name);
 		return -1;
 	}
 
 	if (netc->security_level > NET_UNSECURE
 		&& netc->kconn->status != KRYPT_SECURE) {
 
-		JOURNAL_ERR("netc]> the network connection is not yet secure");
+		jlog(L_ERROR, "netc]> the network connection is not yet secure");
 		return -1;
 	}
 
@@ -503,12 +503,12 @@ netc_t *net_client(const char *listen_addr,
 			break;
 
 		default:
-			JOURNAL_NOTICE("net> unknown protocol specified :: %s:%i", __FILE__, __LINE__);
+			jlog(L_NOTICE, "net> unknown protocol specified :: %s:%i", __FILE__, __LINE__);
 			return NULL;
 	}
 
 	if (netc->peer == NULL) {
-		JOURNAL_NOTICE("net]> client initialization failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_NOTICE, "net]> client initialization failed :: %s:%i", __FILE__, __LINE__);
 		return NULL;
 	}
 
@@ -525,7 +525,7 @@ netc_t *net_client(const char *listen_addr,
 
 		ret = krypt_secure_connection(netc->kconn, KRYPT_TLS, KRYPT_CLIENT, krypt_security_level);
 		if (ret < 0) {
-			JOURNAL_NOTICE("net]> securing client connection failed :: %s:%i", __FILE__, __LINE__);
+			jlog(L_NOTICE, "net]> securing client connection failed :: %s:%i", __FILE__, __LINE__);
 			return NULL;
 		}
 
@@ -551,7 +551,7 @@ int net_server(const char *listen_addr,
 
 	netc = net_connection_new(security_level);
 	if (netc == NULL) {
-		JOURNAL_NOTICE("net]> server initialization failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_NOTICE, "net]> server initialization failed :: %s:%i", __FILE__, __LINE__);
 		return -1;
 	}
 
@@ -581,12 +581,12 @@ int net_server(const char *listen_addr,
 			break;
 
 		default:
-			JOURNAL_NOTICE("net]> unknown protocol specified :: %s:%i", __FILE__, __LINE__);
+			jlog(L_NOTICE, "net]> unknown protocol specified :: %s:%i", __FILE__, __LINE__);
 			return -1;
 	}
 
 	if (ret < 0) {
-		JOURNAL_NOTICE("net]> server initialization failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_NOTICE, "net]> server initialization failed :: %s:%i", __FILE__, __LINE__);
 		return -1;
 	}
 
@@ -611,13 +611,13 @@ netc_t *net_p2p(const char *listen_addr,
 	uint8_t kconn_type;
 
 	if (protocol != NET_PROTO_UDT) {
-		JOURNAL_ERR("net]> the only protocol that support p2p is UDT");
+		jlog(L_ERROR, "net]> the only protocol that support p2p is UDT");
 		return NULL;
 	}
 
 	netc = net_connection_new(security_level);
 	if (netc == NULL) {
-		JOURNAL_ERR("net]> unable to initialize connection :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "net]> unable to initialize connection :: %s:%i", __FILE__, __LINE__);
 		return NULL;
 	}
 
@@ -628,13 +628,13 @@ netc_t *net_p2p(const char *listen_addr,
 	netc->protocol = protocol;
 	netc->security_level = security_level;
 
-	printf("listen_addr: %s\n", listen_addr);
-	printf("dest_addr: %s\n", dest_addr);
-	printf("port: %s\n", port);
-	
+	jlog(L_NOTICE, "listen_addr: %s\n", listen_addr);
+	jlog(L_NOTICE, "dest_addr: %s\n", dest_addr);
+	jlog(L_NOTICE, "port: %s\n", port);
+
 	peer = udtbus_rendezvous(listen_addr, dest_addr, port, net_on_disconnect, net_on_input, netc);
 	if (peer == NULL) {
-		JOURNAL_ERR("net]> unable to initialize the p2p connection :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "net]> unable to initialize the p2p connection :: %s:%i", __FILE__, __LINE__);
 		return NULL;
 
 	}
@@ -654,7 +654,7 @@ netc_t *net_p2p(const char *listen_addr,
 		ret = krypt_secure_connection(netc->kconn, KRYPT_TLS, kconn_type, KRYPT_RSA);
 
 		if (ret < 0) {
-			JOURNAL_NOTICE("net]> securing client connection failed :: %s:%i", __FILE__, __LINE__);
+			jlog(L_NOTICE, "net]> securing client connection failed :: %s:%i", __FILE__, __LINE__);
 			return NULL;
 		}
 

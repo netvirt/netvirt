@@ -28,7 +28,7 @@ extern void hooklet_show()
 	for (i = 0; i < HOOKLET_MAX; i++) {
 
 		if (hooklets[i]) {
-			JOURNAL_NOTICE("hooklet]> %s::%i", hooklets[i]->name, hooklets[i]->hookin());
+			jlog(L_NOTICE, "hooklet]> %s::%i", hooklets[i]->name, hooklets[i]->hookin());
 		}
 	}
 }
@@ -36,7 +36,7 @@ extern void hooklet_show()
 extern hooklet_t *hooklet_inherit(int hookin)
 {
 	if (hookin < 0 || hookin > HOOKLET_MAX) {
-		JOURNAL_NOTICE("hooklet]> The hookin is out of range %i"
+		jlog(L_NOTICE, "hooklet]> The hookin is out of range %i"
 				" :: %s:%i", __FILE__, __LINE__);
 		return NULL;
 	}
@@ -48,7 +48,7 @@ extern int hooklet_map_cb(hooklet_t *hk, hooklet_cb_t *cb)
 {
 	int i, err = 0;
 	if (hk->handle == NULL) {
-		JOURNAL_NOTICE("hooklet]> The hooklet handle is invalid."
+		jlog(L_NOTICE, "hooklet]> The hooklet handle is invalid."
 				" :: %s:%i", __FILE__, __LINE__);
 		return -1;
 	}
@@ -57,7 +57,7 @@ extern int hooklet_map_cb(hooklet_t *hk, hooklet_cb_t *cb)
 
 		*cb[i].ptr = dlsym(hk->handle, cb[i].name);
 		if (*cb[i].ptr == NULL) {
-			JOURNAL_NOTICE("hooklet]> The hooklet `%s` has no callback `%s` implemented."
+			jlog(L_NOTICE, "hooklet]> The hooklet `%s` has no callback `%s` implemented."
 					" :: %s:%i", hk->name, cb[i].name, __FILE__, __LINE__);
 
 			err = -1;
@@ -79,12 +79,12 @@ extern int hooklet_init(char *hooklet_list, const char *hooklet_path)
 	char *s_tk, *z_tk, *a_tk = hooklet_list;
 
 	if (hooklet_list == NULL) {
-		JOURNAL_NOTICE("hooklet]> The hooklet list is empty. :: %s:%i", __FILE__, __LINE__);
+		jlog(L_NOTICE, "hooklet]> The hooklet list is empty. :: %s:%i", __FILE__, __LINE__);
 		return -1;
 	}
 
 	if (hooklet_path == NULL) {
-		JOURNAL_NOTICE("hooklet]> The hooklet path is empty. :: %s:%i", __FILE__, __LINE__);
+		jlog(L_NOTICE, "hooklet]> The hooklet path is empty. :: %s:%i", __FILE__, __LINE__);
 		return -1;
 	}
 
@@ -94,26 +94,26 @@ extern int hooklet_init(char *hooklet_list, const char *hooklet_path)
 			hk = calloc(1, sizeof(hooklet_t));
 
 		if (hk == NULL) {
-			JOURNAL_NOTICE("hooklet]> calloc() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+			jlog(L_NOTICE, "hooklet]> calloc() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 			return -1;
 		}
 
 		hk->name = strdup(trim(s_tk));
 
 		snprintf(fullname, PATHLEN, "%s/%s.so", hooklet_path, hk->name);
-		JOURNAL_DEBUG("hooklet]> opening %s", fullname);
+		jlog(L_DEBUG, "hooklet]> opening %s", fullname);
 
 		hk->handle = dlopen(fullname, RTLD_GLOBAL|RTLD_NOW);
 
 		if (hk->handle == NULL) {
-			JOURNAL_NOTICE("hooklet]> Can't load `%s` from `%s`, dlopen() : %s :: %s:%i", \
+			jlog(L_NOTICE, "hooklet]> Can't load `%s` from `%s`, dlopen() : %s :: %s:%i", \
 					hk->name, fullname, dlerror(), __FILE__, __LINE__);
 			continue;
 		}
 
 		hk->hookin = dlsym(hk->handle, "hookin");
 		if (hk->hookin == NULL) {
-			JOURNAL_NOTICE("hooklet]> `%s` failed to return any hookin callback. %s :: %s:%i", \
+			jlog(L_NOTICE, "hooklet]> `%s` failed to return any hookin callback. %s :: %s:%i", \
 					hk->name, dlerror(), __FILE__, __LINE__);
 
 			continue;

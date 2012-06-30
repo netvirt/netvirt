@@ -43,7 +43,7 @@ extern int tun_up(char *devname, char *addr)
 		devname,
 		addr);
 
-	JOURNAL_DEBUG("tun_ifreq]> sys:: %s", sys);
+	jlog(L_DEBUG, "tun_ifreq]> sys:: %s", sys);
 
 	ret = system(sys);
 	return ret;
@@ -57,7 +57,7 @@ extern int tun_create(char *devname, int *fd)
 
 	*fd = open("/dev/net/tun", O_RDWR);
 	if (*fd < 0) {
-		JOURNAL_ERR("tun_ifreq]> open tun failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "tun_ifreq]> open tun failed :: %s:%i", __FILE__, __LINE__);
 		return -1;
 	}
 
@@ -67,18 +67,18 @@ extern int tun_create(char *devname, int *fd)
 
 	ret = ioctl(*fd, TUNSETIFF, (void *)&ifr);
 	if (ret < 0) {
-		JOURNAL_ERR("tun_ifreq]> ioctl TUNSETIFF :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "tun_ifreq]> ioctl TUNSETIFF :: %s:%i", __FILE__, __LINE__);
 		return -1;
 	}
 
 	ret = ioctl(*fd, TUNGETIFF, (void *)&ifr);
 	if (ret < 0) {
-		JOURNAL_ERR("tun_ifreq]> ioctl TUNGETIFF :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "tun_ifreq]> ioctl TUNGETIFF :: %s:%i", __FILE__, __LINE__);
 		return -1;
 	}
 
 	snprintf(devname, IFNAMSIZ, "%s", ifr.ifr_name);
-	JOURNAL_DEBUG("tun_ifreq: devname: %s %s", ifr.ifr_name, devname);
+	jlog(L_DEBUG, "tun_ifreq: devname: %s %s", ifr.ifr_name, devname);
 
 	return ret;
 }

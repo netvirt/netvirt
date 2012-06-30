@@ -174,7 +174,6 @@ void scheduler()
 		// XXX sigprocmask() can fail. so what ?
 
 		tsk = get_next_task();
-//		JOURNAL_NOTICE("task]> %s", tsk->name);
 
 		if (tsk != NULL	)
 			tsk->cb(tsk->udata);
@@ -185,5 +184,5 @@ void scheduler()
 
 	} while (sched_running);
 
-	JOURNAL_NOTICE("sched]> i'm off.");
+	jlog(L_NOTICE, "sched]> i'm off.");
 }

@@ -62,7 +62,7 @@ static DH *get_dh_1024() {
 // FIXME - could we remove this function?
 static DH *tmp_dh_callback(SSL *s, int is_export, int keylength)
 {
-	printf("keyl %i\n", keylength);
+	jlog(L_NOTICE, "keyl %i\n", keylength);
 	return NULL;
 }
 
@@ -74,7 +74,7 @@ static void ssl_error_stack()
 
 	do {
 		e = ERR_get_error_line(&file, &line);
-		JOURNAL_ERR("openssl]> %s", ERR_error_string(e, NULL));
+		jlog(L_ERROR, "openssl]> %s", ERR_error_string(e, NULL));
 	} while (e);
 }
 
@@ -91,7 +91,7 @@ static long post_handshake_check(SSL *ssl)
 	subj_ptr = X509_get_subject_name(cert);
 	X509_NAME_get_text_by_NID(subj_ptr, NID_commonName, subj, 256);
 
-	printf("COMMON NAME: %s\n", subj);
+	jlog(L_NOTICE, "COMMON NAME: %s\n", subj);
 
 	return 0;
 }
@@ -104,7 +104,7 @@ static int verify_callback(int ok, X509_STORE_CTX *store)
 
 static int krypt_set_adh(krypt_t *kconn)
 {
-	JOURNAL_NOTICE("krypt]> set adh");
+	jlog(L_NOTICE, "krypt]> set adh");
 
 	SSL_CTX_set_cipher_list(kconn->ctx, "ADH");
 	SSL_CTX_set_tmp_dh(kconn->ctx, get_dh_1024());
@@ -118,11 +118,11 @@ static int krypt_set_adh(krypt_t *kconn)
 // XXX Clean up this function, we MUST handle all errors possible
 int krypt_set_rsa(krypt_t *kconn)
 {
-	JOURNAL_NOTICE("krypt]> set rsa");
+	jlog(L_NOTICE, "krypt]> set rsa");
 	int ret;
 
 	if (kconn->security_level == KRYPT_RSA) {
-		JOURNAL_NOTICE("krypt]> the security level is already set to RSA");
+		jlog(L_NOTICE, "krypt]> the security level is already set to RSA");
 		return 0;
 	}
 
@@ -139,7 +139,7 @@ int krypt_set_rsa(krypt_t *kconn)
 	ret = SSL_use_PrivateKey(kconn->ssl, kconn->passport->keyring);
 
 	if (kconn->conn_type == KRYPT_SERVER) {
-		JOURNAL_NOTICE("KRYPT]> set verify\n");
+		jlog(L_NOTICE, "KRYPT]> set verify\n");
 
 			// Change the session id to avoid resuming ADH session
 		ret = SSL_set_session_id_context(kconn->ssl, (void*)&s_server_auth_session_id_context,
@@ -184,11 +184,11 @@ int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 
 	ret = SSL_do_handshake(kconn->ssl);
 
-	JOURNAL_INFO("krypt]> SSL state: %s", SSL_state_string_long(kconn->ssl));
+	jlog(L_NOTICE, "krypt]> SSL state: %s", SSL_state_string_long(kconn->ssl));
 
 	if (ret > 0 && SSL_renegotiate_pending(kconn->ssl)) {
 		// Need more data to continue ?
-		JOURNAL_ERR("krypt]> handshake need more data to continue ??");
+		jlog(L_ERROR, "krypt]> handshake need more data to continue ??");
 		status = 1;
 	}
 	else if (ret > 0 && !SSL_renegotiate_pending(kconn->ssl)) {
@@ -197,13 +197,13 @@ int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 		kconn->status = KRYPT_SECURE;
 		status = 0;
 
-		printf("Cipher used: %s\n", SSL_get_cipher_name(kconn->ssl));
+		jlog(L_NOTICE, "Cipher used: %s\n", SSL_get_cipher_name(kconn->ssl));
 	}
 	else if (ret == 0) {
 		// Error
 		kconn->status = KRYPT_FAIL;
 		ssl_error_stack();
-		JOURNAL_ERR("krypt]> handshake error");
+		jlog(L_ERROR, "krypt]> handshake error");
 		status = -1;
 	}
 	else if (ret < 0) {
@@ -235,16 +235,6 @@ int krypt_decrypt_buf(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 	int error = 0;
 	int status = -1;
 
-/*
-	if (buf != NULL && buf_data_size > 0) {
-		printf("BIO would like to write %i\n", buf_data_size);
-		nbyte = BIO_write(kconn->network_bio, buf, buf_data_size);
-		printf("krypt_decrypt> BIO write %i\n", nbyte);
-		if (nbyte != buf_data_size)
-			printf("BIO has not been filled properly\n");
-	}
-*/
-
 	nbyte = SSL_read(kconn->ssl, kconn->buf_decrypt, kconn->buf_decrypt_size);
 
 	if (nbyte <= 0) {
@@ -264,7 +254,7 @@ int krypt_decrypt_buf(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 				break;
 
 			default:
-				JOURNAL_ERR("krypt]> <%s> SSL error", __func__);
+				jlog(L_ERROR, "krypt]> <%s> SSL error", __func__);
 				ssl_error_stack();
 				return -1;
 		}
@@ -286,9 +276,6 @@ int krypt_encrypt_buf(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 
 	int ret;
 	char peek;
-
-//	ret = SSL_peek(kconn->ssl, &peek, 1);
-//	printf("krypt_encrypt> SSL peek %i\n", ret);
 
 	nbyte = BIO_ctrl_pending(kconn->network_bio);
 
@@ -343,12 +330,12 @@ int krypt_secure_connection(krypt_t *kconn, uint8_t protocol, uint8_t conn_type,
 			break;
 
 		default:
-			JOURNAL_ERR("krypt]> unknown protocol :: %s:%i", __FILE__, __LINE__);
+			jlog(L_ERROR, "krypt]> unknown protocol :: %s:%i", __FILE__, __LINE__);
 			return -1;
 	}
 
 	if (kconn->ctx == NULL) {
-		JOURNAL_CRIT("krypt]> unable to create SSL context");
+		jlog(L_ERROR, "krypt]> unable to create SSL context");
 		ssl_error_stack();
 		return -1;
 	}
@@ -362,7 +349,7 @@ int krypt_secure_connection(krypt_t *kconn, uint8_t protocol, uint8_t conn_type,
 
 /*
 	else {
-		JOURNAL_ERR("krypt]> unknown security level (provided: %d)", security_level);
+		jlog(L_ERROR, "krypt]> unknown security level (provided: %d)", security_level);
 		return -1;
 	}
 */
@@ -382,19 +369,19 @@ int krypt_secure_connection(krypt_t *kconn, uint8_t protocol, uint8_t conn_type,
 	switch (conn_type) {
 
 		case KRYPT_SERVER:
-			JOURNAL_NOTICE("krypt]> connection type server");
+			jlog(L_NOTICE, "krypt]> connection type server");
 			SSL_set_accept_state(kconn->ssl);
 
 			break;
 
 		case KRYPT_CLIENT:
-			JOURNAL_NOTICE("krypt]> connection type client");
+			jlog(L_NOTICE, "krypt]> connection type client");
 			SSL_set_connect_state(kconn->ssl);
 
 			break;
 
 		default:
-			JOURNAL_ERR("krypt]> unknown connection type");
+			jlog(L_ERROR, "krypt]> unknown connection type");
 			return -1;
 	}
 

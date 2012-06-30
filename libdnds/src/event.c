@@ -28,7 +28,7 @@ extern int event_register(int EVENT, char *name, void (*cb)(void *), int prio)
 
 	ev = malloc(sizeof(event_t));
 	if (ev == NULL) {
-		JOURNAL_DEBUG("event]> malloc() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_DEBUG, "event]> malloc() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		return -1;
 	}
 
@@ -85,10 +85,10 @@ extern void event_throw(int EVENT, void *data)
 {
 	event_t *ev;
 	ev = events[EVENT];
-	JOURNAL_NOTICE("event]> throw::%i", EVENT);
+	jlog(L_NOTICE, "event]> throw::%i", EVENT);
 
 	while (ev) {
-		JOURNAL_NOTICE("event]> %s", ev->name);
+		jlog(L_NOTICE, "event]> %s", ev->name);
 		ev->cb(data);
 		ev = ev->next;
 	}
@@ -113,18 +113,18 @@ static void sig_handler(int signum, siginfo_t *info, void *ucontext)
 	switch (signum) {
 
 		case SIGSEGV:
-			JOURNAL_NOTICE("event]> caught SIGSEGV :: %s:%i", __FILE__, __LINE__);
+			jlog(L_NOTICE, "event]> caught SIGSEGV :: %s:%i", __FILE__, __LINE__);
 			event_throw(EVENT_EXIT, NULL);
 			if (caught_sigsev == 0)
 				caught_sigsev = 1;
 			else {
-				JOURNAL_ERR("event]> system failure, SIGSEGV loop detected :: %s%i", __FILE__, __LINE__);
+				jlog(L_ERROR, "event]> system failure, SIGSEGV loop detected :: %s%i", __FILE__, __LINE__);
 				_exit(-1);
 			}
 
 			break;
 		case SIGINT:
-			JOURNAL_NOTICE("event]> caught SIGINT :: %s:%i", __FILE__, __LINE__);
+			jlog(L_NOTICE, "event]> caught SIGINT :: %s:%i", __FILE__, __LINE__);
 			event_throw(EVENT_EXIT, NULL);
 			break;
 

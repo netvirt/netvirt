@@ -113,7 +113,7 @@ static void server_read_socket(usocket_t *sck)
 	cli_args_t args = { 0 };
 
 	if (!sck) {
-		JOURNAL_DEBUG("cli]> %s called with NULL pointer :: %s:%i",
+		jlog(L_DEBUG, "cli]> %s called with NULL pointer :: %s:%i",
 		    __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -132,7 +132,7 @@ static void server_read_socket(usocket_t *sck)
 
 static void console_read_socket(usocket_t *sck)
 {
-	JOURNAL_ERR("cli]> caller must register socket handlers :: %s:%i",
+	jlog(L_ERROR, "cli]> caller must register socket handlers :: %s:%i",
 		__FILE__, __LINE__);
 }
 

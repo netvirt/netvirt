@@ -17,13 +17,10 @@
 #include "aclset.h"
 #include "ipset.h"
 #include "ipf.h"
+#include "journal.h"
 
 #define IPF_ACCEPT	0x01	// FIXME use enum
 #define	IPF_DENY	0x02
-
-/* TODO
- * replace all printf() with journal
- */
 
 typedef struct rule {
 
@@ -114,7 +111,7 @@ int ipf_rule_del(ipf_t *ipf, ipset_t *ipset_src, ipset_t *ipset_dst, uint8_t ver
 	}
 
 	if (rule == NULL) {
-		printf("not found\n");
+		jlog(L_WARNING, "ipf]> rule not found\n");
 		return -1;
 	}
 
@@ -142,7 +139,7 @@ void ipf_default_policy(ipf_t *ipf, uint8_t verdict)
 		ipf->default_policy = IPF_DENY;
 
 	else
-		printf("ipf]> failed trying to set default policy\n");
+		jlog(L_WARNING, "ipf]> failed trying to set default policy\n");
 }
 
 uint8_t ipf_filter(ipf_t *ipf, const char *ip_src, const char *ip_dst)

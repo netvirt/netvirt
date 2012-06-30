@@ -151,7 +151,7 @@ static int netbus_ping(peer_t *peer)
 	len = sizeof(struct ip) + sizeof(struct icmp);
 	ret = sendto(peer->socket, icmp_packet, len, 0, (struct sockaddr *)&dst_addr, sizeof(struct sockaddr));
 	if (ret < 0) {
-		JOURNAL_NOTICE("netbus]> netbus_ping() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "netbus]> netbus_ping() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		return -1;
 	}
 
@@ -190,15 +190,15 @@ static void catch_pingreply(peer_t *peer)
 		if (peer->on_pingreply)
 			peer->on_pingreply(peer);
 
-		JOURNAL_DEBUG("ping]> ID: %d", ntohs(ip_reply->ip_id));
-		JOURNAL_DEBUG("ping]> TTL: %d", ip_reply->ip_ttl);
-		JOURNAL_DEBUG("ping]> Received %d byte reply from %s:",
+		jlog(L_DEBUG, "ping]> ID: %d", ntohs(ip_reply->ip_id));
+		jlog(L_DEBUG, "ping]> TTL: %d", ip_reply->ip_ttl);
+		jlog(L_DEBUG, "ping]> Received %d byte reply from %s:",
 			sizeof(buffer), inet_ntoa(ip_reply->ip_src));
 
-		JOURNAL_DEBUG("ping]> type: %i", icmp_reply->icmp_type);
-		JOURNAL_DEBUG("ping]> code: %i", icmp_reply->icmp_code);
-		JOURNAL_DEBUG("ping]> id  : %i", icmp_reply->icmp_id);
-		JOURNAL_DEBUG("ping]> seq : %i", icmp_reply->icmp_seq);
+		jlog(L_DEBUG, "ping]> type: %i", icmp_reply->icmp_type);
+		jlog(L_DEBUG, "ping]> code: %i", icmp_reply->icmp_code);
+		jlog(L_DEBUG, "ping]> id  : %i", icmp_reply->icmp_id);
+		jlog(L_DEBUG, "ping]> seq : %i", icmp_reply->icmp_seq);
 	}
 }
 
@@ -219,7 +219,7 @@ static int netbus_read(iface_t *iface)
 	if (iface->frame == NULL) {
 		iface->frame = calloc(1, IFACE_BUF_SZ);
 		if (iface->frame == NULL) {
-			JOURNAL_NOTICE("netbus]> netbus_read() calloc FAILED :: %s:%i", __FILE__, __LINE__);
+			jlog(L_NOTICE, "netbus]> netbus_read() calloc FAILED :: %s:%i", __FILE__, __LINE__);
 			return -1;
 		}
 	}
@@ -228,7 +228,7 @@ static int netbus_read(iface_t *iface)
 
 	ret = read(iface->fd, iface->frame, IFACE_BUF_SZ);
 	if (ret < 0) {
-		JOURNAL_NOTICE("netbus]> netbus_read() failed %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "netbus]> netbus_read() failed %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		return -1;
 	}
 
@@ -246,7 +246,7 @@ static int netbus_send(peer_t *peer, void *data, int len)
 		ret = send(peer->socket, (uint8_t*)data + total, byteleft, 0);
 
 		if (errno != 0)
-			JOURNAL_ERR("netbus]> netbus_send errno [%i] :: %s:%i", __FILE__, __LINE__);
+			jlog(L_ERROR, "netbus]> netbus_send errno [%i] :: %s:%i", __FILE__, __LINE__);
 
 		if (ret == -1 && errno != 11)
 			return -1;
@@ -277,7 +277,7 @@ static int netbus_recv(peer_t *peer)
 
 	ret = select(peer->socket + 1, &rfds, NULL, NULL, &tv);
 	if (ret == 0) { /* TIMEOUT !*/
-		JOURNAL_NOTICE("netbus]> netbus_recv() TIMEOUT peer->socket(%i) :: %s:%i",
+		jlog(L_NOTICE, "netbus]> netbus_recv() TIMEOUT peer->socket(%i) :: %s:%i",
 			peer->socket, __FILE__, __LINE__);
 		return -1;
 	}
@@ -285,7 +285,7 @@ static int netbus_recv(peer_t *peer)
 	if (peer->buffer == NULL) {
 		peer->buffer = calloc(1, PEER_BUF_SZ);
 		if (peer->buffer == NULL) {
-			JOURNAL_CRIT("netbus]> netbus_recv() calloc FAILED :: %s:%i", __FILE__, __LINE__);
+			jlog(L_ERROR, "netbus]> netbus_recv() calloc FAILED :: %s:%i", __FILE__, __LINE__);
 			return -1;
 		}
 	}
@@ -311,7 +311,7 @@ static void netbus_shutdown(iface_t *iface)
 	int ret;
 	ret = close(iface->fd);
 	if (ret < 0) {
-		JOURNAL_NOTICE("netbus]> iface closed: %u %u %s :: %s:%i",
+		jlog(L_NOTICE, "netbus]> iface closed: %u %u %s :: %s:%i",
 			iface->fd, ret, strerror(errno), __FILE__, __LINE__);
 		return;
 	}
@@ -322,7 +322,7 @@ static void netbus_shutdown(iface_t *iface)
 
 static void notify_input_frame(iface_t *iface)
 {
-//	JOURNAL_DEBUG("netbus]> received frame from iface {%s}", iface->devname);
+//	jlog(L_DEBUG, "netbus]> received frame from iface {%s}", iface->devname);
 
 	if (iface->on_input)
 		iface->on_input(iface);
@@ -335,12 +335,12 @@ static void netbus_disconnect(peer_t *peer)
 	//close() will cause the socket to be automatically removed from the queue
 	ret = close(peer->socket);
 	if (ret < 0) {
-		JOURNAL_NOTICE("netbus]> close() failed: %u %u %s :: %s:%i",
+		jlog(L_NOTICE, "netbus]> close() failed: %u %u %s :: %s:%i",
 			peer->socket, ret, strerror(errno), __FILE__, __LINE__);
 		return;
 	}
 
-	JOURNAL_DEBUG("netbus]> client close: %u", peer->socket);
+	jlog(L_DEBUG, "netbus]> client close: %u", peer->socket);
 
 	free(peer->buffer);
 	free(peer);
@@ -357,7 +357,7 @@ static void on_disconnect(peer_t *peer)
 
 static void on_input(peer_t *peer)
 {
-	JOURNAL_DEBUG("netbus]> received data for peer {%i}", peer->socket);
+	jlog(L_DEBUG, "netbus]> received data for peer {%i}", peer->socket);
 
 	if (peer->on_input)
 		peer->on_input(peer);
@@ -379,14 +379,14 @@ static void on_connect(peer_t *peer)
 	addrlen = sizeof(struct sockaddr_in);
 	npeer->socket = accept(peer->socket, (struct sockaddr *)&addr, (socklen_t *)&addrlen);
 	if (npeer->socket < 0) {
-		JOURNAL_ERR("netbus]> accept() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_ERROR, "netbus]> accept() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		free(npeer);
 		return;
 	}
 
 	ret = setnonblocking(npeer->socket);
         if (ret < 0) {
-                JOURNAL_ERR("netbus]> setnonblocking() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+                jlog(L_ERROR, "netbus]> setnonblocking() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		free(npeer);
                 return;
         }
@@ -406,14 +406,14 @@ static void on_connect(peer_t *peer)
 	nsys->peer = npeer;
 	ret = ion_add(netbus_queue, npeer->socket, nsys);
 	if (ret < 0) {
-		JOURNAL_ERR("netbus]> ion_add() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_ERROR, "netbus]> ion_add() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		free(npeer);
 	}
 
 	if (peer->on_connect)
 		peer->on_connect(npeer);
 
-	JOURNAL_DEBUG("netbus]> successfully added TCP client {%i} on server {%i}", npeer->socket, peer->socket);
+	jlog(L_DEBUG, "netbus]> successfully added TCP client {%i} on server {%i}", npeer->socket, peer->socket);
 }
 
 // Handle IO Events
@@ -458,7 +458,7 @@ static void poke_queue(void *udata)
 
 	ret = ion_poke(netbus_queue, netbus_hioe);
 	if (ret < 0) {
-		JOURNAL_DEBUG("netbus]> ion_poke() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_DEBUG, "netbus]> ion_poke() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		return;
 	}
 }
@@ -471,7 +471,7 @@ iface_t *netbus_newtun(void (*on_input)(iface_t *))
 	iface_t *iface;
 
 	if (netbus_queue == INVALID_Q) {
-		JOURNAL_ERR("netbus]> subsystem unitialized :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "netbus]> subsystem unitialized :: %s:%i", __FILE__, __LINE__);
 		return NULL;
 	}
 
@@ -483,7 +483,7 @@ iface_t *netbus_newtun(void (*on_input)(iface_t *))
 
 	ret = tun_create((char*)&(iface->devname), &(iface->fd));
 	if (ret < 0) {
-		JOURNAL_NOTICE("netbus]> tun_create failed %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "netbus]> tun_create failed %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		free(iface);
 		free(nsys);
 		return NULL;
@@ -491,7 +491,7 @@ iface_t *netbus_newtun(void (*on_input)(iface_t *))
 
 	ret = setnonblocking(iface->fd);
 	if (ret < 0) {
-		JOURNAL_NOTICE("netbus]> setnonblocking() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "netbus]> setnonblocking() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		tun_destroy(iface);
 		close(iface->fd);
 		free(iface);
@@ -510,7 +510,7 @@ iface_t *netbus_newtun(void (*on_input)(iface_t *))
 
 	ret = ion_add(netbus_queue, iface->fd, nsys);
 	if (ret < 0) {
-		JOURNAL_NOTICE("ion_add() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "ion_add() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		tun_destroy(iface);
 		close(iface->fd);
 		free(iface);
@@ -540,7 +540,7 @@ peer_t *netbus_tcp_client(const char *addr,
 	tv.tv_usec = 0;
 
 	if (netbus_queue == INVALID_Q) {
-		JOURNAL_ERR("netbus]> subsystem unitialized :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "netbus]> subsystem unitialized :: %s:%i", __FILE__, __LINE__);
 		return NULL;
 	}
 
@@ -552,7 +552,7 @@ peer_t *netbus_tcp_client(const char *addr,
 
 	peer->socket = socket(PF_INET, SOCK_STREAM, 0);
 	if (peer->socket == -1) {
-		JOURNAL_ERR("netbus]> socket() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_ERROR, "netbus]> socket() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		close(peer->socket);
 		free(peer);
 		return NULL;
@@ -560,7 +560,7 @@ peer_t *netbus_tcp_client(const char *addr,
 
         ret = setnonblocking(peer->socket);
         if (ret < 0) {
-                JOURNAL_ERR("netbus]> setnonblocking() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+                jlog(L_ERROR, "netbus]> setnonblocking() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		close(peer->socket);
                 free(peer);
                 return NULL;
@@ -582,7 +582,7 @@ peer_t *netbus_tcp_client(const char *addr,
 			 */
 			ret = select(peer->socket + 1, NULL, &wfds, NULL, &tv);
 			if (ret == 0) { /* TIMEOUT */
-				JOURNAL_DEBUG("netbus]> connect() timed out :: %s:%i", __FILE__, __LINE__);
+				jlog(L_DEBUG, "netbus]> connect() timed out :: %s:%i", __FILE__, __LINE__);
 				close(peer->socket);
 				free(peer);
 				return NULL;
@@ -592,14 +592,14 @@ peer_t *netbus_tcp_client(const char *addr,
 				/* use getsockopt(2) with SO_ERROR to check for error conditions */
 				ret = getsockopt(peer->socket, SOL_SOCKET, SO_ERROR, &optval, &optlen);
 				if (ret == -1) {
-					JOURNAL_DEBUG("netbus]> getsockopt() %s :: %s:%i", __FILE__, __LINE__);
+					jlog(L_DEBUG, "netbus]> getsockopt() %s :: %s:%i", __FILE__, __LINE__);
 					close(peer->socket);
 					free(peer);
 					return NULL;
 				}
 
 				if (optval != 0) { /* NOT CONNECTED ! TIMEOUT... */
-					JOURNAL_DEBUG("netbus]> connect() timed out :: %s:%i", __FILE__, __LINE__);
+					jlog(L_DEBUG, "netbus]> connect() timed out :: %s:%i", __FILE__, __LINE__);
 					close(peer->socket);
 					free(peer);
 	                                return NULL;
@@ -611,7 +611,7 @@ peer_t *netbus_tcp_client(const char *addr,
 
 		}
 		else {
-			JOURNAL_DEBUG("netbus]> connect() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+			jlog(L_DEBUG, "netbus]> connect() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 			close(peer->socket);
 			free(peer);
 			return NULL;
@@ -631,7 +631,7 @@ peer_t *netbus_tcp_client(const char *addr,
 
 	ret = ion_add(netbus_queue, peer->socket, nsys);
 	if (ret < 0) {
-		JOURNAL_NOTICE("netbus]> ion_add() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "netbus]> ion_add() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		close(peer->socket);
 		free(peer);
 		return NULL;
@@ -648,7 +648,7 @@ peer_t *netbus_ping_client(const char *addr, void (*on_pingreply)(peer_t *), voi
 	peer_t *peer;
 
 	if (netbus_queue == INVALID_Q) {
-		JOURNAL_NOTICE("netbus]> subsystem unitialized :: %s:%i", __FILE__, __LINE__);
+		jlog(L_NOTICE, "netbus]> subsystem unitialized :: %s:%i", __FILE__, __LINE__);
 		return NULL;
 	}
 
@@ -669,7 +669,7 @@ peer_t *netbus_ping_client(const char *addr, void (*on_pingreply)(peer_t *), voi
 
 	peer->socket = socket(PF_INET, SOCK_RAW, IPPROTO_ICMP);
 	if (peer->socket < 0) {
-		JOURNAL_NOTICE("netbus]> socket() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "netbus]> socket() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		close(peer->socket);
 		free(peer);
 		return NULL;
@@ -678,7 +678,7 @@ peer_t *netbus_ping_client(const char *addr, void (*on_pingreply)(peer_t *), voi
 	fcntl(peer->socket, F_SETOWN, (int)getpid());
 	ret = setsockopt(peer->socket, IPPROTO_IP, IP_HDRINCL, &optval, sizeof(int));
 	if (ret < 0) {
-		JOURNAL_NOTICE("netbus]> setsockopt() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "netbus]> setsockopt() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		close(peer->socket);
 		free(peer);
 		return NULL;
@@ -688,13 +688,13 @@ peer_t *netbus_ping_client(const char *addr, void (*on_pingreply)(peer_t *), voi
 	nsys->peer = peer;
 	ret = ion_add(netbus_queue, peer->socket, nsys);
 	if (ret < 0) {
-		JOURNAL_NOTICE("netbus]> ion_add() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "netbus]> ion_add() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		close(peer->socket);
 		free(peer);
 		return NULL;
 	}
 
-	JOURNAL_NOTICE("netbus]> new ping added");
+	jlog(L_NOTICE, "netbus]> new ping added");
 
 	return peer;
 }
@@ -712,7 +712,7 @@ int netbus_tcp_server(const char *in_addr,
 	peer_t *peer;
 
 	if (netbus_queue == INVALID_Q) {
-		JOURNAL_NOTICE("netbus]> subsystem unitialized :: %s:%i", __FILE__, __LINE__);
+		jlog(L_NOTICE, "netbus]> subsystem unitialized :: %s:%i", __FILE__, __LINE__);
 		return -1;
 	}
 
@@ -734,7 +734,7 @@ int netbus_tcp_server(const char *in_addr,
 
 	peer->socket = socket(PF_INET, SOCK_STREAM, 0);
 	if (peer->socket < 0) {
-		JOURNAL_NOTICE("netbus]> socket() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "netbus]> socket() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		close(peer->socket);
 		free(peer);
 		return -1;
@@ -747,7 +747,7 @@ int netbus_tcp_server(const char *in_addr,
 
 	ret = setreuse(peer->socket);
 	if (ret < 0) {
-		JOURNAL_NOTICE("netbus]> setreuse() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "netbus]> setreuse() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		close(peer->socket);
 		free(peer);
 		return -1;
@@ -755,7 +755,7 @@ int netbus_tcp_server(const char *in_addr,
 
 	ret = bind(peer->socket, (const struct sockaddr *)&addr, sizeof(const struct sockaddr));
 	if (ret < 0) {
-		JOURNAL_NOTICE("netbus]> bind() %s %s :: %s:%i", strerror(errno), in_addr, __FILE__, __LINE__);
+		jlog(L_NOTICE, "netbus]> bind() %s %s :: %s:%i", strerror(errno), in_addr, __FILE__, __LINE__);
 		close(peer->socket);
 		free(peer);
 		return -1;
@@ -766,7 +766,7 @@ int netbus_tcp_server(const char *in_addr,
 	 */
 	ret = listen(peer->socket, CONN_BACKLOG);
 	if (ret < 0) {
-		JOURNAL_NOTICE("netbus]> set_nonblocking() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "netbus]> set_nonblocking() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		close(peer->socket);
 		free(peer);
 		return -1;
@@ -776,7 +776,7 @@ int netbus_tcp_server(const char *in_addr,
 	nsys->peer = peer;
 	ret = ion_add(netbus_queue, peer->socket, nsys);
 	if (ret < 0) {
-		JOURNAL_NOTICE("netbus]> ion_add() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "netbus]> ion_add() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		close(peer->socket);
 		free(peer);
 		return -1;
@@ -796,7 +796,7 @@ int netbus_init()
 	netbus_queue = ion_new();
 
 	if (netbus_queue < 0) {
-		JOURNAL_NOTICE("netbus]> ion_new() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "netbus]> ion_new() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
 		netbus_queue = INVALID_Q;
 		return -1;
 	}

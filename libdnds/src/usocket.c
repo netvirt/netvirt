@@ -34,7 +34,7 @@ static inline void register_context_handler(
 static int remote_recv(usocket_t *sck)
 {
 	if (!sck) {
-		JOURNAL_DEBUG("usocket]> %s called with NULL pointer :: %s:%i",
+		jlog(L_DEBUG, "usocket]> %s called with NULL pointer :: %s:%i",
 		    __func__, __FILE__, __LINE__);
 		return -1;
 	}
@@ -44,7 +44,7 @@ static int remote_recv(usocket_t *sck)
 		return 0;
 	}
 
-	JOURNAL_DEBUG("usocket]> no recv handler bound to socket :: %s:%i",
+	jlog(L_DEBUG, "usocket]> no recv handler bound to socket :: %s:%i",
 	    __FILE__, __LINE__);
 
 	return -1;
@@ -56,24 +56,24 @@ static int remote_close(usocket_t *sck)
 	int ret;
 
 	if (!sck) {
-		JOURNAL_DEBUG("usocket]> %s called with NULL pointer :: %s:%i",
+		jlog(L_DEBUG, "usocket]> %s called with NULL pointer :: %s:%i",
 		    __func__, __FILE__, __LINE__);
 		return -1;
 	}
 
 	ret = recv(sck->fd, &buf, 1, MSG_DONTWAIT);
 	if (!ret) {
-		JOURNAL_DEBUG("usocket]> orderly shutdown request on socket "
+		jlog(L_DEBUG, "usocket]> orderly shutdown request on socket "
 		    "%i :: %s:%i", sck->fd, __FILE__, __LINE__);
 	} else if (ret < 0) {
-		JOURNAL_DEBUG("usocket]> socket %i failure: %s :: %s:%i",
+		jlog(L_DEBUG, "usocket]> socket %i failure: %s :: %s:%i",
 		    sck->fd, strerror(errno), __FILE__, __LINE__);
 	}
 
 	if (sck->handler && sck->handler->close) {
 		sck->handler->close(sck);
 	} else {
-		JOURNAL_DEBUG("usocket]> no close() handler for socket "
+		jlog(L_DEBUG, "usocket]> no close() handler for socket "
 		    "%i :: %s:%i", sck->fd, __FILE__, __LINE__);
 	}
 
@@ -85,7 +85,7 @@ static int remote_handler(usocket_t *sck, int flag)
 	int ret = -1;
 
 	if (!sck) {
-		JOURNAL_DEBUG("usocket]> %s called with NULL pointer :: %s:%i",
+		jlog(L_DEBUG, "usocket]> %s called with NULL pointer :: %s:%i",
 		    __func__, __FILE__, __LINE__);
 		return -1;
 	}
@@ -102,7 +102,7 @@ static int remote_handler(usocket_t *sck, int flag)
 
 			/* No break here */
 		default:
-			JOURNAL_DEBUG("usocket]> error in %s, flag=0x%02x :: "
+			jlog(L_DEBUG, "usocket]> error in %s, flag=0x%02x :: "
 			    "%s:%i", __func__, flag, __FILE__, __LINE__);
 			break;
 	}
@@ -116,14 +116,14 @@ static int remote_accept(usocket_t *sck)
 	usocket_t *remote;
 
 	if (!sck) {
-		JOURNAL_DEBUG("usocket]> %s called with NULL pointer :: %s:%i",
+		jlog(L_DEBUG, "usocket]> %s called with NULL pointer :: %s:%i",
 		    __func__, __FILE__, __LINE__);
 		return -1;
 	}
 
 	remote = calloc(1, sizeof(usocket_t));
 	if (remote == NULL) {
-		JOURNAL_DEBUG("usocket]> calloc() failed: %s :: %s:%i",
+		jlog(L_DEBUG, "usocket]> calloc() failed: %s :: %s:%i",
 		    strerror(errno), __FILE__, __LINE__);
 		return -1;
 	}
@@ -131,17 +131,17 @@ static int remote_accept(usocket_t *sck)
 	sunaddr_len = sizeof(struct sockaddr_un);
 	remote->fd = accept(sck->fd, (struct sockaddr *)&sunaddr, &sunaddr_len);
 	if (remote->fd < 0) {
-			JOURNAL_DEBUG("usocket]> accept() failed: %s :: %s:%i",
+			jlog(L_DEBUG, "usocket]> accept() failed: %s :: %s:%i",
 			    strerror(errno), __FILE__, __LINE__);
 		free(remote);
 		return -1;
 	}
-	JOURNAL_DEBUG("usocket]> accepting connection on socket %i :: %s:%i",
+	jlog(L_DEBUG, "usocket]> accepting connection on socket %i :: %s:%i",
 	    remote->fd, __FILE__, __LINE__);
 
 	remote->buf = fdopen(remote->fd, "r+");
 	if (remote->buf == NULL) {
-		JOURNAL_DEBUG("usocket]> fdopen() failed: %s :: %s:%i",
+		jlog(L_DEBUG, "usocket]> fdopen() failed: %s :: %s:%i",
 		    strerror(errno), __FILE__, __LINE__);
 		usocket_close(remote);
 		return -1;
@@ -152,7 +152,7 @@ static int remote_accept(usocket_t *sck)
 	usocket_register_handler(remote, sck->handler);
 
 	if (usocket_queue_add(sck->queue, remote, sck->udata)) {
-		JOURNAL_DEBUG("usocket]> usocket_queue_add() failed :: %s:%i",
+		jlog(L_DEBUG, "usocket]> usocket_queue_add() failed :: %s:%i",
 			__FILE__, __LINE__);
 		usocket_close(remote);
 		return -1;
@@ -170,7 +170,7 @@ static int listener_handler(usocket_t *sck, int flag)
 			break;
 		default:
 		case ION_EROR:
-			JOURNAL_DEBUG("usocket]> error in %s, flag=0x%02x :: "
+			jlog(L_DEBUG, "usocket]> error in %s, flag=0x%02x :: "
 			    "%s:%i", __func__, flag, __FILE__, __LINE__);
 			break;
 	}
@@ -182,7 +182,7 @@ static void dispatch(void *udata, int flag)
 	usocket_t *sck = udata;
 
 	if (!sck) {
-		JOURNAL_DEBUG("usocket]> %s called with NULL pointer :: %s:%i",
+		jlog(L_DEBUG, "usocket]> %s called with NULL pointer :: %s:%i",
 		    __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -191,7 +191,7 @@ static void dispatch(void *udata, int flag)
 	    usocket_context_handler[sck->context];
 
 	if (context_handler(sck, flag) < 0)
-		JOURNAL_DEBUG("usocket]> context_handler failed :: %s:%i",
+		jlog(L_DEBUG, "usocket]> context_handler failed :: %s:%i",
 		    __FILE__, __LINE__);
 }
 
@@ -200,13 +200,13 @@ static void poke(void *udata)
 	int *queue = udata;
 
 	if (!queue) {
-		JOURNAL_DEBUG("usocket]> poke() called with NULL pointer"
+		jlog(L_DEBUG, "usocket]> poke() called with NULL pointer"
 		    " :: %s:%i", __FILE__, __LINE__);
 		return;
 	}
 
 	if (ion_poke(*queue, dispatch) < 0)
-		JOURNAL_DEBUG("usocket]> ion_poke() failure on queue %i: "
+		jlog(L_DEBUG, "usocket]> ion_poke() failure on queue %i: "
 		    "%s :: %s:%i", queue, strerror(errno), __FILE__, __LINE__);
 }
 
@@ -216,21 +216,21 @@ static usocket_t *factory(const char *sun_path, struct sockaddr_un *sunaddr)
 
 	sck = calloc(1, sizeof(usocket_t));
 	if (sck == NULL) {
-		JOURNAL_DEBUG("usocket]> calloc() failed: %s :: %s:%i",
+		jlog(L_DEBUG, "usocket]> calloc() failed: %s :: %s:%i",
 		    strerror(errno), __FILE__, __LINE__);
 		return NULL;
 	}
 
 	sck->fd = socket(PF_LOCAL, SOCK_STREAM, 0);
 	if (sck->fd < 0) {
-		JOURNAL_DEBUG("usocket]> socket() failed: %s :: %s:%i",
+		jlog(L_DEBUG, "usocket]> socket() failed: %s :: %s:%i",
 		    strerror(errno), __FILE__, __LINE__);
 		return NULL;
 	}
 
 	sck->buf = fdopen(sck->fd, "r+");
 	if (sck->buf == NULL) {
-		JOURNAL_DEBUG("usocket]> fdopen() failed: %s :: %s:%i",
+		jlog(L_DEBUG, "usocket]> fdopen() failed: %s :: %s:%i",
 		    strerror(errno), __FILE__, __LINE__);
 		usocket_close(sck);
 		return NULL;
@@ -246,7 +246,7 @@ static usocket_t *factory(const char *sun_path, struct sockaddr_un *sunaddr)
 int usocket_close(usocket_t *sck)
 {
 	if (!sck) {
-		JOURNAL_DEBUG("usocket]> %s called with NULL pointer :: %s:%i",
+		jlog(L_DEBUG, "usocket]> %s called with NULL pointer :: %s:%i",
 		    __func__, __FILE__, __LINE__);
 		return -1;
 	}
@@ -265,7 +265,7 @@ int usocket_queue_init(int *queue)
 {
 	*queue = ion_new();
 	if (*queue < 0) {
-		JOURNAL_DEBUG("usocket]> ion_new() failed :: %s:%i",
+		jlog(L_DEBUG, "usocket]> ion_new() failed :: %s:%i",
 		    __FILE__, __LINE__);
 		return -1;
 	}
@@ -277,7 +277,7 @@ int usocket_queue_init(int *queue)
 int usocket_queue_add(int queue, usocket_t *sck, void *udata)
 {
 	if (!sck) {
-		JOURNAL_DEBUG("usocket]> %s called with NULL pointer :: %s:%i",
+		jlog(L_DEBUG, "usocket]> %s called with NULL pointer :: %s:%i",
 		    __func__, __FILE__, __LINE__);
 		return -1;
 	}
@@ -286,7 +286,7 @@ int usocket_queue_add(int queue, usocket_t *sck, void *udata)
 	sck->udata = udata;
 
 	if (ion_add(queue, sck->fd, sck)) {
-		JOURNAL_DEBUG("usocket]> ion_add() failed :: %s:%i",
+		jlog(L_DEBUG, "usocket]> ion_add() failed :: %s:%i",
 		    __FILE__, __LINE__);
 		return -1;
 	}
@@ -297,13 +297,13 @@ int usocket_queue_add(int queue, usocket_t *sck, void *udata)
 int usocket_listen(usocket_t *sck, int backlog)
 {
 	if (!sck) {
-		JOURNAL_DEBUG("usocket]> %s called with NULL pointer :: %s:%i",
+		jlog(L_DEBUG, "usocket]> %s called with NULL pointer :: %s:%i",
 		    __func__, __FILE__, __LINE__);
 		return -1;
 	}
 
 	if (listen(sck->fd, backlog) < 0) {
-		JOURNAL_DEBUG("usocket]> listen() failure: %s :: %s:%i",
+		jlog(L_DEBUG, "usocket]> listen() failure: %s :: %s:%i",
 		    strerror(errno), __FILE__, __LINE__);
 		return -1;
 	}
@@ -319,14 +319,14 @@ usocket_t *usocket_create(char *sun_path)
 
 	sck = factory(sun_path, &sunaddr);
 	if (sck == NULL) {
-		JOURNAL_DEBUG("usocket]> sck is NULL :: %s:%i",
+		jlog(L_DEBUG, "usocket]> sck is NULL :: %s:%i",
 		    __FILE__, __LINE__);
 		return NULL;
 	}
 
 	unlink(sun_path);
 	if (bind(sck->fd, (struct sockaddr *)&sunaddr, sizeof(sunaddr))) {
-		JOURNAL_DEBUG("usocket]> bind() failed: %s :: %s:%i",
+		jlog(L_DEBUG, "usocket]> bind() failed: %s :: %s:%i",
 		    strerror(errno), __FILE__, __LINE__);
 		usocket_close(sck);
 		return NULL;
@@ -342,13 +342,13 @@ usocket_t *usocket_connect(char *sun_path)
 
 	sck = factory(sun_path, &sunaddr);
 	if (sck == NULL) {
-		JOURNAL_DEBUG("usocket]> sck is NULL :: %s:%i",
+		jlog(L_DEBUG, "usocket]> sck is NULL :: %s:%i",
 		    __FILE__, __LINE__);
 		return NULL;
 	}
 
 	if (connect(sck->fd, (struct sockaddr *)&sunaddr, sizeof(sunaddr))) {
-		JOURNAL_DEBUG("usocket]> connect() failed: %s :: %s:%i",
+		jlog(L_DEBUG, "usocket]> connect() failed: %s :: %s:%i",
 		    strerror(errno), __FILE__, __LINE__);
 		usocket_close(sck);
 		return NULL;

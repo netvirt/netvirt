@@ -130,7 +130,7 @@ void mbuf_print(mbuf_t **mbuf_head)
 	mbuf_t *mbuf;
 
 	for (mbuf = *mbuf_head; mbuf != NULL; mbuf = mbuf->next) {
-			printf("mbuf{%i}||", mbuf->ext_size);
+			jlog(L_NOTICE, "mbuf{%i}||", mbuf->ext_size);
 
 	}
 }

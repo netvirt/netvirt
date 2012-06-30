@@ -95,7 +95,7 @@ void inet_print_iphdr(void *data)
 {
 	struct ip *iph;
 	iph = data + sizeof(struct ether_header);
-	JOURNAL_DEBUG("inet]> iphdr len: %i", iph->ip_len);
+	jlog(L_DEBUG, "inet]> iphdr len: %i", iph->ip_len);
 }
 
 int inet_is_ipv4(void *data)
@@ -198,7 +198,7 @@ void inet_print_ether_type(void *data)
 	struct ether_header *hd;
 	hd = data;
 
-	JOURNAL_DEBUG("inet]> ether type: %x", htons(hd->ether_type));
+	jlog(L_DEBUG, "inet]> ether type: %x", htons(hd->ether_type));
 }
 
 void inet_print_ethernet(void *data)
@@ -206,15 +206,15 @@ void inet_print_ethernet(void *data)
 	struct ether_header *hd;
 	hd = data;
 
-	JOURNAL_DEBUG("inet]> ether_dhost: %02x:%02x:%02x:%02x:%02x:%02x", hd->ether_dhost[0],
+	jlog(L_DEBUG, "inet]> ether_dhost: %02x:%02x:%02x:%02x:%02x:%02x", hd->ether_dhost[0],
 		hd->ether_dhost[1], hd->ether_dhost[2], hd->ether_dhost[3],
 		hd->ether_dhost[4], hd->ether_dhost[5]);
 
-	JOURNAL_DEBUG("inet]> ether_shost: %02x:%02x:%02x:%02x:%02x:%02x", hd->ether_shost[0],
+	jlog(L_DEBUG, "inet]> ether_shost: %02x:%02x:%02x:%02x:%02x:%02x", hd->ether_shost[0],
 		hd->ether_shost[1], hd->ether_shost[2], hd->ether_shost[3],
 		hd->ether_shost[4], hd->ether_shost[5]);
 
-	JOURNAL_DEBUG("inet]> ether_type: %x", htons(hd->ether_type));
+	jlog(L_DEBUG, "inet]> ether_type: %x", htons(hd->ether_type));
 }
 
 void inet_print_arp(peer_t *peer)
@@ -227,18 +227,18 @@ void inet_print_arp(peer_t *peer)
 	if (htons(hd->ether_type) == 0x806) { // ARP Request
 		ea = peer->buffer + sizeof(struct ether_header);
 
-		JOURNAL_DEBUG("inet]> arp_hdr: %i", ea->arp_hrd);
+		jlog(L_DEBUG, "inet]> arp_hdr: %i", ea->arp_hrd);
 
-		JOURNAL_DEBUG("inet]> arp_sha:  %02x:%02x:%02x:%02x:%02x:%02x", ea->arp_sha[0],
+		jlog(L_DEBUG, "inet]> arp_sha:  %02x:%02x:%02x:%02x:%02x:%02x", ea->arp_sha[0],
 			ea->arp_sha[1], ea->arp_sha[2], ea->arp_sha[3],
 			ea->arp_sha[4], ea->arp_sha[5]);
-		JOURNAL_DEBUG("inet]> arp_spa: %02x:%02x:%02x:%02x", ea->arp_spa[0],
+		jlog(L_DEBUG, "inet]> arp_spa: %02x:%02x:%02x:%02x", ea->arp_spa[0],
 			ea->arp_spa[1], ea->arp_spa[2], ea->arp_spa[3]);
 
-		JOURNAL_DEBUG("inet]> arp_tha: %02x:%02x:%02x:%02x:%02x:%02x", ea->arp_tha[0],
+		jlog(L_DEBUG, "inet]> arp_tha: %02x:%02x:%02x:%02x:%02x:%02x", ea->arp_tha[0],
 			ea->arp_tha[1], ea->arp_tha[2], ea->arp_sha[3],
 			ea->arp_tha[4], ea->arp_sha[5]);
-		JOURNAL_DEBUG("inet]> arp_tpa: %02x:%02x:%02x:%02x", ea->arp_tpa[0],
+		jlog(L_DEBUG, "inet]> arp_tpa: %02x:%02x:%02x:%02x", ea->arp_tpa[0],
 			ea->arp_tpa[1], ea->arp_tpa[2], ea->arp_tpa[3]);
 	}
 }
