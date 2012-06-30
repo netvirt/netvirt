@@ -50,6 +50,10 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg);
 static ftable_t *ftable;
 struct session *master_session;
 
+char *g_certificate = NULL;
+char *g_privatekey = NULL;
+char *g_trusted_authority = NULL;
+
 static void tunnel_in(iface_t *iface)
 {
 	DNDSMessage_t *msg = NULL;
@@ -125,6 +129,30 @@ void transmit_netinfo_request(struct session *session)
 	net_send_msg(session->netc, msg);
 }
 
+void transmit_prov_request(netc_t *netc)
+{
+	size_t nbyte;
+	DNDSMessage_t *msg;
+
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dnm);
+
+	DNMessage_set_seqNumber(msg, 1);
+	DNMessage_set_ackNumber(msg, 0);
+	DNMessage_set_operation(msg, dnop_PR_provRequest);
+
+	/* TODO take the OTP as a parameter, or ask for it */
+	ProvRequest_set_provCode(msg, "26be418a-863a-43ca-b447-34fa1d7267f3",
+					strlen("26be418a-863a-43ca-b447-34fa1d7267f3"));
+
+	nbyte = net_send_msg(netc, msg);
+	if (nbyte == -1) {
+		jlog(L_NOTICE, "dnc]> malformed message\n", nbyte);
+		return;
+	}
+}
+
 void transmit_register(netc_t *netc)
 {
 	X509_NAME *subj_ptr;
@@ -145,16 +173,16 @@ void transmit_register(netc_t *netc)
 	subj_ptr = X509_get_subject_name(session->passport->certificate);
 	X509_NAME_get_text_by_NID(subj_ptr, NID_commonName, subj, 256);
 
-	JOURNAL_NOTICE("dnc> my common name: %s\n", subj);
+	jlog(L_NOTICE, "dnc> my common name: %s\n", subj);
         AuthRequest_set_certName(msg, subj, strlen(subj));
 
         nbyte = net_send_msg(netc, msg);
         if (nbyte == -1) {
-                JOURNAL_NOTICE("dnc]> malformed message\n", nbyte);
+                jlog(L_NOTICE, "dnc]> malformed message: %d\n", nbyte);
                 return;
         }
 
-        JOURNAL_NOTICE("dnc]> sent %i bytes\n", nbyte);
+        jlog(L_NOTICE, "dnc]> sent %i bytes\n", nbyte);
 	session->status = SESSION_STATUS_WAIT_ANSWER;
 
         return;
@@ -165,23 +193,26 @@ static void on_secure(netc_t *netc);
 
 static void on_disconnect(netc_t *netc)
 {
-	printf("on_disconnect !!\n");
+	jlog(L_NOTICE, "on_disconnect !!\n");
+
 	netc_t *retry_netc = NULL;
 	struct session *session;
 
 	session = netc->ext_ptr;
 	session->status = SESSION_STATUS_DOWN;
-	
+
 	do {
 		sleep(5);
-		printf("connection retry...\n");
+
+		jlog(L_NOTICE, "connection retry...\n");
+
 		retry_netc = net_client(session->server_address,
-		    session->server_port, NET_PROTO_UDT, NET_SECURE_ADH,
-		    session->passport, on_disconnect, on_input, on_secure);
+		session->server_port, NET_PROTO_UDT, NET_SECURE_ADH,
+		session->passport, on_disconnect, on_input, on_secure);
 
 		if (retry_netc)
 			break;
-		
+
 	} while (1);
 
 	session->status = SESSION_STATUS_NOT_AUTHED;
@@ -192,7 +223,7 @@ static void on_disconnect(netc_t *netc)
 /* only used by P2P */
 static void on_connect(netc_t *netc)
 {
-	printf("on_connect\n");
+	jlog(L_NOTICE, "on_connect\n");
 
 	struct session *session = NULL;
         session = malloc(sizeof(struct session));
@@ -215,13 +246,22 @@ static void p2p_on_secure(netc_t *netc)
 
 static void on_secure(netc_t *netc)
 {
-	JOURNAL_NOTICE("dnc]> on_secure !");
+	jlog(L_NOTICE, "dnc]> on_secure !");
 
 	struct session *session;
 	session = netc->ext_ptr;
 
 	if (session->status == SESSION_STATUS_NOT_AUTHED) {
-		transmit_register(netc);
+
+		/* XXX is there a better way to detect that we
+		 * have no certificate yet ? */
+		if (session->passport == NULL) {
+			jlog(L_NOTICE, "Provisioning mode !\n");
+			transmit_prov_request(netc);
+		}
+		else {
+			transmit_register(netc);
+		}
 	}
 }
 
@@ -271,24 +311,61 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 	uint8_t mac_dst[ETHER_ADDR_LEN];
 	char ip_addr[INET_ADDRSTRLEN];
 
+	size_t length;
+	char *certificate = NULL;
+	char *certificatekey = NULL;
+	char *trusted_authority = NULL;
+	FILE *fp = NULL;
+
 	DNMessage_get_operation(msg, &operation);
 
+	/* TODO all cases must be handled in seperate functions */
+
 	switch (operation) {
+
+		case dnop_PR_provResponse:
+
+			ProvResponse_get_certificate(msg, &certificate, &length);
+
+			fp = fopen(g_certificate, "w");
+			fwrite(certificate, 1, strlen(certificate), fp);
+			fclose(fp);
+
+			ProvResponse_get_certificateKey(msg, &certificatekey, &length);
+			jlog(L_NOTICE, "certkey length: %d\n", length);
+			fp = fopen(g_privatekey, "w");
+			fwrite(certificatekey, 1, strlen(certificatekey), fp);
+			fclose(fp);
+
+			ProvResponse_get_trustedCert(msg, &trusted_authority, &length);
+			fp = fopen(g_trusted_authority, "w");
+			fwrite(trusted_authority, 1, strlen(trusted_authority), fp);
+			fclose(fp);
+
+			session->passport = pki_passport_load_from_file(g_certificate,
+							 g_privatekey,
+							 g_trusted_authority);
+
+
+			krypt_add_passport(session->netc->kconn, session->passport);
+			transmit_register(session->netc);
+
+			break;
 
 		case dnop_PR_authResponse:
 
 			AuthResponse_get_result(msg, &result);
 
 			if (result == DNDSResult_success) {
-				JOURNAL_INFO("dnc]> session authenticated");
+				jlog(L_NOTICE, "dnc]> session authenticated");
 				transmit_netinfo_request(session);
 			}
 			else if (result == DNDSResult_secureStepUp) {
-				JOURNAL_INFO("dnc]> server authentication require step up");
+				jlog(L_NOTICE, "dnc]> server authentication require step up");
 				net_step_up(session->netc);
 			}
 			else {
-				JOURNAL_ERR("dnc]> unknown AuthResponse result (%i)", result);
+				jlog(L_NOTICE, "dnc]> unknown AuthResponse result (%i)", result);
 			}
 
 			break;
@@ -296,7 +373,7 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 		case dnop_PR_netinfoResponse:
 
 			NetinfoResponse_get_ipAddress(msg, ip_addr);
-			JOURNAL_INFO("dnc]> got ip address %s\n", ip_addr);
+			jlog(L_NOTICE, "dnc]> got ip address %s\n", ip_addr);
 
 			master_session = session;
 			tun_up(session->iface->devname, ip_addr);
@@ -309,16 +386,16 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 			P2pRequest_get_macAddrDst(msg, mac_dst);
 			P2pRequest_get_ipAddrDst(msg, dest_addr);
 			P2pRequest_get_port(msg, &port);
-		
+
 			snprintf(port_name, 6, "%d", port);
 			p2p_netc = net_p2p("0.0.0.0", dest_addr, port_name, NET_PROTO_UDT, NET_UNSECURE, state,
 						on_connect, p2p_on_secure, on_disconnect, on_input);
 
 			if (p2p_netc != NULL) {
-				JOURNAL_INFO("dnc]> p2p connected");
+				jlog(L_NOTICE, "dnc]> p2p connected");
 				ftable_insert(ftable, mac_dst, p2p_netc->ext_ptr);
 			} else {
-				JOURNAL_INFO("dnc]> p2p unable to connect");
+				jlog(L_NOTICE, "dnc]> p2p unable to connect");
 			}
 
 			break;
@@ -328,7 +405,7 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 		 */
 		case dnop_PR_NOTHING:
 		default:
-			JOURNAL_NOTICE("dnc]> not a valid DNM operation");
+			jlog(L_NOTICE, "dnc]> not a valid DNM operation");
 		case dnop_PR_terminateRequest:
 			terminate(session);
 			break;
@@ -369,7 +446,7 @@ static int handle_connect(cli_entry_t *entry, int cmd, cli_args_t *args)
 
 		master_session->status = SESSION_STATUS_NOT_AUTHED;
 		master_session->netc = netc;
-		netc->ext_ptr = master_session; 
+		netc->ext_ptr = master_session;
 
 		return CLI_RETURN_SUCCESS;
 	}
@@ -432,6 +509,14 @@ int dnc_init(char *server_address, char *server_port,
 	session->passport = pki_passport_load_from_file(certificate,
 							 privatekey,
 							 trusted_authority);
+
+	/* XXX these var should be part of a global
+	 * config->certificate...
+	 */
+	g_certificate = certificate;
+	g_privatekey = privatekey;
+	g_trusted_authority = trusted_authority;
+
 	session->server_address = server_address;
 	session->server_port = server_port;
 

@@ -44,47 +44,48 @@ struct options opts[] = {
 
 	{ NULL }
 };
+
 int main(int argc, char *argv[])
 {
 	if (getuid() != 0) {
-		JOURNAL_ERR("dnc]> you must be root");
+		jlog(L_ERROR, "dnc]> You must be root !");
 		return -1;
 	}
 
 	if (option_parse(opts, CONFIG_FILE)) {
-		JOURNAL_ERR("dnc]> option_parse() failed :: %s:%i", __FILE__, __LINE__);
-		_exit(EXIT_ERR);
+		jlog(L_ERROR, "dnc]> option_parse() failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
 	}
 
 	option_dump(opts);
 
 	if (event_init()) {
-		JOURNAL_ERR("dnc]> event_init() failed :: %s:%i", __FILE__, __LINE__);
-		_exit(EXIT_ERR);
+		jlog(L_ERROR, "dnc]> event_init() failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
 	}
 
 	if (scheduler_init()) {
-		JOURNAL_ERR("dnc]> scheduler_init() failed :: %s:%i", __FILE__, __LINE__);
-		_exit(EXIT_ERR);
+		jlog(L_ERROR, "dnc]> scheduler_init() failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
 	}
 
 	dnc_cli_server = cli_server_init(unix_socket_path);
 	if (!dnc_cli_server)
-		JOURNAL_NOTICE("dnc]> failed to launch command line server");
+		jlog(L_WARNING, "dnc]> failed to launch command line server");
 
 
 	if (netbus_init()) {
-		JOURNAL_ERR("dnc]> netbus_init() failed :: %s:%i", __FILE__, __LINE__);
-		_exit(EXIT_ERR);
+		jlog(L_ERROR, "dnc]> netbus_init() failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
 	}
 
 	krypt_init();
 
-	JOURNAL_INFO("dnc]> connecting...");
+	jlog(L_NOTICE, "dnc]> connecting...");
 
 	if (dnc_init(server_address, server_port, certificate, privatekey, trusted_authority)) {
-		JOURNAL_ERR("dnc]> dnc_init() failed :: %s:%i", __FILE__, __LINE__);
-		_exit(EXIT_ERR);
+		jlog(L_ERROR, "dnc]> dnc_init() failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
 	}
 
 	scheduler();
