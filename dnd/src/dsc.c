@@ -18,11 +18,42 @@
 
 #include "context.h"
 #include "dsc.h"
+#include "session.h"
 
 netc_t *dsc_netc = NULL;
 static passport_t *dnd_passport = NULL;
 static char *dsc_address = NULL;
 static char *dsc_port = NULL;
+
+struct session *session_prov = NULL;
+
+int transmit_provisioning(struct session *session, char *provCode, uint32_t length)
+{
+	DNDSMessage_t *msg;
+
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+
+	DSMessage_set_seqNumber(msg, 0);
+	DSMessage_set_ackNumber(msg, 0);
+	DSMessage_set_operation(msg, dsop_PR_searchRequest);
+
+	SearchRequest_set_searchType(msg, SearchType_object);
+
+	DNDSObject_t *objPeer;
+	DNDSObject_new(&objPeer);
+	DNDSObject_set_objectType(objPeer, DNDSObject_PR_peer);
+
+	Peer_set_contextId(objPeer, 0);
+	Peer_set_provCode(objPeer, provCode, length);
+
+	SearchRequest_set_object(msg, objPeer);
+
+	net_send_msg(dsc_netc, msg);
+
+	session_prov = session; // XXX hack for the proof of concept
+}
 
 int transmit_peerconnectinfo(e_ConnectState state, char *ipAddress, char *certName)
 {
@@ -38,7 +69,7 @@ int transmit_peerconnectinfo(e_ConnectState state, char *ipAddress, char *certNa
 
         PeerConnectInfo_set_certName(msg, certName, strlen(certName));
         PeerConnectInfo_set_ipAddr(msg, ipAddress);
-        PeerConnectInfo_set_state(msg, state);  
+        PeerConnectInfo_set_state(msg, state);
 
 	net_send_msg(dsc_netc, msg);
 
@@ -47,7 +78,7 @@ int transmit_peerconnectinfo(e_ConnectState state, char *ipAddress, char *certNa
 
 static void on_secure(netc_t *netc)
 {
-	JOURNAL_DEBUG("dsc on secure");
+	jlog(L_DEBUG, "dsc on secure");
 
 	DNDSMessage_t *msg;
 
@@ -65,7 +96,45 @@ static void on_secure(netc_t *netc)
 	net_send_msg(netc, msg);
 }
 
-static void handle_SearchResponse(netc_t *netc, DNDSMessage_t *msg)
+static void handle_SearchResponse_Peer(netc_t *netc, DNDSMessage_t *msg)
+{
+	DNDSObject_t *object;
+	uint32_t count; int ret;
+	uint32_t length;
+
+	char *certificate = NULL;
+	char *certificateKey = NULL;
+	char *trustedCert = NULL;
+
+	SearchResponse_get_object_count(msg, &count);
+
+	DNDSMessage_t *new_msg;
+	DNDSMessage_new(&new_msg);
+	DNDSMessage_set_channel(new_msg, 0);
+	DNDSMessage_set_pdu(new_msg, pdu_PR_dnm);
+
+	DNMessage_set_operation(new_msg, dnop_PR_provResponse);
+
+	ret = SearchResponse_get_object(msg, &object);
+	if (ret == DNDS_success && object != NULL) {
+
+		Peer_get_certificate(object, &certificate, &length);
+		ProvResponse_set_certificate(new_msg, certificate, length);
+		//printf("cert: %s\n", certificate);
+
+		Peer_get_certificateKey(object, &certificateKey, &length);
+		ProvResponse_set_certificateKey(new_msg, certificateKey, length);
+		//printf("certKey: %s\n", certificateKey);
+
+		Peer_get_trustedCert(object, &trustedCert, &length);
+		ProvResponse_set_trustedCert(new_msg, trustedCert, length);
+		//printf("trustedcert: %s\n", trustedCert);
+	}
+
+	net_send_msg(session_prov->netc, new_msg);
+}
+
+static void handle_SearchResponse_Context(netc_t *netc, DNDSMessage_t *msg)
 {
 	DNDSObject_t *object;
 	uint32_t count; int ret;
@@ -100,13 +169,30 @@ static void handle_SearchResponse(netc_t *netc, DNDSMessage_t *msg)
 	}
 }
 
+static void handle_SearchResponse(netc_t *netc, DNDSMessage_t *msg)
+{
+	e_SearchType SearchType;
+
+	SearchResponse_get_searchType(msg, &SearchType);
+
+	jlog(L_DEBUG, "SearchType: %s\n", SearchType_str(SearchType));
+
+	if (SearchType == SearchType_all) {
+		handle_SearchResponse_Context(netc, msg);
+	}
+
+	if (SearchType == SearchType_object) {
+		handle_SearchResponse_Peer(netc, msg);
+	}
+}
+
 static void dispatch_operation(netc_t *netc, DNDSMessage_t *msg)
 {
 	dsop_PR operation;
 
+	jlog(L_DEBUG, "dispatch operation\n");
 	DSMessage_get_operation(msg, &operation);
 
-	printf("dispatch operation\n");
 //	switch (operation) {
 //	case dsop_PR_contextInfo:
 		handle_SearchResponse(netc, msg);
@@ -133,7 +219,7 @@ static void on_input(netc_t *netc)
 				break;
 			default:
 				/* TODO disconnect session */
-				JOURNAL_ERR("dnd]> invalid PDU");
+				jlog(L_ERROR, "dnd]> invalid PDU");
 				break;
 		}
 
@@ -143,15 +229,14 @@ static void on_input(netc_t *netc)
 
 static void on_connect(netc_t *netc)
 {
-	JOURNAL_DEBUG("dsc on connect");
+	jlog(L_DEBUG, "dsc on connect");
 }
-
 
 static void on_disconnect(netc_t *netc)
 {
 	netc_t *retry_netc = NULL;
 
-	JOURNAL_DEBUG("dsc on disconnect");
+	jlog(L_DEBUG, "dsc on disconnect");
 
 	/* maybe net_client() should keep pointers to address,
 	   port and passport?  A net_connection_retry() would be given
@@ -184,7 +269,7 @@ int dsc_init(char *ip_address, char *port, char *certificate, char *privatekey, 
 				on_disconnect, on_input, on_secure);
 
 	if (dsc_netc == NULL) {
-		JOURNAL_NOTICE("dnd]> failed to connect to the Directory Service :: %s:%i\n", __FILE__, __LINE__);
+		jlog(L_NOTICE, "dnd]> failed to connect to the Directory Service :: %s:%i\n", __FILE__, __LINE__);
 		return -1;
 	}
 

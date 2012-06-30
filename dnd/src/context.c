@@ -24,7 +24,7 @@
 #include "context.h"
 #include "session.h"
 
-/* XXX the context list should bee a tree, or a hashlist */
+/* XXX the context list should be a tree, or a hashlist */
 
 #define CONTEXT_LIST_SIZE 512
 context_t *context_table[CONTEXT_LIST_SIZE] = {NULL};
@@ -38,7 +38,7 @@ void context_del_session(context_t *context, struct session *session)
 		if (session->prev)
 			session->prev->next = session->next;
 		else
-			printf("no previons link ?\n");
+			jlog(L_WARNING, "no previons link ?\n");
 	}
 
 	bitpool_release_bit(context->bitpool, 1024, session->id);
@@ -62,7 +62,7 @@ void context_add_session(context_t *context, struct session *session)
 
 context_t *context_lookup(uint32_t context_id)
 {
-	printf("lookup id %d\n", context_id);
+	jlog(L_NOTICE, "lookup id %d\n", context_id);
 	if (context_id < CONTEXT_LIST_SIZE)
 		return context_table[context_id];
 
@@ -77,9 +77,9 @@ int context_create(uint32_t id, char *address, char *netmask,
 	context = (context_t*)malloc(sizeof(context_t));
 	context_table[id] = context;
 
-	JOURNAL_DEBUG("context]> id	:: %i", id);
-	JOURNAL_DEBUG("context]> subnet :: %s", address);
-	JOURNAL_DEBUG("context]> netmask:: %s", netmask);
+	jlog(L_DEBUG, "context]> id	:: %i", id);
+	jlog(L_DEBUG, "context]> subnet :: %s", address);
+	jlog(L_DEBUG, "context]> netmask:: %s", netmask);
 
 	context->ippool = ippool_new(address, netmask);
 	context->id = id;

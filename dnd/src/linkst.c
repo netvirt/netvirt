@@ -93,6 +93,9 @@ void linkst_free(uint8_t **adjacency_matrix, size_t max_node)
 	free(adjacency_matrix);
 }
 
+/* TODO use a binary based matrix
+ * use half of a matrix
+ */
 uint8_t **linkst_new(size_t max_node)
 {
 	int i;

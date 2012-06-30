@@ -18,7 +18,7 @@ struct session *session_new()
 
 	session = calloc(1, sizeof(struct session));
 	if (session == NULL) {
-		JOURNAL_CRIT("dnd]> memory allocation failed");
+		jlog(L_ERROR, "dnd]> memory allocation failed");
 		return NULL;
 	}
 
@@ -40,13 +40,13 @@ void session_free(struct session*session)
 	if (session->ip != NULL) {
 		free(session->ip);
 	}
-	
+
 	free(session);
 }
 
 void session_terminate(struct session *session)
 {
-	JOURNAL_INFO("dnd]> terminating session");
+	jlog(L_NOTICE, "dnd]> terminating session");
 	net_disconnect(session->netc);
 	session_free(session);
 }

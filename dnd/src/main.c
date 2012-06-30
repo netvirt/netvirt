@@ -51,52 +51,53 @@ int main(int argc, char *argv[])
 {
 	if (getuid() != 0) {
 		fprintf(stderr, "dnd]> you must be root\n");
-		_exit(EXIT_NOT_ROOT);
+		exit(EXIT_FAILURE);
 	}
 
 	/* State initialization */
 	if (option_parse(opts, CONFIG_FILE)) {
-		JOURNAL_ERR("dnd]> option_parse() failed :: %s:%i", __FILE__, __LINE__);
-		_exit(EXIT_ERR);
+		jlog(L_ERROR, "dnd]> option_parse() failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
 	}
 
 	option_dump(opts);
 
 	/* System initialization */
 	if (event_init()) {
-		JOURNAL_ERR("dnd]> event_init() failed :: %s:%i", __FILE__, __LINE__);
-		_exit(EXIT_ERR);
+		jlog(L_ERROR, "dnd]> event_init() failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
 	}
 
 	if (scheduler_init()) {
-		JOURNAL_ERR("dnd]> scheduler_init() failed :: %s:%i", __FILE__, __LINE__);
-		_exit(EXIT_ERR);
+		jlog(L_ERROR, "dnd]> scheduler_init() failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
 	}
 
 	if (udtbus_init()) {
-		JOURNAL_ERR("dnd]> udtbus_init() faled :: %s:%i", __FILE__, __LINE__);
-		_exit(EXIT_ERR);
+		jlog(L_ERROR, "dnd]> udtbus_init() faled :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
 	}
 
 	if (netbus_init()) {
-		JOURNAL_ERR("dnd]> netbus_init() failed :: %s:%i", __FILE__, __LINE__);
-		_exit(EXIT_ERR);
+		jlog(L_ERROR, "dnd]> netbus_init() failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
 	}
 
 	if (krypt_init()) {
-		JOURNAL_ERR("dnd]> krypt_init() failed :: %s:%i", __FILE__, __LINE__);
-		_exit(EXIT_ERR);
+		jlog(L_ERROR, "dnd]> krypt_init() failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
+	}
+
+	/* Connect to the Directory Service */
+	if (dsc_init(dsc_address, dsc_port, certificate, privatekey, trusted_authority)) {
+		jlog(L_ERROR, "dnd]> dnc_init() failed :: %s:%i\n", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
 	}
 
 	/* Server initialization */
-	if (dsc_init(dsc_address, dsc_port, certificate, privatekey, trusted_authority)) {
-		JOURNAL_ERR("dnd]> dnc_init() failed :: %s:%i\n", __FILE__, __LINE__);
-		_exit(EXIT_ERR);
-	}
-
 	if (dnd_init(listen_address, listen_port)) {
-		JOURNAL_ERR("dnd]> dnd_init() failed :: %s:%i", __FILE__, __LINE__);
-		_exit(EXIT_ERR);
+		jlog(L_ERROR, "dnd]> dnd_init() failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
 	}
 
 	/* Now... run ! */

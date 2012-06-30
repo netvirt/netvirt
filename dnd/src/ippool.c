@@ -22,6 +22,9 @@
 
 #include "ippool.h"
 
+/* TODO write complete u-test to test the limit
+ * and to handle properly any errors */
+
 static int get_bit(const uint8_t bitmap[], size_t bit)
 {
 	return (bitmap[bit/8] >> (bit % 8)) & 1;
@@ -50,14 +53,14 @@ static int allocate_bit(uint8_t bitmap[], size_t bits, uint32_t *bit)
 {
 	int i, j, byte_size;
 
-	JOURNAL_DEBUG("ippool]> bit: %i", *bit);
+	jlog(L_DEBUG, "ippool]> bit: %i", *bit);
 
 	byte_size = bits/8;
 
 	/* byte */
 	for (i = 0; (i < byte_size) && (bitmap[i] == 0xff); i++);
 
-	JOURNAL_DEBUG("ippool]> bit: %i", *bit);
+	jlog(L_DEBUG, "ippool]> bit: %i", *bit);
 
 	if (i == byte_size)
 		return 0;
@@ -66,7 +69,7 @@ static int allocate_bit(uint8_t bitmap[], size_t bits, uint32_t *bit)
 	for (j = 0; get_bit( bitmap+i, j); j++);
 
 	*bit = i * 8 + j;
-	JOURNAL_DEBUG("ippool]> bit: %i", *bit);
+	jlog(L_DEBUG, "ippool]> bit: %i", *bit);
 	set_bit(bitmap, *bit);
 
 	return 1;
@@ -101,11 +104,11 @@ void ippool_release_ip(ippool_t *ippool, char *ip)
 	struct in_addr addr;
 	inet_aton(ip, &addr);
 
-	JOURNAL_DEBUG("ippool]> rem addr: %x", ntohl(addr.s_addr));
-	JOURNAL_DEBUG("ippool]> offset: %x", ntohl(ippool->hostmin.s_addr));
+	jlog(L_DEBUG, "ippool]> rem addr: %x", ntohl(addr.s_addr));
+	jlog(L_DEBUG, "ippool]> offset: %x", ntohl(ippool->hostmin.s_addr));
 
 	bit = ntohl(addr.s_addr) - ntohl(ippool->hostmin.s_addr);
-	JOURNAL_DEBUG("ippool]> bit to be released : %i", bit);
+	jlog(L_DEBUG, "ippool]> bit to be released : %i", bit);
 
 	free_bit(ippool->pool, ippool->hosts, bit);
 }
@@ -132,9 +135,9 @@ ippool_t *ippool_new(char *address, char *netmask)
 
 	ipcalc(ippool, address, netmask);
 
-	printf("hosts %u\n", ippool->hosts);
-	printf("hostmin %s\n", inet_ntoa(ippool->hostmin));
-	printf("hostmax %s\n", inet_ntoa(ippool->hostmax));
+	jlog(L_DEBUG, "hosts %u\n", ippool->hosts);
+	jlog(L_DEBUG, "hostmin %s\n", inet_ntoa(ippool->hostmin));
+	jlog(L_DEBUG, "hostmax %s\n", inet_ntoa(ippool->hostmax));
 
 	alloc_bitmap(ippool->hosts, &(ippool->pool));
 

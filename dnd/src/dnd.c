@@ -56,7 +56,7 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 		context_add_session(session->context, session);
 		session_src = session;
 
-		JOURNAL_DEBUG("dnd]> new ID [%d]\n", session->id);
+		jlog(L_DEBUG, "dnd]> new ID [%d]\n", session->id);
 	}
 
 	/* Lookup the destination */
@@ -74,7 +74,7 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 		&& session_dst != NULL
 		&& session_dst->netc != NULL) {		/* AND the session is up */
 
-			//JOURNAL_DEBUG("dnd]> forwarding the packet to [%s]", session_dst->ip);
+			//jlog(L_DEBUG, "dnd]> forwarding the packet to [%s]", session_dst->ip);
 			ret = net_send_msg(session_dst->netc, msg);
 
 			int lstate = 0;
@@ -94,7 +94,7 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 				session_list = session_list->next;
 			}
 	} else {
-		JOURNAL_WARN("dnd]> unknown packet");
+		jlog(L_WARNING, "dnd]> unknown packet");
 	}
 }
 
@@ -104,7 +104,7 @@ static int validate_msg(DNDSMessage_t *msg)
 	DNDSMessage_get_pdu(msg, &pdu);
 
 	if (pdu != pdu_PR_dnm) {
-		//JOURNAL_DEBUG("dnd]> not a valid DNM pdu");
+		jlog(L_DEBUG, "dnd]> not a valid DNM pdu");
 		return -1;
 	}
 
@@ -122,7 +122,7 @@ void transmit_netinfo_response(netc_t *netc)
 	/* Send to the client his network informations */
 	ip_address = ippool_get_ip(context->ippool);
 	session->ip = strdup(ip_address);
-	JOURNAL_DEBUG("session ip %s", session->ip);
+	jlog(L_DEBUG, "session ip %s", session->ip);
 
 	DNDSMessage_t *msg = NULL;
 	DNDSMessage_new(&msg);
@@ -134,9 +134,10 @@ void transmit_netinfo_response(netc_t *netc)
 	DNMessage_set_operation(msg, dnop_PR_netinfoResponse);
 
 	NetinfoResponse_set_ipAddress(msg, ip_address);
-	NetinfoResponse_set_netmask(msg, "255.255.255.0");	/* TODO find the real netmask */
+	/* TODO find the real netmask */
+	NetinfoResponse_set_netmask(msg, "255.255.255.0");
 
-	JOURNAL_DEBUG("dnd]> client ip address %s", ip_address);
+	jlog(L_DEBUG, "dnd]> client ip address %s", ip_address);
 
 	net_send_msg(session->netc, msg);
 
@@ -149,8 +150,8 @@ void handle_netinfo_request(struct session *session, DNDSMessage_t *msg)
 	NetinfoRequest_get_ipLocal(msg, session->ip_local);
 	NetinfoRequest_get_macAddr(msg, session->tun_mac_addr);
 
-	printf("client local ip %s\n", session->ip_local);
-	printf("%02x:%02x:%02x:%02x:%02x:%02x\n",
+	jlog(L_NOTICE, "client local ip %s\n", session->ip_local);
+	jlog(L_NOTICE, "%02x:%02x:%02x:%02x:%02x:%02x\n",
 		session->tun_mac_addr[0],
 		session->tun_mac_addr[1],
 		session->tun_mac_addr[2],
@@ -168,6 +169,10 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 	DNMessage_get_operation(msg, &operation);
 
 	switch (operation) {
+
+		case dnop_PR_provRequest:
+			provRequest(session, msg);
+			break;
 
 		case dnop_PR_authRequest:
 			authRequest(session, msg);
@@ -243,7 +248,7 @@ static void on_input(netc_t *netc)
 				break;
 			default:
 				/* TODO disconnect session */
-				JOURNAL_ERR("dnd]> invalid PDU");
+				jlog(L_ERROR, "dnd]> invalid PDU");
 				break;
 		}
 
@@ -255,9 +260,10 @@ static void on_connect(netc_t *netc)
 {
 	struct session *session = NULL;
 
+	/* TODO should have a timer, to disconnect people not auth'ed */
 	session = session_new();
 	if (session == NULL) {
-		JOURNAL_ERR("dnd]> unable to create a new session");
+		jlog(L_ERROR, "dnd]> unable to create a new session");
 		net_disconnect(netc);
 		return;
 	}
@@ -273,7 +279,7 @@ static void on_disconnect(netc_t *netc)
 	int ret = 0;
 	struct session *session = NULL;
 
-	JOURNAL_DEBUG("dnd]> disconnect");
+	jlog(L_DEBUG, "dnd]> disconnect");
 
 	session = netc->ext_ptr;
 
@@ -287,7 +293,7 @@ static void on_disconnect(netc_t *netc)
 	ftable_erase(session->context->ftable, session->mac_addr);
 
 	if (session->ip != NULL) {
-		JOURNAL_DEBUG("dnd]> disconnecting ip {%s}", session->ip);
+		jlog(L_DEBUG, "dnd]> disconnecting ip {%s}", session->ip);
 		ippool_release_ip(session->context->ippool, session->ip);
 	}
 
@@ -314,7 +320,7 @@ int dnd_init(char *listen_addr, char *port)
 		on_connect, on_disconnect, on_input, on_secure);
 
 	if (ret < 0) {
-		JOURNAL_ERR("dnd]> net_server failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "dnd]> net_server failed :: %s:%i", __FILE__, __LINE__);
 		return -1;
 	}
 

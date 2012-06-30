@@ -17,6 +17,19 @@
 #include "request.h"
 #include "session.h"
 
+int provRequest(struct session *session, DNDSMessage_t *req_msg)
+{
+	jlog(L_DEBUG, "PROV REQUEST !\n");
+
+	size_t length;
+	char *provcode = NULL;
+
+	ProvRequest_get_provCode(req_msg, &provcode, &length);
+	jlog(L_DEBUG, "prov code: %s\n", provcode);
+
+	transmit_provisioning(session, provcode, length);
+}
+
 int authRequest(struct session *session, DNDSMessage_t *req_msg)
 {
 	char *certName;
@@ -30,7 +43,7 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 	AuthRequest_get_certName(req_msg, &certName, &length);
 
 	if (session->status != SESSION_STATUS_NOT_AUTHED) {
-		JOURNAL_NOTICE("dnd]> authRequest duplicate");
+		jlog(L_NOTICE, "dnd]> authRequest duplicate");
 		return -1;
 	}
 
@@ -92,20 +105,19 @@ void p2pRequest(struct session *session_a, struct session *session_b)
 	char *ip_b;
 
 	if (!strcmp(session_a->netc->peer->host, session_b->netc->peer->host)) {
-
 		ip_a = strdup(session_a->ip_local);
 		ip_b = strdup(session_b->ip_local);
 	} else {
-
 		ip_a = strdup(session_a->netc->peer->host);
 		ip_b = strdup(session_b->netc->peer->host);
 	}
 
-	/* basic random port : 49152–65535 */
+	/* TODO make sure no collision
+	 * basic random port : 49152–65535 */
 	port = rand() % (65535-49152+1)+49152;
 
-	printf("A ip public %s\n", ip_a);
-	printf("B ip public %s\n", ip_b);
+	jlog(L_DEBUG, "A ip public %s\n", ip_a);
+	jlog(L_DEBUG, "B ip public %s\n", ip_b);
 
 	/* msg session A */
 	DNDSMessage_new(&msg);
