@@ -25,7 +25,10 @@ static passport_t *dnd_passport = NULL;
 static char *dsc_address = NULL;
 static char *dsc_port = NULL;
 
-struct session *session_prov = NULL;
+/* TODO extend this tracking table into a subsystem in it's own */
+#define MAX_SESSION 1024
+struct session *session_tracking_table[MAX_SESSION];
+static tracking_id = 0;
 
 int transmit_provisioning(struct session *session, char *provCode, uint32_t length)
 {
@@ -35,7 +38,8 @@ int transmit_provisioning(struct session *session, char *provCode, uint32_t leng
 	DNDSMessage_set_channel(msg, 0);
 	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
 
-	DSMessage_set_seqNumber(msg, 0);
+	/* XXX should have it's own tracking number field  ? */
+	DSMessage_set_seqNumber(msg, tracking_id);
 	DSMessage_set_ackNumber(msg, 0);
 	DSMessage_set_operation(msg, dsop_PR_searchRequest);
 
@@ -52,7 +56,8 @@ int transmit_provisioning(struct session *session, char *provCode, uint32_t leng
 
 	net_send_msg(dsc_netc, msg);
 
-	session_prov = session; // XXX hack for the proof of concept
+	session_tracking_table[tracking_id % MAX_SESSION] = session;
+	tracking_id++;
 }
 
 int transmit_peerconnectinfo(e_ConnectState state, char *ipAddress, char *certName)
@@ -98,6 +103,8 @@ static void on_secure(netc_t *netc)
 
 static void handle_SearchResponse_Peer(netc_t *netc, DNDSMessage_t *msg)
 {
+	struct session *session;
+	uint32_t tracked_id;
 	DNDSObject_t *object;
 	uint32_t count; int ret;
 	uint32_t length;
@@ -131,7 +138,12 @@ static void handle_SearchResponse_Peer(netc_t *netc, DNDSMessage_t *msg)
 		//printf("trustedcert: %s\n", trustedCert);
 	}
 
-	net_send_msg(session_prov->netc, new_msg);
+
+	DSMessage_get_seqNumber(msg, &tracked_id);
+
+	session = session_tracking_table[tracked_id % MAX_SESSION];
+	session_tracking_table[tracked_id % MAX_SESSION] = NULL;
+	net_send_msg(session->netc, new_msg);
 }
 
 static void handle_SearchResponse_Context(netc_t *netc, DNDSMessage_t *msg)
