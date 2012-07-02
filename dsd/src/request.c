@@ -379,6 +379,8 @@ void searchRequest_peer(struct session *session, DNDSMessage_t *req_msg)
 	Peer_get_provCode(obj, &provcode, &length);
 	printf("provcode to search: %s\n", provcode);
 
+	uint32_t tracked_id;
+	DSMessage_get_seqNumber(req_msg, &tracked_id);
 
 	//// answer ////
 	DNDSMessage_t *msg;
@@ -387,7 +389,7 @@ void searchRequest_peer(struct session *session, DNDSMessage_t *req_msg)
 	DNDSMessage_set_channel(msg, 0);
 	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
 
-	DSMessage_set_seqNumber(msg, 0);
+	DSMessage_set_seqNumber(msg, tracked_id);
 	DSMessage_set_ackNumber(msg, 0);
 	DSMessage_set_operation(msg, dsop_PR_searchResponse);
 
