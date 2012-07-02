@@ -50,9 +50,11 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg);
 static ftable_t *ftable;
 struct session *master_session;
 
+/* TODO must be part of a config->members */
 char *g_certificate = NULL;
 char *g_privatekey = NULL;
 char *g_trusted_authority = NULL;
+char *g_prov_code = NULL;
 
 static void tunnel_in(iface_t *iface)
 {
@@ -142,9 +144,7 @@ void transmit_prov_request(netc_t *netc)
 	DNMessage_set_ackNumber(msg, 0);
 	DNMessage_set_operation(msg, dnop_PR_provRequest);
 
-	/* TODO take the OTP as a parameter, or ask for it */
-	ProvRequest_set_provCode(msg, "26be418a-863a-43ca-b447-34fa1d7267f3",
-					strlen("26be418a-863a-43ca-b447-34fa1d7267f3"));
+	ProvRequest_set_provCode(msg, g_prov_code, strlen(g_prov_code));
 
 	nbyte = net_send_msg(netc, msg);
 	if (nbyte == -1) {
@@ -495,7 +495,7 @@ static int handle_show_peer(cli_entry_t *entry, int cmd, cli_args_t *args)
 	return CLI_RETURN_SUCCESS;
 }
 
-int dnc_init(char *server_address, char *server_port,
+int dnc_init(char *server_address, char *server_port, char *prov_code,
 		char *certificate, char *privatekey, char *trusted_authority)
 {
 	netc_t *netc;
@@ -510,12 +510,18 @@ int dnc_init(char *server_address, char *server_port,
 							 privatekey,
 							 trusted_authority);
 
+	if (session->passport == NULL && prov_code == NULL) {
+		jlog(L_ERROR, "dnc]> Must provide a provisioning code: ./dnc -p ...");
+		return -1;
+	}
+
 	/* XXX these var should be part of a global
 	 * config->certificate...
 	 */
 	g_certificate = certificate;
 	g_privatekey = privatekey;
 	g_trusted_authority = trusted_authority;
+	g_prov_code = prov_code;
 
 	session->server_address = server_address;
 	session->server_port = server_port;

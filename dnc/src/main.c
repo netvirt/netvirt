@@ -47,9 +47,20 @@ struct options opts[] = {
 
 int main(int argc, char *argv[])
 {
+	int opt;
+	char *prov_code = NULL;
+
 	if (getuid() != 0) {
 		jlog(L_ERROR, "dnc]> You must be root !");
 		return -1;
+	}
+
+	while ((opt = getopt(argc, argv, "p:")) != -1) {
+		switch (opt) {
+		case 'p':
+			jlog(L_DEBUG, "provisioning code: %s", optarg);
+			prov_code = strdup(optarg);
+		}
 	}
 
 	if (option_parse(opts, CONFIG_FILE)) {
@@ -83,7 +94,7 @@ int main(int argc, char *argv[])
 
 	jlog(L_NOTICE, "dnc]> connecting...");
 
-	if (dnc_init(server_address, server_port, certificate, privatekey, trusted_authority)) {
+	if (dnc_init(server_address, server_port, prov_code, certificate, privatekey, trusted_authority)) {
 		jlog(L_ERROR, "dnc]> dnc_init() failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
