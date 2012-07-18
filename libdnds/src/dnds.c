@@ -4546,9 +4546,15 @@ void SearchRequest_printf(DNDSMessage_t *msg)
 
 void SearchResponse_printf(DNDSMessage_t *msg)
 {
+	int ret = 0;
+
+	e_SearchType SearchType;
+	ret = SearchResponse_get_searchType(msg, &SearchType);
+	printf("SearchResponse> searchType(%i): %s\n", ret, SearchType_str(SearchType));
+
 	e_DNDSResult result;
-	SearchResponse_get_result(msg, &result);
-	printf("SearchResponse> result: %i :: %s\n", result, DNDSResult_str(result));
+	ret = SearchResponse_get_result(msg, &result);
+	printf("SearchResponse> result(%i): %i :: %s\n", ret, result, DNDSResult_str(result));
 }
 
 void Acl_printf(DNDSObject_t *object)
@@ -4613,7 +4619,7 @@ void Context_printf(DNDSObject_t *object)
 	int ret = 0;
 	size_t length;
 
-	uint32_t id;
+	uint32_t id = 0;
 	ret = Context_get_id(object, &id);
 	printf("Context> id(%i): %i\n", ret, id);
 
