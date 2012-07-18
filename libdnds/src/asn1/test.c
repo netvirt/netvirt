@@ -290,6 +290,7 @@ void test_SearchResponse_WebCredential()
 	DSMessage_set_operation(msg, dsop_PR_searchResponse);
 
 	SearchResponse_set_result(msg, DNDSResult_success);
+	SearchResponse_set_searchType(msg, SearchType_object);
 
 	DNDSObject_t *objWebCred;
 	DNDSObject_new(&objWebCred);
@@ -1294,13 +1295,14 @@ void test_TerminateRequest()
 
 int main()
 {
-/*
+
 	test_SearchRequest_WebCredential();
 	show_SearchRequest_WebCredential();
 
 	test_SearchResponse_WebCredential();
 	show_SearchResponse_WebCredential();
 
+/*
 	test_SearchRequest_context();
 	show_SearchRequest_context();
 
@@ -1309,10 +1311,10 @@ int main()
 
 	test_AddRequest_context();
 	show_AddRequest_context();
-*/
+
 	test_AddRequest_peer();
 	show_AddRequest_peer();
-/*
+
 	test_PeerConnectInfo();
 	show_PeerConnectInfo();
 
@@ -1365,12 +1367,12 @@ int main()
 
 	test_TerminateRequest();
 */
-
+/*
 	test_SearchRequest();
 	show_SearchRequest();
 
 	test_SearchResponse();
 	show_SearchResponse();
-
+*/
 
 }
