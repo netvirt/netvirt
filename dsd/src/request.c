@@ -12,6 +12,7 @@
 #include <stdlib.h>
 
 #include <dnds/dnds.h>
+#include <dnds/journal.h>
 
 #include "dao.h"
 #include "request.h"
@@ -54,10 +55,8 @@ void authRequest(struct session *session, DNDSMessage_t *req_msg)
 	net_send_msg(session->netc, msg);
 }
 
-void AddRequest_peer(struct session *session, DNDSMessage_t *msg)
+void AddRequest_node(struct session *session, DNDSMessage_t *msg)
 {
-	printf("Add Peer !\n");
-
 	DNDSMessage_printf(msg);
 	DSMessage_printf(msg);
 	AddRequest_printf(msg);
@@ -66,35 +65,32 @@ void AddRequest_peer(struct session *session, DNDSMessage_t *msg)
 	AddRequest_get_object(msg, &obj);
 	DNDSObject_printf(obj);
 
+	int ret;
 	size_t length = 0;
 
-	uint32_t contextId = 0;
-	Peer_get_contextId(obj, &contextId);
+	uint32_t context_id = 0;
+	Peer_get_contextId(obj, &context_id);
 
 	char *description = NULL;
 	Peer_get_description(obj, &description, &length);
 
-	char str_ctxid[10];
-	snprintf(str_ctxid, 10, "%d", contextId);
+	char context_id_str[10];
+	snprintf(context_id_str, 10, "%d", context_id);
 
-	/* DNC certificate */
-
-	pki_init();
+	embassy_t *emb;
+	char *emb_cert_ptr; long size;
+	char *emb_pvkey_ptr;
 
 	int exp_delay;
-	exp_delay = pki_expiration_delay(50);
+	exp_delay = pki_expiration_delay(10);
 
-	char *cert_ptr; long size;
-	char *pvkey_ptr;
+	char *serial = NULL;
 
+	ret = dao_fetch_context_embassy(context_id_str, &emb_cert_ptr, &emb_pvkey_ptr, &serial);
+	printf("dao_fetch_context_embassy: %d\n", ret);
+	printf("serial: %s\n", serial);
 
-
-	// fetch embassy
-	char *certificate, *private_key, *serial;
-	embassy_t *f_emb;
-	dao_fetch_embassy(str_ctxid, &certificate, &private_key, &serial);
-
-	f_emb = pki_embassy_load_from_memory(certificate, private_key, atoi(serial));
+	emb = pki_embassy_load_from_memory(emb_cert_ptr, emb_pvkey_ptr, atoi(serial));
 
 	char *uuid;
 	uuid = uuid_v4();
@@ -103,24 +99,33 @@ void AddRequest_peer(struct session *session, DNDSMessage_t *msg)
 	provcode = uuid_v4();
 
 	char common_name[256];
-	snprintf(common_name, sizeof(common_name), "dnc-%s@%s", uuid, str_ctxid);
-	printf("common_name: %s\n", common_name);
+	snprintf(common_name, sizeof(common_name), "dnc-%s@%s", uuid, context_id_str);
+	jlog(L_DEBUG, "common_name: %s\n", common_name);
 
-	digital_id_t *dnc_id;
-	dnc_id = pki_digital_id(common_name, "CA", "Quebec", "Levis", "info@demo.com", "DNDS");
+	digital_id_t *node_ident;
+	node_ident = pki_digital_id(common_name, "", "", "", "info@dynvpn.com", "DNDS");
 
-	passport_t *dnc_passport;
-	dnc_passport = pki_embassy_deliver_passport(f_emb, dnc_id, exp_delay);
+	passport_t *node_passport;
+	node_passport = pki_embassy_deliver_passport(emb, node_ident, exp_delay);
 
-	pki_write_certificate_in_mem(dnc_passport->certificate, &cert_ptr, &size);
-	pki_write_privatekey_in_mem(dnc_passport->keyring, &pvkey_ptr, &size);
+	char *node_cert_ptr;
+	char *node_pvkey_ptr;
 
-	dao_add_passport_client(str_ctxid, uuid, cert_ptr, pvkey_ptr, provcode);
+	pki_write_certificate_in_mem(node_passport->certificate, &node_cert_ptr, &size);
+	pki_write_privatekey_in_mem(node_passport->keyring, &node_pvkey_ptr, &size);
 
-	dao_update_embassy_issue_serial(str_ctxid, f_emb->serial);
+	ret = dao_add_node(context_id_str, uuid, node_cert_ptr, node_pvkey_ptr, provcode);
+	jlog(L_DEBUG, "dao_add_node: %d\n", ret);
 
-	free(cert_ptr);
-	free(pvkey_ptr);
+	char emb_serial[10];
+	snprintf(emb_serial, sizeof(emb_serial), "%d", emb->serial);
+	printf("emb->serial: %d\n", emb->serial);
+	ret = dao_update_embassy_serial(context_id_str, emb_serial);
+	jlog(L_DEBUG, "dao_update_embassy_serial: %d\n", ret);
+
+	free(node_cert_ptr);
+	free(node_pvkey_ptr);
+
 }
 
 void AddRequest_client(struct session *session, DNDSMessage_t *msg)
@@ -185,43 +190,28 @@ void AddRequest_client(struct session *session, DNDSMessage_t *msg)
 			country,
 			stateProvince,
 			city,
-			postalCode);
-
-
-	char *client_id = NULL;
-	dao_fetch_client_id(&client_id, firstname, lastname, email);
-
-	dao_add_webcredential(client_id, username, password);
+			postalCode,
+			password);
 }
 
 void AddRequest_context(struct session *session, DNDSMessage_t *msg)
 {
-	printf("Add context!\n");
-
-
 	DNDSObject_t *obj;
 	AddRequest_get_object(msg, &obj);
 	DNDSObject_printf(obj);
 
+	int ret;
+
 	size_t length;
 
-	uint32_t clientId;
-	Context_get_clientId(obj, &clientId);
+	uint32_t client_id;
+	Context_get_clientId(obj, &client_id);
+
+	char client_id_str[10];
+	snprintf(client_id_str, 10, "%d", client_id);
 
 	char *description = NULL;
 	Context_get_description(obj, &description, &length);
-
-	printf("description: %s\n", description);
-
-	char str_id[10];
-	snprintf(str_id, 10, "%d", clientId);
-
-	printf("str_id: %s\n", str_id);
-
-	dao_add_context(str_id, 1, description);
-
-	char *context_id = NULL;
-	dao_fetch_context_id(&context_id, str_id, description);
 
 	char network[INET_ADDRSTRLEN];
 	Context_get_network(obj, network);
@@ -229,57 +219,60 @@ void AddRequest_context(struct session *session, DNDSMessage_t *msg)
 	char netmask[INET_ADDRSTRLEN];
 	Context_get_netmask(obj, netmask);
 
-	printf("network || netmask: %s || %s \n", network, netmask);
-
-	/* XXX the network/netmask we receive is buggy..
-	 * DSC python code has a problem...
-	 * use default values for now
-	 */
-	dao_add_subnet(context_id, "44.128.0.0", "255.255.0.0");
-
-	/* DSD certificate */
-
 	pki_init();
 
+	/* 3.1- Initialise embassy */
 	int exp_delay;
-	exp_delay = pki_expiration_delay(50);
+	exp_delay = pki_expiration_delay(10);
 
-	digital_id_t *dsd_id;
-
-	dsd_id = pki_digital_id("embassy", "CA", "Quebec", "Levis", "info@demo.com", "DNDS");
+	digital_id_t *embassy_id;
+	embassy_id = pki_digital_id("embassy", "CA", "Quebec", "Levis", "info@dynvpn.com", "DNDS");
 
 	embassy_t *emb;
-	emb = pki_embassy_new(dsd_id, exp_delay);
+	emb = pki_embassy_new(embassy_id, exp_delay);
 
-	char *cert_ptr; long size;
-	char *pvkey_ptr;
+	char *emb_cert_ptr; long size;
+	char *emb_pvkey_ptr;
 
-	pki_write_certificate_in_mem(emb->certificate, &cert_ptr, &size);
-	pki_write_privatekey_in_mem(emb->keyring, &pvkey_ptr, &size);
+	pki_write_certificate_in_mem(emb->certificate, &emb_cert_ptr, &size);
+	pki_write_privatekey_in_mem(emb->keyring, &emb_pvkey_ptr, &size);
 
-	dao_add_embassy(context_id, cert_ptr, pvkey_ptr);
+	/* 3.2- Initialise server passport */
 
-	free(cert_ptr);
-	free(pvkey_ptr);
-
-	/* DND certificate */
-
-	digital_id_t *dnd_id;
-	dnd_id = pki_digital_id("dnd", "CA", "Quebec", "Levis", "info@demo.com", "DNDS");
+	digital_id_t *server_id;
+	server_id = pki_digital_id("dnd", "CA", "Quebec", "Levis", "info@dynvpn.com", "DNDS");
 
 	passport_t *dnd_passport;
-	dnd_passport = pki_embassy_deliver_passport(emb, dnd_id, exp_delay);
+	dnd_passport = pki_embassy_deliver_passport(emb, server_id, exp_delay);
 
-	pki_write_certificate_in_mem(dnd_passport->certificate, &cert_ptr, &size);
-	pki_write_privatekey_in_mem(dnd_passport->keyring, &pvkey_ptr, &size);
+	char *serv_cert_ptr;
+	char *serv_pvkey_ptr;
 
-	char common_name[20];
-	snprintf(common_name, 20, "dnd@%s", context_id);
+	pki_write_certificate_in_mem(dnd_passport->certificate, &serv_cert_ptr, &size);
+	pki_write_privatekey_in_mem(dnd_passport->keyring, &serv_pvkey_ptr, &size);
 
-	dao_add_passport_server(context_id, common_name, cert_ptr, pvkey_ptr);
+	char emb_serial[10];
+	snprintf(emb_serial, sizeof(emb_serial), "%d", emb->serial);
 
-	free(cert_ptr);
-	free(pvkey_ptr);
+	ret = dao_add_context(client_id_str,
+				description,
+				"1",
+				"44.128.0.0/16",
+				emb_cert_ptr,
+				emb_pvkey_ptr,
+				emb_serial,
+				serv_cert_ptr,
+				serv_pvkey_ptr);
+
+	printf("emb->serial: %d\n", emb->serial);
+	printf("dao_add_context: %d\n", ret);
+
+	free(serv_cert_ptr);
+	free(serv_pvkey_ptr);
+
+	free(emb_cert_ptr);
+	free(emb_pvkey_ptr);
+
 }
 
 void addRequest(struct session *session, DNDSMessage_t *msg)
@@ -297,7 +290,7 @@ void addRequest(struct session *session, DNDSMessage_t *msg)
 	}
 
 	if (objType == DNDSObject_PR_peer) {
-		AddRequest_peer(session, msg);
+		AddRequest_node(session, msg);
 	}
 }
 
@@ -421,6 +414,7 @@ void searchRequest_webcredential(struct session *session, DNDSMessage_t *req_msg
 	SearchRequest_get_object(req_msg, &object);
 	DNDSObject_printf(object);
 
+
         size_t length;
 
 	char *id = NULL;
@@ -433,7 +427,9 @@ void searchRequest_webcredential(struct session *session, DNDSMessage_t *req_msg
         WebCredential_get_password(object, &password, &length);
         printf("WebCredential> password: %s\n", password);
 
-	dao_fetch_webcredential_client_id(&id, username, password);
+	dao_fetch_client_id(&id, username, password);
+
+	printf("id: %s\n", id);
 
 
         DNDSMessage_t *msg;
@@ -446,7 +442,7 @@ void searchRequest_webcredential(struct session *session, DNDSMessage_t *req_msg
         DSMessage_set_ackNumber(msg, 1);
         DSMessage_set_operation(msg, dsop_PR_searchResponse);
 
-	SearchResponse_set_searchType(msg, SearchType_all);
+	SearchResponse_set_searchType(msg, SearchType_object);
         SearchResponse_set_result(msg, DNDSResult_success);
 
         DNDSObject_t *objWebCred;
@@ -454,7 +450,6 @@ void searchRequest_webcredential(struct session *session, DNDSMessage_t *req_msg
         DNDSObject_set_objectType(objWebCred, DNDSObject_PR_webcredential);
 
         WebCredential_set_clientId(objWebCred, atoi(id));
-
         SearchResponse_add_object(msg, objWebCred);
 
 	net_send_msg(session->netc, msg);
