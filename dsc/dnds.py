@@ -112,8 +112,9 @@ class DNDSResult(univ.Enumerated):
 
 class SearchResponse(univ.Sequence):
     componentType = namedtype.NamedTypes(
-        namedtype.NamedType('result', DNDSResult().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 0))),
-        namedtype.NamedType('objects', objects().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 1)))
+        namedtype.NamedType('searchtype', SearchType().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0))),
+        namedtype.NamedType('result', DNDSResult().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 1))),
+        namedtype.NamedType('objects', objects().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 2)))
         )
 
 class DNDSResult(univ.Enumerated):
