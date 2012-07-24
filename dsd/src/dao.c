@@ -51,7 +51,7 @@ int dao_connect(char *host, char *username, char *password, char *dbname)
 	dbconn = PQconnectdb(conn_str);
 
 	if (PQstatus(dbconn) != CONNECTION_OK) {
-		jlog(LOG_ERROR, "dsd]> Connection to database failed: %s", PQerrorMessage(dbconn));
+		jlog(L_ERROR, "dsd]> Connection to database failed: %s", PQerrorMessage(dbconn));
 		PQfinish(dbconn);
 		return -1;
 	} else {

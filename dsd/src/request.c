@@ -57,6 +57,7 @@ void authRequest(struct session *session, DNDSMessage_t *req_msg)
 
 void AddRequest_node(struct session *session, DNDSMessage_t *msg)
 {
+	jlog(L_NOTICE, "AddRequest_node!");
 	DNDSMessage_printf(msg);
 	DSMessage_printf(msg);
 	AddRequest_printf(msg);
