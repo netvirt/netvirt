@@ -23,8 +23,10 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <net/if_arp.h>
+#include <net/if_dl.h>
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
+#include <ifaddrs.h>
 
 #include "inet.h"
 #include "journal.h"
@@ -37,6 +39,7 @@
  */
 
 #define CMD_LINUX_GET_LOCAL_IP "/sbin/ifconfig `ip route show | grep default | awk '{print $5}'` | grep 'inet addr' | cut -d: -f2 | awk '{print $1}'"
+#define CMD_OBSD_GET_LOCAL_IP "ifconfig `route -n show | grep default | awk '{print $8}'` | grep -w 'inet' | awk '{print $2}'"
 
 const uint8_t mac_addr_broadcast[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 const uint8_t mac_addr_multicast[6] = { 0x01, 0x00, 0x5e, 0x0, 0x0, 0x0 };
@@ -144,7 +147,12 @@ int inet_get_local_ip(char *ip, size_t ip_len)
 	FILE *process = NULL;
 	char local_ip[17]; // max_size (15 + \n + \0)
 
+#if defined(LINUX)
 	process = popen(CMD_LINUX_GET_LOCAL_IP, "r");
+#endif
+#if defined (OPENBSD)
+	process = popen(CMD_OBSD_GET_LOCAL_IP, "r");
+#endif
 
 	if (process == NULL) {
 		// Unable to open the process
@@ -172,6 +180,7 @@ int inet_get_local_ip(char *ip, size_t ip_len)
  */
 int inet_get_iface_mac_address(char *iface_name, uint8_t *mac_address)
 {
+#if defined(LINUX)
 	int fd;
 	struct ifreq ifr;
 
@@ -191,6 +200,37 @@ int inet_get_iface_mac_address(char *iface_name, uint8_t *mac_address)
 	mac_address[5] = ifr.ifr_hwaddr.sa_data[5];
 
 	return 0;
+#endif
+#if defined(OPENBSD)
+
+        struct sockaddr_dl *lladdr;
+        struct ifaddrs *ifap, *if_itr;
+
+        getifaddrs(&ifap);
+
+        for (if_itr = ifap; if_itr != NULL; if_itr = if_itr->ifa_next) {
+                if (!strcmp(iface_name, if_itr->ifa_name)) {
+                        if (if_itr->ifa_addr->sa_family == AF_LINK) {
+                                lladdr = (struct sockaddr_dl *)if_itr->ifa_addr;
+
+                                mac_address[0] = lladdr->sdl_data[0 + lladdr->sdl_nlen];
+                                mac_address[1] = lladdr->sdl_data[1 + lladdr->sdl_nlen];
+                                mac_address[2] = lladdr->sdl_data[2 + lladdr->sdl_nlen];
+                                mac_address[3] = lladdr->sdl_data[3 + lladdr->sdl_nlen];
+                                mac_address[4] = lladdr->sdl_data[4 + lladdr->sdl_nlen];
+                                mac_address[5] = lladdr->sdl_data[5 + lladdr->sdl_nlen];
+
+                                freeifaddrs(ifap);
+                                return 0;
+                        }
+                }
+        }
+
+        freeifaddrs(ifap);
+        return -1
+
+#endif
+
 }
 
 void inet_print_ether_type(void *data)
