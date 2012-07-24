@@ -23,10 +23,14 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <net/if_arp.h>
-#include <net/if_dl.h>
+#if defined(OPENBSD)
+# include <net/if_dl.h>
+#endif
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
+#if defined(OPENBSD)
 #include <ifaddrs.h>
+#endif
 
 #include "inet.h"
 #include "journal.h"
@@ -38,8 +42,11 @@
  * using DNDS frame instead of peer buffer
  */
 
-#define CMD_LINUX_GET_LOCAL_IP "/sbin/ifconfig `ip route show | grep default | awk '{print $5}'` | grep 'inet addr' | cut -d: -f2 | awk '{print $1}'"
-#define CMD_OBSD_GET_LOCAL_IP "ifconfig `route -n show | grep default | awk '{print $8}'` | grep -w 'inet' | awk '{print $2}'"
+#if defined(OPENBSD)
+# define CMD_GET_LOCAL_IP "ifconfig `route -n show | grep default | awk '{print $8}'` | grep -w 'inet' | awk '{print $2}'"
+#else
+# define CMD_GET_LOCAL_IP "/sbin/ifconfig `ip route show | grep default | awk '{print $5}'` | grep 'inet addr' | cut -d: -f2 | awk '{print $1}'"
+#endif
 
 const uint8_t mac_addr_broadcast[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 const uint8_t mac_addr_multicast[6] = { 0x01, 0x00, 0x5e, 0x0, 0x0, 0x0 };
@@ -147,12 +154,7 @@ int inet_get_local_ip(char *ip, size_t ip_len)
 	FILE *process = NULL;
 	char local_ip[17]; // max_size (15 + \n + \0)
 
-#if defined(LINUX)
-	process = popen(CMD_LINUX_GET_LOCAL_IP, "r");
-#endif
-#if defined (OPENBSD)
-	process = popen(CMD_OBSD_GET_LOCAL_IP, "r");
-#endif
+	process = popen(CMD_GET_LOCAL_IP, "r");
 
 	if (process == NULL) {
 		// Unable to open the process
