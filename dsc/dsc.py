@@ -38,12 +38,11 @@ dsop = dsm.setComponentByName('dsop').getComponentByName('dsop')
 obj = dsop.setComponentByName('addRequest').getComponentByName('addRequest')
 client = obj.setComponentByName('client').getComponentByName('client')
 
-client.setComponentByName('id', '0')
-client.setComponentByName('username', 'test-username')
-client.setComponentByName('password', 'test-password')
+#client.setComponentByName('id', '0')
 client.setComponentByName('firstname', 'test-firstname')
 client.setComponentByName('lastname', 'test-lastname')
 client.setComponentByName('email', 'test-email')
+client.setComponentByName('password', 'test-password')
 client.setComponentByName('company', 'test-company')
 client.setComponentByName('phone', 'test-phone')
 client.setComponentByName('country', 'test-country')
@@ -71,11 +70,10 @@ req = dsop.setComponentByName('searchRequest').getComponentByName('searchRequest
 req.setComponentByName('searchtype', 'object')
 
 obj = req.setComponentByName('object').getComponentByName('object')
-webcred = obj.setComponentByName('webcredential').getComponentByName('webcredential')
+client = obj.setComponentByName('client').getComponentByName('client')
 
-webcred.setComponentByName('clientId', '0')
-webcred.setComponentByName('username', 'test-username')
-webcred.setComponentByName('password', 'test-password')
+client.setComponentByName('email', 'test-email')
+client.setComponentByName('password', 'test-password')
 
 print(msg.prettyPrint())
 print ssl_sock.write(encoder.encode(msg))
@@ -94,8 +92,8 @@ recv_objs = recv_req.getComponentByName('objects')
 
 for idx in range(len(recv_objs)):
     recv_obj =  recv_objs.getComponentByPosition(idx)
-    recv_web = recv_obj.getComponentByName('webcredential')
-    recv_clientId = recv_web.getComponentByName('clientId')
+    recv_client = recv_obj.getComponentByName('client')
+    recv_clientId = recv_client.getComponentByName('id')
     print "the client id is " + str(recv_clientId)
 
 time.sleep(2)
@@ -139,10 +137,10 @@ dsm.setComponentByName('ackNumber', '1')
 dsop = dsm.setComponentByName('dsop').getComponentByName('dsop')
 
 obj = dsop.setComponentByName('addRequest').getComponentByName('addRequest')
-peer = obj.setComponentByName('peer').getComponentByName('peer')
+node = obj.setComponentByName('node').getComponentByName('node')
 
-peer.setComponentByName('contextId', '75')
-peer.setComponentByName('description', 'VoIP network - business')
+node.setComponentByName('contextId', '133')
+node.setComponentByName('description', 'VoIP network - business')
 
 
 print(msg.prettyPrint())
