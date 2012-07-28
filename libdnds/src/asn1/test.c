@@ -120,12 +120,11 @@ void test_AddRequest()
 
 	AddRequest_set_objectType(msg, DNDSObject_PR_client, &objClient);
 
-	Client_set_id(objClient, 1);
-	Client_set_username(objClient, "username", 8);
-	Client_set_password(objClient, "password", 8);
+	Client_set_id(objClient, 987);
 	Client_set_firstname(objClient, "firstname", 9);
 	Client_set_lastname(objClient, "lastname", 8);
 	Client_set_email(objClient, "mail@example.com", 15);
+	Client_set_password(objClient, "password", 8);
 	Client_set_company(objClient, "mycompany", 9);
 	Client_set_phone(objClient, "thephone", 8);
 	Client_set_country(objClient, "mycountry", 9);
@@ -251,120 +250,7 @@ void test_SearchResponse_context()
 
 }
 
-void show_SearchResponse_WebCredential()
-{
-	DNDSMessage_t *msg;
-
-	msg = decode();
-	DNDSMessage_printf(msg);
-	DSMessage_printf(msg);
-	SearchResponse_printf(msg);
-
-	DNDSObject_t *obj = NULL;
-	uint32_t count; int ret;
-
-	SearchResponse_get_object_count(msg, &count);
-
-	while (count-- > 0) {
-
-		ret = SearchResponse_get_object(msg, &obj);
-		if (ret == DNDS_success && obj != NULL) {
-			DNDSObject_printf(obj);
-		}
-	}
-
-}
-
-void test_SearchResponse_WebCredential()
-{
-	/// Building a SearchResponse
-
-	DNDSMessage_t *msg;	// A DNDS Message
-
-	DNDSMessage_new(&msg);
-	DNDSMessage_set_channel(msg, 0);
-	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
-
-	DSMessage_set_seqNumber(msg, 0);
-	DSMessage_set_ackNumber(msg, 400);
-	DSMessage_set_operation(msg, dsop_PR_searchResponse);
-
-	SearchResponse_set_result(msg, DNDSResult_success);
-	SearchResponse_set_searchType(msg, SearchType_object);
-
-	DNDSObject_t *objWebCred;
-	DNDSObject_new(&objWebCred);
-	DNDSObject_set_objectType(objWebCred, DNDSObject_PR_webcredential);
-
-	WebCredential_set_clientId(objWebCred, 1060);
-	WebCredential_set_username(objWebCred, "test-username", 13);
-
-	SearchResponse_add_object(msg, objWebCred);
-
-	/// Encoding part
-
-	asn_enc_rval_t ec;	// Encoder return value
-	FILE *fp = fopen("dnds.ber", "wb"); // BER output
-	ec = der_encode(&asn_DEF_DNDSMessage, msg, write_out, fp);
-	fclose(fp);
-
-	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
-
-	DNDSMessage_del(msg);
-}
-
-void show_SearchRequest_WebCredential()
-{
-	DNDSMessage_t *msg;
-
-	msg = decode();
-	DNDSMessage_printf(msg);
-	DSMessage_printf(msg);
-	SearchRequest_printf(msg);
-
-//	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
-}
-
-void test_SearchRequest_WebCredential()
-{
-	/// Building a SearchRequest WebCredential ///
-	int ret;
-
-	DNDSMessage_t *msg;	// a DNDS Message
-
-	DNDSMessage_new(&msg);
-	DNDSMessage_set_channel(msg, 0);
-	DNDSMessage_set_pdu(msg, pdu_PR_dsm);	// Directory Service Message
-
-	DSMessage_set_seqNumber(msg, 800);
-	DSMessage_set_ackNumber(msg, 0);
-	DSMessage_set_operation(msg, dsop_PR_searchRequest);
-
-	SearchRequest_set_searchType(msg, SearchType_object);
-
-	DNDSObject_t *objWebCred;
-	DNDSObject_new(&objWebCred);
-	DNDSObject_set_objectType(objWebCred, DNDSObject_PR_webcredential);
-
-	WebCredential_set_clientId(objWebCred, 1024);
-	WebCredential_set_username(objWebCred, "test-username", 13);
-	WebCredential_set_password(objWebCred, "test-password", 13);
-
-	SearchRequest_set_object(msg, objWebCred);
-
-	/// Encoding part
-
-	asn_enc_rval_t ec;	// Encoder return value
-	FILE *fp = fopen("dnds.ber", "wb"); // BER output
-	ec = der_encode(&asn_DEF_DNDSMessage, msg, write_out, fp);
-	fclose(fp);
-
-	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
-
-	DNDSMessage_del(msg);
-}
-
-show_AddRequest_peer()
+show_AddRequest_node()
 {
 	DNDSMessage_t *msg;
 
@@ -380,9 +266,9 @@ show_AddRequest_peer()
 	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
 }
 
-test_AddRequest_peer()
+test_AddRequest_node()
 {
-	/// Building peer AddRequest ///
+	/// Building node AddRequest ///
 
 	DNDSMessage_t *msg;
 	DNDSObject_t *obj;
@@ -395,10 +281,10 @@ test_AddRequest_peer()
 	DSMessage_set_ackNumber(msg, 0);
 	DSMessage_set_operation(msg, dsop_PR_addRequest);
 
-	AddRequest_set_objectType(msg, DNDSObject_PR_peer, &obj);
+	AddRequest_set_objectType(msg, DNDSObject_PR_node, &obj);
 
-	Peer_set_contextId(obj, 100);
-	Peer_set_description(obj, "voip node 1", 11);
+	Node_set_contextId(obj, 100);
+	Node_set_description(obj, "voip node 1", 11);
 
 	/// Encoding part
 
@@ -504,19 +390,19 @@ void test_SearchRequest_context()
 
 }
 
-void show_PeerConnectInfo()
+void show_NodeConnectInfo()
 {
 	DNDSMessage_t *msg;
 
 	msg = decode();
 	DNDSMessage_printf(msg);
 	DSMessage_printf(msg);
-	PeerConnectInfo_printf(msg);
+	NodeConnectInfo_printf(msg);
 }
 
-void test_PeerConnectInfo()
+void test_NodeConnectInfo()
 {
-	/// Building a PeerConnectInfo ///
+	/// Building a NodeConnectInfo ///
 	int ret;
 
 	DNDSMessage_t *msg;
@@ -527,11 +413,11 @@ void test_PeerConnectInfo()
 
 	DSMessage_set_seqNumber(msg, 800);
 	DSMessage_set_ackNumber(msg, 0);
-	DSMessage_set_operation(msg, dsop_PR_peerConnectInfo);
+	DSMessage_set_operation(msg, dsop_PR_nodeConnectInfo);
 
-	PeerConnectInfo_set_certName(msg, "unique_name@context", 19);
-	PeerConnectInfo_set_ipAddr(msg, "44.128.0.1");
-	PeerConnectInfo_set_state(msg, ConnectState_connected);
+	NodeConnectInfo_set_certName(msg, "unique_name@context", 19);
+	NodeConnectInfo_set_ipAddr(msg, "44.128.0.1");
+	NodeConnectInfo_set_state(msg, ConnectState_connected);
 
 	/// Encoding part
 
@@ -728,7 +614,7 @@ void test_AuthRequest()
 
 	DSMessage_set_seqNumber(msg, 100);
 	DSMessage_set_ackNumber(msg, 0);
-	DSMessage_set_operation(msg, dsop_PR_authRequest);
+	DSMessage_set_operation(msg, dnop_PR_authRequest);
 
 	AuthRequest_set_certName(msg, "nib@1", 5);
 
@@ -766,7 +652,7 @@ void test_AuthResponse()
 
 	DSMessage_set_seqNumber(msg, 0);
 	DSMessage_set_ackNumber(msg, 100);
-	DSMessage_set_operation(msg, dsop_PR_authResponse);
+	DSMessage_set_operation(msg, dnop_PR_authResponse);
 
 	AuthResponse_set_result(msg, DNDSResult_success);
 
@@ -798,6 +684,7 @@ void show_DelRequest()
 
 void test_DelRequest()
 {
+#if 0
 	/// Building a DelRequest ///
 
 	DNDSMessage_t *msg;	// a DNDS Message
@@ -827,6 +714,7 @@ void test_DelRequest()
 	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
 
 	DNDSMessage_del(msg);
+#endif
 }
 
 void show_DelResponse()
@@ -883,6 +771,7 @@ void show_ModifyRequest()
 
 void test_ModifyRequest()
 {
+#if 0
 	/// Building a ModifyRequest ///
 
 	DNDSMessage_t *msg;		// a DNDS Message
@@ -913,6 +802,7 @@ void test_ModifyRequest()
 	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
 
 	DNDSMessage_del(msg);
+#endif
 }
 
 void show_ModifyResponse()
@@ -1050,6 +940,7 @@ void show_SearchRequest()
 
 void test_SearchRequest()
 {
+#if 0
 	/// Building a SearchRequest()
 
 	DNDSMessage_t *msg;	// a DNDS Message
@@ -1083,6 +974,7 @@ void test_SearchRequest()
 	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
 
 	DNDSMessage_del(msg);
+#endif
 }
 
 void show_SearchResponse()
@@ -1124,102 +1016,25 @@ void test_SearchResponse()
 
 	SearchResponse_set_result(msg, DNDSResult_success);
 
-/// objAcl
-	DNDSObject_t *objAcl;
-	DNDSObject_new(&objAcl);
-	DNDSObject_set_objectType(objAcl, DNDSObject_PR_acl);
-
-	Acl_set_id(objAcl, 3);
-	Acl_set_contextId(objAcl, 10);
-	Acl_set_description(objAcl, "desc", 4);
-
-	SearchResponse_add_object(msg, objAcl);
-
-/// objAclGroup
-	DNDSObject_t *objAclGroup;
-	DNDSObject_new(&objAclGroup);
-	DNDSObject_set_objectType(objAclGroup, DNDSObject_PR_aclgroup);
-
-	AclGroup_set_id(objAclGroup, 5);
-	AclGroup_set_contextId(objAclGroup, 10);
-	AclGroup_set_name(objAclGroup, "nico", 4);
-	AclGroup_set_description(objAclGroup, "desc", 4);
-
-	SearchResponse_add_object(msg, objAclGroup);
-
-/// objIpPool
-	DNDSObject_t *objIpPool;
-	DNDSObject_new(&objIpPool);
-	DNDSObject_set_objectType(objIpPool, DNDSObject_PR_ippool);
-
-	IpPool_set_id(objIpPool, 3);
-	IpPool_set_ipLocal(objIpPool, "192.168.0.1");
-	IpPool_set_ipBegin(objIpPool, "192.168.0.2");
-	IpPool_set_ipEnd(objIpPool, "192.168.0.10");
-	IpPool_set_netmask(objIpPool, "255.255.255.255");
-
-	SearchResponse_add_object(msg, objIpPool);
-
 /// objContext
 	DNDSObject_t *objContext;
 	DNDSObject_new(&objContext);
 	DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
 
 	Context_set_id(objContext, 40);
-	/*
-	Context_set_ippoolId(objContext, 20);
-	Context_set_dnsZone(objContext, "dnsZone", 7);
-	Context_set_dnsSerial(objContext, 666);
-	Context_set_vhost(objContext, "vhost", 5);
-	Context_set_certificate(objContext, "certificate", 11);
-	Context_set_certificateKey(objContext, "key", 3);
-	Context_set_description(objContext, "desc", 4);
-	*/
-
 	SearchResponse_add_object(msg, objContext);
 
-/// objHost
-	DNDSObject_t *objHost;
-	DNDSObject_new(&objHost);
-	DNDSObject_set_objectType(objHost, DNDSObject_PR_host);
-
-	uint8_t macAddress[ETH_ALEN] = { 0xa, 0xb, 0xc, 0xa, 0xb, 0xc };
-
-	Host_set_id(objHost, 33);
-	Host_set_contextId(objHost, 10);
-	Host_set_peerId(objHost, 11);
-	Host_set_name(objHost, "hostname", 8);
-	Host_set_macAddress(objHost, macAddress);
-	Host_set_ipAddress(objHost, "66.43.24.12");
-	Host_set_status(objHost, 1);
-
-	SearchResponse_add_object(msg, objHost);
-
-/// objNode
+/// Node
 	DNDSObject_t *objNode;
 	DNDSObject_new(&objNode);
 	DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
 
-	Node_set_id(objNode, 3);
-	Node_set_name(objNode, "node-name", 9);
-	Node_set_ipAddress(objNode, "192.168.10.2");
+	Node_set_contextId(objNode, 10);
 	Node_set_certificate(objNode, "certificate", 11);
 	Node_set_certificateKey(objNode, "key", 3);
-	Node_set_status(objNode, 0);
+	Node_set_status(objNode, 2);
 
 	SearchResponse_add_object(msg, objNode);
-
-/// Peer
-	DNDSObject_t *objPeer;
-	DNDSObject_new(&objPeer);
-	DNDSObject_set_objectType(objPeer, DNDSObject_PR_peer);
-
-	Peer_set_contextId(objPeer, 10);
-	Peer_set_certificate(objPeer, "certificate", 11);
-	Peer_set_certificateKey(objPeer, "key", 3);
-	Peer_set_status(objPeer, 2);
-
-	SearchResponse_add_object(msg, objPeer);
 /*
 /// User1
 	DNDSObject_t *objUser1;	// A User Object
@@ -1296,12 +1111,6 @@ void test_TerminateRequest()
 int main()
 {
 
-	test_SearchRequest_WebCredential();
-	show_SearchRequest_WebCredential();
-
-	test_SearchResponse_WebCredential();
-	show_SearchResponse_WebCredential();
-
 /*
 	test_SearchRequest_context();
 	show_SearchRequest_context();
@@ -1312,23 +1121,23 @@ int main()
 	test_AddRequest_context();
 	show_AddRequest_context();
 
-	test_AddRequest_peer();
-	show_AddRequest_peer();
+	test_AddRequest_node();
+	show_AddRequest_node();
 
-	test_PeerConnectInfo();
-	show_PeerConnectInfo();
+	test_NodeConnectInfo();
+	show_NodeConnectInfo();
 
 
 	test_DNDS_ethernet();
 	show_DNDS_ethernet();
 
-
+*/
 	test_AddRequest();
 	show_AddRequest();
 
-	test_AddResponse();
-	show_AddResponse();
-
+	//test_AddResponse();
+	//show_AddResponse();
+/*
 	test_P2pRequest_dnm();
 	show_P2pRequest_dnm();
 
