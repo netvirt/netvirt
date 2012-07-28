@@ -645,7 +645,7 @@ int dao_fetch_embassy(char *context_id,
 	}
 }
 
-int dao_fetch_peer_from_provcode(char *provcode,
+int dao_fetch_node_from_provcode(char *provcode,
 					char **certificate,
 					char **private_key,
 					char **trustedcert)

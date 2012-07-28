@@ -58,12 +58,8 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 
 	switch (operation) {
 
-		case dsop_PR_peerConnectInfo:
-			peerConnectInfo(session, msg);
-			break;
-
-		case dsop_PR_authRequest:
-			authRequest(session, msg);
+		case dsop_PR_nodeConnectInfo:
+			nodeConnectInfo(session, msg);
 			break;
 
 		case dsop_PR_addRequest:
