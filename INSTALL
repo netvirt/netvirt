@@ -81,3 +81,8 @@
 	 $ ./configure
 	 $ make
 	 $ sudo make install
+
+
+ PG crypto
+ ---------------
+ postgresql extension pgcrypto is need
