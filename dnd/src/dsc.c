@@ -45,14 +45,14 @@ int transmit_provisioning(struct session *session, char *provCode, uint32_t leng
 
 	SearchRequest_set_searchType(msg, SearchType_object);
 
-	DNDSObject_t *objPeer;
-	DNDSObject_new(&objPeer);
-	DNDSObject_set_objectType(objPeer, DNDSObject_PR_peer);
+	DNDSObject_t *objNode;
+	DNDSObject_new(&objNode);
+	DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
 
-	Peer_set_contextId(objPeer, 0);
-	Peer_set_provCode(objPeer, provCode, length);
+	Node_set_contextId(objNode, 0);
+	Node_set_provCode(objNode, provCode, length);
 
-	SearchRequest_set_object(msg, objPeer);
+	SearchRequest_set_object(msg, objNode);
 
 	net_send_msg(dsc_netc, msg);
 
@@ -60,7 +60,7 @@ int transmit_provisioning(struct session *session, char *provCode, uint32_t leng
 	tracking_id++;
 }
 
-int transmit_peerconnectinfo(e_ConnectState state, char *ipAddress, char *certName)
+int transmit_node_connectinfo(e_ConnectState state, char *ipAddress, char *certName)
 {
 	DNDSMessage_t *msg;
 
@@ -70,11 +70,11 @@ int transmit_peerconnectinfo(e_ConnectState state, char *ipAddress, char *certNa
 
         DSMessage_set_seqNumber(msg, 0);
         DSMessage_set_ackNumber(msg, 0);
-        DSMessage_set_operation(msg, dsop_PR_peerConnectInfo);
+        DSMessage_set_operation(msg, dsop_PR_nodeConnectInfo);
 
-        PeerConnectInfo_set_certName(msg, certName, strlen(certName));
-        PeerConnectInfo_set_ipAddr(msg, ipAddress);
-        PeerConnectInfo_set_state(msg, state);
+        NodeConnectInfo_set_certName(msg, certName, strlen(certName));
+        NodeConnectInfo_set_ipAddr(msg, ipAddress);
+        NodeConnectInfo_set_state(msg, state);
 
 	net_send_msg(dsc_netc, msg);
 
@@ -101,7 +101,7 @@ static void on_secure(netc_t *netc)
 	net_send_msg(netc, msg);
 }
 
-static void handle_SearchResponse_Peer(netc_t *netc, DNDSMessage_t *msg)
+static void handle_SearchResponse_Node(netc_t *netc, DNDSMessage_t *msg)
 {
 	struct session *session;
 	uint32_t tracked_id;
@@ -125,15 +125,15 @@ static void handle_SearchResponse_Peer(netc_t *netc, DNDSMessage_t *msg)
 	ret = SearchResponse_get_object(msg, &object);
 	if (ret == DNDS_success && object != NULL) {
 
-		Peer_get_certificate(object, &certificate, &length);
+		Node_get_certificate(object, &certificate, &length);
 		ProvResponse_set_certificate(new_msg, certificate, length);
 		//printf("cert: %s\n", certificate);
 
-		Peer_get_certificateKey(object, &certificateKey, &length);
+		Node_get_certificateKey(object, &certificateKey, &length);
 		ProvResponse_set_certificateKey(new_msg, certificateKey, length);
 		//printf("certKey: %s\n", certificateKey);
 
-		Peer_get_trustedCert(object, &trustedCert, &length);
+		Node_get_trustedCert(object, &trustedCert, &length);
 		ProvResponse_set_trustedCert(new_msg, trustedCert, length);
 		//printf("trustedcert: %s\n", trustedCert);
 	}
@@ -194,7 +194,7 @@ static void handle_SearchResponse(netc_t *netc, DNDSMessage_t *msg)
 	}
 
 	if (SearchType == SearchType_object) {
-		handle_SearchResponse_Peer(netc, msg);
+		handle_SearchResponse_Node(netc, msg);
 	}
 }
 

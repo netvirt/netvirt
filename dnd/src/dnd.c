@@ -141,7 +141,7 @@ void transmit_netinfo_response(netc_t *netc)
 
 	net_send_msg(session->netc, msg);
 
-	transmit_peerconnectinfo(ConnectState_connected,
+	transmit_node_connectinfo(ConnectState_connected,
 				session->ip, session->cert_name);
 }
 
@@ -297,7 +297,7 @@ static void on_disconnect(netc_t *netc)
 		ippool_release_ip(session->context->ippool, session->ip);
 	}
 
-	transmit_peerconnectinfo(ConnectState_disconnected,
+	transmit_node_connectinfo(ConnectState_disconnected,
 				session->ip, session->cert_name);
 
 	session_free(session);
