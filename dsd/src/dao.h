@@ -21,4 +21,5 @@ int dao_fetch_context(char **id,
 			char **serverCert,
 			char **serverPrivkey,
 			char **trustedCert);
+char *uuid_v4(void);
 #endif

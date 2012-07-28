@@ -539,7 +539,7 @@ int dao_fetch_context_embassy(char *context_id,
 	}
 
 
-	int tuples, fields;
+	int tuples, fields, i;
 	tuples = PQntuples(result);
 	fields = PQnfields(result);
 
@@ -547,15 +547,19 @@ int dao_fetch_context_embassy(char *context_id,
 		*certificate = strdup(PQgetvalue(result, 0, 0));
 		*privatekey = strdup(PQgetvalue(result, 0, 1));
 		*serial = strdup(PQgetvalue(result, 0, 2));
+
+		jlog(L_DEBUG, "Tuples %d\n", tuples);
+		jlog(L_DEBUG, "Fields %d\n", fields);
+
+		for (i = 0; i<fields; i++) {
+			jlog(L_DEBUG, "%s | %s\n", PQfname(result, i), PQgetvalue(result, 0, i));
+		}
+
+	} else {
+		return -1;
 	}
 
-	jlog(L_DEBUG, "Tuples %d\n", tuples);
-	jlog(L_DEBUG, "Fields %d\n", fields);
-
-	int i;
-	for (i = 0; i<fields; i++) {
-		jlog(L_DEBUG, "%s | %s\n", PQfname(result, i), PQgetvalue(result, 0, i));
-	}
+	return 0;
 }
 
 int dao_update_embassy_serial(char *context_id, char *serial)

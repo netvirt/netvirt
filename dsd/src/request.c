@@ -35,7 +35,7 @@ void authRequest(struct session *session, DNDSMessage_t *req_msg)
 	// XXX validate the certName
 	// fetch the appropriate certificate
 	// step_up the security
-	printf("certName: %s\n", certName);
+	jlog(L_DEBUG, "certName: %s\n", certName);
 
 	// XXX mark the session as authenticated
 	session->status = SESSION_STATUS_AUTHED;
@@ -66,72 +66,87 @@ void AddRequest_node(struct session *session, DNDSMessage_t *msg)
 	AddRequest_get_object(msg, &obj);
 	DNDSObject_printf(obj);
 
-	int ret;
+	int ret = 0;
 	size_t length = 0;
 
 	uint32_t context_id = 0;
-	Peer_get_contextId(obj, &context_id);
-
+	char context_id_str[10] = {0};
 	char *description = NULL;
-	Peer_get_description(obj, &description, &length);
-
-	char context_id_str[10];
-	snprintf(context_id_str, 10, "%d", context_id);
-
-	embassy_t *emb;
-	char *emb_cert_ptr; long size;
-	char *emb_pvkey_ptr;
 
 	int exp_delay;
-	exp_delay = pki_expiration_delay(10);
-
+	embassy_t *emb = NULL;
+	char *emb_cert_ptr = NULL;
+	char *emb_pvkey_ptr = NULL;
 	char *serial = NULL;
+	long size;
 
+	char *uuid = NULL;
+	char *provcode = NULL;
+	char common_name[256] = {0};
+	char *node_cert_ptr = NULL;
+	char *node_pvkey_ptr = NULL;
+	char emb_serial[10];
+
+	Peer_get_contextId(obj, &context_id);
+	Peer_get_description(obj, &description, &length);
+
+	snprintf(context_id_str, 10, "%d", context_id);
+
+	exp_delay = pki_expiration_delay(10);
 	ret = dao_fetch_context_embassy(context_id_str, &emb_cert_ptr, &emb_pvkey_ptr, &serial);
-	printf("dao_fetch_context_embassy: %d\n", ret);
-	printf("serial: %s\n", serial);
+	if (ret == -1) {
+		jlog(L_ERROR, "failed to fetch context embassy\n");
+		return;
+	}
+	jlog(L_DEBUG, "serial: %s\n", serial);
 
 	emb = pki_embassy_load_from_memory(emb_cert_ptr, emb_pvkey_ptr, atoi(serial));
 
-	char *uuid;
 	uuid = uuid_v4();
-
-	char *provcode;
 	provcode = uuid_v4();
 
-	char common_name[256];
 	snprintf(common_name, sizeof(common_name), "dnc-%s@%s", uuid, context_id_str);
 	jlog(L_DEBUG, "common_name: %s\n", common_name);
 
-	digital_id_t *node_ident;
+	digital_id_t *node_ident = NULL;
 	node_ident = pki_digital_id(common_name, "", "", "", "info@dynvpn.com", "DNDS");
 
-	passport_t *node_passport;
+	passport_t *node_passport = NULL;
 	node_passport = pki_embassy_deliver_passport(emb, node_ident, exp_delay);
-
-	char *node_cert_ptr;
-	char *node_pvkey_ptr;
 
 	pki_write_certificate_in_mem(node_passport->certificate, &node_cert_ptr, &size);
 	pki_write_privatekey_in_mem(node_passport->keyring, &node_pvkey_ptr, &size);
 
-	ret = dao_add_node(context_id_str, uuid, node_cert_ptr, node_pvkey_ptr, provcode);
-	jlog(L_DEBUG, "dao_add_node: %d\n", ret);
-
-	char emb_serial[10];
 	snprintf(emb_serial, sizeof(emb_serial), "%d", emb->serial);
 	printf("emb->serial: %d\n", emb->serial);
+
 	ret = dao_update_embassy_serial(context_id_str, emb_serial);
+	if (ret == -1) {
+		jlog(L_ERROR, "failed to update embassy serial\n");
+		return;
+	}
 	jlog(L_DEBUG, "dao_update_embassy_serial: %d\n", ret);
+
+	ret = dao_add_node(context_id_str, uuid, node_cert_ptr, node_pvkey_ptr, provcode);
+	if (ret == -1) {
+		jlog(L_ERROR, "failed to add node\n");
+		return;
+	}
+
+	free(uuid);
+	free(provcode);
+
+	free(serial);
+	free(emb_cert_ptr);
+	free(emb_pvkey_ptr);
 
 	free(node_cert_ptr);
 	free(node_pvkey_ptr);
-
 }
 
 void AddRequest_client(struct session *session, DNDSMessage_t *msg)
 {
-	printf("Add Request !\n");
+	jlog(L_DEBUG, "Add Request !\n");
 
 	DNDSMessage_printf(msg);
 	DSMessage_printf(msg);
@@ -141,49 +156,37 @@ void AddRequest_client(struct session *session, DNDSMessage_t *msg)
 	AddRequest_get_object(msg, &obj);
 	DNDSObject_printf(obj);
 
+	int ret = 0;
+	size_t length = 0;
+	uint32_t id = 0;
+	char *username = NULL;
+	char *password = NULL;
+	char *firstname = NULL;
+	char *lastname = NULL;
+	char *email = NULL;
+	char *company = NULL;
+	char *phone = NULL;
+	char *country = NULL;
+	char *stateProvince = NULL;
+	char *city = NULL;
+	char *postalCode = NULL;
+	uint8_t status = 0;
 
-	size_t length;
-
-        uint32_t id;
         Client_get_id(obj, &id);
-
-        char *username;
         Client_get_username(obj, &username, &length);
-
-        char *password;
         Client_get_password(obj, &password, &length);
-
-        char *firstname;
         Client_get_firstname(obj, &firstname, &length);
-
-        char *lastname;
         Client_get_lastname(obj, &lastname, &length);
-
-        char *email;
         Client_get_email(obj, &email, &length);
-
-        char *company;
         Client_get_company(obj, &company, &length);
-
-        char *phone;
         Client_get_phone(obj, &phone, &length);
-
-        char *country;
         Client_get_country(obj, &country, &length);
-
-        char *stateProvince;
         Client_get_stateProvince(obj, &stateProvince, &length);
-
-        char *city;
         Client_get_city(obj, &city, &length);
-
-        char *postalCode;
         Client_get_postalCode(obj, &postalCode, &length);
-
-        uint8_t status;
         Client_get_status(obj, &status);
 
-	dao_add_client(firstname,
+	ret = dao_add_client(firstname,
 			lastname,
 			email,
 			company,
@@ -193,6 +196,11 @@ void AddRequest_client(struct session *session, DNDSMessage_t *msg)
 			city,
 			postalCode,
 			password);
+
+	if (ret == -1) {
+		jlog(L_ERROR, "failed to add client\n");
+		return;
+	}
 }
 
 void AddRequest_context(struct session *session, DNDSMessage_t *msg)
