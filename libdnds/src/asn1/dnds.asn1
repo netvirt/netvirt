@@ -1,10 +1,10 @@
 -- Dynamic-Network-Directory-Service-Protocol-V1
--- Copyright (C) Nicolas Bouliane - Mind4Networks, 2010, 2011
+-- Copyright (C) Nicolas Bouliane - Mind4Networks, 2010, 2011, 2012
 
 -- DN> Dynamic Network
 -- DS> Directory Service
 
--- asn1c dnds.asn1 -fnative-types
+-- asn1c dnds.asn1 -fnative-types -fskeletons-copy
 
 DNDS DEFINITIONS AUTOMATIC TAGS ::=
 BEGIN
@@ -54,15 +54,13 @@ DSMessage ::= SEQUENCE {
 	seqNumber	INTEGER (0..uint32max),
 	ackNumber	INTEGER (0..uint32max),
 	dsop		CHOICE	{
-		peerConnectInfo		PeerConnectInfo,
-		authRequest		AuthRequest,
-		authResponse		AuthResponse,
 		addRequest		AddRequest,
 		addResponse		AddResponse,
 		delRequest		DelRequest,
 		delResponse		DelResponse,
 		modifyRequest		ModifyRequest,
 		modifyResponse		ModifyResponse,
+		nodeConnectInfo		NodeConnectInfo,
 		searchRequest		SearchRequest,
 		searchResponse		SearchResponse,
 		terminateRequest	TerminateRequest,
@@ -71,32 +69,22 @@ DSMessage ::= SEQUENCE {
 }
 
 DNDSObject ::= CHOICE {
-	acl		Acl,
-	aclgroup	AclGroup,
-	ippool		IpPool,
-	context		Context,
-	host		Host,
-	node		Node,
-	peer		Peer,
-	permission	Permission,
 	client		Client,
-	webcredential	WebCredential,
+	context		Context,
+	node		Node,
 	...
 }
 
 ObjectName ::= ENUMERATED {
-	acl		(1),
-	aclgroup	(2),
-	ippool		(3),
-	context		(4),
-	host		(5),
-	node		(6),
-	peer		(7),
-	permission	(8),
-	client		(9),
-	webcredential	(10),
+	client		(1),
+	context		(2),
+	node		(3),
 	...
 }
+
+-------------------------
+-- DN> Dynamic Network
+-------------------------
 
 AuthRequest ::= SEQUENCE {
 	certName	IA5String (SIZE(1..256)),
@@ -105,9 +93,16 @@ AuthRequest ::= SEQUENCE {
 
 AuthResponse ::= DNDSResult
 
-P2pSide ::= ENUMERATED {
-	client		(1),
-	server		(2),
+NetinfoRequest ::= SEQUENCE {
+	ipLocal		OCTET STRING (SIZE(4..16)),	-- ipv4 extensible to ipv6
+	macAddr		OCTET STRING (SIZE(6)),
+	...
+}
+
+NetinfoResponse ::= SEQUENCE {
+	ipAddress	OCTET STRING (SIZE(4..16)),
+	netmask		OCTET STRING (SIZE(4..16)),
+	result		DNDSResult,
 	...
 }
 
@@ -123,6 +118,11 @@ ProvResponse ::= SEQUENCE {
 	...
 }
 
+P2pSide ::= ENUMERATED {
+	client		(1),
+	server		(2),
+	...
+}
 
 P2pRequest ::= SEQUENCE {
 	macAddrDst	OCTET STRING (SIZE(6)),
@@ -138,18 +138,9 @@ P2pResponse ::= SEQUENCE {
 	...
 }
 
-ConnectState ::= ENUMERATED {
-	connected	(1),
-	disconnected	(2),
-	...
-}
-
-PeerConnectInfo ::= SEQUENCE {
-	certName	IA5String (SIZE(1..256)),
-	ipAddr		OCTET STRING (SIZE(4..16)),
-	state		ConnectState,
-	...
-}
+-------------------------
+-- DS> Directory Service
+-------------------------
 
 AddRequest ::= DNDSObject
 AddResponse ::= DNDSResult
@@ -160,16 +151,16 @@ DelResponse ::= DNDSResult
 ModifyRequest ::= DNDSObject
 ModifyResponse ::= DNDSResult
 
-NetinfoRequest ::= SEQUENCE {
-	ipLocal		OCTET STRING (SIZE(4..16)),	-- ipv4 extensible to ipv6
-	macAddr		OCTET STRING (SIZE(6)),
+ConnectState ::= ENUMERATED {
+	connected	(1),
+	disconnected	(2),
 	...
 }
 
-NetinfoResponse ::= SEQUENCE {
-	ipAddress	OCTET STRING (SIZE(4..16)),
-	netmask		OCTET STRING (SIZE(4..16)),
-	result		DNDSResult,
+NodeConnectInfo ::= SEQUENCE {
+	certName	IA5String (SIZE(1..256)),
+	ipAddr		OCTET STRING (SIZE(4..16)),
+	state		ConnectState,
 	...
 }
 
@@ -184,8 +175,6 @@ SearchRequest ::= SEQUENCE {
 	searchtype	SearchType,
 	objectname	ObjectName OPTIONAL,
 	object		DNDSObject OPTIONAL,
---	from		INTEGER (0..uint32max) OPTIONAL,
---	to		INTEGER (0..uint32max) OPTIONAL,
 	...
 }
 
@@ -198,34 +187,26 @@ SearchResponse ::= SEQUENCE {
 
 TerminateRequest ::= NULL
 
-Acl ::= SEQUENCE {
-	id		INTEGER (0..uint32max),
-	contextId	INTEGER (0..uint32max),
-	description	PrintableString (SIZE(1..256)) OPTIONAL,
-	...
-}
-
-AclGroup ::= SEQUENCE {
-	id		INTEGER (0..uint32max),
-	contextId	INTEGER (0..uint32max),
-	name		PrintableString (SIZE(1..128)) OPTIONAL,
-	description	PrintableString (SIZE(1..256)) OPTIONAL,
-	...
-}
-
-IpPool ::= SEQUENCE {
-	id		INTEGER (0..uint32max),
-	ipLocal		OCTET STRING (SIZE(4..16)) OPTIONAL,
-	ipBegin		OCTET STRING (SIZE(4..16)) OPTIONAL,
-	ipEnd		OCTET STRING (SIZE(4..16)) OPTIONAL,
-	netmask		OCTET STRING (SIZE(4..16)) OPTIONAL,
-	...
-}
-
 Topology ::= ENUMERATED {
 	mesh		(1),
 	hubspoke	(2),
 	gateway		(3),
+	...
+}
+
+Client ::= SEQUENCE {
+	id		INTEGER (0..uint32max) OPTIONAL,
+	firstname	PrintableString OPTIONAL,
+	lastname	PrintableString OPTIONAL,
+	email		IA5String OPTIONAL,
+	password	PrintableString OPTIONAL,
+	company		PrintableString OPTIONAL,
+	phone		PrintableString OPTIONAL,
+	country		PrintableString OPTIONAL,
+	stateProvince	PrintableString OPTIONAL,
+	city 		PrintableString OPTIONAL,
+	postalCode	PrintableString OPTIONAL,
+	status		INTEGER (0..127) OPTIONAL,
 	...
 }
 
@@ -242,37 +223,7 @@ Context ::= SEQUENCE {
 	...
 }
 
-Host ::= SEQUENCE {
-	id		INTEGER (0..uint32max),
-	contextId	INTEGER (0..uint32max),
-	peerId		INTEGER (0..uint32max),
-	name		PrintableString (SIZE(1..64)) OPTIONAL,
-	macAddress	OCTET STRING (SIZE(6)) OPTIONAL,
-	ipAddress	OCTET STRING (SIZE(4..16)) OPTIONAL,
-	status		INTEGER (0..127) OPTIONAL,
-	...
-}
-
 Node ::= SEQUENCE {
-	id		INTEGER (0..uint32max),
-	type		INTEGER (0..127) OPTIONAL,
-	name		PrintableString (SIZE(1..64)) OPTIONAL,
-	ipAddress	OCTET STRING (SIZE(4..16)) OPTIONAL,
-	certificate	PrintableString OPTIONAL,
-	certificateKey	BIT STRING OPTIONAL,
-	permission	NULL OPTIONAL,
-	status		INTEGER (0..127) OPTIONAL,
-	...
-}
-
-Permission ::= SEQUENCE {
-	id		INTEGER (0..uint32max),
-        name		PrintableString (SIZE(1..64)) OPTIONAL,
-        matrix		NULL OPTIONAL,
-	...
-}
-
-Peer ::= SEQUENCE {
 	contextId	INTEGER (0..uint32max),
 	description	PrintableString (SIZE(1..256)) OPTIONAL,
 	uuid		PrintableString OPTIONAL,
@@ -280,30 +231,6 @@ Peer ::= SEQUENCE {
 	certificate	PrintableString OPTIONAL,
 	certificateKey	BIT STRING OPTIONAL,
 	trustedCert     PrintableString OPTIONAL,
-	status		INTEGER (0..127) OPTIONAL,
-	...
-}
-
-WebCredential ::= SEQUENCE {
-	clientId	INTEGER (0..uint32max),
-	username	PrintableString OPTIONAL,
-	password	PrintableString OPTIONAL,
-	...
-}
-
-Client ::= SEQUENCE {
-	id		INTEGER (0..uint32max),
-	username	PrintableString OPTIONAL,
-	password	PrintableString OPTIONAL,
-	firstname	PrintableString OPTIONAL,
-	lastname	PrintableString OPTIONAL,
-	email		IA5String OPTIONAL,
-	company		PrintableString OPTIONAL,
-	phone		PrintableString OPTIONAL,
-	country		PrintableString OPTIONAL,
-	stateProvince	PrintableString OPTIONAL,
-	city 		PrintableString OPTIONAL,
-	postalCode	PrintableString OPTIONAL,
 	status		INTEGER (0..127) OPTIONAL,
 	...
 }
