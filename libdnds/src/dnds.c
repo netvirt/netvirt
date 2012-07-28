@@ -314,8 +314,8 @@ int DNDSObject_get_objectType(DNDSObject_t *object, DNDSObject_PR *objType)
 	return DNDS_success;
 }
 
-// PeerConnectInfo
-int PeerConnectInfo_set_certName(DNDSMessage_t *msg, char *name, size_t length)
+// NodeConnectInfo
+int NodeConnectInfo_set_certName(DNDSMessage_t *msg, char *name, size_t length)
 {
 	if (msg == NULL || name == NULL) {
 		return DNDS_invalid_param;
@@ -325,17 +325,17 @@ int PeerConnectInfo_set_certName(DNDSMessage_t *msg, char *name, size_t length)
 		return DNDS_invalid_pdu;
 	}
 
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_peerConnectInfo) {
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_nodeConnectInfo) {
 		return DNDS_invalid_op;
 	}
 
-	msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.certName.buf = (uint8_t *)strdup(name);
-	msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.certName.size = length;
+	msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.certName.buf = (uint8_t *)strdup(name);
+	msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.certName.size = length;
 
 	return DNDS_success;
 }
 
-int PeerConnectInfo_get_certName(DNDSMessage_t *msg, char **name, size_t *length)
+int NodeConnectInfo_get_certName(DNDSMessage_t *msg, char **name, size_t *length)
 {
 	if (msg == NULL || name == NULL || length == NULL) {
 		return DNDS_invalid_param;
@@ -345,17 +345,17 @@ int PeerConnectInfo_get_certName(DNDSMessage_t *msg, char **name, size_t *length
 		return DNDS_invalid_pdu;
 	}
 
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_peerConnectInfo) {
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_nodeConnectInfo) {
 		return DNDS_invalid_op;
 	}
 
-	*name = (char *)msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.certName.buf;
-	*length = msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.certName.size;
+	*name = (char *)msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.certName.buf;
+	*length = msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.certName.size;
 
 	return DNDS_success;
 }
 
-int PeerConnectInfo_set_ipAddr(DNDSMessage_t *msg, char *ipAddress)
+int NodeConnectInfo_set_ipAddr(DNDSMessage_t *msg, char *ipAddress)
 {
 	if (msg == NULL || ipAddress == NULL) {
 		return DNDS_invalid_param;
@@ -365,27 +365,27 @@ int PeerConnectInfo_set_ipAddr(DNDSMessage_t *msg, char *ipAddress)
 		return DNDS_invalid_pdu;
 	}
 
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_peerConnectInfo) {
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_nodeConnectInfo) {
 		return DNDS_invalid_op;
 	}
 
-	msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.ipAddr.buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
-	if (msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.ipAddr.buf == NULL) {
+	msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.ipAddr.buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
+	if (msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.ipAddr.buf == NULL) {
 		return DNDS_alloc_failed;
 	}
 
 	int ret;
-	ret = inet_pton(AF_INET, ipAddress, msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.ipAddr.buf);
+	ret = inet_pton(AF_INET, ipAddress, msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.ipAddr.buf);
 	if (ret != 1) {
 		return DNDS_conversion_failed;
 	}
 
-	msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.ipAddr.size = sizeof(struct in_addr);
+	msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.ipAddr.size = sizeof(struct in_addr);
 
 	return DNDS_success;
 }
 
-int PeerConnectInfo_get_ipAddr(DNDSMessage_t *msg, char *ipAddress)
+int NodeConnectInfo_get_ipAddr(DNDSMessage_t *msg, char *ipAddress)
 {
 	if (msg == NULL || ipAddress == NULL) {
 		return DNDS_invalid_param;
@@ -395,12 +395,12 @@ int PeerConnectInfo_get_ipAddr(DNDSMessage_t *msg, char *ipAddress)
 		return DNDS_invalid_pdu;
 	}
 
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_peerConnectInfo) {
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_nodeConnectInfo) {
 		return DNDS_invalid_op;
 	}
 
 	const char *ret;
-	ret = inet_ntop(AF_INET, msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.ipAddr.buf, ipAddress, INET_ADDRSTRLEN);
+	ret = inet_ntop(AF_INET, msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.ipAddr.buf, ipAddress, INET_ADDRSTRLEN);
 	if (ret == NULL) {
 		return DNDS_conversion_failed;
 	}
@@ -408,7 +408,7 @@ int PeerConnectInfo_get_ipAddr(DNDSMessage_t *msg, char *ipAddress)
 	return DNDS_success;
 }
 
-int PeerConnectInfo_set_state(DNDSMessage_t *msg, e_ConnectState state)
+int NodeConnectInfo_set_state(DNDSMessage_t *msg, e_ConnectState state)
 {
 	if (msg == NULL) {
 		return DNDS_invalid_param;
@@ -418,16 +418,16 @@ int PeerConnectInfo_set_state(DNDSMessage_t *msg, e_ConnectState state)
 		return DNDS_invalid_pdu;
 	}
 
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_peerConnectInfo) {
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_nodeConnectInfo) {
 		return DNDS_invalid_op;
 	}
 
-	msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.state = state;
+	msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.state = state;
 
 	return DNDS_success;
 }
 
-int PeerConnectInfo_get_state(DNDSMessage_t *msg, e_ConnectState *state)
+int NodeConnectInfo_get_state(DNDSMessage_t *msg, e_ConnectState *state)
 {
 	if (msg == NULL || state == NULL) {
 		return DNDS_invalid_param;
@@ -437,11 +437,11 @@ int PeerConnectInfo_get_state(DNDSMessage_t *msg, e_ConnectState *state)
 		return DNDS_invalid_pdu;
 	}
 
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_peerConnectInfo) {
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_nodeConnectInfo) {
 		return DNDS_invalid_op;
 	}
 
-	*state = msg->pdu.choice.dsm.dsop.choice.peerConnectInfo.state;
+	*state = msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.state;
 
 	return DNDS_success;
 }
@@ -551,30 +551,16 @@ int AuthRequest_set_certName(DNDSMessage_t *msg, char *certName, size_t length)
 		return DNDS_invalid_param;
 	}
 
-	switch (msg->pdu.present) {
-		case pdu_PR_dsm:
-
-			if (msg->pdu.choice.dsm.dsop.present != dsop_PR_authRequest) {
-				return DNDS_invalid_op;
-			}
-
-			msg->pdu.choice.dsm.dsop.choice.authRequest.certName.buf = (uint8_t *)strdup(certName);
-			msg->pdu.choice.dsm.dsop.choice.authRequest.certName.size = length;
-			break;
-
-		case pdu_PR_dnm:
-
-			if (msg->pdu.choice.dnm.dnop.present != dnop_PR_authRequest) {
-				return DNDS_invalid_op;
-			}
-
-			msg->pdu.choice.dnm.dnop.choice.authRequest.certName.buf = (uint8_t *)strdup(certName);
-			msg->pdu.choice.dnm.dnop.choice.authRequest.certName.size = length;
-			break;
-
-		default:
-			return DNDS_invalid_pdu;
+	if (msg->pdu.present != pdu_PR_dnm) {
+		return DNDS_invalid_pdu;
 	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_authRequest) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.authRequest.certName.buf = (uint8_t *)strdup(certName);
+	msg->pdu.choice.dnm.dnop.choice.authRequest.certName.size = length;
 
 	return DNDS_success;
 }
@@ -585,30 +571,16 @@ int AuthRequest_get_certName(DNDSMessage_t *msg, char **certName, size_t *length
 		return DNDS_invalid_param;
 	}
 
-	switch (msg->pdu.present) {
-		case pdu_PR_dsm:
-
-			if (msg->pdu.choice.dsm.dsop.present != dsop_PR_authRequest) {
-				return DNDS_invalid_op;
-			}
-
-			*certName = (char *)msg->pdu.choice.dsm.dsop.choice.authRequest.certName.buf;
-			*length = msg->pdu.choice.dsm.dsop.choice.authRequest.certName.size;
-			break;
-
-		case pdu_PR_dnm:
-
-			if (msg->pdu.choice.dnm.dnop.present != dnop_PR_authRequest) {
-				return DNDS_invalid_op;
-			}
-
-			*certName = (char *)msg->pdu.choice.dnm.dnop.choice.authRequest.certName.buf;
-			*length = msg->pdu.choice.dnm.dnop.choice.authRequest.certName.size;
-			break;
-
-		default:
-			return DNDS_invalid_op;
+	if (msg->pdu.present != pdu_PR_dnm) {
+		return DNDS_invalid_pdu;
 	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_authRequest) {
+		return DNDS_invalid_op;
+	}
+
+	*certName = (char *)msg->pdu.choice.dnm.dnop.choice.authRequest.certName.buf;
+	*length = msg->pdu.choice.dnm.dnop.choice.authRequest.certName.size;
 
 	return DNDS_success;
 }
@@ -620,28 +592,15 @@ int AuthResponse_set_result(DNDSMessage_t *msg, e_DNDSResult result)
 		return DNDS_invalid_param;
 	}
 
-	switch (msg->pdu.present) {
-		case pdu_PR_dsm:
-
-			if (msg->pdu.choice.dsm.dsop.present != dsop_PR_authResponse) {
-				return DNDS_invalid_op;
-			}
-
-			msg->pdu.choice.dsm.dsop.choice.authResponse = result;
-			break;
-
-		case pdu_PR_dnm:
-
-			if (msg->pdu.choice.dnm.dnop.present != dnop_PR_authResponse) {
-				return DNDS_invalid_op;
-			}
-
-			msg->pdu.choice.dnm.dnop.choice.authResponse = result;
-			break;
-
-		default:
-			return DNDS_invalid_pdu;
+	if (msg->pdu.present != pdu_PR_dnm) {
+		return DNDS_invalid_pdu;
 	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_authResponse) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.authResponse = result;
 
 	return DNDS_success;
 }
@@ -652,28 +611,15 @@ int AuthResponse_get_result(DNDSMessage_t *msg, e_DNDSResult *result)
 		return DNDS_invalid_param;
 	}
 
-	switch (msg->pdu.present) {
-		case pdu_PR_dsm:
-
-			if (msg->pdu.choice.dsm.dsop.present != dsop_PR_authResponse) {
-				return DNDS_invalid_op;
-			}
-
-			*result = msg->pdu.choice.dsm.dsop.choice.authResponse;
-			break;
-
-		case pdu_PR_dnm:
-
-			if (msg->pdu.choice.dnm.dnop.present != dnop_PR_authResponse) {
-				return DNDS_invalid_op;
-			}
-
-			*result = msg->pdu.choice.dnm.dnop.choice.authResponse;
-			break;
-
-		default:
-			return DNDS_invalid_pdu;
+	if (msg->pdu.present != pdu_PR_dnm) {
+		return DNDS_invalid_pdu;
 	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_authResponse) {
+		return DNDS_invalid_op;
+	}
+
+	*result = msg->pdu.choice.dnm.dnop.choice.authResponse;
 
 	return DNDS_success;
 }
@@ -1875,502 +1821,6 @@ int DNDSObject_new(DNDSObject_t **object)
 	return DNDS_success;
 }
 
-// Acl
-int Acl_set_id(DNDSObject_t *object, uint32_t id)
-{
-	if (object == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_acl) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.acl.id = id;
-
-	return DNDS_success;
-}
-
-int Acl_get_id(DNDSObject_t *object, uint32_t *id)
-{
-	if (object == NULL || id == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_acl) {
-		return DNDS_invalid_object_type;
-	}
-
-	*id = object->choice.acl.id;
-
-	return DNDS_success;
-}
-
-int Acl_set_contextId(DNDSObject_t *object, uint32_t contextId)
-{
-	if (object == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_acl) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.acl.contextId = contextId;
-
-	return DNDS_success;
-}
-
-int Acl_get_contextId(DNDSObject_t *object, uint32_t *contextId)
-{
-	if (object == NULL || contextId == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_acl) {
-		return DNDS_invalid_object_type;
-	}
-
-	*contextId = object->choice.acl.contextId;
-
-	return DNDS_success;
-}
-
-int Acl_set_description(DNDSObject_t *object, char *description, size_t length)
-{
-	if (object == NULL || description == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_acl) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.acl.description = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.acl.description == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.acl.description->buf = (uint8_t *)strdup(description);
-	object->choice.acl.description->size = length;
-
-	return DNDS_success;
-}
-
-int Acl_get_description(DNDSObject_t *object, char **description, size_t *length)
-{
-	if (object == NULL || description == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_acl) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.acl.description == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	if (object->choice.acl.description == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	*description = (char *)object->choice.acl.description->buf;
-	*length = object->choice.acl.description->size;
-
-	return DNDS_success;
-}
-
-// AclGroup
-int AclGroup_set_id(DNDSObject_t *object, uint32_t id)
-{
-	if (object == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_aclgroup) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.aclgroup.id = id;
-
-	return DNDS_success;
-}
-
-int AclGroup_get_id(DNDSObject_t *object, uint32_t *id)
-{
-	if (object == NULL || id == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_aclgroup) {
-		return DNDS_invalid_object_type;
-	}
-
-	*id = object->choice.aclgroup.id;
-
-	return DNDS_success;
-}
-
-int AclGroup_set_contextId(DNDSObject_t *object, uint32_t contextId)
-{
-	if (object == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_aclgroup) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.aclgroup.contextId = contextId;
-
-	return DNDS_success;
-}
-
-int AclGroup_get_contextId(DNDSObject_t *object, uint32_t *contextId)
-{
-	if (object == NULL || contextId == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_aclgroup) {
-		return DNDS_invalid_object_type;
-	}
-
-	*contextId = object->choice.aclgroup.contextId;
-
-	return DNDS_success;
-}
-
-int AclGroup_set_name(DNDSObject_t *object, char *name, size_t length)
-{
-	if (object == NULL || name == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_aclgroup) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.aclgroup.name = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.aclgroup.name == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.aclgroup.name->buf = (uint8_t *)strdup(name);
-	object->choice.aclgroup.name->size = length;
-
-	return DNDS_success;
-}
-
-int AclGroup_get_name(DNDSObject_t *object, char **name, size_t *length)
-{
-	if (object == NULL || name == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_aclgroup) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.aclgroup.name == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	*name = (char *)object->choice.aclgroup.name->buf;
-	*length = object->choice.aclgroup.name->size;
-
-	return DNDS_success;
-}
-
-int AclGroup_set_description(DNDSObject_t *object, char *description, size_t length)
-{
-	if (object == NULL || description == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_aclgroup) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.aclgroup.description = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.aclgroup.description == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.aclgroup.description->buf = (uint8_t *)strdup(description);
-	object->choice.aclgroup.description->size = length;
-
-	return DNDS_success;
-}
-
-int AclGroup_get_description(DNDSObject_t *object, char **description, size_t *length)
-{
-	if (object == NULL || description == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_aclgroup) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.aclgroup.description == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	*description = (char *)object->choice.aclgroup.description->buf;
-	*length = object->choice.aclgroup.description->size;
-
-	return DNDS_success;
-}
-
-// IpPool
-int IpPool_set_id(DNDSObject_t *object, uint32_t id)
-{
-	if (object == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_ippool) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.ippool.id = id;
-
-	return DNDS_success;
-}
-
-int IpPool_get_id(DNDSObject_t *object, uint32_t *id)
-{
-	if (object == NULL || id == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_ippool) {
-		return DNDS_invalid_object_type;
-	}
-
-	*id = object->choice.ippool.id;
-
-	return DNDS_success;
-}
-
-int IpPool_set_ipLocal(DNDSObject_t *object, char *ipLocal)
-{
-	if (object == NULL || ipLocal == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_ippool) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.ippool.ipLocal = (OCTET_STRING_t *)calloc(1, sizeof(OCTET_STRING_t));
-	if (object->choice.ippool.ipLocal == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.ippool.ipLocal->buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
-	if (object->choice.ippool.ipLocal == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	int ret;
-	ret = inet_pton(AF_INET, ipLocal, object->choice.ippool.ipLocal->buf);
-	if (ret != 1) {
-		return DNDS_conversion_failed;
-	}
-
-	object->choice.ippool.ipLocal->size = sizeof(struct in_addr);
-
-	return DNDS_success;
-}
-
-int IpPool_get_ipLocal(DNDSObject_t *object, char *ipLocal)
-{
-	if (object == NULL || ipLocal == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_ippool) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.ippool.ipLocal == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	const char *ret;
-	ret = inet_ntop(AF_INET, object->choice.ippool.ipLocal->buf, ipLocal, INET_ADDRSTRLEN);
-	if (ret == NULL) {
-		return DNDS_conversion_failed;
-	}
-
-	return DNDS_success;
-}
-
-int IpPool_set_ipBegin(DNDSObject_t *object, char *ipBegin)
-{
-	if (object == NULL || ipBegin == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_ippool) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.ippool.ipBegin = (OCTET_STRING_t *)calloc(1, sizeof(OCTET_STRING_t));
-	if (object->choice.ippool.ipBegin == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.ippool.ipBegin->buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
-	if (object->choice.ippool.ipBegin->buf == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	int ret;
-	ret = inet_pton(AF_INET, ipBegin, object->choice.ippool.ipBegin->buf);
-	if (ret != 1) {
-		return DNDS_conversion_failed;
-	}
-
-	object->choice.ippool.ipBegin->size = sizeof(struct in_addr);
-
-	return DNDS_success;
-}
-
-int IpPool_get_ipBegin(DNDSObject_t *object, char *ipBegin)
-{
-	if (object == NULL || ipBegin == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_ippool) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.ippool.ipBegin == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	const char *ret;
-	ret = inet_ntop(AF_INET, object->choice.ippool.ipBegin->buf, ipBegin, INET_ADDRSTRLEN);
-	if (ret == NULL) {
-		return DNDS_conversion_failed;
-	}
-
-	return DNDS_success;
-}
-
-int IpPool_set_ipEnd(DNDSObject_t *object, char *ipEnd)
-{
-	if (object == NULL || ipEnd == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_ippool) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.ippool.ipEnd = (OCTET_STRING_t *)calloc(1, sizeof(OCTET_STRING_t));
-	if (object->choice.ippool.ipEnd == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.ippool.ipEnd->buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
-	if (object->choice.ippool.ipEnd->buf == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	int ret;
-	ret = inet_pton(AF_INET, ipEnd, object->choice.ippool.ipEnd->buf);
-	if (ret != 1) {
-		return DNDS_conversion_failed;
-	}
-
-	object->choice.ippool.ipEnd->size = sizeof(struct in_addr);
-
-	return DNDS_success;
-}
-
-int IpPool_get_ipEnd(DNDSObject_t *object, char *ipEnd)
-{
-	if (object == NULL || ipEnd == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_ippool) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.ippool.ipEnd == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	const char *ret;
-	ret = inet_ntop(AF_INET, object->choice.ippool.ipEnd->buf, ipEnd, INET_ADDRSTRLEN);
-	if (ret == NULL) {
-		return DNDS_conversion_failed;
-	}
-
-	return DNDS_success;
-}
-
-int IpPool_set_netmask(DNDSObject_t *object, char *netmask)
-{
-	if (object == NULL || netmask == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_ippool) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.ippool.netmask = (OCTET_STRING_t *)calloc(1, sizeof(OCTET_STRING_t));
-	if (object->choice.ippool.netmask == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.ippool.netmask->buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
-	if (object->choice.ippool.netmask->buf == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	int ret;
-	ret = inet_pton(AF_INET, netmask, object->choice.ippool.netmask->buf);
-	if (ret != 1) {
-		return DNDS_conversion_failed;
-	}
-
-	object->choice.ippool.netmask->size = sizeof(struct in_addr);
-
-	return DNDS_success;
-}
-
-int IpPool_get_netmask(DNDSObject_t *object, char *netmask)
-{
-	if (object == NULL || netmask == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_ippool) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.ippool.netmask == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	const char *ret;
-	ret = inet_ntop(AF_INET, object->choice.ippool.netmask->buf, netmask, INET_ADDRSTRLEN);
-	if (ret == NULL) {
-		return DNDS_conversion_failed;
-	}
-
-	return DNDS_success;
-}
-
 // Context
 int Context_set_id(DNDSObject_t *object, uint32_t id)
 {
@@ -2729,280 +2179,40 @@ int Context_get_trustedCert(DNDSObject_t *object, char **trustedCert, size_t *le
 	return DNDS_success;
 }
 
-// Host
-int Host_set_id(DNDSObject_t *object, uint32_t id)
+// Node
+int Node_set_contextId(DNDSObject_t *object, uint32_t contextId)
 {
 	if (object == NULL) {
 		return DNDS_invalid_param;
 	}
 
-	if (object->present != DNDSObject_PR_host) {
+	if (object->present != DNDSObject_PR_node) {
 		return DNDS_invalid_object_type;
 	}
 
-	object->choice.host.id = id;
+	object->choice.node.contextId = contextId;
 
 	return DNDS_success;
 }
 
-int Host_get_id(DNDSObject_t *object, uint32_t *id)
-{
-	if (object == NULL || id == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_host) {
-		return DNDS_invalid_object_type;
-	}
-
-	*id = object->choice.host.id;
-
-	return DNDS_success;
-}
-
-int Host_set_contextId(DNDSObject_t *object, uint32_t contextId)
-{
-	if (object == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_host) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.host.contextId = contextId;
-
-	return DNDS_success;
-}
-
-int Host_get_contextId(DNDSObject_t *object, uint32_t *contextId)
+int Node_get_contextId(DNDSObject_t *object, uint32_t *contextId)
 {
 	if (object == NULL || contextId == NULL) {
 		return DNDS_invalid_param;
 	}
 
-	if (object->present != DNDSObject_PR_host) {
+	if (object->present != DNDSObject_PR_node) {
 		return DNDS_invalid_object_type;
 	}
 
-	*contextId = object->choice.host.contextId;
+	*contextId = object->choice.node.contextId;
 
 	return DNDS_success;
 }
 
-int Host_set_peerId(DNDSObject_t *object, uint32_t peerId)
+int Node_set_description(DNDSObject_t *object, char *description, size_t length)
 {
-	if (object == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_host) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.host.peerId = peerId;
-
-	return DNDS_success;
-}
-
-int Host_get_peerId(DNDSObject_t *object, uint32_t *peerId)
-{
-	if (object == NULL || peerId == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_host) {
-		return DNDS_invalid_object_type;
-	}
-
-	*peerId = object->choice.host.peerId;
-
-	return DNDS_success;
-}
-
-int Host_set_name(DNDSObject_t *object, char *name, size_t length)
-{
-	if (object == NULL || name == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_host) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.host.name = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.host.name == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.host.name->buf = (uint8_t *)strdup(name);
-	object->choice.host.name->size = length;
-
-	return DNDS_success;
-}
-
-int Host_get_name(DNDSObject_t *object, char **name, size_t *length)
-{
-	if (object == NULL || name == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_host) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.host.name == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	*name = (char *)object->choice.host.name->buf;
-	*length = object->choice.host.name->size;
-
-	return DNDS_success;
-}
-
-int Host_set_macAddress(DNDSObject_t *object, uint8_t *macAddress)
-{
-	if (object == NULL || macAddress == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_host) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.host.macAddress = (OCTET_STRING_t *)calloc(1, sizeof(OCTET_STRING_t));
-	if (object->choice.host.macAddress == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.host.macAddress->buf = (uint8_t *)calloc(1, ETHER_ADDR_LEN);
-	if (object->choice.host.macAddress->buf == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	memmove(object->choice.host.macAddress->buf, macAddress, ETHER_ADDR_LEN);
-	object->choice.host.macAddress->size = ETHER_ADDR_LEN;
-
-	return DNDS_success;
-}
-
-int Host_get_macAddress(DNDSObject_t *object, uint8_t *macAddress)
-{
-	if (object == NULL || macAddress == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_host) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.host.macAddress == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	memmove(macAddress, object->choice.host.macAddress->buf, ETHER_ADDR_LEN);
-
-	return DNDS_success;
-}
-
-int Host_set_ipAddress(DNDSObject_t *object, char *ipAddress)
-{
-	if (object == NULL || ipAddress == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_host) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.host.ipAddress = (OCTET_STRING_t *)calloc(1, sizeof(OCTET_STRING_t));
-	if (object->choice.host.ipAddress == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.host.ipAddress->buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
-	if (object->choice.host.ipAddress->buf == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	int ret;
-	ret = inet_pton(AF_INET, ipAddress, object->choice.host.ipAddress->buf);
-	if (ret != 1) {
-		return DNDS_conversion_failed;
-	}
-
-	object->choice.host.ipAddress->size = sizeof(struct in_addr);
-
-	return DNDS_success;
-}
-
-int Host_get_ipAddress(DNDSObject_t *object, char *ipAddress)
-{
-	if (object == NULL || ipAddress == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_host) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.host.ipAddress == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	const char *ret;
-	ret = inet_ntop(AF_INET, object->choice.host.ipAddress->buf, ipAddress, INET_ADDRSTRLEN);
-	if (ret == NULL) {
-		return DNDS_conversion_failed;
-	}
-
-	return DNDS_success;
-}
-
-int Host_set_status(DNDSObject_t *object, uint8_t status)
-{
-	if (object == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_host) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.host.status = (long *)calloc(1, sizeof(long));
-	if (object->choice.host.status == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	*object->choice.host.status = status;
-
-	return DNDS_success;
-}
-
-int Host_get_status(DNDSObject_t *object, uint8_t *status)
-{
-	if (object == NULL || status == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_host) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.host.status == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	*status = *object->choice.host.status;
-
-	return DNDS_success;
-}
-
-// Node
-int Node_set_id(DNDSObject_t *object, uint32_t id)
-{
-	if (object == NULL) {
+	if (object == NULL || description == NULL) {
 		return DNDS_invalid_param;
 	}
 
@@ -3010,50 +2220,20 @@ int Node_set_id(DNDSObject_t *object, uint32_t id)
 		return DNDS_invalid_object_type;
 	}
 
-	object->choice.node.id = id;
-
-	return DNDS_success;
-}
-
-int Node_get_id(DNDSObject_t *object, uint32_t *id)
-{
-	if (object == NULL || id == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_node) {
-		return DNDS_invalid_object_type;
-	}
-
-	*id = object->choice.node.id;
-
-	return DNDS_success;
-}
-
-int Node_set_name(DNDSObject_t *object, char *name, size_t length)
-{
-	if (object == NULL || name == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_node) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.node.name = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.node.name == NULL) {
+	object->choice.node.description = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.node.description == NULL) {
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.node.name->buf = (uint8_t *)strdup(name);
-	object->choice.node.name->size = length;
+	object->choice.node.description->buf = (uint8_t *)strdup(description);
+	object->choice.node.description->size = length;
 
 	return DNDS_success;
 }
 
-int Node_get_name(DNDSObject_t *object, char **name, size_t *length)
+int Node_get_description(DNDSObject_t *object, char **description, size_t *length)
 {
-	if (object == NULL || name == NULL || length == NULL) {
+	if (object == NULL || description == NULL || length == NULL) {
 		return DNDS_invalid_param;
 	}
 
@@ -3061,66 +2241,57 @@ int Node_get_name(DNDSObject_t *object, char **name, size_t *length)
 		return DNDS_invalid_object_type;
 	}
 
-	if (object->choice.node.name == NULL) {
+	if (object->choice.node.description == NULL) {
 		return DNDS_value_not_present;
 	}
 
-	*name = (char *)object->choice.node.name->buf;
-	*length = object->choice.node.name->size;
-
-	return DNDS_success;
-}
-
-int Node_set_ipAddress(DNDSObject_t *object, char *ipAddress)
-{
-	if (object == NULL || ipAddress == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_node) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.node.ipAddress = (OCTET_STRING_t *)calloc(1, sizeof(OCTET_STRING_t));
-	if (object->choice.node.ipAddress == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.node.ipAddress->buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
-	if (object->choice.node.ipAddress->buf == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	int ret;
-	ret = inet_pton(AF_INET, ipAddress, object->choice.node.ipAddress->buf);
-	if (ret != 1) {
-		return DNDS_conversion_failed;
-	}
-
-	object->choice.node.ipAddress->size = sizeof(struct in_addr);
-
-	return DNDS_success;
-}
-
-int Node_get_ipAddress(DNDSObject_t *object, char *ipAddress)
-{
-	if (object == NULL || ipAddress == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_node) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.node.ipAddress == NULL) {
+	if (object->choice.node.description == NULL) {
 		return DNDS_value_not_present;
 	}
 
-	const char *ret;
-	ret = inet_ntop(AF_INET, object->choice.node.ipAddress->buf, ipAddress, INET_ADDRSTRLEN);
-	if (ret == NULL) {
-		return DNDS_conversion_failed;
+	*description = (char *)object->choice.node.description->buf;
+	*length = object->choice.node.description->size;
+
+	return DNDS_success;
+}
+
+int Node_set_provCode(DNDSObject_t *object, char *provCode, size_t length)
+{
+	if (object == NULL || provCode == NULL) {
+		return DNDS_invalid_param;
 	}
+
+	if (object->present != DNDSObject_PR_node) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.node.provCode = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.node.provCode == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.node.provCode->buf = (uint8_t *)strdup(provCode);
+	object->choice.node.provCode->size = length;
+
+	return DNDS_success;
+}
+
+int Node_get_provCode(DNDSObject_t *object, char **provCode, size_t *length)
+{
+	if (object == NULL || provCode == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_node) {
+		return DNDS_invalid_object_type;
+	}
+
+	if (object->choice.node.provCode == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*provCode = (char *)object->choice.node.provCode->buf;
+	*length = object->choice.node.provCode->size;
 
 	return DNDS_success;
 }
@@ -3203,7 +2374,7 @@ int Node_get_certificateKey(DNDSObject_t *object, uint8_t **certificateKey, size
 	}
 
 	if (object->choice.node.certificateKey == NULL) {
-		return DNDS_value_not_present;
+		return	DNDS_value_not_present;
 	}
 
 	*certificateKey = object->choice.node.certificateKey->buf;
@@ -3212,9 +2383,50 @@ int Node_get_certificateKey(DNDSObject_t *object, uint8_t **certificateKey, size
 	return DNDS_success;
 }
 
-int Node_set_permission()
+int Node_set_trustedCert(DNDSObject_t *object, uint8_t *trustedCert, size_t length)
 {
-	return 0;
+	if (object == NULL || trustedCert == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_node) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.node.trustedCert = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.node.trustedCert == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.node.trustedCert->buf = (uint8_t *)calloc(1, length);
+	if (object->choice.node.trustedCert->buf == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	memmove(object->choice.node.trustedCert->buf, trustedCert, length);
+	object->choice.node.trustedCert->size = length;
+
+	return DNDS_success;
+}
+
+int Node_get_trustedCert(DNDSObject_t *object, uint8_t **trustedCert, size_t *length)
+{
+	if (object == NULL || trustedCert == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_node) {
+		return DNDS_invalid_object_type;
+	}
+
+	if (object->choice.node.trustedCert == NULL) {
+		return	DNDS_value_not_present;
+	}
+
+	*trustedCert = object->choice.node.trustedCert->buf;
+	*length = object->choice.node.trustedCert->size;
+
+	return DNDS_success;
 }
 
 int Node_set_status(DNDSObject_t *object, uint8_t status)
@@ -3228,6 +2440,10 @@ int Node_set_status(DNDSObject_t *object, uint8_t status)
 	}
 
 	object->choice.node.status = (long *)calloc(1, sizeof(long));
+	if (object->choice.node.status == NULL) {
+		return DNDS_alloc_failed;
+	}
+
 	*object->choice.node.status = status;
 
 	return DNDS_success;
@@ -3252,311 +2468,6 @@ int Node_get_status(DNDSObject_t *object, uint8_t *status)
 	return DNDS_success;
 }
 
-// Permission
-int Permission_set_id()
-{
-	return 0;
-}
-
-int Permission_set_name()
-{
-	return 0;
-}
-
-int Permission_set_matrix()
-{
-	return 0;
-}
-
-// Peer
-int Peer_set_contextId(DNDSObject_t *object, uint32_t contextId)
-{
-	if (object == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_peer) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.peer.contextId = contextId;
-
-	return DNDS_success;
-}
-
-int Peer_get_contextId(DNDSObject_t *object, uint32_t *contextId)
-{
-	if (object == NULL || contextId == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_peer) {
-		return DNDS_invalid_object_type;
-	}
-
-	*contextId = object->choice.peer.contextId;
-
-	return DNDS_success;
-}
-
-int Peer_set_description(DNDSObject_t *object, char *description, size_t length)
-{
-	if (object == NULL || description == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_peer) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.peer.description = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.peer.description == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.peer.description->buf = (uint8_t *)strdup(description);
-	object->choice.peer.description->size = length;
-
-	return DNDS_success;
-}
-
-int Peer_get_description(DNDSObject_t *object, char **description, size_t *length)
-{
-	if (object == NULL || description == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_peer) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.peer.description == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	if (object->choice.peer.description == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	*description = (char *)object->choice.peer.description->buf;
-	*length = object->choice.peer.description->size;
-
-	return DNDS_success;
-}
-
-int Peer_set_provCode(DNDSObject_t *object, char *provCode, size_t length)
-{
-	if (object == NULL || provCode == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_peer) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.peer.provCode = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.peer.provCode == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.peer.provCode->buf = (uint8_t *)strdup(provCode);
-	object->choice.peer.provCode->size = length;
-
-	return DNDS_success;
-}
-
-int Peer_get_provCode(DNDSObject_t *object, char **provCode, size_t *length)
-{
-	if (object == NULL || provCode == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_peer) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.peer.provCode == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	*provCode = object->choice.peer.provCode->buf;
-	*length = object->choice.peer.provCode->size;
-
-	return DNDS_success;
-}
-
-int Peer_set_certificate(DNDSObject_t *object, char *certificate, size_t length)
-{
-	if (object == NULL || certificate == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_peer) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.peer.certificate = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.peer.certificate == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.peer.certificate->buf = (uint8_t *)strdup(certificate);
-	object->choice.peer.certificate->size = length;
-
-	return DNDS_success;
-}
-
-int Peer_get_certificate(DNDSObject_t *object, char **certificate, size_t *length)
-{
-	if (object == NULL || certificate == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_peer) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.peer.certificate == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	*certificate = (char *)object->choice.peer.certificate->buf;
-	*length = object->choice.peer.certificate->size;
-
-	return DNDS_success;
-}
-
-int Peer_set_certificateKey(DNDSObject_t *object, uint8_t *certificateKey, size_t length)
-{
-	if (object == NULL || certificateKey == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_peer) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.peer.certificateKey = (BIT_STRING_t *)calloc(1, sizeof(BIT_STRING_t));
-	if (object->choice.peer.certificateKey == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.peer.certificateKey->buf = (uint8_t *)calloc(1, length);
-	if (object->choice.peer.certificateKey->buf == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	memmove(object->choice.peer.certificateKey->buf, certificateKey, length);
-	object->choice.peer.certificateKey->size = length;
-
-	return DNDS_success;
-}
-
-int Peer_get_certificateKey(DNDSObject_t *object, uint8_t **certificateKey, size_t *length)
-{
-	if (object == NULL || certificateKey == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_peer) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.peer.certificateKey == NULL) {
-		return	DNDS_value_not_present;
-	}
-
-	*certificateKey = object->choice.peer.certificateKey->buf;
-	*length = object->choice.peer.certificateKey->size;
-
-	return DNDS_success;
-}
-
-int Peer_set_trustedCert(DNDSObject_t *object, uint8_t *trustedCert, size_t length)
-{
-	if (object == NULL || trustedCert == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_peer) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.peer.trustedCert = (BIT_STRING_t *)calloc(1, sizeof(BIT_STRING_t));
-	if (object->choice.peer.trustedCert == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.peer.trustedCert->buf = (uint8_t *)calloc(1, length);
-	if (object->choice.peer.trustedCert->buf == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	memmove(object->choice.peer.trustedCert->buf, trustedCert, length);
-	object->choice.peer.trustedCert->size = length;
-
-	return DNDS_success;
-}
-
-int Peer_get_trustedCert(DNDSObject_t *object, uint8_t **trustedCert, size_t *length)
-{
-	if (object == NULL || trustedCert == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_peer) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.peer.trustedCert == NULL) {
-		return	DNDS_value_not_present;
-	}
-
-	*trustedCert = object->choice.peer.trustedCert->buf;
-	*length = object->choice.peer.trustedCert->size;
-
-	return DNDS_success;
-}
-
-int Peer_set_status(DNDSObject_t *object, uint8_t status)
-{
-	if (object == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_peer) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.peer.status = (long *)calloc(1, sizeof(long));
-	if (object->choice.peer.status == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	*object->choice.peer.status = status;
-
-	return DNDS_success;
-}
-
-int Peer_get_status(DNDSObject_t *object, uint8_t *status)
-{
-	if (object == NULL || status == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_peer) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.peer.status == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	*status = *object->choice.peer.status;
-
-	return DNDS_success;
-}
-
 // Client
 int Client_set_id(DNDSObject_t *object, uint32_t id)
 {
@@ -3568,7 +2479,12 @@ int Client_set_id(DNDSObject_t *object, uint32_t id)
 		return DNDS_invalid_object_type;
 	}
 
-	object->choice.client.id = id;
+	object->choice.client.id = calloc(1, sizeof(uint32_t));
+	if (object->choice.context.id == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	*object->choice.client.id = id;
 
 	return DNDS_success;
 }
@@ -3583,48 +2499,11 @@ int Client_get_id(DNDSObject_t *object, uint32_t *id)
 		return DNDS_invalid_object_type;
 	}
 
-	*id = object->choice.client.id;
-
-	return DNDS_success;
-}
-
-int Client_set_username(DNDSObject_t *object, char *username, size_t length)
-{
-	if (object == NULL || username == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_client) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.client.username = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.client.username == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.client.username->buf = (uint8_t *)strdup(username);
-	object->choice.client.username->size = length;
-
-	return DNDS_success;
-}
-
-int Client_get_username(DNDSObject_t *object, char **username, size_t *length)
-{
-	if (object == NULL || username == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_client) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.client.username == NULL) {
+	if (object->choice.context.id == NULL) {
 		return DNDS_value_not_present;
 	}
 
-	*username = (char *)object->choice.client.username->buf;
-	*length = object->choice.client.username->size;
+	*id = (uint32_t)*object->choice.client.id;
 
 	return DNDS_success;
 }
@@ -4078,141 +2957,15 @@ int Client_get_status(DNDSObject_t *object, uint8_t *status)
 	return DNDS_success;
 }
 
-// WebCredential
-int WebCredential_set_clientId(DNDSObject_t *object, uint32_t id)
-{
-	if (object == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_webcredential) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.webcredential.clientId = id;
-
-	return DNDS_success;
-}
-
-int WebCredential_get_clientId(DNDSObject_t *object, uint32_t *id)
-{
-	if (object == NULL || id == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_webcredential) {
-		return DNDS_invalid_object_type;
-	}
-
-	*id = object->choice.webcredential.clientId;
-
-	return DNDS_success;
-}
-
-int WebCredential_set_username(DNDSObject_t *object, char *username, size_t length)
-{
-	if (object == NULL || username == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_webcredential) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.webcredential.username = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.webcredential.username == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.webcredential.username->buf = (uint8_t *)strdup(username);
-	object->choice.webcredential.username->size = length;
-
-	return DNDS_success;
-}
-int WebCredential_get_username(DNDSObject_t *object, char **username, size_t *length)
-{
-	if (object == NULL || username == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_webcredential) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.webcredential.username == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	*username = (char *)object->choice.webcredential.username->buf;
-	*length = object->choice.webcredential.username->size;
-
-	return DNDS_success;
-}
-
-int WebCredential_set_password(DNDSObject_t *object, char *password, size_t length)
-{
-	if (object == NULL || password == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_webcredential) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.webcredential.password = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (object->choice.webcredential.password == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	object->choice.webcredential.password->buf = (uint8_t *)strdup(password);
-	object->choice.webcredential.password->size = length;
-
-	return DNDS_success;
-}
-
-int WebCredential_get_password(DNDSObject_t *object, char **password, size_t *length)
-{
-	if (object == NULL || password == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_webcredential) {
-		return DNDS_invalid_object_type;
-	}
-
-	if (object->choice.webcredential.password == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	*password = (char *)object->choice.webcredential.password->buf;
-	*length = object->choice.webcredential.password->size;
-
-	return DNDS_success;
-}
-
 char *ObjectName_str(e_ObjectName objectname)
 {
 	switch (objectname) {
-	case ObjectName_acl:
-		return "acl";
-	case ObjectName_aclgroup:
-		return "aclgroup";
-	case ObjectName_ippool:
-		return "ippool";
 	case ObjectName_context:
 		return "context";
-	case ObjectName_host:
-		return "host";
 	case ObjectName_node:
 		return "node";
-	case ObjectName_peer:
-		return "peer";
-	case ObjectName_permission:
-		return "permission";
 	case ObjectName_client:
 		return "client";
-	case ObjectName_webcredential:
-		return "webcredential";
 	}
 	return "Unknown";
 }
@@ -4408,23 +3161,23 @@ void AddResponse_printf(DNDSMessage_t *msg)
 	printf("AddResponse> result: %i :: %s\n", result, DNDSResult_str(result));
 }
 
-void PeerConnectInfo_printf(DNDSMessage_t *msg)
+void NodeConnectInfo_printf(DNDSMessage_t *msg)
 {
 	int ret = 0;
 
 	size_t length;
 	char *certName;
 
-	ret = PeerConnectInfo_get_certName(msg, &certName, &length);
-	printf("PeerConnectInfo> certName(%i): %s\n", ret, certName);
+	ret = NodeConnectInfo_get_certName(msg, &certName, &length);
+	printf("NodeConnectInfo> certName(%i): %s\n", ret, certName);
 
 	char ipAddress[INET_ADDRSTRLEN];
-	ret = PeerConnectInfo_get_ipAddr(msg, ipAddress);
-	printf("PeerConnectInfo> ipAddr(%i): %s\n", ret, ipAddress);
+	ret = NodeConnectInfo_get_ipAddr(msg, ipAddress);
+	printf("NodeConnectInfo> ipAddr(%i): %s\n", ret, ipAddress);
 
 	e_ConnectState state;
-	ret = PeerConnectInfo_get_state(msg, &state);
-	printf("PeerConnectInfo> state(%i): %i :: %s\n", ret, state, ConnectState_str(state));
+	ret = NodeConnectInfo_get_state(msg, &state);
+	printf("NodeConnectInfo> state(%i): %i :: %s\n", ret, state, ConnectState_str(state));
 }
 
 void P2pRequest_printf(DNDSMessage_t *msg)
@@ -4557,63 +3310,6 @@ void SearchResponse_printf(DNDSMessage_t *msg)
 	printf("SearchResponse> result(%i): %i :: %s\n", ret, result, DNDSResult_str(result));
 }
 
-void Acl_printf(DNDSObject_t *object)
-{
-	uint32_t id;
-	Acl_get_id(object, &id);
-	printf("Acl> id: %i\n", id);
-
-	uint32_t contextId;
-	Acl_get_contextId(object, &contextId);
-	printf("Acl> contextId: %i\n", contextId);
-
-	char *description; size_t length;
-	Acl_get_description(object, &description, &length);
-	printf("Acl> description: %s\n", description);
-}
-
-void AclGroup_printf(DNDSObject_t *object)
-{
-	uint32_t id;
-	AclGroup_get_id(object, &id);
-	printf("AclGroup> id: %i\n", id);
-
-	uint32_t contextId;
-	AclGroup_get_contextId(object, &contextId);
-	printf("AclGroup> contextId: %i\n", contextId);
-
-	char *name; size_t length;
-	AclGroup_get_name(object, &name, &length);
-	printf("AclGroup> name: %s\n", name);
-
-	char *description;
-	AclGroup_get_description(object, &description, &length);
-	printf("AclGroup> description: %s\n", description);
-}
-
-void IpPool_printf(DNDSObject_t *object)
-{
-	uint32_t id;
-	IpPool_get_id(object, &id);
-	printf("IpPool> id: %i\n", id);
-
-	char ipLocal[INET_ADDRSTRLEN];
-	IpPool_get_ipLocal(object, ipLocal);
-	printf("IpPool> ipLocal: %s\n", ipLocal);
-
-	char ipBegin[INET_ADDRSTRLEN];
-	IpPool_get_ipBegin(object, ipBegin);
-	printf("IpPool> ipBegin: %s\n", ipBegin);
-
-	char ipEnd[INET_ADDRSTRLEN];
-	IpPool_get_ipEnd(object, ipEnd);
-	printf("IpPool> ipEnd: %s\n", ipEnd);
-
-	char netmask[INET_ADDRSTRLEN];
-	IpPool_get_netmask(object, netmask);
-	printf("IpPool> netmask: %s\n", netmask);
-}
-
 void Context_printf(DNDSObject_t *object)
 {
 	int ret = 0;
@@ -4652,156 +3348,72 @@ void Context_printf(DNDSObject_t *object)
 	printf("Context> trustedCert(%i): %s\n", ret, trustedCert);
 }
 
-void Host_printf(DNDSObject_t *object)
-{
-	uint32_t id;
-	Host_get_id(object, &id);
-	printf("Host> id: %i\n", id);
-
-	uint32_t contextId;
-	Host_get_contextId(object, &contextId);
-	printf("Host> contextId: %i\n", contextId);
-
-	uint32_t peerId;
-	Host_get_peerId(object, &peerId);
-	printf("Host> peerId: %i\n", peerId);
-
-	char *name; size_t length;
-	Host_get_name(object, &name, &length);
-	printf("Host> name: %s\n", name);
-
-	uint8_t macAddress[ETHER_ADDR_LEN];
-	Host_get_macAddress(object, macAddress);
-	printf("Host> macAddress: %x:%x:%x:%x:%x:%x\n", macAddress[0],macAddress[1],macAddress[2],
-							macAddress[3],macAddress[4],macAddress[5]);
-	char ipAddress[INET_ADDRSTRLEN];
-	Host_get_ipAddress(object, ipAddress);
-	printf("Host> ipAddress: %s\n", ipAddress);
-
-	uint8_t status;
-	Host_get_status(object, &status);
-	printf("Host> status: %i\n", status);
-}
-
 void Node_printf(DNDSObject_t *object)
 {
-	uint32_t id;
-	Node_get_id(object, &id);
-	printf("Node> id: %i\n", id);
+	uint32_t contextId = -1;
+	Node_get_contextId(object, &contextId);
+	printf("Node> contextId: %i\n", contextId);
 
-	char *name; size_t length;
-	Node_get_name(object, &name, &length);
-	printf("Node> name: %s\n", name);
-
-	char ipAddress[INET_ADDRSTRLEN];
-	Node_get_ipAddress(object, ipAddress);
-	printf("Node> ipAddress: %s\n", ipAddress);
-
-	char *certificate;
+	char *certificate = NULL; size_t length = 0;
 	Node_get_certificate(object, &certificate, &length);
-	printf("Node> certificate: %s\n", certificate);
+	printf("Node> certficiate: %s\n", certificate);
 
-	uint8_t *certificateKey;
+	uint8_t *certificateKey = NULL;
+	length = 0;
 	Node_get_certificateKey(object, &certificateKey, &length);
-	printf("Node> certficiateKey: ");
-	int i; for (i = 0; i < length; i++) { printf("%x", certificateKey[i]); } printf("\n");
+	printf("Node> certificateKey: ");
+	int i; for (i = 0; i < length; i++) { printf("%x", certificateKey[i]); }; printf("\n");
 
 	uint8_t status;
 	Node_get_status(object, &status);
 	printf("Node> status: %i\n", status);
 }
 
-void Peer_printf(DNDSObject_t *object)
-{
-	uint32_t contextId;
-	Peer_get_contextId(object, &contextId);
-	printf("Peer> contextId: %i\n", contextId);
-
-	char *certificate = NULL; size_t length = 0;
-	Peer_get_certificate(object, &certificate, &length);
-	printf("Peer> certficiate: %s\n", certificate);
-
-	uint8_t *certificateKey = NULL;
-	length = 0;
-	Peer_get_certificateKey(object, &certificateKey, &length);
-	printf("Peer> certificateKey: ");
-	int i; for (i = 0; i < length; i++) { printf("%x", certificateKey[i]); }; printf("\n");
-
-	uint8_t status;
-	Peer_get_status(object, &status);
-	printf("Peer> status: %i\n", status);
-}
-
-void Permission_printf(DNDSObject_t *object)
-{
-}
-
-void WebCredential_printf(DNDSObject_t *object)
-{
-	size_t length;
-
-	uint32_t id;
-	WebCredential_get_clientId(object, &id);
-	printf("WebCredential> id: %i\n", id);
-
-	char *username;
-	WebCredential_get_username(object, &username, &length);
-	printf("WebCredential> username: %s\n", username);
-
-	char *password;
-	WebCredential_get_password(object, &password, &length);
-	printf("WebCredential> password: %s\n", password);
-}
-
 void Client_printf(DNDSObject_t *object)
 {
 	size_t length;
 
-	uint32_t id;
+	uint32_t id = -1;
 	Client_get_id(object, &id);
 	printf("Client> id: %i\n", id);
 
-	char *username;
-	Client_get_username(object, &username, &length);
-	printf("Client> username: %s\n", username);
-
-	char *password;
+	char *password = NULL;
 	Client_get_password(object, &password, &length);
 	printf("Client> password: %s\n", password);
 
-	char *firstname;
+	char *firstname = NULL;
 	Client_get_firstname(object, &firstname, &length);
 	printf("Client> firstname: %s\n", firstname);
 
-	char *lastname;
+	char *lastname = NULL;
 	Client_get_lastname(object, &lastname, &length);
 	printf("Client> lastname: %s\n", lastname);
 
-	char *email;
+	char *email = NULL;
 	Client_get_email(object, &email, &length);
 	printf("Client> email: %s\n", email);
 
-	char *company;
+	char *company = NULL;
 	Client_get_company(object, &company, &length);
 	printf("Client> company: %s\n", company);
 
-	char *phone;
+	char *phone = NULL;
 	Client_get_phone(object, &phone, &length);
 	printf("Client> phone: %s\n", phone);
 
-	char *country;
+	char *country = NULL;
 	Client_get_country(object, &country, &length);
 	printf("Client> country: %s\n", country);
 
-	char *stateProvince;
+	char *stateProvince = NULL;
 	Client_get_stateProvince(object, &stateProvince, &length);
 	printf("Client> stateProvince: %s\n", stateProvince);
 
-	char *city;
+	char *city = NULL;
 	Client_get_city(object, &city, &length);
 	printf("Client> city: %s\n", city);
 
-	char *postalCode;
+	char *postalCode = NULL;
 	Client_get_postalCode(object, &postalCode, &length);
 	printf("Client> postalCode: %s\n", postalCode);
 
@@ -4817,43 +3429,16 @@ void DNDSObject_printf(DNDSObject_t *obj)
 
 	switch (objType) {
 
-		case DNDSObject_PR_acl:
-			Acl_printf(obj);
-			break;
-
-		case DNDSObject_PR_aclgroup:
-			AclGroup_printf(obj);
-			break;
-
-		case DNDSObject_PR_ippool:
-			IpPool_printf(obj);
-			break;
-
 		case DNDSObject_PR_context:
 			Context_printf(obj);
-			break;
-
-		case DNDSObject_PR_host:
-			Host_printf(obj);
 			break;
 
 		case DNDSObject_PR_node:
 			Node_printf(obj);
 			break;
 
-		case DNDSObject_PR_peer:
-			Peer_printf(obj);
-			break;
-
-		case DNDSObject_PR_permission:
-			break;
-
 		case DNDSObject_PR_client:
 			Client_printf(obj);
-			break;
-
-		case DNDSObject_PR_webcredential:
-			WebCredential_printf(obj);
 			break;
 
 		case DNDSObject_PR_NOTHING:
