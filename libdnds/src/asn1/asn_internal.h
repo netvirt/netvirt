@@ -20,13 +20,16 @@ extern "C" {
 #endif
 
 /* Environment version might be used to avoid running with the old library */
-#define	ASN1C_ENVIRONMENT_VERSION	922	/* Compile-time version */
+#define	ASN1C_ENVIRONMENT_VERSION	923	/* Compile-time version */
 int get_asn1c_environment_version(void);	/* Run-time version */
 
 #define	CALLOC(nmemb, size)	calloc(nmemb, size)
 #define	MALLOC(size)		malloc(size)
 #define	REALLOC(oldptr, size)	realloc(oldptr, size)
 #define	FREEMEM(ptr)		free(ptr)
+
+#define	asn_debug_indent	0
+#define ASN_DEBUG_INDENT_ADD(i) do{}while(0)
 
 /*
  * A macro for debugging the ASN.1 internals.
@@ -36,9 +39,13 @@ int get_asn1c_environment_version(void);	/* Run-time version */
 #if	EMIT_ASN_DEBUG == 1	/* And it was asked to emit this code... */
 #ifdef	__GNUC__
 #ifdef	ASN_THREAD_SAFE
-#define	asn_debug_indent	0
+/* Thread safety requires sacrifice in output indentation:
+ * Retain empty definition of ASN_DEBUG_INDENT_ADD. */
 #else	/* !ASN_THREAD_SAFE */
+#undef  ASN_DEBUG_INDENT_ADD
+#undef  asn_debug_indent
 int asn_debug_indent;
+#define ASN_DEBUG_INDENT_ADD(i) do { asn_debug_indent += i; } while(0)
 #endif	/* ASN_THREAD_SAFE */
 #define	ASN_DEBUG(fmt, args...)	do {			\
 		int adi = asn_debug_indent;		\
