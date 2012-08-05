@@ -202,6 +202,7 @@ int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 	else if (ret == 0) {
 		// Error
 		kconn->status = KRYPT_FAIL;
+		jlog(L_ERROR, "ssl_get_error: %d\n", SSL_get_error(kconn->ssl, ret));
 		ssl_error_stack();
 		jlog(L_ERROR, "krypt]> handshake error");
 		status = -1;

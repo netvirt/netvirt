@@ -3,7 +3,7 @@
 #
 
 AC_PREREQ([2.67])
-AC_INIT([DNDS library],[0.1],[nicboul@gmail.com],[libdnds],[https://github.com/nicboul/DNDS/wiki])
+AC_INIT([DNDS library],[0.2],[nib@dynvpn.com],[libdnds],[https://github.com/nicboul/DNDS/wiki])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 LT_PREREQ([2.2])
 LT_INIT([dlopen])

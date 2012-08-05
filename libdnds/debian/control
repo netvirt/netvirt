@@ -1,6 +1,6 @@
 Source: libdnds
 Priority: extra
-Maintainer: Nicolas Bouliane <nib@mind4networks.com>
+Maintainer: Nicolas Bouliane <nib@dynvpn.com>
 Build-Depends: debhelper (>= 7.0.50~), autotools-dev, openssl
 Standards-Version: 3.9.1
 Section: libs
