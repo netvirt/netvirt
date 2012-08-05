@@ -76,13 +76,14 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 
 			//jlog(L_DEBUG, "dnd]> forwarding the packet to [%s]", session_dst->ip);
 			ret = net_send_msg(session_dst->netc, msg);
-
+/*
 			int lstate = 0;
 			lstate = linkst_joined(session_src->id, session_dst->id, session_src->context->linkst, 1024);
 			if (!lstate) {
 				p2pRequest(session_src, session_dst);
 				linkst_join(session_src->id, session_dst->id, session_src->context->linkst, 1024);
 			}
+*/
 
 	/* Switch flooding */
 	} else if (macaddr_dst_type == ADDR_BROADCAST ||	/* This packet has to be broadcasted */

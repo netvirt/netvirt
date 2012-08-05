@@ -1,4 +1,4 @@
-AC_INIT([dnd], [0.1])
+AC_INIT([dnd], [0.2])
 
 AC_CONFIG_SRCDIR(src/dnd.c)
 AC_CONFIG_HEADER(config.h)
@@ -25,7 +25,7 @@ AC_PROG_CC
 AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
 
-PKG_CHECK_MODULES(libdnds, libdnds >= 0.1)
+PKG_CHECK_MODULES(libdnds, libdnds >= 0.2)
 AC_SUBST(libdnds_CFLAGS)
 AC_SUBST(libdnds_LIBS)
 
