@@ -1,0 +1,15 @@
+Source: dsd
+Section: comm
+Priority: extra
+Maintainer: Nicolas Bouliane <nib@dynvpn.com>
+Build-Depends: debhelper (>= 7.0.50~), autotools-dev
+Standards-Version: 3.9.1
+Homepage: http://www.dynvpn.com
+#Vcs-Git: git://git.debian.org/collab-maint/dnd.git
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/dnd.git;a=summary
+
+Package: dsd
+Architecture: i386
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Directory Service
+ DNDS is a Dynamic VPN solution that allow you to securely access and manage computers/devices via Internet
