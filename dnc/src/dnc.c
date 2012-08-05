@@ -84,12 +84,14 @@ static void tunnel_in(iface_t *iface)
 	DNDSMessage_set_ethernet(msg, iface->frame, frame_size);
 
 	/* Any p2p connection already established ? if so, route the packet to the p2p link.
-	 * Otherwise the packet is sent to the server, where he will be switched to the right node.
-	 */
+	 * Otherwise the packet is sent to the server, where it will be switched to the right node.
+
+	FIXME: still in alpha, must become asynchronous
+
 	p2p_session = ftable_find(ftable, macaddr_dst);
 	if (p2p_session && p2p_session->status == SESSION_STATUS_AUTHED) {
 		session = p2p_session;
-	}
+	}*/
 
 	net_send_msg(session->netc, msg);
 }
