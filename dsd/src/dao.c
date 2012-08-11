@@ -502,8 +502,8 @@ int dao_fetch_context_embassy(char *context_id,
 			char **privatekey,
 			char **serial)
 {
-	const char *paramValues[0];
-	int paramLengths[0];
+	const char *paramValues[1];
+	int paramLengths[1];
 	PGresult *result;
 
 	if (!context_id || !certificate || !privatekey || !serial) {
