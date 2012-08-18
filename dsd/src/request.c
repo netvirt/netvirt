@@ -383,6 +383,7 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 
 	char *provcode = NULL;
 	uint32_t length;
+	int ret = 0;
 
 	DNDSObject_t *obj;
         SearchRequest_get_object(req_msg, &obj);
@@ -413,7 +414,11 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 	char *private_key = NULL;
 	char *trustedcert = NULL;
 
-	dao_fetch_node_from_provcode(provcode, &certificate, &private_key, &trustedcert);
+	ret = dao_fetch_node_from_provcode(provcode, &certificate, &private_key, &trustedcert);
+	if (ret != 0) {
+		jlog(L_WARNING, "dao fetch node from provcode failed: %s\n", provcode);
+		return;
+	}
 
 	Node_set_certificate(objNode, certificate, strlen(certificate));
 	Node_set_certificateKey(objNode, private_key, strlen(private_key));

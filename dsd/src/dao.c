@@ -664,9 +664,20 @@ int dao_fetch_node_from_provcode(char *provcode,
 	jlog(L_DEBUG, "fetch_req: %s\n", fetch_req);
 
 	result = PQexec(dbconn, fetch_req);
-	*certificate = strdup(PQgetvalue(result, 0, 0));
-	*private_key = strdup(PQgetvalue(result, 0, 1));
-	*trustedcert = strdup(PQgetvalue(result, 0, 2));
+
+	int tuples, fields;
+	tuples = PQntuples(result);
+	fields = PQnfields(result);
+
+	jlog(L_DEBUG, "Tuples %d\n", tuples);
+	jlog(L_DEBUG, "Fields %d\n", fields);
+
+	if (tuples > 0 && fields == 3) {
+		*certificate = strdup(PQgetvalue(result, 0, 0));
+		*private_key = strdup(PQgetvalue(result, 0, 1));
+		*trustedcert = strdup(PQgetvalue(result, 0, 2));
+	} else
+		return -1;
 
 	if (!result) {
 		jlog(L_DEBUG, "PQexec command failed, no error code\n");
@@ -685,6 +696,8 @@ int dao_fetch_node_from_provcode(char *provcode,
 			PQresultErrorMessage(result));
 		break;
 	}
+
+	return 0;
 }
 
 int dao_fetch_context(char **id,
