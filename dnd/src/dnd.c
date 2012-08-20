@@ -50,13 +50,30 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 	/* New mac address ? Add it to the lookup table */
 	inet_get_mac_addr_src(frame, macaddr_src);
 	session_src = ftable_find(session->context->ftable, macaddr_src);
+
 	if (session_src == NULL) {
+
 		memcpy(session->mac_addr, macaddr_src, ETHER_ADDR_LEN);
 		ftable_insert(session->context->ftable, macaddr_src, session);
 		context_add_session(session->context, session);
 		session_src = session;
 
 		jlog(L_DEBUG, "dnd]> new ID [%d]\n", session->id);
+
+	} else if (session->mac_addr[0] == 0 &&
+			session->mac_addr[1] == 0 &&
+			session->mac_addr[2] == 0 &&
+			session->mac_addr[3] == 0 &&
+			session->mac_addr[4] == 0 &&
+			session->mac_addr[5] == 0) {
+
+		/* If a node reconnect and has the same mac address,
+		   update the ftable with the new session. */
+
+		memcpy(session->mac_addr, macaddr_src, ETHER_ADDR_LEN);
+		ftable_erase(session->context->ftable, macaddr_src);
+		ftable_insert(session->context->ftable, macaddr_src, session);
+		context_add_session(session->context, session);
 	}
 
 	/* Lookup the destination */
