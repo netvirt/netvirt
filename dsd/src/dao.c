@@ -148,6 +148,17 @@ int dao_prepare_statements()
 
 	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
 
+
+	result = PQprepare(dbconn,
+			"dao_fetch_context_by_client_id",
+			"SELECT id, topology_id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
+			"FROM context "
+			"WHERE client_id = $1;",
+			0,
+			NULL);
+
+	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+
 }
 
 void dao_dump_statements()
@@ -695,6 +706,75 @@ int dao_fetch_node_from_provcode(char *provcode,
 			PQresStatus(PQresultStatus(result)),
 			PQresultErrorMessage(result));
 		break;
+	}
+
+	return 0;
+}
+
+int dao_fetch_context_by_client_id(char *client_id, void *data, int (*cb_data_handler)(void *data,
+					char *id,
+					char *topology_id,
+					char *description,
+					char *client_id,
+					char *network,
+					char *netmask,
+					char *serverCert,
+					char *serverPrivkey,
+					char *trustedCert))
+
+{
+	const char *paramValues[1];
+	int paramLengths[1];
+	int tuples;
+	int fields;
+	PGresult *result;
+
+	if (!client_id) {
+		jlog(L_ERROR, "invalid NULL parameter\n");
+		return -1;
+	}
+
+	paramValues[0] = client_id;
+	paramLengths[0] = strlen(client_id);
+
+	result = PQexecPrepared(dbconn, "dao_fetch_context_by_client_id", 1, paramValues, paramLengths, NULL, 0);
+
+	if (!result) {
+		jlog(L_DEBUG, "PQexec command failed, no error code\n");
+	}
+
+	switch (PQresultStatus(result)) {
+	case PGRES_COMMAND_OK:
+		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
+		break;
+	case PGRES_TUPLES_OK:
+		jlog(L_DEBUG, "query may have returned data\n");
+		break;
+	default:
+		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
+			PQresStatus(PQresultStatus(result)),
+			PQresultErrorMessage(result));
+		break;
+	}
+
+	tuples = PQntuples(result);
+	fields = PQnfields(result);
+
+	jlog(L_DEBUG, "Tuples %d\n", tuples);
+	jlog(L_DEBUG, "Fields %d\n", fields);
+
+	int i;
+	for (i = 0; i < tuples; i++) {
+		cb_data_handler(data,
+			strdup(PQgetvalue(result, i, 0)),
+			strdup(PQgetvalue(result, i, 1)),
+			strdup(PQgetvalue(result, i, 2)),
+			strdup(PQgetvalue(result, i, 3)),
+			strdup(PQgetvalue(result, i, 4)),
+			strdup(PQgetvalue(result, i, 5)),
+			strdup(PQgetvalue(result, i, 6)),
+			strdup(PQgetvalue(result, i, 7)),
+			strdup(PQgetvalue(result, i, 8)));
 	}
 
 	return 0;

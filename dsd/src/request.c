@@ -315,23 +315,85 @@ void searchRequest_client(struct session *session, DNDSMessage_t *req_msg)
 	DNDSObject_new(&objClient);
 	DNDSObject_set_objectType(objClient, DNDSObject_PR_client);
 
-	Client_set_id(objClient, atoi(id)); /* FIXME id might be NULL */
+	Client_set_id(objClient, id ? atoi(id): 0); /* FIXME id might be NULL */
 
 	SearchResponse_add_object(msg, objClient);
 	net_send_msg(session->netc, msg);
 }
 
-void searchRequest_context(struct session *session, DNDSMessage_t *req_msg)
-
+void CB_searchRequest_context_by_client_id(DNDSMessage_t *msg,
+						char *id,
+						char *topology_id,
+						char *description,
+						char *client_id,
+						char *network,
+						char *netmask,
+						char *serverCert,
+						char *serverPrivkey,
+						char *trustedCert)
 {
-	char *id;
-	char *topology_id;
-	char *description;
-	char *network;
-	char *netmask;
-	char *serverCert;
-	char *serverPrivkey;
-	char *trustedCert;
+	/*jlog(L_DEBUG, "callback called! %s:%s\n", id, description);*/
+
+	DNDSObject_t *objContext;
+	DNDSObject_new(&objContext);
+	DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
+
+	/*printf("id: %s:%d\n", id, atoi(id));*/
+
+	Context_set_id(objContext, atoi(id));
+	Context_set_clientId(objContext, client_id);
+	Context_set_topology(objContext, Topology_mesh);
+	Context_set_description(objContext, description, strlen(description));
+	Context_set_network(objContext, network);
+	Context_set_netmask(objContext, netmask);
+/*
+        Context_set_serverCert(objContext, serverCert, strlen(serverCert));
+        Context_set_serverPrivkey(objContext, serverPrivkey, strlen(serverPrivkey));
+        Context_set_trustedCert(objContext, trustedCert, strlen(trustedCert));
+*/
+	SearchResponse_set_searchType(msg, SearchType_object);
+	SearchResponse_add_object(msg, objContext);
+
+}
+
+void searchRequest_context_by_client_id(struct session *session, DNDSMessage_t *req_msg)
+{
+	uint32_t client_id = 0;
+	char str_client_id[20];
+
+	DNDSObject_t *obj = NULL;
+	SearchRequest_get_object(req_msg, &obj);
+
+	Context_get_clientId(obj, &client_id);
+	snprintf(str_client_id, sizeof(str_client_id), "%d", client_id);
+
+	DNDSMessage_t *msg;
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+
+	DSMessage_set_seqNumber(msg, 0);
+	DSMessage_set_ackNumber(msg, 1);
+	DSMessage_set_operation(msg, dsop_PR_searchResponse);
+
+	dao_fetch_context_by_client_id(str_client_id, msg,
+		CB_searchRequest_context_by_client_id);
+
+	SearchResponse_set_result(msg, DNDSResult_success);
+
+	net_send_msg(session->netc, msg);
+}
+
+void searchRequest_context(struct session *session, DNDSMessage_t *req_msg)
+{
+	char *id = NULL;
+	char *topology_id = NULL;
+	char *description = NULL;
+	char *network = NULL;
+	char *netmask = NULL;
+	char *serverCert = NULL;
+	char *serverPrivkey = NULL;
+	char *trustedCert = NULL;
 
 	dao_fetch_context(&id,
 			&topology_id,
@@ -453,6 +515,9 @@ void searchRequest(struct session *session, DNDSMessage_t *req_msg)
 			break;
 		case DNDSObject_PR_node:
 			searchRequest_node(session, req_msg);
+			break;
+		case DNDSObject_PR_context:
+			searchRequest_context_by_client_id(session, req_msg);
 			break;
 		}
 	}
