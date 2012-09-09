@@ -159,6 +159,14 @@ int dao_prepare_statements()
 
 	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
 
+	result = PQprepare(dbconn,
+			"dao_fetch_context",
+			"SELECT id, topology_id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
+			"FROM context;",
+			0,
+			NULL);
+
+	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
 }
 
 void dao_dump_statements()
@@ -780,20 +788,22 @@ int dao_fetch_context_by_client_id(char *client_id, void *data, int (*cb_data_ha
 	return 0;
 }
 
-int dao_fetch_context(char **id,
-			char **topology_id,
-			char **description,
-			char **network,
-			char **netmask,
-			char **serverCert,
-			char **serverPrivkey,
-			char **trustedCert)
+int dao_fetch_context(void *data, void (*cb_data_handler)(void *data,
+							char *id,
+							char *topology_id,
+							char *description,
+							char *client_id,
+							char *network,
+							char *netmask,
+							char *serverCert,
+							char *serverPrivkey,
+							char *trustedCert))
 {
+	int tuples;
+	int fields;
 	PGresult *result;
-	result = PQexec(dbconn, "SELECT id, topology_id, description, host(network), netmask(network),\
-					passport_certificate, \
-					passport_privatekey, embassy_certificate \
-				FROM context;");
+
+	result = PQexecPrepared(dbconn, "dao_fetch_context", 0, NULL, NULL, NULL, 0);
 
 	if (!result) {
 		jlog(L_DEBUG, "PQexec command failed, no error code\n");
@@ -813,7 +823,6 @@ int dao_fetch_context(char **id,
 		break;
 	}
 
-	int tuples, fields;
 	tuples = PQntuples(result);
 	fields = PQnfields(result);
 
@@ -821,18 +830,18 @@ int dao_fetch_context(char **id,
 	jlog(L_DEBUG, "Fields %d\n", fields);
 
 	int i;
-	for (i = 0; i<fields; i++) {
-		jlog(L_DEBUG, "%s | %s\n", PQfname(result, i), PQgetvalue(result, 0, i));
+	for (i = 0; i < tuples; i++) {
+		cb_data_handler(data,
+			strdup(PQgetvalue(result, i, 0)),
+			strdup(PQgetvalue(result, i, 1)),
+			strdup(PQgetvalue(result, i, 2)),
+			strdup(PQgetvalue(result, i, 3)),
+			strdup(PQgetvalue(result, i, 4)),
+			strdup(PQgetvalue(result, i, 5)),
+			strdup(PQgetvalue(result, i, 6)),
+			strdup(PQgetvalue(result, i, 7)),
+			strdup(PQgetvalue(result, i, 8)));
 	}
-
-	*id = strdup(PQgetvalue(result, 0, 0));
-	*topology_id = strdup(PQgetvalue(result, 0, 1));
-	*description = strdup(PQgetvalue(result, 0, 2));
-	*network = strdup(PQgetvalue(result, 0, 3));
-	*netmask = strdup(PQgetvalue(result, 0, 4));
-	*serverCert = strdup(PQgetvalue(result, 0, 5));
-	*serverPrivkey = strdup(PQgetvalue(result, 0, 6));
-	*trustedCert = strdup(PQgetvalue(result, 0, 7));
 
 	return 0;
 }

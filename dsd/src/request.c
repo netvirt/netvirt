@@ -384,6 +384,38 @@ void searchRequest_context_by_client_id(struct session *session, DNDSMessage_t *
 	net_send_msg(session->netc, msg);
 }
 
+void CB_searchRequest_context(DNDSMessage_t *msg,
+				char *id,
+				char *topology_id,
+				char *description,
+				char *client_id,
+				char *network,
+				char *netmask,
+				char *serverCert,
+				char *serverPrivkey,
+				char *trustedCert)
+{
+
+	DNDSObject_t *objContext;
+	DNDSObject_new(&objContext);
+	DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
+
+	printf("id: %s:%d\n", id, atoi(id));
+
+	Context_set_id(objContext, atoi(id));
+	Context_set_topology(objContext, Topology_mesh);
+	Context_set_description(objContext, description, strlen(description));
+	Context_set_network(objContext, network);
+	Context_set_netmask(objContext, netmask);
+	Context_set_serverCert(objContext, serverCert, strlen(serverCert));
+	Context_set_serverPrivkey(objContext, serverPrivkey, strlen(serverPrivkey));
+	Context_set_trustedCert(objContext, trustedCert, strlen(trustedCert));
+
+	SearchResponse_set_searchType(msg, SearchType_all);
+		SearchResponse_add_object(msg, objContext);
+}
+
+
 void searchRequest_context(struct session *session, DNDSMessage_t *req_msg)
 {
 	char *id = NULL;
@@ -395,17 +427,7 @@ void searchRequest_context(struct session *session, DNDSMessage_t *req_msg)
 	char *serverPrivkey = NULL;
 	char *trustedCert = NULL;
 
-	dao_fetch_context(&id,
-			&topology_id,
-			&description,
-			&network,
-			&netmask,
-			&serverCert,
-			&serverPrivkey,
-			&trustedCert);
-
         DNDSMessage_t *msg;
-
         DNDSMessage_new(&msg);
         DNDSMessage_set_channel(msg, 0);
         DNDSMessage_set_pdu(msg, pdu_PR_dsm);
@@ -416,23 +438,7 @@ void searchRequest_context(struct session *session, DNDSMessage_t *req_msg)
 
         SearchResponse_set_result(msg, DNDSResult_success);
 
-        DNDSObject_t *objContext;
-        DNDSObject_new(&objContext);
-        DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
-
-	printf("id: %s:%d\n", id, atoi(id));
-
-        Context_set_id(objContext, atoi(id));
-        Context_set_topology(objContext, Topology_mesh);
-        Context_set_description(objContext, description, strlen(description));
-        Context_set_network(objContext, network);
-        Context_set_netmask(objContext, netmask);
-        Context_set_serverCert(objContext, serverCert, strlen(serverCert));
-        Context_set_serverPrivkey(objContext, serverPrivkey, strlen(serverPrivkey));
-        Context_set_trustedCert(objContext, trustedCert, strlen(trustedCert));
-
-	SearchResponse_set_searchType(msg, SearchType_all);
-        SearchResponse_add_object(msg, objContext);
+	dao_fetch_context(msg, CB_searchRequest_context);
 
 	net_send_msg(session->netc, msg);
 

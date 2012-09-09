@@ -22,7 +22,7 @@ int dao_connect(char *host, char *username, char *password, char *dbname);
 			char **serverCert,
 			char **serverPrivkey,
 			char **trustedCert);
-*/
+
 int dao_fetch_context(char **id,
 			char **topology_id,
 			char **description,
@@ -31,5 +31,6 @@ int dao_fetch_context(char **id,
 			char **serverCert,
 			char **serverPrivkey,
 			char **trustedCert);
+*/
 char *uuid_v4(void);
 #endif
