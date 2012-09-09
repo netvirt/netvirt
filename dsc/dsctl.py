@@ -67,8 +67,8 @@ def login(conn, arg):
     obj = req.setComponentByName('object').getComponentByName('object')
     client = obj.setComponentByName('client').getComponentByName('client')
 
-    client.setComponentByName('email', 'test-email')
-    client.setComponentByName('password', 'test-password')
+    client.setComponentByName('email', loginInfo[0])
+    client.setComponentByName('password', loginInfo[1])
 
 #    print(msg.prettyPrint())
     conn.ssl_sock.write(encoder.encode(msg))
