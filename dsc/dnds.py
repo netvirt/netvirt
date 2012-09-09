@@ -43,8 +43,8 @@ class Context(univ.Sequence):
         namedtype.NamedType('clientId', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1))),
         namedtype.NamedType('topology', Topology().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 2))),
         namedtype.OptionalNamedType('description', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 3))),
-        namedtype.NamedType('network', univ.OctetString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 4))),
-        namedtype.NamedType('netmask', univ.OctetString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 5))),
+        namedtype.OptionalNamedType('network', univ.OctetString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 4))),
+        namedtype.OptionalNamedType('netmask', univ.OctetString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 5))),
         namedtype.OptionalNamedType('serverCert',char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 6))),
         namedtype.OptionalNamedType('serverPrivkey', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 7))),
         namedtype.OptionalNamedType('trustedCert', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 8))),
@@ -189,7 +189,6 @@ f = open('dnds.ber', 'wb')
 f.write(encoder.encode(msg))
 f.close()
 
-"""
 f = open('dnds.ber', 'rb')
 substrate = f.read()
 f.close()
@@ -197,3 +196,4 @@ my_msg, substrate = decoder.decode(substrate, asn1Spec=DNDSMessage())
 
 print(my_msg.prettyPrint())
 
+"""
