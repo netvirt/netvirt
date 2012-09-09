@@ -25,6 +25,7 @@ struct session *session_new()
 	session->next = NULL;
 	session->prev = NULL;
 	session->context = NULL;
+	session->id = 0;
 
 	session->status = SESSION_STATUS_NOT_AUTHED;
 
