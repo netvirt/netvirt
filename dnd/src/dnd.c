@@ -55,7 +55,6 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 
 		memcpy(session->mac_addr, macaddr_src, ETHER_ADDR_LEN);
 		ftable_insert(session->context->ftable, macaddr_src, session);
-		context_add_session(session->context, session);
 		session_src = session;
 
 		jlog(L_DEBUG, "dnd]> new ID [%d]\n", session->id);
@@ -73,7 +72,6 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 		memcpy(session->mac_addr, macaddr_src, ETHER_ADDR_LEN);
 		ftable_erase(session->context->ftable, macaddr_src);
 		ftable_insert(session->context->ftable, macaddr_src, session);
-		context_add_session(session->context, session);
 	}
 
 	/* Lookup the destination */
@@ -239,6 +237,8 @@ static void on_secure(netc_t *netc)
 
 		DNDSMessage_del(msg);
 		msg = NULL;
+
+		context_add_session(session->context, session);
 	}
 }
 
