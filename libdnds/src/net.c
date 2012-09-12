@@ -446,8 +446,11 @@ int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 		net_queue_out(netc, netc->buf_enc, netc->buf_enc_data_size);
 	}
 
+
 	netc->buf_enc_data_size = 0; // mark buffer as empty
 	nbyte = net_flush_queue_out(netc);
+
+	DNDSMessage_del(msg);
 
 	return nbyte;
 }
