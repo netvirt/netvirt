@@ -19,6 +19,7 @@
 
 #include <dnds/cli.h>
 #include <dnds/dnds.h>
+#include <dnds/event.h>
 #include <dnds/journal.h>
 #include <dnds/mbuf.h>
 #include <dnds/net.h>
@@ -49,6 +50,8 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg);
 
 static ftable_t *ftable;
 struct session *master_session;
+
+static int g_shutdown = 0;	/* True if DNC is shutting down */
 
 /* TODO must be part of a config->members */
 char *g_certificate = NULL;
@@ -212,14 +215,14 @@ static void on_disconnect(netc_t *netc)
 		session->server_port, NET_PROTO_UDT, NET_SECURE_ADH,
 		session->passport, on_disconnect, on_input, on_secure);
 
-		if (retry_netc)
-			break;
+		if (retry_netc) {
+			session->status = SESSION_STATUS_NOT_AUTHED;
+			session->netc = retry_netc;
+			retry_netc->ext_ptr = session;
+			return;
+		}
 
-	} while (1);
-
-	session->status = SESSION_STATUS_NOT_AUTHED;
-	session->netc = retry_netc;
-	retry_netc->ext_ptr = session;
+	} while (!g_shutdown);
 }
 
 /* only used by P2P */
@@ -497,6 +500,11 @@ static int handle_show_peer(cli_entry_t *entry, int cmd, cli_args_t *args)
 	return CLI_RETURN_SUCCESS;
 }
 
+void dnc_fini(void *ext_ptr)
+{
+	g_shutdown = 1;
+}
+
 int dnc_init(char *server_address, char *server_port, char *prov_code,
 		char *certificate, char *privatekey, char *trusted_authority)
 {
@@ -550,6 +558,8 @@ int dnc_init(char *server_address, char *server_port, char *prov_code,
 	session->iface = netbus_newtun(tunnel_in);
 	session->iface->ext_ptr = session;
 	tun_up(session->iface->devname, "0.0.0.0");
+
+	event_register(EVENT_EXIT, "dnc]> dnc_fini", dnc_fini, PRIO_AGNOSTIC);
 
 	return 0;
 }
