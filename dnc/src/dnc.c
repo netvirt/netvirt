@@ -92,8 +92,8 @@ static void tunnel_in(iface_t *iface)
 	if (p2p_session && p2p_session->status == SESSION_STATUS_AUTHED) {
 		session = p2p_session;
 	}*/
-
 	net_send_msg(session->netc, msg);
+	iface->frame = NULL;
 }
 
 static void tunnel_out(iface_t *iface, DNDSMessage_t *msg)
