@@ -14,6 +14,7 @@
 #include "config.h"
 #endif
 
+
 #include <string.h>
 #include <sys/types.h>
 #include <sys/uio.h>
@@ -149,43 +150,21 @@ static int serialize_buf_enc(const void *buf, size_t data_size, void *ext_ptr)
 
 static int net_flush_queue_out(netc_t *netc)
 {
-
-	// XXX would be nice if UDT support iovec
-
 	size_t nbyte = 0;
-//	int iovcnt = 0;
-//	int qcount = 0;
 
 	peer_t *peer = NULL;
-	mbuf_t **mbuf_itr = NULL;
-//	struct iovec *iov = NULL;
+	mbuf_t *mbuf_itr = NULL;
 
 	peer = (peer_t *)netc->peer;
-	mbuf_itr = &netc->queue_out;
-//	qcount = mbuf_count(netc->queue_out);
+	mbuf_itr = netc->queue_out;
 
-//	iov = (struct iovec *)calloc(qcount, sizeof(struct iovec));
+	while (mbuf_itr != NULL) {
 
-	while (*mbuf_itr != NULL) { // && iovcnt < qcount) {	// XXX mbuf_next()
-
-//		iov[iovcnt].iov_base = (*mbuf_itr)->ext_buf;
-//		iov[iovcnt].iov_len = (*mbuf_itr)->ext_size;
-
-//		iovcnt++;
-
-		nbyte = peer->send(peer, (*mbuf_itr)->ext_buf, (*mbuf_itr)->ext_size);
-
-		*mbuf_itr = (*mbuf_itr)->next;
+		nbyte = peer->send(peer, mbuf_itr->ext_buf, mbuf_itr->ext_size);
+		mbuf_itr = mbuf_itr->next;
 	}
 
-//	nbyte = writev(peer->socket, iov, qcount);	// XXX lower layer must support iovec
-
 	mbuf_free(&netc->queue_out);
-/*
-	mbuf_itr = &netc->queue_out;
-	while (*mbuf_itr != NULL)
-		mbuf_del(mbuf_itr, *mbuf_itr);
-*/
 	return nbyte;
 }
 
