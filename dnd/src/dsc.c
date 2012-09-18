@@ -147,7 +147,7 @@ static void handle_SearchResponse_Node(netc_t *netc, DNDSMessage_t *msg)
 	session = session_tracking_table[tracked_id % MAX_SESSION];
 	session_tracking_table[tracked_id % MAX_SESSION] = NULL;
 	net_send_msg(session->netc, new_msg);
-	DNDSMessage_del(msg);
+	DNDSMessage_del(new_msg);
 }
 
 static void handle_SearchResponse_Context(netc_t *netc, DNDSMessage_t *msg)
