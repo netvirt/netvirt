@@ -159,6 +159,7 @@ void transmit_netinfo_response(netc_t *netc)
 
 	transmit_node_connectinfo(ConnectState_connected,
 				session->ip, session->cert_name);
+	DNDSMessage_del(msg);
 }
 
 void handle_netinfo_request(struct session *session, DNDSMessage_t *msg)
@@ -234,9 +235,7 @@ static void on_secure(netc_t *netc)
 
 		AuthResponse_set_result(msg, DNDSResult_success);
 		nbyte = net_send_msg(session->netc, msg);
-
 		DNDSMessage_del(msg);
-		msg = NULL;
 
 		context_add_session(session->context, session);
 	}

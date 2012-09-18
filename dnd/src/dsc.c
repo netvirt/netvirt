@@ -55,6 +55,7 @@ int transmit_provisioning(struct session *session, char *provCode, uint32_t leng
 	SearchRequest_set_object(msg, objNode);
 
 	net_send_msg(dsc_netc, msg);
+	DNDSMessage_del(msg);
 
 	session_tracking_table[tracking_id % MAX_SESSION] = session;
 	tracking_id++;
@@ -77,6 +78,7 @@ int transmit_node_connectinfo(e_ConnectState state, char *ipAddress, char *certN
         NodeConnectInfo_set_state(msg, state);
 
 	net_send_msg(dsc_netc, msg);
+	DNDSMessage_del(msg);
 
 	return 0;
 }
@@ -99,6 +101,7 @@ static void on_secure(netc_t *netc)
 	SearchRequest_set_objectName(msg, ObjectName_context);
 
 	net_send_msg(netc, msg);
+	DNDSMessage_del(msg);
 }
 
 static void handle_SearchResponse_Node(netc_t *netc, DNDSMessage_t *msg)
@@ -144,6 +147,7 @@ static void handle_SearchResponse_Node(netc_t *netc, DNDSMessage_t *msg)
 	session = session_tracking_table[tracked_id % MAX_SESSION];
 	session_tracking_table[tracked_id % MAX_SESSION] = NULL;
 	net_send_msg(session->netc, new_msg);
+	DNDSMessage_del(msg);
 }
 
 static void handle_SearchResponse_Context(netc_t *netc, DNDSMessage_t *msg)

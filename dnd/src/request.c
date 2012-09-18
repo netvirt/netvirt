@@ -89,9 +89,12 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 
 		AuthResponse_set_result(msg, DNDSResult_insufficientAccessRights);
 		nbyte = net_send_msg(session->netc, msg);
+		DNDSMessage_del(msg);
 
 		return -1;
 	}
+
+	DNDSMessage_del(msg);
 
 	return 0;
 }
@@ -131,6 +134,7 @@ void p2pRequest(struct session *session_a, struct session *session_b)
 	P2pRequest_set_side(msg, P2pSide_client);
 
 	net_send_msg(session_a->netc, msg);
+	DNDSMessage_del(msg);
 
 	/* msg session B */
 	DNDSMessage_new(&msg);
@@ -144,4 +148,5 @@ void p2pRequest(struct session *session_a, struct session *session_b)
 	P2pRequest_set_side(msg, P2pSide_client);
 
 	net_send_msg(session_b->netc, msg);
+	DNDSMessage_del(msg);
 }
