@@ -319,6 +319,7 @@ void searchRequest_client(struct session *session, DNDSMessage_t *req_msg)
 
 	SearchResponse_add_object(msg, objClient);
 	net_send_msg(session->netc, msg);
+	DNDSMessage_del(msg);
 }
 
 void CB_searchRequest_context_by_client_id(DNDSMessage_t *msg,
@@ -382,6 +383,7 @@ void searchRequest_context_by_client_id(struct session *session, DNDSMessage_t *
 	SearchResponse_set_result(msg, DNDSResult_success);
 
 	net_send_msg(session->netc, msg);
+	DNDSMessage_del(msg);
 }
 
 void CB_searchRequest_context(DNDSMessage_t *msg,
@@ -441,7 +443,7 @@ void searchRequest_context(struct session *session, DNDSMessage_t *req_msg)
 	dao_fetch_context(msg, CB_searchRequest_context);
 
 	net_send_msg(session->netc, msg);
-
+	DNDSMessage_del(msg);
 }
 
 void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
@@ -485,7 +487,7 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 	ret = dao_fetch_node_from_provcode(provcode, &certificate, &private_key, &trustedcert);
 	if (ret != 0) {
 		jlog(L_WARNING, "dao fetch node from provcode failed: %s\n", provcode);
-		return;
+		return; /* FIXME send negative response */
 	}
 
 	Node_set_certificate(objNode, certificate, strlen(certificate));
@@ -495,6 +497,7 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 	SearchResponse_set_searchType(msg, SearchType_object);
 	SearchResponse_add_object(msg, objNode);
 	net_send_msg(session->netc, msg);
+	DNDSMessage_del(msg);
 }
 
 void searchRequest(struct session *session, DNDSMessage_t *req_msg)
