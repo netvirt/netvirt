@@ -96,6 +96,7 @@ static void tunnel_in(iface_t *iface)
 		session = p2p_session;
 	}*/
 	net_send_msg(session->netc, msg);
+	DNDSMessage_del(msg);
 	iface->frame = NULL;
 }
 
@@ -134,6 +135,7 @@ void transmit_netinfo_request(struct session *session)
 	NetinfoRequest_set_macAddr(msg, session->tun_mac_addr);
 
 	net_send_msg(session->netc, msg);
+	DNDSMessage_del(msg);
 }
 
 void transmit_prov_request(netc_t *netc)
@@ -152,6 +154,7 @@ void transmit_prov_request(netc_t *netc)
 	ProvRequest_set_provCode(msg, g_prov_code, strlen(g_prov_code));
 
 	nbyte = net_send_msg(netc, msg);
+	DNDSMessage_del(msg);
 	if (nbyte == -1) {
 		jlog(L_NOTICE, "dnc]> malformed message\n", nbyte);
 		return;
@@ -182,6 +185,7 @@ void transmit_register(netc_t *netc)
         AuthRequest_set_certName(msg, subj, strlen(subj));
 
         nbyte = net_send_msg(netc, msg);
+	DNDSMessage_del(msg);
         if (nbyte == -1) {
                 jlog(L_NOTICE, "dnc]> malformed message: %d\n", nbyte);
                 return;
