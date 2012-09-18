@@ -235,9 +235,6 @@ static void on_secure(netc_t *netc)
 		AuthResponse_set_result(msg, DNDSResult_success);
 		nbyte = net_send_msg(session->netc, msg);
 
-		DNDSMessage_del(msg);
-		msg = NULL;
-
 		context_add_session(session->context, session);
 	}
 }
