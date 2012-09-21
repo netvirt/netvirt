@@ -54,6 +54,15 @@ static void udtbus_disconnect(peer_t *peer)
 	}
 }
 
+static void on_disconnect(peer_t *peer)
+{
+	// inform upper layer
+	if (peer->on_disconnect)
+		peer->on_disconnect(peer);
+
+	udtbus_disconnect(peer);
+}
+
 static int udtbus_send(peer_t *peer, void *data, int len)
 {
 	vector<UDTSOCKET>::iterator i;
@@ -67,16 +76,17 @@ static int udtbus_send(peer_t *peer, void *data, int len)
 		for (i = exceptfds.begin(); i != exceptfds.end(); ++i) {
 			if (peer->socket == *i) {
 				cout << "send:" << UDT::getlasterror().getErrorMessage() << endl;
-				udtbus_disconnect(peer);
+				on_disconnect(peer);
 				return -1;
 			}
 		}
 	}
 
 	int ret = UDT::send(peer->socket, (char*)data, len, 0);
-	
+
 	if (ret == UDT::ERROR) {
 		cout << "send:" << UDT::getlasterror().getErrorMessage() << endl;
+		on_disconnect(peer);
 		return -1;
 	}
 
@@ -98,15 +108,6 @@ static int udtbus_recv(peer_t *peer)
 	}
 
 	return rs;
-}
-
-static void on_disconnect(peer_t *peer)
-{
-	// inform upper layer
-	if (peer->on_disconnect)
-		peer->on_disconnect(peer);
-
-	udtbus_disconnect(peer);
 }
 
 static void on_input(peer_t *peer)
@@ -179,6 +180,8 @@ extern "C" void udtbus_poke_queue()
 	for (i = readfds.begin(); i != readfds.end(); ++i) {
 
 		peer = (peer_t*)UDT::get_ext_ptr(*i);
+		if (peer == NULL)
+			continue;
 
 		if (peer->type == UDTBUS_SERVER) {
 			on_connect(peer);
@@ -192,6 +195,9 @@ extern "C" void udtbus_poke_queue()
 	for (i = exceptfds.begin(); i != exceptfds.end(); ++i) {
 
 		peer = (peer_t*)UDT::get_ext_ptr(*i);
+		if (peer == NULL)
+			continue;
+
 		on_disconnect(peer);
 	}
 }

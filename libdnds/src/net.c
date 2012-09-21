@@ -100,6 +100,9 @@ static void net_do_krypt(netc_t *netc)
 	if (netc->kconn->buf_encrypt_data_size > 0) {
 
 		nbyte = netc->peer->send(netc->peer, netc->kconn->buf_encrypt, netc->kconn->buf_encrypt_data_size);
+		if (nbyte == -1) {
+			return;
+		}
 
 		if (nbyte >= 0)
 			netc->kconn->buf_encrypt_data_size = 0; // XXX adjust with offset ?
@@ -159,8 +162,10 @@ static int net_flush_queue_out(netc_t *netc)
 	mbuf_itr = netc->queue_out;
 
 	while (mbuf_itr != NULL) {
-
 		nbyte = peer->send(peer, mbuf_itr->ext_buf, mbuf_itr->ext_size);
+		if (nbyte == -1) {
+			break;
+		}
 		mbuf_itr = mbuf_itr->next;
 	}
 
