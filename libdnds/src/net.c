@@ -489,11 +489,13 @@ netc_t *net_client(const char *listen_addr,
 
 		default:
 			jlog(L_NOTICE, "net> unknown protocol specified :: %s:%i", __FILE__, __LINE__);
+			net_connection_free(netc);
 			return NULL;
 	}
 
 	if (netc->peer == NULL) {
 		jlog(L_NOTICE, "net]> client initialization failed :: %s:%i", __FILE__, __LINE__);
+		net_connection_free(netc);
 		return NULL;
 	}
 
@@ -511,6 +513,7 @@ netc_t *net_client(const char *listen_addr,
 		ret = krypt_secure_connection(netc->kconn, KRYPT_TLS, KRYPT_CLIENT, krypt_security_level);
 		if (ret < 0) {
 			jlog(L_NOTICE, "net]> securing client connection failed :: %s:%i", __FILE__, __LINE__);
+			net_connection_free(netc);
 			return NULL;
 		}
 
@@ -567,11 +570,13 @@ int net_server(const char *listen_addr,
 
 		default:
 			jlog(L_NOTICE, "net]> unknown protocol specified :: %s:%i", __FILE__, __LINE__);
+			net_connection_free(netc);
 			return -1;
 	}
 
 	if (ret < 0) {
 		jlog(L_NOTICE, "net]> server initialization failed :: %s:%i", __FILE__, __LINE__);
+		net_connection_free(netc);
 		return -1;
 	}
 
@@ -620,6 +625,7 @@ netc_t *net_p2p(const char *listen_addr,
 	peer = udtbus_rendezvous(listen_addr, dest_addr, port, net_on_disconnect, net_on_input, netc);
 	if (peer == NULL) {
 		jlog(L_ERROR, "net]> unable to initialize the p2p connection :: %s:%i", __FILE__, __LINE__);
+		net_connection_free(netc);
 		return NULL;
 
 	}
@@ -640,6 +646,7 @@ netc_t *net_p2p(const char *listen_addr,
 
 		if (ret < 0) {
 			jlog(L_NOTICE, "net]> securing client connection failed :: %s:%i", __FILE__, __LINE__);
+			net_connection_free(netc);
 			return NULL;
 		}
 
