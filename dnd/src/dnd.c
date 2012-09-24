@@ -52,26 +52,10 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 	session_src = ftable_find(session->context->ftable, macaddr_src);
 
 	if (session_src == NULL) {
-
 		memcpy(session->mac_addr, macaddr_src, ETHER_ADDR_LEN);
 		ftable_insert(session->context->ftable, macaddr_src, session);
 		session_src = session;
-
-		jlog(L_DEBUG, "dnd]> new ID [%d]\n", session->id);
-
-	} else if (session->mac_addr[0] == 0 &&
-			session->mac_addr[1] == 0 &&
-			session->mac_addr[2] == 0 &&
-			session->mac_addr[3] == 0 &&
-			session->mac_addr[4] == 0 &&
-			session->mac_addr[5] == 0) {
-
-		/* If a node reconnect and has the same mac address,
-		   update the ftable with the new session. */
-
-		memcpy(session->mac_addr, macaddr_src, ETHER_ADDR_LEN);
-		ftable_erase(session->context->ftable, macaddr_src);
-		ftable_insert(session->context->ftable, macaddr_src, session);
+		session_add_mac(session, macaddr_src);
 	}
 
 	/* Lookup the destination */
@@ -89,7 +73,7 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 		&& session_dst != NULL
 		&& session_dst->netc != NULL) {		/* AND the session is up */
 
-			//jlog(L_DEBUG, "dnd]> forwarding the packet to [%s]", session_dst->ip);
+			/*jlog(L_DEBUG, "dnd]> forwarding the packet to [%s]", session_dst->ip);*/
 			ret = net_send_msg(session_dst->netc, msg);
 /*
 			int lstate = 0;
@@ -107,6 +91,7 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 			session_list = session->context->session_list;
 			while (session_list != NULL) {
 				ret = net_send_msg(session_list->netc, msg);
+				/*jlog(L_DEBUG, "dnd]> flooding the packet to [%s]", session_list->ip);*/
 				session_list = session_list->next;
 			}
 	} else {
@@ -237,7 +222,10 @@ static void on_secure(netc_t *netc)
 		nbyte = net_send_msg(session->netc, msg);
 		DNDSMessage_del(msg);
 
+		/*context_show_session_list(session->context);*/
 		context_add_session(session->context, session);
+		/*context_show_session_list(session->context);*/
+		jlog(L_DEBUG, "dnd]> session ID [%d]\n", session->id);
 	}
 }
 
@@ -295,6 +283,7 @@ static void on_disconnect(netc_t *netc)
 {
 	int ret = 0;
 	struct session *session = NULL;
+	struct mac_list *mac_itr = NULL;
 
 	jlog(L_DEBUG, "dnd]> disconnect");
 
@@ -305,9 +294,24 @@ static void on_disconnect(netc_t *netc)
 		return;
 	}
 
-	/* Remove the session from the context session list */
+	while (session->mac_list != NULL) {
+
+		mac_itr = session->mac_list;
+		session->mac_list = mac_itr->next;
+		ftable_erase(session->context->ftable, mac_itr->mac_addr);
+
+		/*
+		jlog(L_DEBUG, "inet]> erase mac: %02x:%02x:%02x:%02x:%02x:%02x", mac_itr->mac_addr[0],
+		mac_itr->mac_addr[1], mac_itr->mac_addr[2], mac_itr->mac_addr[3],
+		mac_itr->mac_addr[4], mac_itr->mac_addr[5]);
+		*/
+
+		free(mac_itr);
+	}
+
+	/*context_show_session_list(session->context);*/
 	context_del_session(session->context, session);
-	ftable_erase(session->context->ftable, session->mac_addr);
+	/*context_show_session_list(session->context);*/
 
 	if (session->ip != NULL) {
 		jlog(L_DEBUG, "dnd]> disconnecting ip {%s}", session->ip);

@@ -31,14 +31,20 @@ context_t *context_table[CONTEXT_LIST_SIZE] = {NULL};
 
 void context_del_session(context_t *context, struct session *session)
 {
-	if (session == context->session_list)
-		context->session_list = NULL;
-
-	else {
-		if (session->prev)
-			session->prev->next = session->next;
+	if (session->next == NULL) {
+		if (session->prev == NULL)
+			context->session_list = NULL;
 		else
-			jlog(L_WARNING, "no previons link ?\n");
+			session->prev->next = NULL;
+	} else {
+		if (session->prev == NULL) {
+			context->session_list = session->next;
+			session->next->prev = NULL;
+		}
+		else {
+			session->prev->next = session->next;
+			session->next->prev = session->prev;
+		}
 	}
 
 	bitpool_release_bit(context->bitpool, 1024, session->id);
@@ -59,6 +65,19 @@ void context_add_session(context_t *context, struct session *session)
 
 	bitpool_allocate_bit(context->bitpool, 1024, &session->id);
 }
+
+void context_show_session_list(context_t *context)
+{
+	struct session *itr = NULL;
+	itr = context->session_list;
+
+	while (itr != NULL) {
+		jlog(L_DEBUG, "session: %p:%s\n", itr, itr->ip);
+		itr = itr->next;
+	}
+	jlog(L_DEBUG, "--\n");
+}
+
 
 context_t *context_lookup(uint32_t context_id)
 {

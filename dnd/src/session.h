@@ -19,6 +19,11 @@
 #define SESSION_STATUS_NOT_AUTHED       0x2
 #define SESSION_STATUS_WAIT_STEPUP      0x4
 
+struct mac_list {
+	uint8_t mac_addr[ETHER_ADDR_LEN];
+	struct mac_list *next;
+};
+
 struct session {
 
 	uint8_t status;
@@ -35,6 +40,7 @@ struct session {
 
 	/* should we support a mac list XXX */
 	uint8_t mac_addr[ETHER_ADDR_LEN];
+	struct mac_list *mac_list;
 
 	struct session *next;
 	struct session *prev;
