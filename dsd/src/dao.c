@@ -167,6 +167,16 @@ int dao_prepare_statements()
 			NULL);
 
 	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+
+	result = PQprepare(dbconn,
+			"dao_fetch_node_from_context_id",
+			"SELECT uuid, description, provcode "
+			"FROM node "
+			"WHERE context_id = $1;",
+			0,
+			NULL);
+
+	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
 }
 
 void dao_dump_statements()
@@ -662,6 +672,66 @@ int dao_fetch_embassy(char *context_id,
 			PQresultErrorMessage(result));
 		break;
 	}
+}
+
+int dao_fetch_node_from_context_id(char *context_id, void *data, int (*cb_data_handler)(void *data,
+								char *uuid,
+								char *description,
+								char *provcode))
+{
+	const char *paramValues[1];
+	int paramLengths[1];
+	int tuples;
+	int fields;
+	PGresult *result;
+
+	if (!context_id) {
+		jlog(L_ERROR, "invalid NULL parameter\n");
+		return -1;
+	}
+
+	paramValues[0] = context_id;
+	paramLengths[0] = strlen(context_id);
+
+	result = PQexecPrepared(dbconn, "dao_fetch_node_from_context_id", 1, paramValues, paramLengths, NULL, 0);
+
+	if (!result) {
+		jlog(L_DEBUG, "PQexec command failed, %s\n", PQerrorMessage(dbconn));
+		return -1;
+	}
+
+	switch (PQresultStatus(result)) {
+	case PGRES_COMMAND_OK:
+		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
+		break;
+
+	case PGRES_TUPLES_OK:
+		jlog(L_DEBUG, "query may have returned data\n");
+		break;
+
+	default:
+		jlog(L_DEBUG, "command failed with code %s, %s\n",
+			PQresStatus(PQresultStatus(result)),
+			PQresultErrorMessage(result));
+
+		return -1;
+	}
+
+	tuples = PQntuples(result);
+	fields = PQnfields(result);
+
+	jlog(L_DEBUG, "Tuples %d\n", tuples);
+	jlog(L_DEBUG, "Fields %d\n", fields);
+
+	int i;
+	for (i = 0; i < tuples; i++) {
+		cb_data_handler(data,
+			strdup(PQgetvalue(result, i, 0)),
+			strdup(PQgetvalue(result, i, 1)),
+			strdup(PQgetvalue(result, i, 2)));
+	}
+
+	return 0;
 }
 
 int dao_fetch_node_from_provcode(char *provcode,

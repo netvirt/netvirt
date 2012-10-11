@@ -446,24 +446,37 @@ void searchRequest_context(struct session *session, DNDSMessage_t *req_msg)
 	DNDSMessage_del(msg);
 }
 
+void CB_searchRequest_node_by_context_id(DNDSMessage_t *msg, char *uuid, char *description, char *provcode)
+{
+	DNDSObject_t *objNode;
+	DNDSObject_new(&objNode);
+	DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
+
+	Node_set_description(objNode, description, strlen(description));
+	Node_set_uuid(objNode, uuid, strlen(uuid));
+	Node_set_provCode(objNode, provcode, strlen(provcode));
+
+	SearchResponse_set_searchType(msg, SearchType_object);
+	SearchResponse_add_object(msg, objNode);
+}
+
 void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 {
-	printf("searchRequest node for provisioning !\n");
-
-
 	char *provcode = NULL;
+	uint32_t contextid = 0;
+	char str_contextid[20];
 	uint32_t length;
 	int ret = 0;
 
-	DNDSObject_t *obj;
+	DNDSObject_t *obj = NULL;
         SearchRequest_get_object(req_msg, &obj);
 	Node_get_provCode(obj, &provcode, &length);
-	printf("provcode to search: %s\n", provcode);
+	Node_get_contextId(obj, &contextid);
 
 	uint32_t tracked_id;
 	DSMessage_get_seqNumber(req_msg, &tracked_id);
 
-	//// answer ////
+
 	DNDSMessage_t *msg;
 
 	DNDSMessage_new(&msg);
@@ -474,28 +487,54 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 	DSMessage_set_ackNumber(msg, 0);
 	DSMessage_set_operation(msg, dsop_PR_searchResponse);
 
-	SearchResponse_set_result(msg, DNDSResult_success);
+	if (contextid > 0) { /* searching by context ID */
 
-	DNDSObject_t *objNode;
-	DNDSObject_new(&objNode);
-	DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
+		jlog(L_DEBUG, "context ID to search: %d\n", contextid);
 
-	char *certificate = NULL;
-	char *private_key = NULL;
-	char *trustedcert = NULL;
+		char *description = NULL;
+		char *uuid = NULL;
+		char *provcode = NULL;
 
-	ret = dao_fetch_node_from_provcode(provcode, &certificate, &private_key, &trustedcert);
-	if (ret != 0) {
-		jlog(L_WARNING, "dao fetch node from provcode failed: %s\n", provcode);
-		return; /* FIXME send negative response */
+		snprintf(str_contextid, sizeof(str_contextid), "%d", contextid);
+
+		ret = dao_fetch_node_from_context_id(str_contextid, msg,
+					CB_searchRequest_node_by_context_id);
+		if (ret != 0) {
+			jlog(L_WARNING, "dao fetch node from context id failed: %d\n", contextid);
+			return; /* FIXME send negative response */
+		}
+
+		/* the fields are set via the callback */
+
+	} else if (provcode != NULL) { /* searching by provcode */
+
+		printf("searchRequest node for provisioning !\n");
+
+		DNDSObject_t *objNode;
+		DNDSObject_new(&objNode);
+		DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
+
+		jlog(L_DEBUG, "provcode to search: %s\n", provcode);
+
+		char *certificate = NULL;
+		char *private_key = NULL;
+		char *trustedcert = NULL;
+
+		ret = dao_fetch_node_from_provcode(provcode, &certificate, &private_key, &trustedcert);
+		if (ret != 0) {
+			jlog(L_WARNING, "dao fetch node from provcode failed: %s\n", provcode);
+			return; /* FIXME send negative response */
+		}
+
+		Node_set_certificate(objNode, certificate, strlen(certificate));
+		Node_set_certificateKey(objNode, private_key, strlen(private_key));
+		Node_set_trustedCert(objNode, trustedcert, strlen(trustedcert));
+
+		SearchResponse_set_result(msg, DNDSResult_success);
+		SearchResponse_add_object(msg, objNode);
 	}
 
-	Node_set_certificate(objNode, certificate, strlen(certificate));
-	Node_set_certificateKey(objNode, private_key, strlen(private_key));
-	Node_set_trustedCert(objNode, trustedcert, strlen(trustedcert));
-
 	SearchResponse_set_searchType(msg, SearchType_object);
-	SearchResponse_add_object(msg, objNode);
 	net_send_msg(session->netc, msg);
 	DNDSMessage_del(msg);
 }
