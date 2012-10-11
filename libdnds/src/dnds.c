@@ -2245,15 +2245,53 @@ int Node_get_description(DNDSObject_t *object, char **description, size_t *lengt
 		return DNDS_value_not_present;
 	}
 
-	if (object->choice.node.description == NULL) {
-		return DNDS_value_not_present;
-	}
-
 	*description = (char *)object->choice.node.description->buf;
 	*length = object->choice.node.description->size;
 
 	return DNDS_success;
 }
+
+int Node_set_uuid(DNDSObject_t *object, char *uuid, size_t length)
+{
+	if (object == NULL || uuid == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_node) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.node.uuid = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.node.uuid == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.node.uuid->buf = (uint8_t *)strdup(uuid);
+	object->choice.node.uuid->size = length;
+
+	return DNDS_success;
+}
+
+int Node_get_uuid(DNDSObject_t *object, char **uuid, size_t *length)
+{
+	if (object == NULL || uuid == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_node) {
+		return DNDS_invalid_object_type;
+	}
+
+	if (object->choice.node.uuid == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*uuid = (char *)object->choice.node.uuid->buf;
+	*length = object->choice.node.uuid->size;
+
+	return DNDS_success;
+}
+
 
 int Node_set_provCode(DNDSObject_t *object, char *provCode, size_t length)
 {
