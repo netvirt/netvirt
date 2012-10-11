@@ -31,6 +31,7 @@ def dsctl_help():
     print '  add-context <unique description>'
     print '  add-node <context id>'
     print '  show-context'
+    print '  show-nodes <context id>'
     print '  logout'
     print '  disconnect'
     print '  exit'
@@ -100,6 +101,56 @@ def login(conn, arg):
     conn.loggedin = True
     print 'ClientId: ' + conn.ClientId
     print 'you are now logged in!'
+
+def showNode(conn, arg):
+
+    contextId = arg
+
+    if conn.connected == False:
+        print 'you must connect first...'
+        return
+
+    if conn.loggedin == False:
+        print 'you are not logged in...'
+        return
+
+    msg = DNDSMessage()
+    msg.setComponentByName('version', '1')
+    msg.setComponentByName('channel', '0')
+    pdu = msg.setComponentByName('pdu').getComponentByName('pdu')
+    dsm = pdu.setComponentByName('dsm').getComponentByName('dsm')
+
+    dsm.setComponentByName('seqNumber', '1')
+    dsm.setComponentByName('ackNumber', '1')
+    dsop = dsm.setComponentByName('dsop').getComponentByName('dsop')
+
+    req = dsop.setComponentByName('searchRequest').getComponentByName('searchRequest')
+    req.setComponentByName('searchtype', 'object')
+
+    obj = req.setComponentByName('object').getComponentByName('object')
+    node = obj.setComponentByName('node').getComponentByName('node')
+
+    node.setComponentByName('contextId', str(contextId))
+
+    conn.ssl_sock.write(encoder.encode(msg))
+    data = conn.ssl_sock.read()
+
+    substrate = data
+    a_msg, substrate = decoder.decode(substrate, asn1Spec=DNDSMessage())
+
+    recv_pdu = a_msg.getComponentByName('pdu')
+    recv_dsm = recv_pdu.getComponentByName('dsm')
+    recv_dsop = recv_dsm.getComponentByName('dsop')
+    recv_req = recv_dsop.getComponentByName('searchResponse')
+    recv_objs = recv_req.getComponentByName('objects')
+
+    for idx in range(len(recv_objs)):
+        recv_obj =  recv_objs.getComponentByPosition(idx)
+        recv_node = recv_obj.getComponentByName('node')
+        recv_uuid = recv_node.getComponentByName('uuid')
+        recv_provcode = recv_node.getComponentByName('provCode')
+        recv_desc = recv_node.getComponentByName('description')
+        print "node uuid: " + str(recv_uuid) + ' provCode: ' + str(recv_provcode) + ' <' + recv_desc + '>'
 
 def showContext(conn):
 
@@ -308,6 +359,9 @@ def loop():
 
         if command == 'show-context':
             showContext(conn)
+
+        if command == 'show-node':
+            showNode(conn, arg)
 
         if command == 'add-context':
             addContext(conn, arg)
