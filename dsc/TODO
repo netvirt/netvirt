@@ -1,5 +1,4 @@
 
-
 dsctl - Directory Service control
 
 This tool is a command line interface aimed to interact with the DSD service (Directory Service Daemon).
@@ -10,7 +9,6 @@ that is used by dsctl.py. The tool dsctl will then import the libdsm and interac
 libdsm is going to be the basic building block in the effort of building a web based administration system
 or any other system written in python that have to interact with DSD.
 
-
 What has to be done:
 
-	- breakdown dsctl.py into libdsm.py and dsctl.py
+	- breaking down dsctl.py into libdsm.py and dsctl.py
