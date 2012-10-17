@@ -4,7 +4,7 @@
 
 AC_PREREQ([2.67])
 AC_INIT([DNDS library],[0.2],[nib@dynvpn.com],[libdnds],[https://github.com/nicboul/DNDS/wiki])
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign -Wno-extra-portability])
 LT_PREREQ([2.2])
 LT_INIT([dlopen])
 
