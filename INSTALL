@@ -9,6 +9,8 @@
   * libtool
   * openssl
   * udt+patch
+  * libpq-dev
+  * libossp-uuid-dev
 
  Quick Start
  -----------
@@ -17,6 +19,9 @@
  apt-get install autoconf
  apt-get install libtool
  apt-get install pkg-config
+ apt-get install autotool
+ apt-get install libpq-dev
+ apt-get install libossp-uuid-dev
 
  Getting UDT and OpenSSL
  -----------
@@ -26,14 +31,14 @@
 
  Installing OpenSSL
  ------------------
- 
+
  You must build and install OpenSSL into /usr/local.
 
-	$ ./config --prefix=/usr/local --openssldir=/usr/local/openssl 
+	$ ./config --prefix=/usr/local --openssldir=/usr/local/openssl
 
  Installing UDT
  --------------
- 
+
  Copy the udt patch from DNDS/patch/udt4.9_ext_ptr.patch next to
  your UDT directory.
 
@@ -43,8 +48,8 @@
  Apply the patch.
 
 	$ patch -p0 < udt4.9_ext_ptr.patch
- 
- You can now build udt by invoking `make`. You DON'T NEED to `make install` it.	
+
+ You can now build udt by invoking `make`. You DON'T NEED to `make install` it.
 
  Installing libdnds
  -----------------
@@ -64,6 +69,17 @@
  ./configure: line 17832: syntax error near unexpected token `openssl,'
  ./configure: line 17832: `	PKG_CHECK_EXISTS(openssl, pkgconfig_have_openssl=yes, pkgconfig_have_openssl=no)'
 
+
+ Installing DSD - Directory Service Daemon
+ ---------------------------------------
+
+	 $ cd DNDS/dsd
+	 $ autoreconf -fvi
+	 $ ./configure
+	 $ make
+	 $ sudo make install
+
+
  Installing DND - Dynamic Network Daemon
  ---------------------------------------
 
@@ -72,6 +88,7 @@
 	 $ ./configure
 	 $ make
 	 $ sudo make install
+
 
  Installing DNC - Dynamic Network Client
  ---------------------------------------
@@ -83,6 +100,30 @@
 	 $ sudo make install
 
 
- PG crypto
- ---------------
- postgresql extension pgcrypto is need
+ Database - postgresql
+ ---------------------------------------
+ apt-get install postgresql
+ apt-get install postgresql-contrib
+
+	# You first need to log into postgreSQL with the user 'postgres'
+		$ su - postgres
+		$ psql
+
+	# Load the pgcrypto module
+	\i /usr/share/postgresql/8.4/contrib/pgcrypto.sql
+
+	# Create the 'dnds' user
+	CREATE USER dnds WITH CREATEDB PASSWORD 'a_strong_password';
+	\du
+
+	# Now log into postgreSQL using your 'dnds' user, into the 'postgres' database
+	psql --host=127.0.0.1 -U dnds -W postgres
+
+	# Create the 'dnds' database container
+	CREATE DATABASE dnds;
+	\l
+	\c dnds;
+
+	# Load the 'dnds' schema into the 'dnds' database container
+	psql --host=127.0.0.1 -U dnds -W < dnds.sql
+	\dt
