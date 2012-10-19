@@ -31,7 +31,7 @@ def dsctl_help():
     print '  add-context <unique description>'
     print '  add-node <context id>'
     print '  show-context'
-    print '  show-nodes <context id>'
+    print '  show-node <context id>'
     print '  logout'
     print '  disconnect'
     print '  exit'
