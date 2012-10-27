@@ -4,13 +4,7 @@ DNDS - Dynamic Network Directory Service
 
 A Dynamic VPN solution that allow you to securely access and manage computers/devices via Internet.
 
-Each computers/devices connect to a central point called DND (Dynamic Network Daemon) via a Layer2 SSL tunnel.
-When data is transfered between DNC (Dynamic Network Client), a direct connection is established between
-the peers (peer-to-peer). Using hole-punching techniques and DND as a fallback relay, every
-computers/devices can easily communicate to each other without bothering with NATs and firewalls.
-Every computers/devices receive an IP address from a subnet that is configurable as needed, this way
-the peers see each other as part of the same LAN (Local Area Network). In other word, they appear
-to be in the same broadcast domain.
+Each computers/devices connect to a central point called DND (Dynamic Network Daemon) via a Layer2 SSL tunnel. When data is transfered between DNC (Dynamic Network Client), a direct connection is established between the peers (peer-to-peer). Using hole-punching techniques and DND as a fallback relay, every computers/devices can easily communicate to each other without bothering with NATs and firewalls. Every computers/devices receive an IP address from a subnet that is configurable as needed, this way the peers see each other as part of the same LAN (Local Area Network). In other word, they appear to be in the same broadcast domain.
 
 LICENSE : GPLv2
 DNDS is Copyright (C) Nicolas J. Bouliane See the file LICENSE
