@@ -1,0 +1,90 @@
+
+DNDS - Dynamic Network Directory Service ROADMAP
+------------------------------------------------
+Last updated: 10/12/20
+
+
+This ROADMAP file represent everything that has to be developped. If you are interested
+by anything listed below, please contact the dynvpn development team.
+
+
+>> Web management plateform
+---------------------------
+Desc: The web plateform will be written in python/Django and will interact
+with the DNDS protocol via a python/asn1 library called libdnm (taken from dsctl).
+
+- Register a new account
+- Add/Del a new context to an account
+- Add/Del a new node to a context
+- List context
+- List Node
+- Regenerate provisioning-key
+- Send invitation via an email
+- control the maximum account possible (and being able to increase it easily)
+- Commecial account should be able to pay via paypal (or other)
+
+
+>> Multi plateform VPN client
+-----------------------------
+Desc: The portable VPN client will be written in C++/QT and will work on
+linux/windows/macOSX. The DNDS protocol that is part of libdnds will need
+to be extracted and be made in a seperate library that will be cross-plateform
+and to which the VPN client will be linked. The work for the dynvpn-client
+should be derivated from dnc.
+
+Core
+- Autoprovisioning
+- p2p non-blocking
+
+GUI
+- list of reachable nodes with online status
+- systray icon
+
+
+>> DNDS library (libdnds)
+-------------------------
+Desc: This is the main library that contain all the subsystems used
+by the different DNDS component.
+
+- jlog (journal log subsystem)
+- udt patch should be pushed upstream
+- udt should use epoll
+
+
+>> Dynamic Network Daemon (DND)
+-------------------------------
+Desc: DND represent the server that spawn virtual-switch into which nodes get connected.
+
+- integrated dhcp server
+- dynamic arp inspection
+- dhcp snooping to build trust table
+- check MAC validity
+
+
+>> Directory Service (DSD)
+--------------------------
+Desc: DSD represent the server that is responsible to interface the database.
+DSD interact with both DND and the web-interface.
+
+[DND] <- fetch context      -> [DSD] <- add new context -> [web-interface]
+      <- update node status ->       <- list all nodes  ->
+      <- ask for prov-key   ->       <- ...             ->
+      <- ...                ->
+
+- delete account, context, node
+- properly handle IP address format
+- create all certificates the first time
+
+
+>> DNDS Automated Building Plateform
+------------------------------------
+Desc: When code in git is pushed, it should be fetched by jenkins, than compiled and tested and then
+package should be created.
+
+- automate the build process
+	- linux debian, redhat, arch
+	- OpenBSD, NetBSD, FreeBSD
+	- Window, MacOSX
+	- i386, ppc, arm
+
+- setup jenkins server
