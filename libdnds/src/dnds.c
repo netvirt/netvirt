@@ -22,7 +22,7 @@
 #include <net/if_arp.h>
 #include <netinet/if_ether.h>
 
-#include "asn1/DNDSMessage.h"
+#include "DNDSMessage.h"
 #include "dnds.h"
 
 /* TODO

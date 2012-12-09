@@ -4,22 +4,12 @@
 
  To install DNDS you will need:
 
-  * build-essential
-  * autotool
-  * libtool
-  * openssl
-  * udt+patch
-  * libpq-dev
-  * libossp-uuid-dev
+  * CMake 2.6 or higher
 
  Quick Start
  -----------
 
- apt-get install build-essential
- apt-get install autoconf
- apt-get install libtool
- apt-get install pkg-config
- apt-get install autotool
+ apt-get install cmake
  apt-get install libpq-dev
  apt-get install libossp-uuid-dev
 
@@ -55,27 +45,15 @@
  -----------------
 
 	 $ cd DNDS/libdnds/
-	 $ autoreconf -fvi
-	 $ ./configure --with-udt=/full/path/udt4/src
+	 $ cmake .
 	 $ make
 	 $ sudo make install
-
-
- Configure error
- ---------------
-
- If you get anything like this, it's because you forgot to install pkg-config
-
- ./configure: line 17832: syntax error near unexpected token `openssl,'
- ./configure: line 17832: `	PKG_CHECK_EXISTS(openssl, pkgconfig_have_openssl=yes, pkgconfig_have_openssl=no)'
-
 
  Installing DSD - Directory Service Daemon
  ---------------------------------------
 
 	 $ cd DNDS/dsd
-	 $ autoreconf -fvi
-	 $ ./configure
+	 $ cmake .
 	 $ make
 	 $ sudo make install
 
@@ -84,8 +62,7 @@
  ---------------------------------------
 
 	 $ cd DNDS/dnd
-	 $ autoreconf -fvi
-	 $ ./configure
+	 $ cmake .
 	 $ make
 	 $ sudo make install
 
@@ -94,8 +71,7 @@
  ---------------------------------------
 
 	 $ cd DNDS/dnc
-	 $ autoreconf -fvi
-	 $ ./configure
+	 $ cmake .
 	 $ make
 	 $ sudo make install
 

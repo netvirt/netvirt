@@ -24,7 +24,6 @@
 #include <dnds/utils.h>
 #include <dnds/xsched.h>
 
-#include "config.h"
 #include "dao.h"
 #include "dsd.h"
 
@@ -72,7 +71,7 @@ int main(int argc, char *argv[])
 				D_FLAG = 1;
 				break;
 			case 'v':
-				printf("%s version %s\n", PACKAGE_NAME, PACKAGE_VERSION);
+				printf("beta version\n");
 				exit(EXIT_SUCCESS);
 	    		default:
 				printf("-d , -v\n");

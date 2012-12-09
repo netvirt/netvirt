@@ -1,6 +1,7 @@
+# The actual Makefile produced
+Makefile
 
 # DNDS generated files during compilation
-
 *.o
 *.lo
 *.la
@@ -8,36 +9,32 @@
 *.libs
 dnc/src/dnc
 dnd/src/dnd
-libdnds/config/libdnds.pc
+dnd/src/dsd
+libdnds/src/libdnds.so
+libdnds/src/protocol/libdnds_protocol.a
 
-# The actual Makefiles produced
-Makefile
-Makefile.in
+# CMake related files
+dnc/CMakeCache.txt
+dnc/CMakeFiles/
+dnc/cmake_install.cmake
+dnc/src/CMakeFiles/
+dnc/src/cmake_install.cmake
+dnd/CMakeCache.txt
+dnd/CMakeFiles/
+dnd/cmake_install.cmake
+dnd/src/CMakeFiles/
+dnd/src/cmake_install.cmake
+dsd/CMakeCache.txt
+dsd/CMakeFiles/
+dsd/cmake_install.cmake
+dsd/src/CMakeFiles/
+dsd/src/cmake_install.cmake
+dsd/src/dsd
+libdnds/CMakeCache.txt
+libdnds/CMakeFiles/
+libdnds/cmake_install.cmake
+libdnds/src/CMakeFiles/
+libdnds/src/cmake_install.cmake
+libdnds/src/protocol/CMakeFiles/
+libdnds/src/protocol/cmake_install.cmake
 
-# The local aclocal.m4 file
-aclocal.m4
-
-# The output of the configure script
-config.guess
-config.log
-config.status
-config.sub
-
-# The configure script itself
-configure
-
-# The include directory artifacts
-*config.h*
-*stamp-h1*
-
-# Various scripts used for libtool and the like
-install-sh
-libtool
-ltmain.sh
-missing
-
-# Caching wrapper around m4 processor
-*autom4te.cache*
-
-# Compile a program generating dependencies as side-effects 
-*depcomp*

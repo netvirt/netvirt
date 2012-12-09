@@ -7,7 +7,7 @@
 #include <net/if_arp.h>
 #include <netinet/if_ether.h>
 
-#include "asn1/DNDSMessage.h"
+#include "DNDSMessage.h"
 
 #ifndef ETHER_ADDR_LEN
 #define ETHER_ADDR_LEN	6
