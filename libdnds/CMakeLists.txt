@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 1.8)
+cmake_minimum_required(VERSION 2.6)
 project(libdnds)
 
 if(COMMAND cmake_policy)
