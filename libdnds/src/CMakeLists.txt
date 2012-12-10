@@ -11,8 +11,6 @@ set(DNDS_SRCS
 	hash.c
 	hooklet.c
 	inet.c
-	#ion_epoll.c
-	#ion_kqueue.c
 	ipf.c
 	ipset.c
 	journal.c
@@ -25,8 +23,6 @@ set(DNDS_SRCS
 	options.c
 	pki.c
 	setx.c
-	#tun_ifreq.c
-	#tun_tuninfo.c
 	udtbus.cpp
 	usocket.c
 	utils.c

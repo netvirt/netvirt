@@ -803,8 +803,7 @@ int netbus_init()
 
 	sched_register(SCHED_APERIODIC, "netbus_do_sched", netbus_do_sched, 0, NULL);
 
-#ifdef HAVE_UDT
 	sched_register(SCHED_APERIODIC, "udtbus_poke_queue", udtbus_poke_queue, 0, NULL);
-#endif
+
 	return 0;
 }
