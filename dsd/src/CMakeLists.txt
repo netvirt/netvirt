@@ -18,3 +18,6 @@ target_link_libraries(dsd
 	${PostgreSQL_LIBRARIES}
 	ossp-uuid)
 
+install(TARGETS dsd
+	DESTINATION bin)
+

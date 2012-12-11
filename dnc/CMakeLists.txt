@@ -5,3 +5,5 @@ include_directories("../libdnds/protocol/")
 
 add_subdirectory(src)
 
+install(FILES dnc.conf
+	DESTINATION etc/dnds/)

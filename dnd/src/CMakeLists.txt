@@ -14,3 +14,6 @@ include_directories("${CMAKE_SOURCE_DIR}/../libdnds/src/protocol/")
 target_link_libraries(dnd
         ${CMAKE_SOURCE_DIR}/../libdnds/src/libdnds.so
 )
+
+install(TARGETS dnd
+	DESTINATION bin)
