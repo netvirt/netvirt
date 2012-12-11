@@ -10,31 +10,34 @@ Makefile
 dnc/src/dnc
 dnd/src/dnd
 dnd/src/dsd
-libdnds/src/libdnds.so
+libdnds/src/libdnds.a
 libdnds/src/protocol/libdnds_protocol.a
 
 # CMake related files
 dnc/CMakeCache.txt
 dnc/CMakeFiles/
 dnc/cmake_install.cmake
+dnc/install_manifest.txt
 dnc/src/CMakeFiles/
 dnc/src/cmake_install.cmake
 dnd/CMakeCache.txt
 dnd/CMakeFiles/
 dnd/cmake_install.cmake
+dnd/install_manifest.txt
 dnd/src/CMakeFiles/
 dnd/src/cmake_install.cmake
 dsd/CMakeCache.txt
 dsd/CMakeFiles/
 dsd/cmake_install.cmake
+dsd/install_manifest.txt
 dsd/src/CMakeFiles/
 dsd/src/cmake_install.cmake
 dsd/src/dsd
 libdnds/CMakeCache.txt
 libdnds/CMakeFiles/
 libdnds/cmake_install.cmake
+libdnds/install_manifest.txt
 libdnds/src/CMakeFiles/
 libdnds/src/cmake_install.cmake
 libdnds/src/protocol/CMakeFiles/
 libdnds/src/protocol/cmake_install.cmake
-
