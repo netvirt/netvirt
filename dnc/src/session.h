@@ -12,8 +12,8 @@
 #ifndef DNC_SESSION_H
 #define DNC_SESSION_H
 
-#include <dnds/net.h>
-#include <dnds/netbus.h>
+#include <net.h>
+#include <netbus.h>
 
 #define	SESSION_STATUS_AUTHED		0x1
 #define SESSION_STATUS_NOT_AUTHED	0x2

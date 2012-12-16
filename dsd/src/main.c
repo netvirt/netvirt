@@ -15,14 +15,14 @@
 
 #include <sys/stat.h>
 
-#include <dnds/dnds.h>
-#include <dnds/event.h>
-#include <dnds/hooklet.h>
-#include <dnds/journal.h>
-#include <dnds/netbus.h>
-#include <dnds/options.h>
-#include <dnds/utils.h>
-#include <dnds/xsched.h>
+#include <dnds.h>
+#include <event.h>
+#include <hooklet.h>
+#include <journal.h>
+#include <netbus.h>
+#include <options.h>
+#include <utils.h>
+#include <xsched.h>
 
 #include "dao.h"
 #include "dsd.h"

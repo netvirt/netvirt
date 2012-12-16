@@ -18,7 +18,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <dnds/journal.h>
+#include <journal.h>
 
 #include "ippool.h"
 

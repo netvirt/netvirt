@@ -15,12 +15,12 @@
 #include <time.h>
 #include <stdlib.h>
 
-#include <dnds/event.h>
-#include <dnds/journal.h>
-#include <dnds/netbus.h>
-#include <dnds/net.h>
-#include <dnds/inet.h>
-#include <dnds/dnds.h>
+#include <event.h>
+#include <journal.h>
+#include <netbus.h>
+#include <net.h>
+#include <inet.h>
+#include <dnds.h>
 
 #include "context.h"
 #include "dnd.h"

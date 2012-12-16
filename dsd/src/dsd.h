@@ -12,7 +12,7 @@
 #ifndef DNDS_DSD_H
 #define DNDS_DSD_H
 
-#include <dnds/net.h>
+#include <net.h>
 
 #define SESSION_STATUS_AUTHED           0x1
 #define SESSION_STATUS_NOT_AUTHED       0x2

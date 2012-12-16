@@ -11,13 +11,13 @@
 
 #include <unistd.h>
 
-#include <dnds/event.h>
-#include <dnds/hooklet.h>
-#include <dnds/journal.h>
-#include <dnds/netbus.h>
-#include <dnds/options.h>
-#include <dnds/udtbus.h>
-#include <dnds/xsched.h>
+#include <event.h>
+#include <hooklet.h>
+#include <journal.h>
+#include <netbus.h>
+#include <options.h>
+#include <udtbus.h>
+#include <xsched.h>
 
 #include "dnd.h"
 #include "dsc.h"

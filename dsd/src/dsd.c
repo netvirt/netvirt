@@ -9,11 +9,11 @@
  *
  */
 
-#include <dnds/dnds.h>
-#include <dnds/event.h>
-#include <dnds/journal.h>
-#include <dnds/net.h>
-#include <dnds/pki.h>
+#include <dnds.h>
+#include <event.h>
+#include <journal.h>
+#include <net.h>
+#include <pki.h>
 
 #include "dao.h"
 #include "dsd.h"

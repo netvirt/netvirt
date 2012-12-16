@@ -13,13 +13,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <dnds/bitpool.h>
-#include <dnds/event.h>
-#include <dnds/hash.h>
-#include <dnds/journal.h>
-#include <dnds/netbus.h>
-#include <dnds/pki.h>
-#include <dnds/inet.h>
+#include <bitpool.h>
+#include <event.h>
+#include <hash.h>
+#include <journal.h>
+#include <netbus.h>
+#include <pki.h>
+#include <inet.h>
 
 #include "context.h"
 #include "session.h"

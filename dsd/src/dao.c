@@ -19,8 +19,8 @@
 #include <postgresql/libpq-fe.h>
 #include <ossp/uuid.h>
 
-#include <dnds/journal.h>
-#include <dnds/pki.h>
+#include <journal.h>
+#include <pki.h>
 
 #include "dao.h"
 

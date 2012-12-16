@@ -11,10 +11,10 @@
 
 #include <unistd.h>
 
-#include <dnds/dnds.h>
-#include <dnds/journal.h>
-#include <dnds/net.h>
-#include <dnds/pki.h>
+#include <dnds.h>
+#include <journal.h>
+#include <net.h>
+#include <pki.h>
 
 #include "context.h"
 #include "dsc.h"

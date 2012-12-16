@@ -9,9 +9,9 @@
  *
  */
 
-#include <dnds/dnds.h>
-#include <dnds/journal.h>
-#include <dnds/pki.h>
+#include <dnds.h>
+#include <journal.h>
+#include <pki.h>
 
 #include "context.h"
 #include "request.h"

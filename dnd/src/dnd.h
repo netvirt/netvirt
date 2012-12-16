@@ -12,7 +12,7 @@
 #ifndef DND_DND_H
 #define DND_DND_H
 
-#include <dnds/net.h>
+#include <net.h>
 #include "context.h"
 
 extern int dnd_init(char *listen_addr, char *port);
