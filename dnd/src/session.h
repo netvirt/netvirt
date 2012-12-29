@@ -12,7 +12,7 @@
 #ifndef DND_SESSION_H
 #define DND_SESSION_H
 
-#include <dnds/net.h>
+#include <net.h>
 #include "context.h"
 
 #define SESSION_STATUS_AUTHED           0x1

@@ -11,13 +11,13 @@
 
 #include <unistd.h>
 
-#include <dnds/cli.h>
-#include <dnds/event.h>
-#include <dnds/journal.h>
-#include <dnds/net.h>
-#include <dnds/netbus.h>
-#include <dnds/options.h>
-#include <dnds/xsched.h>
+#include <cli.h>
+#include <event.h>
+#include <journal.h>
+#include <net.h>
+#include <netbus.h>
+#include <options.h>
+#include <xsched.h>
 
 #include "dnc.h"
 #include "session.h"

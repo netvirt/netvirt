@@ -12,7 +12,7 @@
 #ifndef DND_REQUEST_H
 #define DND_REQUEST_H
 
-#include <dnds/dnds.h>
+#include <dnds.h>
 #include "session.h"
 
 int authRequest(struct session *session, DNDSMessage_t *msg);

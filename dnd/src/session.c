@@ -9,7 +9,7 @@
  *
  */
 
-#include <dnds/journal.h>
+#include <journal.h>
 #include "session.h"
 
 struct session *session_new()

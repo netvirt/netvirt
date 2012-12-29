@@ -11,8 +11,8 @@
 
 #include <stdlib.h>
 
-#include <dnds/dnds.h>
-#include <dnds/journal.h>
+#include <dnds.h>
+#include <journal.h>
 
 #include "dao.h"
 #include "request.h"

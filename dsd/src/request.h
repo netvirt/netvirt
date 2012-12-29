@@ -12,7 +12,7 @@
 #ifndef DSD_REQUEST_H
 #define DSD_REQUEST_H
 
-#include <dnds/dnds.h>
+#include <dnds.h>
 #include "dsd.h"
 
 void authRequest(struct session *session, DNDSMessage_t *msg);

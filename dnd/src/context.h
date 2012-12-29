@@ -1,10 +1,10 @@
 #ifndef DND_CONTEXT_H
 #define DND_CONTEXT_H
 
-#include <dnds/ftable.h>
-#include <dnds/netbus.h>
-#include <dnds/mbuf.h>
-#include <dnds/pki.h>
+#include <ftable.h>
+#include <netbus.h>
+#include <mbuf.h>
+#include <pki.h>
 
 #include "dnd.h"
 #include "ippool.h"
