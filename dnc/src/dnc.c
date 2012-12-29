@@ -17,17 +17,17 @@
 #include <stdint.h>
 #include <sys/stat.h>
 
-#include <dnds/cli.h>
-#include <dnds/dnds.h>
-#include <dnds/event.h>
-#include <dnds/journal.h>
-#include <dnds/mbuf.h>
-#include <dnds/net.h>
-#include <dnds/netbus.h>
-#include <dnds/pki.h>
-#include <dnds/tun.h>
-#include <dnds/inet.h>
-#include <dnds/ftable.h>
+#include <cli.h>
+#include <dnds.h>
+#include <event.h>
+#include <journal.h>
+#include <mbuf.h>
+#include <net.h>
+#include <netbus.h>
+#include <pki.h>
+#include <tun.h>
+#include <inet.h>
+#include <ftable.h>
 
 #include "dnc.h"
 #include "session.h"
