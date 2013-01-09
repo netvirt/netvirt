@@ -7,6 +7,7 @@ add_executable(dnc
 include_directories("${CMAKE_SOURCE_DIR}/../libdnds/src/protocol/")
 target_link_libraries(dnc
 	${CMAKE_SOURCE_DIR}/../libdnds/src/libdnds.so
+	crypto
 )
 
 install(TARGETS dnc
