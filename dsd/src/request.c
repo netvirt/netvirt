@@ -233,7 +233,7 @@ void AddRequest_node(struct session *session, DNDSMessage_t *msg)
 	}
 	jlog(L_DEBUG, "dao_update_embassy_serial: %d\n", ret);
 
-	ret = dao_add_node(context_id_str, uuid, node_cert_ptr, node_pvkey_ptr, provcode);
+	ret = dao_add_node(context_id_str, uuid, node_cert_ptr, node_pvkey_ptr, provcode, description);
 	if (ret == -1) {
 		jlog(L_ERROR, "failed to add node\n");
 		return;
