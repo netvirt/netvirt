@@ -10,4 +10,4 @@ include_directories("../libdnds/protocol/")
 add_subdirectory(src)
 
 install(FILES dsd.conf
-        DESTINATION etc/dnds/)
+        DESTINATION /etc/dnds/)
