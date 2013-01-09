@@ -8,12 +8,12 @@ Homepage: http://www.dynvpn.com
 #Vcs-Git: git://git.debian.org/collab-maint/libdnds.git
 #Vcs-Browser: http://git.debian.org/?p=collab-maint/libdnds.git;a=summary
 
-Package: libdnds-dev
-Section: libdevel
-Architecture: any
-Depends: libdnds (= ${binary:Version})
-Description: Dynamic Network Directory Service library
- DNDS is a Dynamic VPN solution that allow you to securely access and manage computers/devices via Internet
+#Package: libdnds-dev
+#Section: libdevel
+#Architecture: any
+#Depends: libdnds (= ${binary:Version})
+#Description: Dynamic Network Directory Service library
+# DNDS is a Dynamic VPN solution that allow you to securely access and manage computers/devices via Internet
 
 Package: libdnds
 Section: libs
