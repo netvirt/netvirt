@@ -29,7 +29,7 @@ def dsctl_help():
     print '  login <email,password>'
     print '  add-client <firstname,lastname,email,password,company,phone,country,stateProvince,city,postalCode>'
     print '  add-context <unique description>'
-    print '  add-node <context id>'
+    print '  add-node <context id, unique description>'
     print '  show-context'
     print '  show-node <context id>'
     print '  logout'
@@ -205,7 +205,11 @@ def showContext(conn):
 
 def addNode(conn, arg):
 
-    ContextId = arg
+    nodeInfo = arg.split(',')
+    if len(nodeInfo) != 2:
+        dsctl_help()
+        return
+
     if conn.connected == False:
         print 'you must connect first...'
         return
@@ -229,8 +233,8 @@ def addNode(conn, arg):
     obj = dsop.setComponentByName('addRequest').getComponentByName('addRequest')
     node = obj.setComponentByName('node').getComponentByName('node')
 
-    node.setComponentByName('contextId', str(ContextId))
-#    node.setComponentByName('description', 'VoIP network - business')
+    node.setComponentByName('contextId', str(nodeInfo[0]))
+    node.setComponentByName('description', str(nodeInfo[1]))
 
     conn.ssl_sock.write(encoder.encode(msg))
 
@@ -326,8 +330,8 @@ def connect(conn, ipaddr):
     conn.ssl_sock = ssl.wrap_socket(conn.sock,
                            server_side=False,
                            ca_certs="/etc/dnds/cert-demo/dsd_cert.pem",
-                           certfile="/etc/dnds/cert-demo/dnd_cert.pem",
-                           keyfile="/etc/dnds/cert-demo/dnd_privkey.pem",
+                           certfile="/etc/dnds/cert-demo/dsc_cert.pem",
+                           keyfile="/etc/dnds/cert-demo/dsc_privkey.pem",
                            ssl_version=ssl.PROTOCOL_TLSv1)
 
     conn.ssl_sock.connect((ipaddr, 9091))
