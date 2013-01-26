@@ -303,6 +303,7 @@ int krypt_encrypt_buf(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 			case SSL_ERROR_WANT_READ:
 				break;
 			case SSL_ERROR_WANT_WRITE:
+				status = -1;
 				break;
 			default:
 				ssl_error_stack();

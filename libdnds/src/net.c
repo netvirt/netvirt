@@ -403,6 +403,7 @@ int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 	asn_enc_rval_t ec;
 	peer_t *peer = NULL;
 	size_t nbyte;
+	int ret;
 
 	ec = der_encode(&asn_DEF_DNDSMessage, msg, serialize_buf_enc, netc);
 	if (ec.encoded == -1) {
@@ -421,8 +422,11 @@ int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 	if (netc->security_level > NET_UNSECURE
 		&& netc->kconn->status == KRYPT_SECURE) {
 
-		krypt_encrypt_buf(netc->kconn, netc->buf_enc, netc->buf_enc_data_size);
-		net_queue_out(netc, netc->kconn->buf_encrypt, netc->kconn->buf_encrypt_data_size);
+		do {
+			ret = krypt_encrypt_buf(netc->kconn, netc->buf_enc, netc->buf_enc_data_size);
+			printf("krypt: %d\n", ret);
+			net_queue_out(netc, netc->kconn->buf_encrypt, netc->kconn->buf_encrypt_data_size);
+		} while (ret == -1); /* SSL BIO buffer is full ! flush it, and write again */
 		netc->kconn->buf_encrypt_data_size = 0;
 
 	}
