@@ -12,19 +12,12 @@
  apt-get install cmake
  apt-get install libpq-dev
  apt-get install libossp-uuid-dev
+ apt-get install libossp-uuid-dev
 
- Getting UDT and OpenSSL
+ Getting UDT
  -----------
 
- http://www.openssl.org
- http://udt.sourceforge.net/
-
- Installing OpenSSL
- ------------------
-
- You must build and install OpenSSL into /usr/local.
-
-	$ ./config --prefix=/usr/local --openssldir=/usr/local/openssl
+	wget http://downloads.sourceforge.net/udt/udt.sdk.4.10.tar.gz
 
  Installing UDT
  --------------
