@@ -17,6 +17,7 @@
 #define SESSION_STATUS_AUTHED           0x1
 #define SESSION_STATUS_NOT_AUTHED       0x2
 
+netc_t *g_dnd_netc;
 struct session {
 
 	uint8_t status;

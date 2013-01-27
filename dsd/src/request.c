@@ -17,6 +17,36 @@
 #include "dao.h"
 #include "request.h"
 
+void CB_searchRequest_context_by_client_id(DNDSMessage_t *msg,
+						char *id,
+						char *topology_id,
+						char *description,
+						char *client_id,
+						char *network,
+						char *netmask,
+						char *serverCert,
+						char *serverPrivkey,
+						char *trustedCert)
+{
+	DNDSMessage_printf(msg);
+	DNDSObject_t *objContext;
+	DNDSObject_new(&objContext);
+	DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
+
+	Context_set_id(objContext, atoi(id));
+	Context_set_clientId(objContext, client_id);
+	Context_set_topology(objContext, Topology_mesh);
+	Context_set_description(objContext, description, strlen(description));
+	Context_set_network(objContext, network);
+	Context_set_netmask(objContext, netmask);
+
+	Context_set_serverCert(objContext, serverCert, strlen(serverCert));
+	Context_set_serverPrivkey(objContext, serverPrivkey, strlen(serverPrivkey));
+	Context_set_trustedCert(objContext, trustedCert, strlen(trustedCert));
+
+	SearchResponse_add_object(msg, objContext);
+}
+
 void nodeConnectInfo(struct session *session, DNDSMessage_t *req_msg)
 {
 	NodeConnectInfo_printf(req_msg);
@@ -112,7 +142,7 @@ void AddRequest_context(struct session *session, DNDSMessage_t *msg)
 	exp_delay = pki_expiration_delay(10);
 
 	digital_id_t *embassy_id;
-	embassy_id = pki_digital_id("embassy", "CA", "Quebec", "Levis", "info@dynvpn.com", "DNDS");
+	embassy_id = pki_digital_id("embassy", "CA", "Quebec", "", "info@dynvpn.com", "DNDS");
 
 	embassy_t *emb;
 	emb = pki_embassy_new(embassy_id, exp_delay);
@@ -126,7 +156,7 @@ void AddRequest_context(struct session *session, DNDSMessage_t *msg)
 	/* 3.2- Initialise server passport */
 
 	digital_id_t *server_id;
-	server_id = pki_digital_id("dnd", "CA", "Quebec", "Levis", "info@dynvpn.com", "DNDS");
+	server_id = pki_digital_id("dnd", "CA", "Quebec", "", "info@dynvpn.com", "DNDS");
 
 	passport_t *dnd_passport;
 	dnd_passport = pki_embassy_deliver_passport(emb, server_id, exp_delay);
@@ -150,15 +180,30 @@ void AddRequest_context(struct session *session, DNDSMessage_t *msg)
 				serv_cert_ptr,
 				serv_pvkey_ptr);
 
-	printf("emb->serial: %d\n", emb->serial);
-	printf("dao_add_context: %d\n", ret);
-
 	free(serv_cert_ptr);
 	free(serv_pvkey_ptr);
 
 	free(emb_cert_ptr);
 	free(emb_pvkey_ptr);
 
+	/* send context update to DND */
+
+	DNDSMessage_t *msg_up;
+	DNDSMessage_new(&msg_up);
+	DNDSMessage_set_channel(msg_up, 0);
+	DNDSMessage_set_pdu(msg_up, pdu_PR_dsm);
+
+	DSMessage_set_seqNumber(msg_up, 0);
+	DSMessage_set_ackNumber(msg_up, 1);
+	DSMessage_set_operation(msg_up, dsop_PR_searchResponse);
+
+	dao_fetch_context_by_client_id_desc(client_id_str, description, msg_up,
+		CB_searchRequest_context_by_client_id);
+
+	SearchResponse_set_searchType(msg, SearchType_all);
+	SearchResponse_set_result(msg_up, DNDSResult_success);
+
+	net_send_msg(g_dnd_netc, msg_up);
 }
 
 void AddRequest_node(struct session *session, DNDSMessage_t *msg)
@@ -224,7 +269,6 @@ void AddRequest_node(struct session *session, DNDSMessage_t *msg)
 	pki_write_privatekey_in_mem(node_passport->keyring, &node_pvkey_ptr, &size);
 
 	snprintf(emb_serial, sizeof(emb_serial), "%d", emb->serial);
-	printf("emb->serial: %d\n", emb->serial);
 
 	ret = dao_update_embassy_serial(context_id_str, emb_serial);
 	if (ret == -1) {
@@ -322,41 +366,6 @@ void searchRequest_client(struct session *session, DNDSMessage_t *req_msg)
 	DNDSMessage_del(msg);
 }
 
-void CB_searchRequest_context_by_client_id(DNDSMessage_t *msg,
-						char *id,
-						char *topology_id,
-						char *description,
-						char *client_id,
-						char *network,
-						char *netmask,
-						char *serverCert,
-						char *serverPrivkey,
-						char *trustedCert)
-{
-	/*jlog(L_DEBUG, "callback called! %s:%s\n", id, description);*/
-
-	DNDSObject_t *objContext;
-	DNDSObject_new(&objContext);
-	DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
-
-	/*printf("id: %s:%d\n", id, atoi(id));*/
-
-	Context_set_id(objContext, atoi(id));
-	Context_set_clientId(objContext, client_id);
-	Context_set_topology(objContext, Topology_mesh);
-	Context_set_description(objContext, description, strlen(description));
-	Context_set_network(objContext, network);
-	Context_set_netmask(objContext, netmask);
-/*
-        Context_set_serverCert(objContext, serverCert, strlen(serverCert));
-        Context_set_serverPrivkey(objContext, serverPrivkey, strlen(serverPrivkey));
-        Context_set_trustedCert(objContext, trustedCert, strlen(trustedCert));
-*/
-	SearchResponse_set_searchType(msg, SearchType_object);
-	SearchResponse_add_object(msg, objContext);
-
-}
-
 void searchRequest_context_by_client_id(struct session *session, DNDSMessage_t *req_msg)
 {
 	uint32_t client_id = 0;
@@ -380,6 +389,7 @@ void searchRequest_context_by_client_id(struct session *session, DNDSMessage_t *
 	dao_fetch_context_by_client_id(str_client_id, msg,
 		CB_searchRequest_context_by_client_id);
 
+	SearchResponse_set_searchType(msg, SearchType_object);
 	SearchResponse_set_result(msg, DNDSResult_success);
 
 	net_send_msg(session->netc, msg);
@@ -416,7 +426,6 @@ void CB_searchRequest_context(DNDSMessage_t *msg,
 	SearchResponse_set_searchType(msg, SearchType_all);
 		SearchResponse_add_object(msg, objContext);
 }
-
 
 void searchRequest_context(struct session *session, DNDSMessage_t *req_msg)
 {

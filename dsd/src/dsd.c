@@ -19,6 +19,9 @@
 #include "dsd.h"
 #include "request.h"
 
+passport_t *g_dsd_passport;
+
+
 static void session_free(struct session *session)
 {
 	free(session);
@@ -94,6 +97,10 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 static void on_secure(netc_t *netc)
 {
 	jlog(L_DEBUG, "on secure!\n");
+	if (!strncmp("dnd", netc->kconn->client_cn, 3)) {
+		jlog(L_NOTICE, "dsd]> %s authenticated !\n", netc->kconn->client_cn);
+		g_dnd_netc = netc;
+	}
 }
 
 static void on_input(netc_t *netc)
@@ -162,10 +169,9 @@ int dsd_init(char *ip_address, char *port, char *certificate, char *privatekey, 
 
 	event_register(EVENT_EXIT, "dsd_fini", dsd_fini, PRIO_AGNOSTIC);
 
-	passport_t *dsd_passport;
-	dsd_passport = pki_passport_load_from_file(certificate, privatekey, trusted_authority);
+	g_dsd_passport = pki_passport_load_from_file(certificate, privatekey, trusted_authority);
 
-	ret = net_server(ip_address, port, NET_PROTO_TCP, NET_SECURE_RSA, dsd_passport,
+	ret = net_server(ip_address, port, NET_PROTO_TCP, NET_SECURE_RSA, g_dsd_passport,
 			on_connect, on_disconnect, on_input, on_secure);
 
 	if (ret < 0) {
