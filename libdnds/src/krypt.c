@@ -78,20 +78,19 @@ static void ssl_error_stack()
 	} while (e);
 }
 
-static long post_handshake_check(SSL *ssl)
+static long post_handshake_check(krypt_t *krypt)
 {
 	X509 *cert;
 	X509_NAME *subj_ptr;
-	char subj[256];
 
-	cert = SSL_get_peer_certificate(ssl);
+	cert = SSL_get_peer_certificate(krypt->ssl);
 	if (cert == NULL)
 		return 0;
 
 	subj_ptr = X509_get_subject_name(cert);
-	X509_NAME_get_text_by_NID(subj_ptr, NID_commonName, subj, 256);
+	X509_NAME_get_text_by_NID(subj_ptr, NID_commonName, krypt->client_cn, 256);
 
-	jlog(L_NOTICE, "COMMON NAME: %s\n", subj);
+	jlog(L_NOTICE, "COMMON NAME: %s\n", krypt->client_cn);
 
 	return 0;
 }
@@ -193,7 +192,7 @@ int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 	}
 	else if (ret > 0 && !SSL_renegotiate_pending(kconn->ssl)) {
 		// Handshake successfully completed
-		post_handshake_check(kconn->ssl);
+		post_handshake_check(kconn);
 		kconn->status = KRYPT_SECURE;
 		status = 0;
 

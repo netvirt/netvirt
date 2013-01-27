@@ -33,6 +33,7 @@ typedef struct krypt {
 	BIO *network_bio;		// BIO is a I/O abstraction provided by openSSL
 
 	passport_t *passport;		// Certificate and key used to negotiate RSA
+	char client_cn[256];		// Client certificate commonName
 
 	uint8_t security_level;		// Security level negotiated { ADH, RSA }
 	uint8_t status;			// Status { NOINIT, HANDSHAKE, SECURE, FAIL }
