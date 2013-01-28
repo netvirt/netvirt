@@ -200,10 +200,11 @@ void AddRequest_context(struct session *session, DNDSMessage_t *msg)
 	dao_fetch_context_by_client_id_desc(client_id_str, description, msg_up,
 		CB_searchRequest_context_by_client_id);
 
-	SearchResponse_set_searchType(msg, SearchType_all);
+	SearchResponse_set_searchType(msg_up, SearchType_all);
 	SearchResponse_set_result(msg_up, DNDSResult_success);
 
-	net_send_msg(g_dnd_netc, msg_up);
+	if (g_dnd_netc)
+		net_send_msg(g_dnd_netc, msg_up);
 }
 
 void AddRequest_node(struct session *session, DNDSMessage_t *msg)

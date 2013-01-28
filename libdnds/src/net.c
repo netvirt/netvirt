@@ -424,7 +424,6 @@ int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 
 		do {
 			ret = krypt_encrypt_buf(netc->kconn, netc->buf_enc, netc->buf_enc_data_size);
-			printf("krypt: %d\n", ret);
 			net_queue_out(netc, netc->kconn->buf_encrypt, netc->kconn->buf_encrypt_data_size);
 		} while (ret == -1); /* SSL BIO buffer is full ! flush it, and write again */
 		netc->kconn->buf_encrypt_data_size = 0;
