@@ -11,4 +11,6 @@ or any other system written in python that have to interact with DSD.
 
 What has to be done:
 
+	- A lot of clean up ! this is just a proof of concept at this point.
+
 	- breaking down dsctl.py into libdsm.py and dsctl.py

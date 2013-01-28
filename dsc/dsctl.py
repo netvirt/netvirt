@@ -185,10 +185,16 @@ def showContext(conn):
     context.setComponentByName('netmask', '0')
 
     conn.ssl_sock.write(encoder.encode(msg))
-    data = conn.ssl_sock.read()
-
-    substrate = data
-    a_msg, substrate = decoder.decode(substrate, asn1Spec=DNDSMessage())
+    loop = True
+    data = ""
+    while loop is True:
+        data += conn.ssl_sock.read()
+        substrate = data
+        try:
+            a_msg, substrate = decoder.decode(substrate, asn1Spec=DNDSMessage())
+            loop = False
+        except:
+            pass
 
     recv_pdu = a_msg.getComponentByName('pdu')
     recv_dsm = recv_pdu.getComponentByName('dsm')
