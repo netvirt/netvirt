@@ -5,6 +5,7 @@ endif (PostgreSQL_TYPE_INCLUDE_DIR)
 
 #find_package(PostgreSQL REQUIRED)
 
+set(CMAKE_C_FLAGS "-g")
 add_executable(dsd
 	dao.c
 	dsd.c
