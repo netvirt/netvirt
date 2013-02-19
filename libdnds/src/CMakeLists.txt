@@ -12,6 +12,7 @@ set(DNDS_SRCS
 	hooklet.c
 	inet.c
 	ipf.c
+	ippool.c
 	ipset.c
 	journal.c
 	jsw_hlib.c
