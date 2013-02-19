@@ -1227,6 +1227,60 @@ int ProvResponse_get_trustedCert(DNDSMessage_t *msg, char **trustedCert, size_t 
 
 	return DNDS_success;
 }
+int ProvResponse_get_ipAddress(DNDSMessage_t *msg, char *ipAddress)
+{
+	if (msg == NULL || ipAddress == NULL) {
+		return DNDS_invalid_param;
+	}
+
+        if (msg->pdu.choice.dnm.dnop.present != dnop_PR_provResponse) {
+                return DNDS_invalid_op;
+        }
+
+	if (msg->pdu.choice.dnm.dnop.choice.provResponse.ipAddress == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	const char *ret;
+	ret = inet_ntop(AF_INET, msg->pdu.choice.dnm.dnop.choice.provResponse.ipAddress->buf, ipAddress, INET_ADDRSTRLEN);
+	if (ret == NULL) {
+		return DNDS_conversion_failed;
+	}
+
+	return DNDS_success;
+}
+
+int ProvResponse_set_ipAddress(DNDSMessage_t *msg, char *ipAddress)
+{
+	if (msg == NULL || ipAddress == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_provResponse) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.provResponse.ipAddress = (OCTET_STRING_t *)calloc(1, sizeof(OCTET_STRING_t));
+	if (msg->pdu.choice.dnm.dnop.choice.provResponse.ipAddress == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.provResponse.ipAddress->buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
+	if (msg->pdu.choice.dnm.dnop.choice.provResponse.ipAddress->buf == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	int ret;
+	ret = inet_pton(AF_INET, ipAddress, msg->pdu.choice.dnm.dnop.choice.provResponse.ipAddress->buf);
+	if (ret != 1) {
+		return DNDS_conversion_failed;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.provResponse.ipAddress->size = sizeof(struct in_addr);
+
+	return DNDS_success;
+}
+
 
 // P2pRequest
 int P2pRequest_set_macAddrDst(DNDSMessage_t *msg, uint8_t *macAddrDst)
@@ -2467,6 +2521,61 @@ int Node_get_trustedCert(DNDSObject_t *object, uint8_t **trustedCert, size_t *le
 	return DNDS_success;
 }
 
+int Node_set_ipAddress(DNDSObject_t *object, char *ipAddress)
+{
+	if (object == NULL || ipAddress == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_node) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.node.ipAddress = (OCTET_STRING_t *)calloc(1, sizeof(OCTET_STRING_t));
+	if (object->choice.node.ipAddress == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.node.ipAddress->buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
+	if (object->choice.node.ipAddress->buf == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	int ret;
+	ret = inet_pton(AF_INET, ipAddress, object->choice.node.ipAddress->buf);
+	if (ret != 1) {
+		return DNDS_conversion_failed;
+	}
+
+	object->choice.node.ipAddress->size = sizeof(struct in_addr);
+
+	return DNDS_success;
+}
+
+int Node_get_ipAddress(DNDSObject_t *object, char *ipAddress)
+{
+	if (object == NULL || ipAddress == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_node) {
+		return DNDS_invalid_object_type;
+	}
+
+	if (object->choice.node.ipAddress == NULL ||
+		object->choice.node.ipAddress->buf == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	const char *ret;
+	ret = inet_ntop(AF_INET, object->choice.node.ipAddress->buf, ipAddress, INET_ADDRSTRLEN);
+	if (ret == NULL) {
+		return DNDS_conversion_failed;
+	}
+
+	return DNDS_success;
+}
+
 int Node_set_status(DNDSObject_t *object, uint8_t status)
 {
 	if (object == NULL) {
@@ -3388,6 +3497,8 @@ void Context_printf(DNDSObject_t *object)
 
 void Node_printf(DNDSObject_t *object)
 {
+	int ret = 0;
+
 	uint32_t contextId = -1;
 	Node_get_contextId(object, &contextId);
 	printf("Node> contextId: %i\n", contextId);
@@ -3401,6 +3512,10 @@ void Node_printf(DNDSObject_t *object)
 	Node_get_certificateKey(object, &certificateKey, &length);
 	printf("Node> certificateKey: ");
 	int i; for (i = 0; i < length; i++) { printf("%x", certificateKey[i]); }; printf("\n");
+
+	char ipAddress[INET_ADDRSTRLEN];
+	ret = Node_get_ipAddress(object, ipAddress);
+	printf("Node ipAddress(%i): %s\n", ret, ipAddress);
 
 	uint8_t status;
 	Node_get_status(object, &status);

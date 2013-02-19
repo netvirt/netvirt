@@ -264,13 +264,12 @@ int Node_set_id(DNDSObject_t *NodeObject, uint32_t id);
 int Node_get_id(DNDSObject_t *NodeObject, uint32_t *id);
 int Node_set_name(DNDSObject_t *NodeObject, char *name, size_t length);
 int Node_get_name(DNDSObject_t *NodeObject, char **name, size_t *length);
-int Node_set_ipAddress(DNDSObject_t *NodeObject, char *ipAddress);
-int Node_get_ipAddress(DNDSObject_t *NodeObject, char *ipAddress);
 int Node_set_certificate(DNDSObject_t *NodeObject, char *certificate, size_t length);
 int Node_get_certificate(DNDSObject_t *NodeObject, char **certificate, size_t *length);
 int Node_set_certificateKey(DNDSObject_t *NodeObject, uint8_t *certificateKey, size_t length);
 int Node_get_certificateKey(DNDSObject_t *NodeObject, uint8_t **certificateKey, size_t *length);
-int Node_set_permission();
+int Node_set_ipAddress(DNDSObject_t *NodeObject, char *ipAddress);
+int Node_get_ipAddress(DNDSObject_t *NodeObject, char *ipAddress);
 int Node_set_status(DNDSObject_t *NodeObject, uint8_t status);
 int Node_get_status(DNDSObject_t *NodeObject, uint8_t *status);
 
