@@ -115,6 +115,7 @@ ProvResponse ::= SEQUENCE {
 	certificate	PrintableString OPTIONAL,
 	certificateKey	PrintableString OPTIONAL,
 	trustedCert     PrintableString OPTIONAL,
+	ipAddress	OCTET STRING SIZE((4..16)) OPTIONAL,
 	...
 }
 
@@ -231,6 +232,7 @@ Node ::= SEQUENCE {
 	certificate	PrintableString OPTIONAL,
 	certificateKey	BIT STRING OPTIONAL,
 	trustedCert     PrintableString OPTIONAL,
+	ipAddress	OCTET STRING SIZE((4..16)) OPTIONAL,
 	status		INTEGER (0..127) OPTIONAL,
 	...
 }
