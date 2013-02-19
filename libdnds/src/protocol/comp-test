@@ -1,4 +1,5 @@
 #!/bin/bash
 clang -Wunused-but-set-variable -Wall test.c -c -o test.o -I ../ -I ./
-clang -v -Wall ../dnds.o *.o -o test
+clang -v -Wall ../CMakeFiles/dnds.dir/dnds.c.o ./libdnds_protocol.a test.o -o test ./CMakeFiles/dnds_protocol.dir/xer_encoder.o 
+#clang -v -Wall ../dnds.o *.o -o test
 

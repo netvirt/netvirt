@@ -2,6 +2,8 @@
  * Copyright (C) Nicolas Bouliane - Mind4Networks, 2010, 2011
  */
 
+#include "asn_application.h"
+#include "xer_encoder.h"
 #include "dnds.h"
 
 /* HOWTO compile `test' unit-test
@@ -934,17 +936,16 @@ void show_SearchRequest()
 	SearchRequest_printf(msg);
 
 	DNDSObject_t *obj;
-	//SearchRequest_get_object(msg, &obj);
+	SearchRequest_get_object(msg, &obj);
 	DNDSObject_printf(obj);
 }
 
 void test_SearchRequest()
 {
-#if 0
 	/// Building a SearchRequest()
 
 	DNDSMessage_t *msg;	// a DNDS Message
-	DNDSObject_t *objIpPool; // a DNDS Object
+	DNDSObject_t *objNode; // a DNDS Object
 
 	DNDSMessage_new(&msg);
 	DNDSMessage_set_channel(msg, 0);
@@ -954,15 +955,17 @@ void test_SearchRequest()
 	DSMessage_set_ackNumber(msg, 0);
 	DSMessage_set_operation(msg, dsop_PR_searchRequest);
 
-	SearchRequest_set_searchType(msg, SearchType_all);
-	SearchRequest_set_objectName(msg, ObjectName_context);
-//	SearchRequest_set_objectType(msg, DNDSObject_PR_ippool, &objIpPool);
+	SearchRequest_set_searchType(msg, SearchType_object);
 
-	IpPool_set_id(objIpPool, 1);
-	IpPool_set_ipLocal(objIpPool, "192.168.0.1");
-	IpPool_set_ipBegin(objIpPool, "192.168.0.2");
-	IpPool_set_ipEnd(objIpPool, "192.168.0.10");
-	IpPool_set_netmask(objIpPool, "255.255.255.0");
+
+	DNDSObject_new(&objNode);
+	DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
+
+	Node_set_contextId(objNode, 0);
+	Node_set_provCode(objNode, "secret-prov-code", strlen("secret-prov-code"));
+	Node_set_ipAddress(objNode, "127.0.0.1");
+
+	SearchRequest_set_object(msg, objNode);
 
 	/// Encoding part
 
@@ -974,7 +977,7 @@ void test_SearchRequest()
 	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
 
 	DNDSMessage_del(msg);
-#endif
+
 }
 
 void show_SearchResponse()
@@ -1131,13 +1134,13 @@ int main()
 	test_DNDS_ethernet();
 	show_DNDS_ethernet();
 
-*/
+
 	test_AddRequest();
 	show_AddRequest();
 
 	//test_AddResponse();
 	//show_AddResponse();
-/*
+
 	test_P2pRequest_dnm();
 	show_P2pRequest_dnm();
 
@@ -1176,10 +1179,10 @@ int main()
 
 	test_TerminateRequest();
 */
-/*
+
 	test_SearchRequest();
 	show_SearchRequest();
-
+/*
 	test_SearchResponse();
 	show_SearchResponse();
 */
