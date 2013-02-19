@@ -121,9 +121,9 @@ void transmit_netinfo_response(netc_t *netc)
 	context = session->context;
 
 	/* Send to the client his network informations */
-	ip_address = ippool_get_ip(context->ippool);
-	session->ip = strdup(ip_address);
-	jlog(L_DEBUG, "session ip %s", session->ip);
+	//ip_address = ippool_get_ip(context->ippool);
+	//session->ip = strdup(ip_address);
+	//jlog(L_DEBUG, "session ip %s", session->ip);
 
 	DNDSMessage_t *msg = NULL;
 	DNDSMessage_new(&msg);
@@ -134,11 +134,11 @@ void transmit_netinfo_response(netc_t *netc)
 	DNMessage_set_ackNumber(msg, 0);
 	DNMessage_set_operation(msg, dnop_PR_netinfoResponse);
 
-	NetinfoResponse_set_ipAddress(msg, ip_address);
+	//NetinfoResponse_set_ipAddress(msg, ip_address);
 	/* TODO find the real netmask */
-	NetinfoResponse_set_netmask(msg, "255.255.255.0");
+	//NetinfoResponse_set_netmask(msg, "255.255.255.0");
 
-	jlog(L_DEBUG, "dnd]> client ip address %s", ip_address);
+//	jlog(L_DEBUG, "dnd]> client ip address %s", ip_address);
 
 	net_send_msg(session->netc, msg);
 

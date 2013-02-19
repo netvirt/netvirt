@@ -115,6 +115,7 @@ static void handle_SearchResponse_Node(netc_t *netc, DNDSMessage_t *msg)
 	char *certificate = NULL;
 	char *certificateKey = NULL;
 	char *trustedCert = NULL;
+        char ipAddress[INET_ADDRSTRLEN];
 
 	SearchResponse_get_object_count(msg, &count);
 
@@ -139,6 +140,10 @@ static void handle_SearchResponse_Node(netc_t *netc, DNDSMessage_t *msg)
 		Node_get_trustedCert(object, &trustedCert, &length);
 		ProvResponse_set_trustedCert(new_msg, trustedCert, length);
 		//printf("trustedcert: %s\n", trustedCert);
+
+		Node_get_ipAddress(object, ipAddress);
+		ProvResponse_set_ipAddress(new_msg, ipAddress);
+		//printf("ipAddress: %s\n", ipAddress);
 	}
 
 

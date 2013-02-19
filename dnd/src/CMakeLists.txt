@@ -2,7 +2,6 @@ add_executable(dnd
 	context.c
 	dnd.c
 	dsc.c
-	ippool.c
 	linkst.c
 	main.c
 	request.c

@@ -3,11 +3,11 @@
 
 #include <ftable.h>
 #include <netbus.h>
+#include <ippool.h>
 #include <mbuf.h>
 #include <pki.h>
 
 #include "dnd.h"
-#include "ippool.h"
 #include "linkst.h"
 
 typedef struct context {
