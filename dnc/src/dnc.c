@@ -324,6 +324,8 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 	char *certificate = NULL;
 	char *certificatekey = NULL;
 	char *trusted_authority = NULL;
+        char ipAddress[INET_ADDRSTRLEN];
+
 	FILE *fp = NULL;
 
 	DNMessage_get_operation(msg, &operation);
@@ -350,6 +352,13 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 			fp = fopen(g_trusted_authority, "w");
 			fwrite(trusted_authority, 1, strlen(trusted_authority), fp);
 			fclose(fp);
+
+			ProvResponse_get_ipAddress(msg, ipAddress);
+			printf("ipAddress: %s\n", ipAddress);
+			fp = fopen("/etc/dnds/dnc.ip", "w");
+			fprintf(fp, "%s", ipAddress);
+			fclose(fp);
+
 
 			session->passport = pki_passport_load_from_file(g_certificate,
 							 g_privatekey,
@@ -385,7 +394,15 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 			jlog(L_NOTICE, "dnc]> got ip address %s\n", ip_addr);
 
 			master_session = session;
-			tun_up(session->iface->devname, ip_addr);
+
+			fp = fopen("/etc/dnds/dnc.ip", "r");
+			fscanf(fp, "%s", ipAddress);
+			fclose(fp);
+
+
+			tun_up(session->iface->devname, ipAddress);
+
+
 			session->status = SESSION_STATUS_AUTHED;
 
 			break;
