@@ -100,8 +100,8 @@ int dao_prepare_statements()
 			"INSERT INTO CONTEXT "
 			"(client_id, description, topology_id, network, "
 				"embassy_certificate, embassy_privatekey, embassy_serial, "
-				"passport_certificate, passport_privatekey)"
-			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);",
+				"passport_certificate, passport_privatekey, ippool)"
+			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::bytea);",
 			0,
 			NULL);
 
@@ -120,7 +120,7 @@ int dao_prepare_statements()
 
 	result = PQprepare(dbconn,
 			"dao_fetch_context_embassy",
-			"SELECT embassy_certificate, embassy_privatekey, embassy_serial "
+			"SELECT embassy_certificate, embassy_privatekey, embassy_serial, ippool "
 			"FROM CONTEXT "
 			"WHERE id = $1;",
 			0,
@@ -131,8 +131,18 @@ int dao_prepare_statements()
 	result = PQprepare(dbconn,
 			"dao_add_node",
 			"INSERT INTO NODE "
-			"(context_id, uuid, certificate, privatekey, provcode, description) "
-			"VALUES ($1, $2, $3, $4, $5, $6);",
+			"(context_id, uuid, certificate, privatekey, provcode, description, ipaddress) "
+			"VALUES ($1, $2, $3, $4, $5, $6, $7);",
+			0,
+			NULL);
+
+	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+
+	result = PQprepare(dbconn,
+			"dao_update_context_ippool",
+			"UPDATE context "
+			"SET ippool = $2::bytea "
+			"WHERE Id = $1;",
 			0,
 			NULL);
 
@@ -360,21 +370,16 @@ int dao_fetch_client_id(char **client_id, char *email, char *password)
 	jlog(L_DEBUG, "Tuples %d\n", tuples);
 	jlog(L_DEBUG, "Fields %d\n", fields);
 
-	int i;
-	for (i = 0; i<fields; i++) {
-		jlog(L_DEBUG, "%s | %s\n", PQfname(result, i), PQgetvalue(result, 0, i));
-	}
-
 	return 0;
 }
 
-int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatekey, char *provcode, char *description)
+int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatekey, char *provcode, char *description, char *ipaddress)
 {
-	const char *paramValues[6];
-	int paramLengths[6];
+	const char *paramValues[7];
+	int paramLengths[7];
 	PGresult *result;
 
-	if (!context_id || !uuid || !certificate || !privatekey || !provcode) {
+	if (!context_id || !uuid || !certificate || !privatekey || !provcode || !ipaddress) {
 		jlog(L_ERROR, "invalid NULL parameter\n");
 		return -1;
 	}
@@ -385,6 +390,7 @@ int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatek
 	paramValues[3] = privatekey;
 	paramValues[4] = provcode;
 	paramValues[5] = description;
+	paramValues[6] = ipaddress;
 
 	paramLengths[0] = strlen(context_id);
 	paramLengths[1] = strlen(uuid);
@@ -392,8 +398,9 @@ int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatek
 	paramLengths[3] = strlen(privatekey);
 	paramLengths[4] = strlen(provcode);
 	paramLengths[5] = strlen(description);
+	paramLengths[6] = strlen(ipaddress);
 
-	result = PQexecPrepared(dbconn, "dao_add_node", 6, paramValues, paramLengths, NULL, 0);
+	result = PQexecPrepared(dbconn, "dao_add_node", 7, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
 		jlog(L_DEBUG, "PQexec command failed, %s\n", PQerrorMessage(dbconn));
@@ -426,11 +433,15 @@ int dao_add_context(char *client_id,
 			char *embassy_privatekey,
 			char *embassy_serial,
 			char *passport_certificate,
-			char *passport_privatekey)
+			char *passport_privatekey,
+			char *ippool,
+			size_t pool_size)
 {
-	const char *paramValues[9];
-	int paramLengths[9];
+	const char *paramValues[10];
+	int paramLengths[10];
 	PGresult *result;
+	char *ippool_str;
+	size_t ippool_str_len;
 
 	if (!client_id || !description || !topology_id || !network ||
 		!embassy_certificate || !embassy_privatekey || !embassy_serial ||
@@ -439,6 +450,8 @@ int dao_add_context(char *client_id,
 		jlog(L_ERROR, "invalid NULL parameter\n");
 		return -1;
 	}
+
+	ippool_str = PQescapeByteaConn(dbconn, ippool, pool_size, &ippool_str_len);
 
 	paramValues[0] = client_id;
 	paramValues[1] = description;
@@ -449,6 +462,7 @@ int dao_add_context(char *client_id,
 	paramValues[6] = embassy_serial;
 	paramValues[7] = passport_certificate;
 	paramValues[8] = passport_privatekey;
+	paramValues[9] = ippool_str;
 
 	paramLengths[0] = strlen(client_id);
 	paramLengths[1] = strlen(description);
@@ -459,13 +473,15 @@ int dao_add_context(char *client_id,
 	paramLengths[6] = strlen(embassy_serial);
 	paramLengths[7] = strlen(passport_certificate);
 	paramLengths[8] = strlen(passport_privatekey);
+	paramLengths[9] = ippool_str_len;
 
-	result = PQexecPrepared(dbconn, "dao_add_context", 9, paramValues, paramLengths, NULL, 0);
-
+	result = PQexecPrepared(dbconn, "dao_add_context", 10, paramValues, paramLengths, NULL, 0);
 	if (!result) {
 		jlog(L_DEBUG, "PQexec command failed, %s\n", PQerrorMessage(dbconn));
 		return -1;
 	}
+
+	PQfreemem(ippool_str);
 
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
@@ -534,24 +550,20 @@ int dao_fetch_context_id(char **context_id, char *client_id, char *description)
 	if (tuples > 0 && fields > 0) {
 		*context_id = PQgetvalue(result, 0, 0);
 	}
-
-	jlog(L_DEBUG, "Tuples %d\n", tuples);
-	jlog(L_DEBUG, "Fields %d\n", fields);
-
-	int i;
-	for (i = 0; i<fields; i++) {
-		jlog(L_DEBUG, "%s | %s\n", PQfname(result, i), PQgetvalue(result, 0, i));
-	}
 }
 
 int dao_fetch_context_embassy(char *context_id,
 			char **certificate,
 			char **privatekey,
-			char **serial)
+			char **serial,
+			char **ippool)
 {
 	const char *paramValues[1];
 	int paramLengths[1];
 	PGresult *result;
+	int tuples, fields, i;
+	char *ippool_ptr;
+	size_t ippool_size;
 
 	if (!context_id || !certificate || !privatekey || !serial) {
 		jlog(L_ERROR, "invalid NULL parameter\n");
@@ -585,24 +597,69 @@ int dao_fetch_context_embassy(char *context_id,
 		return -1;
 	}
 
-
-	int tuples, fields, i;
 	tuples = PQntuples(result);
 	fields = PQnfields(result);
 
-	if (tuples > 0 && fields == 3) {
+	if (tuples > 0 && fields == 4) {
+
 		*certificate = strdup(PQgetvalue(result, 0, 0));
 		*privatekey = strdup(PQgetvalue(result, 0, 1));
 		*serial = strdup(PQgetvalue(result, 0, 2));
 
-		jlog(L_DEBUG, "Tuples %d\n", tuples);
-		jlog(L_DEBUG, "Fields %d\n", fields);
-
-		for (i = 0; i<fields; i++) {
-			jlog(L_DEBUG, "%s | %s\n", PQfname(result, i), PQgetvalue(result, 0, i));
-		}
-
+		ippool_ptr = PQgetvalue(result, 0, 3);
+		ippool_size = PQgetlength(result, 0, 3);
+		*ippool = PQunescapeBytea(ippool_ptr, &ippool_size);
 	} else {
+		return -1;
+	}
+
+	return 0;
+}
+
+int dao_update_context_ippool(char *context_id, char *ippool, int pool_size)
+{
+	const char *paramValues[2];
+	int paramLengths[2];
+	PGresult *result = NULL;
+	char *ippool_str;
+	size_t ippool_str_len;
+
+	if (!context_id || !ippool) {
+		jlog(L_ERROR, "invalid NULL parameter\n");
+		return -1;
+	}
+
+	ippool_str = PQescapeByteaConn(dbconn, ippool, pool_size, &ippool_str_len);
+
+	paramValues[0] = context_id;
+	paramValues[1] = ippool_str;
+
+	paramLengths[0] = strlen(context_id);
+	paramLengths[1] = ippool_str_len;
+
+	result = PQexecPrepared(dbconn, "dao_update_context_ippool", 2, paramValues, paramLengths, NULL, 1);
+
+	PQfreemem(ippool_str);
+
+	if (!result) {
+		jlog(L_DEBUG, "PQexec command failed, %s\n", PQerrorMessage(dbconn));
+		return -1;
+	}
+
+	switch (PQresultStatus(result)) {
+	case PGRES_COMMAND_OK:
+		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
+		break;
+
+	case PGRES_TUPLES_OK:
+		jlog(L_DEBUG, "query may have returned data\n");
+		break;
+
+	default:
+		jlog(L_DEBUG, "command failed with code %s, %s\n",
+			PQresStatus(PQresultStatus(result)),
+			PQresultErrorMessage(result));
+
 		return -1;
 	}
 
@@ -738,9 +795,6 @@ int dao_fetch_node_from_context_id(char *context_id, void *data, int (*cb_data_h
 	tuples = PQntuples(result);
 	fields = PQnfields(result);
 
-	jlog(L_DEBUG, "Tuples %d\n", tuples);
-	jlog(L_DEBUG, "Fields %d\n", fields);
-
 	int i;
 	for (i = 0; i < tuples; i++) {
 		cb_data_handler(data,
@@ -755,13 +809,15 @@ int dao_fetch_node_from_context_id(char *context_id, void *data, int (*cb_data_h
 int dao_fetch_node_from_provcode(char *provcode,
 					char **certificate,
 					char **private_key,
-					char **trustedcert)
+					char **trustedcert,
+					char **ipAddress)
 {
 	PGresult *result;
 	char fetch_req[1024];
 
 	snprintf(fetch_req, 1024, 	"SELECT node.certificate, "
 						"node.privatekey, "
+						"node.ipaddress, "
 						"context.embassy_certificate as trustedcert "
 					"FROM	node, context "
 					"WHERE	provcode = '%s' "
@@ -779,10 +835,11 @@ int dao_fetch_node_from_provcode(char *provcode,
 	jlog(L_DEBUG, "Tuples %d\n", tuples);
 	jlog(L_DEBUG, "Fields %d\n", fields);
 
-	if (tuples > 0 && fields == 3) {
+	if (tuples > 0 && fields == 4) {
 		*certificate = strdup(PQgetvalue(result, 0, 0));
 		*private_key = strdup(PQgetvalue(result, 0, 1));
-		*trustedcert = strdup(PQgetvalue(result, 0, 2));
+		*ipAddress = strdup(PQgetvalue(result, 0, 2));
+		*trustedcert = strdup(PQgetvalue(result, 0, 3));
 	} else
 		return -1;
 
@@ -856,9 +913,6 @@ int dao_fetch_context_by_client_id(char *client_id, void *data, int (*cb_data_ha
 	tuples = PQntuples(result);
 	fields = PQnfields(result);
 
-	jlog(L_DEBUG, "Tuples %d\n", tuples);
-	jlog(L_DEBUG, "Fields %d\n", fields);
-
 	int i;
 	for (i = 0; i < tuples; i++) {
 		cb_data_handler(data,
@@ -929,9 +983,6 @@ int dao_fetch_context_by_client_id_desc(char *client_id, char *description,
 	tuples = PQntuples(result);
 	fields = PQnfields(result);
 
-	jlog(L_DEBUG, "Tuples %d\n", tuples);
-	jlog(L_DEBUG, "Fields %d\n", fields);
-
 	int i;
 	for (i = 0; i < tuples; i++) {
 
@@ -986,9 +1037,6 @@ int dao_fetch_context(void *data, void (*cb_data_handler)(void *data,
 
 	tuples = PQntuples(result);
 	fields = PQnfields(result);
-
-	jlog(L_DEBUG, "Tuples %d\n", tuples);
-	jlog(L_DEBUG, "Fields %d\n", fields);
 
 	int i;
 	for (i = 0; i < tuples; i++) {
