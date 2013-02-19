@@ -12,6 +12,7 @@
 #include <stdlib.h>
 
 #include <dnds.h>
+#include <ippool.h>
 #include <journal.h>
 
 #include "dao.h"
@@ -34,7 +35,7 @@ void CB_searchRequest_context_by_client_id(DNDSMessage_t *msg,
 	DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
 
 	Context_set_id(objContext, atoi(id));
-	Context_set_clientId(objContext, client_id);
+	Context_set_clientId(objContext, atoi(client_id));
 	Context_set_topology(objContext, Topology_mesh);
 	Context_set_description(objContext, description, strlen(description));
 	Context_set_network(objContext, network);
@@ -170,6 +171,14 @@ void AddRequest_context(struct session *session, DNDSMessage_t *msg)
 	char emb_serial[10];
 	snprintf(emb_serial, sizeof(emb_serial), "%d", emb->serial);
 
+	/* Create an IP pool */
+	ippool_t *ippool;
+	size_t pool_size;
+
+	ippool = ippool_new("44.128.0.0", "255.255.0.0");
+	ipcalc(ippool, "44.128.0.0", "255.255.0.0");
+	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
+
 	ret = dao_add_context(client_id_str,
 				description,
 				"1",
@@ -178,7 +187,12 @@ void AddRequest_context(struct session *session, DNDSMessage_t *msg)
 				emb_pvkey_ptr,
 				emb_serial,
 				serv_cert_ptr,
-				serv_pvkey_ptr);
+				serv_pvkey_ptr,
+				ippool->pool,
+				pool_size);
+
+	free(ippool->pool);
+	free(ippool);
 
 	free(serv_cert_ptr);
 	free(serv_pvkey_ptr);
@@ -230,6 +244,7 @@ void AddRequest_node(struct session *session, DNDSMessage_t *msg)
 	char *emb_cert_ptr = NULL;
 	char *emb_pvkey_ptr = NULL;
 	char *serial = NULL;
+	char *ippool_bin = NULL;
 	long size;
 
 	char *uuid = NULL;
@@ -245,7 +260,7 @@ void AddRequest_node(struct session *session, DNDSMessage_t *msg)
 	snprintf(context_id_str, 10, "%d", context_id);
 
 	exp_delay = pki_expiration_delay(10);
-	ret = dao_fetch_context_embassy(context_id_str, &emb_cert_ptr, &emb_pvkey_ptr, &serial);
+	ret = dao_fetch_context_embassy(context_id_str, &emb_cert_ptr, &emb_pvkey_ptr, &serial, &ippool_bin);
 	if (ret == -1) {
 		jlog(L_ERROR, "failed to fetch context embassy\n");
 		return;
@@ -278,11 +293,32 @@ void AddRequest_node(struct session *session, DNDSMessage_t *msg)
 	}
 	jlog(L_DEBUG, "dao_update_embassy_serial: %d\n", ret);
 
-	ret = dao_add_node(context_id_str, uuid, node_cert_ptr, node_pvkey_ptr, provcode, description);
+
+	/* handle ip pool */
+	ippool_t *ippool;
+	char *ip;
+	int pool_size;
+
+	ippool = ippool_new("44.128.0.0", "255.255.0.0");
+	free(ippool->pool);
+	ippool->pool = ippool_bin;
+	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
+	ip = ippool_get_ip(ippool);
+
+	ret = dao_add_node(context_id_str, uuid, node_cert_ptr, node_pvkey_ptr, provcode, description, ip);
 	if (ret == -1) {
 		jlog(L_ERROR, "failed to add node\n");
 		return;
 	}
+
+	ret = dao_update_context_ippool(context_id_str, ippool->pool, pool_size);
+	if (ret == -1) {
+		jlog(L_ERROR, "failled to update embassy ippool\n");
+		return;
+	}
+
+	free(ippool->pool);
+	free(ippool);
 
 	free(uuid);
 	free(provcode);
@@ -529,8 +565,9 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 		char *certificate = NULL;
 		char *private_key = NULL;
 		char *trustedcert = NULL;
+		char *ipAddress = NULL;
 
-		ret = dao_fetch_node_from_provcode(provcode, &certificate, &private_key, &trustedcert);
+		ret = dao_fetch_node_from_provcode(provcode, &certificate, &private_key, &trustedcert, &ipAddress);
 		if (ret != 0) {
 			jlog(L_WARNING, "dao fetch node from provcode failed: %s\n", provcode);
 			return; /* FIXME send negative response */
@@ -539,6 +576,7 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 		Node_set_certificate(objNode, certificate, strlen(certificate));
 		Node_set_certificateKey(objNode, private_key, strlen(private_key));
 		Node_set_trustedCert(objNode, trustedcert, strlen(trustedcert));
+		Node_set_ipAddress(objNode, ipAddress);
 
 		SearchResponse_set_result(msg, DNDSResult_success);
 		SearchResponse_add_object(msg, objNode);
