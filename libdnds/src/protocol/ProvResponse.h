@@ -13,6 +13,7 @@
 
 /* Including external dependencies */
 #include <PrintableString.h>
+#include <OCTET_STRING.h>
 #include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
@@ -24,6 +25,7 @@ typedef struct ProvResponse {
 	PrintableString_t	*certificate	/* OPTIONAL */;
 	PrintableString_t	*certificateKey	/* OPTIONAL */;
 	PrintableString_t	*trustedCert	/* OPTIONAL */;
+	OCTET_STRING_t	*ipAddress	/* OPTIONAL */;
 	/*
 	 * This type is extensible,
 	 * possible extensions are below.

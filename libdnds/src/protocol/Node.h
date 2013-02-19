@@ -15,6 +15,7 @@
 #include <NativeInteger.h>
 #include <PrintableString.h>
 #include <BIT_STRING.h>
+#include <OCTET_STRING.h>
 #include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
@@ -30,6 +31,7 @@ typedef struct Node {
 	PrintableString_t	*certificate	/* OPTIONAL */;
 	BIT_STRING_t	*certificateKey	/* OPTIONAL */;
 	PrintableString_t	*trustedCert	/* OPTIONAL */;
+	OCTET_STRING_t	*ipAddress	/* OPTIONAL */;
 	long	*status	/* OPTIONAL */;
 	/*
 	 * This type is extensible,

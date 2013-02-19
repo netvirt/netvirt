@@ -57,8 +57,8 @@ static ber_tlv_tag_t asn_DEF_P2pResponse_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
 static asn_TYPE_tag2member_t asn_MAP_P2pResponse_tag2el_1[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* macAddrDst at 138 */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 } /* result at 139 */
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* macAddrDst at 139 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 } /* result at 140 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_P2pResponse_specs_1 = {
 	sizeof(struct P2pResponse),

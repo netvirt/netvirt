@@ -157,6 +157,32 @@ memb_description_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 }
 
 static int
+memb_ipAddress_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
+			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
+	const OCTET_STRING_t *st = (const OCTET_STRING_t *)sptr;
+	size_t size;
+	
+	if(!sptr) {
+		_ASN_CTFAIL(app_key, td, sptr,
+			"%s: value not given (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+	
+	size = st->size;
+	
+	if((size >= 4 && size <= 16)) {
+		/* Constraint check succeeded */
+		return 0;
+	} else {
+		_ASN_CTFAIL(app_key, td, sptr,
+			"%s: constraint failed (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+}
+
+static int
 memb_status_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
 	long value;
@@ -224,7 +250,7 @@ static asn_TYPE_member_t asn_MBR_Node_1[] = {
 		0,
 		"contextId"
 		},
-	{ ATF_POINTER, 7, offsetof(struct Node, description),
+	{ ATF_POINTER, 8, offsetof(struct Node, description),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
@@ -233,7 +259,7 @@ static asn_TYPE_member_t asn_MBR_Node_1[] = {
 		0,
 		"description"
 		},
-	{ ATF_POINTER, 6, offsetof(struct Node, uuid),
+	{ ATF_POINTER, 7, offsetof(struct Node, uuid),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
@@ -242,7 +268,7 @@ static asn_TYPE_member_t asn_MBR_Node_1[] = {
 		0,
 		"uuid"
 		},
-	{ ATF_POINTER, 5, offsetof(struct Node, provCode),
+	{ ATF_POINTER, 6, offsetof(struct Node, provCode),
 		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
@@ -251,7 +277,7 @@ static asn_TYPE_member_t asn_MBR_Node_1[] = {
 		0,
 		"provCode"
 		},
-	{ ATF_POINTER, 4, offsetof(struct Node, certificate),
+	{ ATF_POINTER, 5, offsetof(struct Node, certificate),
 		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
@@ -260,7 +286,7 @@ static asn_TYPE_member_t asn_MBR_Node_1[] = {
 		0,
 		"certificate"
 		},
-	{ ATF_POINTER, 3, offsetof(struct Node, certificateKey),
+	{ ATF_POINTER, 4, offsetof(struct Node, certificateKey),
 		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_BIT_STRING,
@@ -269,7 +295,7 @@ static asn_TYPE_member_t asn_MBR_Node_1[] = {
 		0,
 		"certificateKey"
 		},
-	{ ATF_POINTER, 2, offsetof(struct Node, trustedCert),
+	{ ATF_POINTER, 3, offsetof(struct Node, trustedCert),
 		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
@@ -278,8 +304,17 @@ static asn_TYPE_member_t asn_MBR_Node_1[] = {
 		0,
 		"trustedCert"
 		},
-	{ ATF_POINTER, 1, offsetof(struct Node, status),
+	{ ATF_POINTER, 2, offsetof(struct Node, ipAddress),
 		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_OCTET_STRING,
+		memb_ipAddress_constraint_1,
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"ipAddress"
+		},
+	{ ATF_POINTER, 1, offsetof(struct Node, status),
+		(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_NativeInteger,
 		memb_status_constraint_1,
@@ -292,23 +327,24 @@ static ber_tlv_tag_t asn_DEF_Node_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
 static asn_TYPE_tag2member_t asn_MAP_Node_tag2el_1[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* contextId at 231 */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* description at 232 */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* uuid at 233 */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* provCode at 234 */
-    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* certificate at 235 */
-    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* certificateKey at 236 */
-    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* trustedCert at 237 */
-    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 } /* status at 238 */
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* contextId at 232 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* description at 233 */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* uuid at 234 */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* provCode at 235 */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* certificate at 236 */
+    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* certificateKey at 237 */
+    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* trustedCert at 238 */
+    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* ipAddress at 239 */
+    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 } /* status at 240 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_Node_specs_1 = {
 	sizeof(struct Node),
 	offsetof(struct Node, _asn_ctx),
 	asn_MAP_Node_tag2el_1,
-	8,	/* Count of tags in the map */
+	9,	/* Count of tags in the map */
 	0, 0, 0,	/* Optional elements (not needed) */
-	7,	/* Start extensions */
-	9	/* Stop extensions */
+	8,	/* Start extensions */
+	10	/* Stop extensions */
 };
 asn_TYPE_descriptor_t asn_DEF_Node = {
 	"Node",
@@ -330,7 +366,7 @@ asn_TYPE_descriptor_t asn_DEF_Node = {
 		/sizeof(asn_DEF_Node_tags_1[0]), /* 1 */
 	0,	/* No PER visible constraints */
 	asn_MBR_Node_1,
-	8,	/* Elements count */
+	9,	/* Elements count */
 	&asn_SPC_Node_specs_1	/* Additional specs */
 };
 
