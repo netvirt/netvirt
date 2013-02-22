@@ -150,7 +150,8 @@ def showNode(conn, arg):
         recv_uuid = recv_node.getComponentByName('uuid')
         recv_provcode = recv_node.getComponentByName('provCode')
         recv_desc = recv_node.getComponentByName('description')
-        print "node uuid: " + str(recv_uuid) + ' provCode: ' + str(recv_provcode) + ' <' + recv_desc + '>'
+        recv_ipaddress = recv_node.getComponentByName('ipaddress')
+        print "node uuid: " + str(recv_uuid) + ' provCode: ' + str(recv_provcode) + ' <' + recv_desc + '> ' + socket.inet_ntoa(recv_ipaddress.asOctets())
 
 def showContext(conn):
 

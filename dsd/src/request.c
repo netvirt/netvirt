@@ -492,7 +492,7 @@ void searchRequest_context(struct session *session, DNDSMessage_t *req_msg)
 	DNDSMessage_del(msg);
 }
 
-void CB_searchRequest_node_by_context_id(DNDSMessage_t *msg, char *uuid, char *description, char *provcode)
+void CB_searchRequest_node_by_context_id(DNDSMessage_t *msg, char *uuid, char *description, char *provcode, char *ipaddress)
 {
 	DNDSObject_t *objNode;
 	DNDSObject_new(&objNode);
@@ -501,6 +501,7 @@ void CB_searchRequest_node_by_context_id(DNDSMessage_t *msg, char *uuid, char *d
 	Node_set_description(objNode, description, strlen(description));
 	Node_set_uuid(objNode, uuid, strlen(uuid));
 	Node_set_provCode(objNode, provcode, strlen(provcode));
+	Node_set_ipAddress(objNode, ipaddress);
 
 	SearchResponse_set_searchType(msg, SearchType_object);
 	SearchResponse_add_object(msg, objNode);

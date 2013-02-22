@@ -58,7 +58,9 @@ class Node(univ.Sequence):
         namedtype.OptionalNamedType('provCode', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 3))),
         namedtype.OptionalNamedType('certificate', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 4))),
         namedtype.OptionalNamedType('certificateKey', univ.BitString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 5))),
-        namedtype.OptionalNamedType('status', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 6))),
+        namedtype.OptionalNamedType('trustedCert', char.PrintableString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 6))),
+        namedtype.OptionalNamedType('ipaddress', univ.OctetString().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 7))),
+        namedtype.OptionalNamedType('status', univ.Integer().subtype(implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 8))),
     )
 
 class DNDSObject(univ.Choice):
