@@ -181,7 +181,7 @@ void transmit_register(netc_t *netc)
 	subj_ptr = X509_get_subject_name(session->passport->certificate);
 	X509_NAME_get_text_by_NID(subj_ptr, NID_commonName, subj, 256);
 
-	jlog(L_NOTICE, "dnc> my common name: %s\n", subj);
+	jlog(L_NOTICE, "dnc]> CN=%s", subj);
         AuthRequest_set_certName(msg, subj, strlen(subj));
 
         nbyte = net_send_msg(netc, msg);
@@ -191,7 +191,6 @@ void transmit_register(netc_t *netc)
                 return;
         }
 
-        jlog(L_NOTICE, "dnc]> sent %i bytes\n", nbyte);
 	session->status = SESSION_STATUS_WAIT_ANSWER;
 
         return;
@@ -202,7 +201,7 @@ static void on_secure(netc_t *netc);
 
 static void on_disconnect(netc_t *netc)
 {
-	jlog(L_NOTICE, "on_disconnect !!\n");
+	jlog(L_NOTICE, "dnc]> disconnected...\n");
 
 	netc_t *retry_netc = NULL;
 	struct session *session;
@@ -213,7 +212,7 @@ static void on_disconnect(netc_t *netc)
 	do {
 		sleep(5);
 
-		jlog(L_NOTICE, "connection retry...\n");
+		jlog(L_NOTICE, "dnc]> connection retry...\n");
 
 		retry_netc = net_client(session->server_address,
 		session->server_port, NET_PROTO_UDT, NET_SECURE_ADH,
@@ -232,8 +231,6 @@ static void on_disconnect(netc_t *netc)
 /* only used by P2P */
 static void on_connect(netc_t *netc)
 {
-	jlog(L_NOTICE, "on_connect\n");
-
 	struct session *session = NULL;
         session = malloc(sizeof(struct session));
 
@@ -255,7 +252,7 @@ static void p2p_on_secure(netc_t *netc)
 
 static void on_secure(netc_t *netc)
 {
-	jlog(L_NOTICE, "dnc]> on_secure !");
+	jlog(L_NOTICE, "dnc]> connection secured");
 
 	struct session *session;
 	session = netc->ext_ptr;
@@ -265,7 +262,7 @@ static void on_secure(netc_t *netc)
 		/* XXX is there a better way to detect that we
 		 * have no certificate yet ? */
 		if (session->passport == NULL) {
-			jlog(L_NOTICE, "Provisioning mode !\n");
+			jlog(L_NOTICE, "dnc]> Provisioning mode...");
 			transmit_prov_request(netc);
 		}
 		else {
@@ -343,7 +340,6 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 			fclose(fp);
 
 			ProvResponse_get_certificateKey(msg, &certificatekey, &length);
-			jlog(L_NOTICE, "certkey length: %d\n", length);
 			fp = fopen(g_privatekey, "w");
 			fwrite(certificatekey, 1, strlen(certificatekey), fp);
 			fclose(fp);
@@ -354,7 +350,7 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 			fclose(fp);
 
 			ProvResponse_get_ipAddress(msg, ipAddress);
-			printf("ipAddress: %s\n", ipAddress);
+			printf("dnc]> ip address: %s\n", ipAddress);
 			fp = fopen("/etc/dnds/dnc.ip", "w");
 			fprintf(fp, "%s", ipAddress);
 			fclose(fp);
@@ -390,19 +386,18 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 
 		case dnop_PR_netinfoResponse:
 
-			NetinfoResponse_get_ipAddress(msg, ip_addr);
-			jlog(L_NOTICE, "dnc]> got ip address %s\n", ip_addr);
-
 			master_session = session;
 
 			fp = fopen("/etc/dnds/dnc.ip", "r");
+			if (fp == NULL) {
+				jlog(L_ERROR, "/etc/dnds/dnc.ip doesn't exist, please reprovision your client");
+				exit(-1);
+				return;
+			}
 			fscanf(fp, "%s", ipAddress);
 			fclose(fp);
 
-
 			tun_up(session->iface->devname, ipAddress);
-
-
 			session->status = SESSION_STATUS_AUTHED;
 
 			break;
