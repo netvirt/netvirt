@@ -374,7 +374,6 @@ passport_t *pki_passport_load_from_file(char *certificate_filename,
 		free(passport);
 		return NULL;
 	}
-	jlog(L_NOTICE, "bio_file %p\n", bio_file);
 	passport->certificate = PEM_read_bio_X509(bio_file, NULL, NULL, NULL);
 	BIO_free(bio_file);
 
@@ -384,7 +383,6 @@ passport_t *pki_passport_load_from_file(char *certificate_filename,
 		free(passport);
 		return NULL;
 	}
-	jlog(L_NOTICE, "bio_file %p\n", bio_file);
 	passport->keyring = PEM_read_bio_PrivateKey(bio_file, NULL, NULL, NULL);
 	BIO_free(bio_file);
 
@@ -395,7 +393,6 @@ passport_t *pki_passport_load_from_file(char *certificate_filename,
 		free(passport);
 		return NULL;
 	}
-	jlog(L_NOTICE, "bio_file %p\n", bio_file);
 	trusted_authority_certificate = PEM_read_bio_X509(bio_file, NULL, NULL, NULL);
 	passport->trusted_authority = X509_STORE_new();
 	X509_STORE_add_cert(passport->trusted_authority, trusted_authority_certificate);

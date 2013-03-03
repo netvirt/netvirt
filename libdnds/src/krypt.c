@@ -90,7 +90,7 @@ static long post_handshake_check(krypt_t *krypt)
 	subj_ptr = X509_get_subject_name(cert);
 	X509_NAME_get_text_by_NID(subj_ptr, NID_commonName, krypt->client_cn, 256);
 
-	jlog(L_NOTICE, "COMMON NAME: %s\n", krypt->client_cn);
+	jlog(L_NOTICE, "krypt]> CN=%s", krypt->client_cn);
 
 	return 0;
 }
@@ -196,7 +196,7 @@ int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 		kconn->status = KRYPT_SECURE;
 		status = 0;
 
-		jlog(L_NOTICE, "Cipher used: %s\n", SSL_get_cipher_name(kconn->ssl));
+		jlog(L_NOTICE, "krypt]> cipher: %s", SSL_get_cipher_name(kconn->ssl));
 	}
 	else if (ret == 0) {
 		// Error

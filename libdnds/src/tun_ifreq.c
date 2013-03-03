@@ -43,7 +43,7 @@ extern int tun_up(char *devname, char *addr)
 		devname,
 		addr);
 
-	jlog(L_DEBUG, "tun_ifreq]> sys:: %s", sys);
+	jlog(L_DEBUG, "tunnel]> %s", sys);
 
 	ret = system(sys);
 	return ret;
@@ -78,7 +78,6 @@ extern int tun_create(char *devname, int *fd)
 	}
 
 	snprintf(devname, IFNAMSIZ, "%s", ifr.ifr_name);
-	jlog(L_DEBUG, "tun_ifreq: devname: %s %s", ifr.ifr_name, devname);
 
 	return ret;
 }
