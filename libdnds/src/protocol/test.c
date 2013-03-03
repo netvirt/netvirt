@@ -1,5 +1,5 @@
 /* API Dynamic-Network-Directory-Service-Protocol-V1
- * Copyright (C) Nicolas Bouliane - Mind4Networks, 2010, 2011
+ * Copyright (C) Nicolas J. Bouliane 2010 - 2013
  */
 
 #include "asn_application.h"
