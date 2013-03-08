@@ -32,6 +32,8 @@ static void net_connection_free(netc_t *netc)
 	if (netc != NULL) {
 
 		if (netc->kconn != NULL) {
+			free(netc->kconn->buf_decrypt);
+			free(netc->kconn->buf_encrypt);
 			free(netc->kconn);
 		}
 

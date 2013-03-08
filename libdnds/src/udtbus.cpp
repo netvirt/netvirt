@@ -226,6 +226,8 @@ extern "C" peer_t *udtbus_client(const char *listen_addr,
 
 	if (UDT::connect(client, serv_info->ai_addr, serv_info->ai_addrlen) == UDT::ERROR) {
 		cout << "connect: " << UDT::getlasterror().getErrorMessage() << endl;
+		freeaddrinfo(serv_info);
+		UDT::close(client);
 		return NULL;
 	}
 
