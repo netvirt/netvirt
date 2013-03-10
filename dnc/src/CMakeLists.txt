@@ -1,3 +1,4 @@
+set(CMAKE_C_FLAGS "-g")
 add_executable(dnc
 	dnc.c
 	main.c
