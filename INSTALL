@@ -17,20 +17,14 @@
  Getting UDT
  -----------
 
-	wget http://downloads.sourceforge.net/udt/udt.sdk.4.10.tar.gz
+	git clone https://github.com/nicboul/udt4.git
 
  Installing UDT
  --------------
 
- Copy the udt patch from DNDS/patch/udt4.9_ext_ptr.patch next to
- your UDT directory.
+ Place the udt4 directory into the DNDS directory.
 
-	$ ls
-	udt4  udt4.9_ext_ptr.patch
-
- Apply the patch.
-
-	$ patch -p0 < udt4.9_ext_ptr.patch
+	 DNDS/udt4/
 
  You can now build udt by invoking `make`. You DON'T NEED to `make install` it.
 
