@@ -12,7 +12,6 @@
  apt-get install cmake
  apt-get install libpq-dev
  apt-get install libossp-uuid-dev
- apt-get install libossp-uuid-dev
 
  Getting UDT
  -----------
