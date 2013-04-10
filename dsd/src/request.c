@@ -12,10 +12,10 @@
 #include <stdlib.h>
 
 #include <dnds.h>
-#include <ippool.h>
 #include <journal.h>
 
 #include "dao.h"
+#include "ippool.h"
 #include "request.h"
 
 void CB_searchRequest_context_by_client_id(DNDSMessage_t *msg,

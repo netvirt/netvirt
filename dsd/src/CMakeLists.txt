@@ -9,6 +9,7 @@ set(CMAKE_C_FLAGS "-g")
 add_executable(dsd
 	dao.c
 	dsd.c
+	ippool.c
 	main.c
 	request.c
 )
