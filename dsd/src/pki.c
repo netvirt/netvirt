@@ -453,7 +453,7 @@ void pki_init()
 	//SSL_library_init();
 	//SSL_load_error_strings();
 }
-
+/*
 int main()
 {
 	pki_init();
@@ -545,4 +545,4 @@ int main()
 
 	return 0;
 }
-
+*/

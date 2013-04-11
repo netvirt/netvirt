@@ -17,6 +17,8 @@
 
 #include <openssl/ssl.h>
 
+#include <krypt.h>
+
 typedef struct digital_id {
 
 	char *commonName;
@@ -33,13 +35,6 @@ typedef struct embassy {
 	EVP_PKEY *keyring;
 	uint32_t serial;
 } embassy_t;
-
-typedef struct passport {
-
-	X509 *certificate;
-	EVP_PKEY *keyring;
-	X509_STORE *trusted_authority;
-} passport_t;
 
 void pki_init();
 uint32_t pki_expiration_delay(uint8_t years);

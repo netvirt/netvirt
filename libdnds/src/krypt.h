@@ -4,9 +4,7 @@
 #include <stdint.h>
 #include <openssl/ssl.h>
 
-#include "net.h"
 #include "netbus.h"
-#include "pki.h"
 
 #define KRYPT_TLS	0x1	// Transport Layer Security { NET_TCP, NET_UDT }
 #define KRYPT_DTLS	0x2	// Datagram Transport Layer Security { unused }
@@ -21,6 +19,13 @@
 
 #define KRYPT_ADH	0x1	// Basic security level ADH
 #define KRYPT_RSA	0x2	// Maximum security level RSA
+
+typedef struct passport {
+
+        X509 *certificate;
+        EVP_PKEY *keyring;
+        X509_STORE *trusted_authority;
+} passport_t;
 
 typedef struct krypt {
 

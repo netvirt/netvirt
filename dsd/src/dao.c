@@ -20,9 +20,9 @@
 #include <ossp/uuid.h>
 
 #include <journal.h>
-#include <pki.h>
 
 #include "dao.h"
+#include "pki.h"
 
 
 /* TODO This prototype is highly fragile, must handle all errors.. */

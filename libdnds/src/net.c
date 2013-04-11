@@ -24,7 +24,6 @@
 #include "journal.h"
 #include "net.h"
 #include "netbus.h"
-#include "pki.h"
 #include "udtbus.h"
 
 static void net_connection_free(netc_t *netc)

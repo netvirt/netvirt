@@ -13,10 +13,10 @@
 #include <event.h>
 #include <journal.h>
 #include <net.h>
-#include <pki.h>
 
 #include "dao.h"
 #include "dsd.h"
+#include "pki.h"
 #include "request.h"
 
 passport_t *g_dsd_passport;

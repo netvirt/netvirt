@@ -11,6 +11,7 @@ add_executable(dsd
 	dsd.c
 	ippool.c
 	main.c
+	pki.c
 	request.c
 )
 

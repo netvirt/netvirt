@@ -16,7 +16,6 @@
 #include "krypt.h"
 #include "netbus.h"
 #include "journal.h"
-#include "pki.h"
 
 static int s_server_session_id_context = 1;
 static int s_server_auth_session_id_context = 2;

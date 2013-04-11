@@ -21,7 +21,6 @@ set(DNDS_SRCS
 	netbus.c
 	net.c
 	options.c
-	pki.c
 	setx.c
 	udtbus.cpp
 	usocket.c

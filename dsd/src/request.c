@@ -16,6 +16,7 @@
 
 #include "dao.h"
 #include "ippool.h"
+#include "pki.h"
 #include "request.h"
 
 void CB_searchRequest_context_by_client_id(DNDSMessage_t *msg,
