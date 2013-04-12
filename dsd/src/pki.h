@@ -58,5 +58,4 @@ void pki_passport_free(passport_t *passport);
 passport_t *pki_embassy_deliver_passport(embassy_t *embassy, digital_id_t *digital_id, uint32_t expiration_delay);
 
 embassy_t *pki_embassy_load_from_memory(char *certificate, char *privatekey, uint32_t serial);
-passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, char *trusted_authority);
 #endif

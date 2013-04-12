@@ -20,6 +20,35 @@
 static int s_server_session_id_context = 1;
 static int s_server_auth_session_id_context = 2;
 
+passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, char *trusted_authority)
+{
+        BIO *bio_memory = NULL;
+        passport_t *passport;
+        X509 *trusted_authority_certificate;
+
+        // create an empty passport
+        passport = calloc(1, sizeof(passport_t));
+
+        // fetch the certificate in PEM format and convert to X509
+        bio_memory = BIO_new_mem_buf(certificate, strlen(certificate));
+        passport->certificate = PEM_read_bio_X509(bio_memory, NULL, NULL, NULL);
+        BIO_free(bio_memory);
+
+        // fetch the private key in PEM format and convert to EVP
+        bio_memory = BIO_new_mem_buf(privatekey, strlen(privatekey));
+        passport->keyring = PEM_read_bio_PrivateKey(bio_memory, NULL, NULL, NULL);
+        BIO_free(bio_memory);
+
+        // fetch the certificate authority in PEM format convert to X509
+        // and add to the trusted store
+        bio_memory = BIO_new_mem_buf(trusted_authority, strlen(trusted_authority));
+        trusted_authority_certificate = PEM_read_bio_X509(bio_memory, NULL, NULL, NULL);
+        passport->trusted_authority = X509_STORE_new();
+        X509_STORE_add_cert(passport->trusted_authority, trusted_authority_certificate);
+
+        return passport;
+}
+
 passport_t *pki_passport_load_from_file(char *certificate_filename,
                                         char *privatekey_filename,
                                         char *trusted_authority_filename)

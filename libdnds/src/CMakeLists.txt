@@ -2,25 +2,18 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/protocol")
 include_directories("./protocol/")
 
 set(DNDS_SRCS
-	aclset.c
 	bitpool.c
-	cli.c
 	dnds.c
 	event.c
 	hooklet.c
 	inet.c
-	ipf.c
-	ipset.c
 	journal.c
-	jsw_rbtree.c
 	krypt.c
 	mbuf.c
 	netbus.c
 	net.c
 	options.c
-	setx.c
 	udtbus.cpp
-	usocket.c
 	utils.c
 	xsched.c
 )

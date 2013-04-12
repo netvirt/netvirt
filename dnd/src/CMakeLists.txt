@@ -3,6 +3,9 @@ add_executable(dnd
 	context.c
 	dnd.c
 	dsc.c
+	ftable.c
+	hash.c
+	jsw_hlib.c
 	linkst.c
 	main.c
 	request.c
