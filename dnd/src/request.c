@@ -11,7 +11,6 @@
 
 #include <dnds.h>
 #include <journal.h>
-#include <pki.h>
 
 #include "context.h"
 #include "request.h"

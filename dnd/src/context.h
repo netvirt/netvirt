@@ -1,13 +1,12 @@
 #ifndef DND_CONTEXT_H
 #define DND_CONTEXT_H
 
-#include <ftable.h>
+#include <krypt.h>
 #include <netbus.h>
-#include <ippool.h>
 #include <mbuf.h>
-#include <pki.h>
 
 #include "dnd.h"
+#include "ftable.h"
 #include "linkst.h"
 
 typedef struct context {
@@ -16,7 +15,6 @@ typedef struct context {
 	ftable_t *ftable;			// forwarding table
 
 	uint8_t **linkst;			// linkstate adjacency matrix
-	ippool_t *ippool;			// ip address pool
 	uint8_t *bitpool;			// bitpool used to generated unique ID per session
 
 	struct session *session_list;		// all session open in this context

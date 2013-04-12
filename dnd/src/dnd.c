@@ -313,11 +313,6 @@ static void on_disconnect(netc_t *netc)
 	context_del_session(session->context, session);
 	/*context_show_session_list(session->context);*/
 
-	if (session->ip != NULL) {
-		jlog(L_DEBUG, "dnd]> disconnecting ip {%s}", session->ip);
-		ippool_release_ip(session->context->ippool, session->ip);
-	}
-
 	transmit_node_connectinfo(ConnectState_disconnected,
 				session->ip, session->cert_name);
 

@@ -14,7 +14,6 @@
 #include <dnds.h>
 #include <journal.h>
 #include <net.h>
-#include <pki.h>
 
 #include "context.h"
 #include "dsc.h"

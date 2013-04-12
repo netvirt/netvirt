@@ -15,13 +15,13 @@
 
 #include <bitpool.h>
 #include <event.h>
-#include <hash.h>
 #include <journal.h>
+#include <krypt.h>
 #include <netbus.h>
-#include <pki.h>
 #include <inet.h>
 
 #include "context.h"
+#include "hash.h"
 #include "session.h"
 
 /* XXX the context list should be a tree, or a hashlist */
@@ -100,7 +100,6 @@ int context_create(uint32_t id, char *address, char *netmask,
 	jlog(L_DEBUG, "context]> subnet :: %s", address);
 	jlog(L_DEBUG, "context]> netmask:: %s", netmask);
 
-	context->ippool = ippool_new(address, netmask);
 	context->id = id;
 
 	context->passport = pki_passport_load_from_memory(serverCert, serverPrivkey, trustedCert);
