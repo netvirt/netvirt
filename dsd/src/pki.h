@@ -59,8 +59,4 @@ passport_t *pki_embassy_deliver_passport(embassy_t *embassy, digital_id_t *digit
 
 embassy_t *pki_embassy_load_from_memory(char *certificate, char *privatekey, uint32_t serial);
 passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, char *trusted_authority);
-passport_t *pki_passport_load_from_file(char *certificate_filename,
-					char *privatekey_filename,
-					char *trusted_authority_filename);
-
 #endif

@@ -353,53 +353,6 @@ passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, c
 	return passport;
 }
 
-passport_t *pki_passport_load_from_file(char *certificate_filename,
-					char *privatekey_filename,
-					char *trusted_authority_filename)
-{
-	BIO *bio_file = NULL;
-	passport_t *passport = NULL;
-	X509 *trusted_authority_certificate;
-
-	if (!certificate_filename || !privatekey_filename || !trusted_authority_filename) {
-		return NULL;
-	}
-
-	// create an empty passport
-	passport = calloc(1, sizeof(passport_t));
-
-	// fetch the certificate in PEM format and convert to X509
-	bio_file = BIO_new_file(certificate_filename, "r");
-	if (bio_file == NULL) {
-		free(passport);
-		return NULL;
-	}
-	passport->certificate = PEM_read_bio_X509(bio_file, NULL, NULL, NULL);
-	BIO_free(bio_file);
-
-	// fetch the private key in PEM format and convert to EVP
-	bio_file = BIO_new_file(privatekey_filename, "r");
-	if (bio_file == NULL) {
-		free(passport);
-		return NULL;
-	}
-	passport->keyring = PEM_read_bio_PrivateKey(bio_file, NULL, NULL, NULL);
-	BIO_free(bio_file);
-
-	// fetch the certificate authority in PEM format convert to X509
-	// and add to the trusted store
-	bio_file = BIO_new_file(trusted_authority_filename, "r");
-	if (bio_file == NULL) {
-		free(passport);
-		return NULL;
-	}
-	trusted_authority_certificate = PEM_read_bio_X509(bio_file, NULL, NULL, NULL);
-	passport->trusted_authority = X509_STORE_new();
-	X509_STORE_add_cert(passport->trusted_authority, trusted_authority_certificate);
-
-	return passport;
-}
-
 void pki_write_certificate_in_mem(X509 *certificate, char **certificate_ptr, long *size)
 {
 	BIO *bio_mem = NULL;
