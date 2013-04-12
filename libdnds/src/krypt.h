@@ -54,6 +54,9 @@ typedef struct krypt {
 
 } krypt_t;
 
+passport_t *pki_passport_load_from_file(char *certificate_filename,
+                                        char *privatekey_filename,
+                                        char *trusted_authority_filename);
 void krypt_set_renegotiate(krypt_t *kconn);
 int krypt_set_rsa(krypt_t *kconn);
 int krypt_step_up(krypt_t *kconn);

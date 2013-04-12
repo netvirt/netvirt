@@ -7,14 +7,11 @@ set(DNDS_SRCS
 	cli.c
 	dnds.c
 	event.c
-	ftable.c
-	hash.c
 	hooklet.c
 	inet.c
 	ipf.c
 	ipset.c
 	journal.c
-	jsw_hlib.c
 	jsw_rbtree.c
 	krypt.c
 	mbuf.c
