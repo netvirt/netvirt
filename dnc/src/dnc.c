@@ -24,10 +24,8 @@
 #include <mbuf.h>
 #include <net.h>
 #include <netbus.h>
-#include <pki.h>
 #include <tun.h>
 #include <inet.h>
-#include <ftable.h>
 
 #include "dnc.h"
 #include "session.h"
@@ -48,7 +46,7 @@ static cli_entry_t commands[] = {
 
 static void dispatch_operation(struct session *session, DNDSMessage_t *msg);
 
-static ftable_t *ftable;
+//static ftable_t *ftable;
 struct session *master_session;
 
 static int g_shutdown = 0;	/* True if DNC is shutting down */
@@ -414,7 +412,7 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 
 			if (p2p_netc != NULL) {
 				jlog(L_NOTICE, "dnc]> p2p connected");
-				ftable_insert(ftable, mac_dst, p2p_netc->ext_ptr);
+				//ftable_insert(ftable, mac_dst, p2p_netc->ext_ptr);
 			} else {
 				jlog(L_NOTICE, "dnc]> p2p unable to connect");
 			}
@@ -561,7 +559,7 @@ int dnc_init(char *server_address, char *server_port, char *prov_code,
 	}
 
 	/* Initialize the forward table */
-        ftable = ftable_new(1024, session_itemdup, session_itemrel);
+        //ftable = ftable_new(1024, session_itemdup, session_itemrel);
 
 	session->iface = NULL;
 	session->netc = netc;
