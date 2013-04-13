@@ -12,7 +12,6 @@
 #include <unistd.h>
 
 #include <event.h>
-#include <hooklet.h>
 #include <journal.h>
 #include <netbus.h>
 #include <options.h>

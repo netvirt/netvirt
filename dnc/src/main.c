@@ -11,7 +11,6 @@
 
 #include <unistd.h>
 
-#include <cli.h>
 #include <event.h>
 #include <journal.h>
 #include <net.h>
@@ -24,14 +23,11 @@
 
 #define CONFIG_FILE "/etc/dnds/dnc.conf"
 
-cli_server_t *dnc_cli_server = NULL;
-
 char *server_address = NULL;
 char *server_port = NULL;
 char *certificate = NULL;
 char *privatekey = NULL;
 char *trusted_authority = NULL;
-char *unix_socket_path = NULL;
 
 struct options opts[] = {
 
@@ -40,8 +36,6 @@ struct options opts[] = {
 	{ "certificate",	&certificate,		OPT_STR | OPT_MAN },
 	{ "privatekey",		&privatekey,		OPT_STR | OPT_MAN },
 	{ "trusted_authority",	&trusted_authority,	OPT_STR | OPT_MAN },
-	{ "unix_socket_path",	&unix_socket_path,	OPT_STR | OPT_MAN },
-
 	{ NULL }
 };
 
@@ -80,11 +74,6 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	dnc_cli_server = cli_server_init(unix_socket_path);
-	if (!dnc_cli_server)
-		jlog(L_WARNING, "dnc]> failed to launch command line server");
-
-
 	if (netbus_init()) {
 		jlog(L_ERROR, "dnc]> netbus_init() failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
@@ -100,8 +89,6 @@ int main(int argc, char *argv[])
 	}
 
 	scheduler();
-
-	cli_server_fini(dnc_cli_server);
 
 	return 0;
 }

@@ -5,7 +5,6 @@ set(DNDS_SRCS
 	bitpool.c
 	dnds.c
 	event.c
-	hooklet.c
 	inet.c
 	journal.c
 	krypt.c
