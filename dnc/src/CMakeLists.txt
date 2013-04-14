@@ -5,10 +5,10 @@ add_executable(dnc
 	session.c
 )
 
-include_directories("${CMAKE_SOURCE_DIR}/../libdnds/src/protocol/")
+include_directories("${CMAKE_SOURCE_DIR}/libdnds/src/protocol/")
 target_link_libraries(dnc
-	${CMAKE_SOURCE_DIR}/../libdnds/src/libdnds.so
-	crypto
+  dnds
+  crypto
 )
 
 install(TARGETS dnc

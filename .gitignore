@@ -13,6 +13,11 @@ dnd/src/dsd
 libdnds/src/libdnds.so
 libdnds/src/protocol/libdnds_protocol.a
 
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake
+install_manifest.txt
+
 # CMake related files
 dnc/CMakeCache.txt
 dnc/CMakeFiles/
