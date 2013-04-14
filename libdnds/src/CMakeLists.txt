@@ -2,30 +2,17 @@ add_subdirectory(protocol)
 include_directories(protocol)
 
 set(DNDS_SRCS
-	aclset.c
 	bitpool.c
-	cli.c
 	dnds.c
 	event.c
-	ftable.c
-	hash.c
-	hooklet.c
 	inet.c
-	ipf.c
-	ippool.c
-	ipset.c
 	journal.c
-	jsw_hlib.c
-	jsw_rbtree.c
 	krypt.c
 	mbuf.c
-	netbus.c
 	net.c
+	netbus.c
 	options.c
-	pki.c
-	setx.c
 	udtbus.cpp
-	usocket.c
 	utils.c
 	xsched.c
 )
