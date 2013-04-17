@@ -21,9 +21,9 @@
 #include <unistd.h>
 
 #include "dnds.h"
-#include "journal.h"
-#include "net.h"
-#include "udtbus.h"
+#include "logger.h"
+#include "netbus.h"
+#include "udt.h"
 
 static void net_connection_free(netc_t *netc)
 {

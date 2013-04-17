@@ -13,8 +13,8 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
-#include "krypt.h"
-#include "journal.h"
+#include "crypto.h"
+#include "logger.h"
 
 static int s_server_session_id_context = 1;
 static int s_server_auth_session_id_context = 2;

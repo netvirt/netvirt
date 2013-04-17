@@ -11,7 +11,7 @@
 
 #include <stdlib.h>
 
-#include "bitpool.h"
+#include "bitv.h"
 
 static int get_bit(const uint8_t bitmap[], size_t bit)
 {

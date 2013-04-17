@@ -2,15 +2,15 @@ add_subdirectory(protocol)
 include_directories(protocol)
 
 set(DNDS_SRCS
-	bitpool.c
+	bitv.c
 	dnds.c
 	inet.c
-	journal.c
-	krypt.c
+	logger.c
+	crypto.c
 	mbuf.c
-	net.c
+	netbus.c
 	options.c
-	udtbus.cpp
+	udt.cpp
 	utils.c
 )
 

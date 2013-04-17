@@ -16,7 +16,7 @@
 #include <errno.h>
 #include <string.h>
 
-#include "journal.h"
+#include "logger.h"
 #include "options.h"
 
 enum {

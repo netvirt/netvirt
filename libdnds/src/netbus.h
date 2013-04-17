@@ -12,9 +12,9 @@
 #include <sys/types.h>
 
 #include "dnds.h"
-#include "krypt.h"
+#include "crypto.h"
 #include "mbuf.h"
-#include "udtbus.h"
+#include "udt.h"
 
 #define NET_PROTO_TCP	0x01
 #define NET_PROTO_UDT	0x02

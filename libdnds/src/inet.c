@@ -33,8 +33,8 @@
 #endif
 
 #include "inet.h"
-#include "journal.h"
-#include "udtbus.h"
+#include "logger.h"
+#include "udt.h"
 
 /* TODO
  * fixing nomenclature

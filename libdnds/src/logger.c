@@ -13,7 +13,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "journal.h"
+#include "logger.h"
 
 void jlog(int level, char *format, ...)
 {
