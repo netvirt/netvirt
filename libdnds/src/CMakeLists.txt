@@ -9,7 +9,6 @@ set(DNDS_SRCS
 	crypto.c
 	mbuf.c
 	netbus.c
-	options.c
 	udt.cpp
 	utils.c
 )

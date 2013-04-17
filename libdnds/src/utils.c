@@ -1,6 +1,4 @@
 /*
- * utils.c: Utility functions API
- *
  * Copyright (C) 2009 Nicolas Bouliane
  *
  * This program is free software; you can redistribute it and/or
@@ -20,11 +18,6 @@
 
 #include "logger.h"
 #include "utils.h"
-
-/* TODO
- * almost everything here is legacy code,
- * we should probably remove this file
- */
 
 extern int daemonize()
 {
@@ -62,21 +55,3 @@ extern int daemonize()
 	return 0;
 }
 
-extern char *trim(char *str)
-{
-	if (str == NULL)
-		return NULL;
-
-	char *a, *z;
-	a = str;
-	while (*a == ' ') a++;
-
-	z = a + strlen(a);
-	if (z == NULL)
-		return NULL;
-
-	while (*--z == ' ' && (z > a));
-	*++z = '\0';
-
-	return a;
-}
