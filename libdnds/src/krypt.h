@@ -4,8 +4,6 @@
 #include <stdint.h>
 #include <openssl/ssl.h>
 
-#include "netbus.h"
-
 #define KRYPT_TLS	0x1	// Transport Layer Security { NET_TCP, NET_UDT }
 #define KRYPT_DTLS	0x2	// Datagram Transport Layer Security { unused }
 

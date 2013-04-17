@@ -23,7 +23,6 @@
 #include "dnds.h"
 #include "journal.h"
 #include "net.h"
-#include "netbus.h"
 #include "udtbus.h"
 
 static void net_connection_free(netc_t *netc)
@@ -117,7 +116,7 @@ static void net_queue_msg(netc_t *netc, DNDSMessage_t *msg)
 
 	// the size doesn't matter, mbuf reference the message only,
 	// the external free function is used to release the DNDS message
-	mbuf = mbuf_new((const void *)msg, 0, MBUF_BYREF, DNDSMessage_del);
+	mbuf = mbuf_new((const void *)msg, 0, MBUF_BYREF, (void (*)(void *))DNDSMessage_del);
 	mbuf_add(&netc->queue_msg, mbuf);
 
 	netc->msg_dec = NULL;
@@ -481,11 +480,6 @@ netc_t *net_client(const char *listen_addr,
 		krypt_add_passport(netc->kconn, passport);
 
 	switch (protocol) {
-		case NET_PROTO_TCP:
-			netc->peer = netbus_tcp_client(listen_addr,
-			    atoi(port), net_on_disconnect, net_on_input);
-			break;
-
 		case NET_PROTO_UDT:
 			netc->peer = udtbus_client(listen_addr, port,
 			    net_on_disconnect, net_on_input);
@@ -560,12 +554,6 @@ int net_server(const char *listen_addr,
 		krypt_add_passport(netc->kconn, passport);
 
 	switch (protocol) {
-		case NET_PROTO_TCP:
-			ret = netbus_tcp_server(listen_addr,
-				atoi(port), net_on_connect,
-				net_on_disconnect, net_on_input, netc);
-			break;
-
 		case NET_PROTO_UDT:
 			ret = udtbus_server(listen_addr, port,
 			    net_on_connect, net_on_disconnect,

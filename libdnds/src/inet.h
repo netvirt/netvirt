@@ -1,7 +1,7 @@
 #ifndef DNDS_INET_H
 #define DNDS_INET_H
 
-#include "netbus.h"
+#include "udtbus.h"
 
 #define ADDR_UNICAST	0x1
 #define ADDR_BROADCAST	0x2

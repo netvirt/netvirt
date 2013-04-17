@@ -34,7 +34,7 @@
 
 #include "inet.h"
 #include "journal.h"
-#include "netbus.h"
+#include "udtbus.h"
 
 /* TODO
  * fixing nomenclature

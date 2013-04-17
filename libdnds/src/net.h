@@ -14,7 +14,7 @@
 #include "dnds.h"
 #include "krypt.h"
 #include "mbuf.h"
-#include "netbus.h"
+#include "udtbus.h"
 
 #define NET_PROTO_TCP	0x01
 #define NET_PROTO_UDT	0x02

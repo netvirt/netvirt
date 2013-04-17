@@ -14,7 +14,6 @@
 #include <openssl/err.h>
 
 #include "krypt.h"
-#include "netbus.h"
 #include "journal.h"
 
 static int s_server_session_id_context = 1;

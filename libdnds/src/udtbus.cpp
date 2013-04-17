@@ -20,7 +20,7 @@
 #include <pthread.h>
 #include <udt.h>
 
-#include "netbus.h"
+#include "udtbus.h"
 
 // g++ udt.cpp -L/usr/local/lib -I../src/ -ludt -lstdc++ -lpthread -lm
 
