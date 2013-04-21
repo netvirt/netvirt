@@ -1,7 +1,27 @@
-#ifndef DNC_DNC_H
-#define DNC_DNC_H
+/*
+ * Dynamic Network Directory Service
+ * Copyright (C) 2009-2013
+ * Nicolas J. Bouliane <nib@dynvpn.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; version 2
+ * of the License.
+ *
+ */
 
-int dnc_init(char *server_address, char *server_port, char *prov_code,
-		char *certificate, char *privatekey, char *trusted_authority);
+#ifndef DNC_H
+#define DNC_H
 
-#endif /* DNC_DNC_H */
+struct dnc_cfg {
+	const char *server_address;
+	const char *server_port;
+	const char *certificate;
+	const char *privatekey;
+	const char *trusted_cert;
+	char *prov_code;
+};
+
+int dnc_init(struct dnc_cfg *dnc_cfg);
+
+#endif

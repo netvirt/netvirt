@@ -1,6 +1,7 @@
 /*
  * Dynamic Network Directory Service
- * Copyright (C) 2010-2012 Nicolas Bouliane
+ * Copyright (C) 2009-2013
+ * Nicolas J. Bouliane <nib@dynvpn.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,30 +19,24 @@
 #include <sys/stat.h>
 
 #include <dnds.h>
-#include <event.h>
-#include <journal.h>
+#include <logger.h>
 #include <mbuf.h>
-#include <net.h>
 #include <netbus.h>
-#include <tun.h>
 #include <inet.h>
 
 #include "dnc.h"
 #include "session.h"
 
+struct dnc_cfg *g_dnc_cfg;
+
+#if 0
 static void dispatch_operation(struct session *session, DNDSMessage_t *msg);
 
 //static ftable_t *ftable;
 struct session *master_session;
 
 static int g_shutdown = 0;	/* True if DNC is shutting down */
-
-/* TODO must be part of a config->members */
-char *g_certificate = NULL;
-char *g_privatekey = NULL;
-char *g_trusted_authority = NULL;
-char *g_prov_code = NULL;
-
+#if 0
 static void tunnel_in(iface_t *iface)
 {
 	DNDSMessage_t *msg = NULL;
@@ -54,7 +49,7 @@ static void tunnel_in(iface_t *iface)
 	uint8_t macaddr_dst_type;
 
 	session = (struct session*)iface->ext_ptr;
-	if (session->status != SESSION_STATUS_AUTHED) {
+	if (session->state != SESSION_STATE_AUTHED) {
 		return;	/* not authenticated yet ! */
 	}
 
@@ -75,7 +70,7 @@ static void tunnel_in(iface_t *iface)
 	FIXME: still in alpha, must become asynchronous
 
 	p2p_session = ftable_find(ftable, macaddr_dst);
-	if (p2p_session && p2p_session->status == SESSION_STATUS_AUTHED) {
+	if (p2p_session && p2p_session->state == SESSION_STATE_AUTHED) {
 		session = p2p_session;
 	}*/
 	net_send_msg(session->netc, msg);
@@ -91,10 +86,11 @@ static void tunnel_out(iface_t *iface, DNDSMessage_t *msg)
 	DNDSMessage_get_ethernet(msg, &frame, &frame_size);
 	iface->write(iface, frame, frame_size);
 }
+#endif
 
 void terminate(struct session *session)
 {
-	session->status = SESSION_STATUS_DOWN;
+	session->state = SESSION_STATE_DOWN;
 	net_disconnect(session->netc);
 	session->netc = NULL;
 }
@@ -174,7 +170,7 @@ void transmit_register(netc_t *netc)
                 return;
         }
 
-	session->status = SESSION_STATUS_WAIT_ANSWER;
+	session->state = SESSION_STATE_WAIT_ANSWER;
 
         return;
 }
@@ -190,7 +186,7 @@ static void on_disconnect(netc_t *netc)
 	struct session *session;
 
 	session = netc->ext_ptr;
-	session->status = SESSION_STATUS_DOWN;
+	session->state = SESSION_STATE_DOWN;
 
 	do {
 		sleep(5);
@@ -202,7 +198,7 @@ static void on_disconnect(netc_t *netc)
 		session->passport, on_disconnect, on_input, on_secure);
 
 		if (retry_netc) {
-			session->status = SESSION_STATUS_NOT_AUTHED;
+			session->state = SESSION_STATE_NOT_AUTHED;
 			session->netc = retry_netc;
 			retry_netc->ext_ptr = session;
 			return;
@@ -223,7 +219,7 @@ static void on_connect(netc_t *netc)
                 session->type = SESSION_TYPE_P2P_SERVER;
         }
 
-        session->status = SESSION_STATUS_AUTHED;
+        session->state = SESSION_STATE_AUTHED;
         session->iface = master_session->iface;
         session->netc = netc;
 	netc->ext_ptr = session;
@@ -240,7 +236,7 @@ static void on_secure(netc_t *netc)
 	struct session *session;
 	session = netc->ext_ptr;
 
-	if (session->status == SESSION_STATUS_NOT_AUTHED) {
+	if (session->state == SESSION_STATE_NOT_AUTHED) {
 
 		/* XXX is there a better way to detect that we
 		 * have no certificate yet ? */
@@ -381,7 +377,7 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 			fclose(fp);
 
 			tun_up(session->iface->devname, ipAddress);
-			session->status = SESSION_STATUS_AUTHED;
+			session->state = SESSION_STATE_AUTHED;
 
 			break;
 
@@ -420,58 +416,54 @@ void dnc_fini(void *ext_ptr)
 {
 	g_shutdown = 1;
 }
+#endif
 
-int dnc_init(char *server_address, char *server_port, char *prov_code,
-		char *certificate, char *privatekey, char *trusted_authority)
+int dnc_init(struct dnc_cfg *dnc_cfg)
 {
-	netc_t *netc;
 	struct session *session;
 
-	session = calloc(1, sizeof(struct session));
-	session->passport = pki_passport_load_from_file(certificate,
-							 privatekey,
-							 trusted_authority);
+	g_dnc_cfg = dnc_cfg;
+	session = calloc(0, sizeof(struct session));
+	session->passport = pki_passport_load_from_file(
+		dnc_cfg->certificate, dnc_cfg->privatekey, dnc_cfg->trusted_cert);
 
-	if (session->passport == NULL && prov_code == NULL) {
+/*
+	if (session->passport == NULL && dnc_cfg->prov_code == NULL) {
 		jlog(L_ERROR, "dnc]> Must provide a provisioning code: ./dnc -p ...");
 		return -1;
 	}
+*/
 
-	/* XXX these var should be part of a global
-	 * config->certificate...
-	 */
-	g_certificate = certificate;
-	g_privatekey = privatekey;
-	g_trusted_authority = trusted_authority;
-	g_prov_code = prov_code;
+/*
+	session->netc = net_client(dnc_cfg->server_address, dnc_cfg->server_port,
+			NET_PROTO_UDT, NET_SECURE_ADH, session->passport,
+			on_disconnect, on_input, on_secure);
 
-	session->server_address = server_address;
-	session->server_port = server_port;
-
-	netc = net_client(server_address, server_port, NET_PROTO_UDT, NET_SECURE_ADH,
-		session->passport, on_disconnect, on_input, on_secure);
-
-	if (netc == NULL) {
+	if (session->netc == NULL) {
 		free(session);
 		return -1;
 	}
+*/
+	session->tapcfg = NULL;
+	session->state = SESSION_STATE_NOT_AUTHED;
+//	session->netc->ext_ptr = session;
 
-	/* Initialize the forward table */
-        //ftable = ftable_new(1024, session_itemdup, session_itemrel);
-
-	session->iface = NULL;
-	session->netc = netc;
-	session->status = SESSION_STATUS_NOT_AUTHED;
-	netc->ext_ptr = session;
-
-	/* Create the tunnel interface now, so when we register,
+	/* Create the tunnel interface now, so when we register
 	 * we can extract the interface mac address needed by the server.
 	 */
-	session->iface = netbus_newtun(tunnel_in);
-	session->iface->ext_ptr = session;
-	tun_up(session->iface->devname, "0.0.0.0");
+	session->tapcfg = tapcfg_init();
+	if (session->tapcfg == NULL) {
+		jlog(L_ERROR, "dnc]> tapcfg_init failed");
+		return -1;
+	}
 
-	event_register(EVENT_EXIT, "dnc]> dnc_fini", dnc_fini, PRIO_AGNOSTIC);
+	if (tapcfg_start(session->tapcfg, NULL, 1) < 0) {
+		jlog(L_ERROR, "dnc]> tapcfg_start failed");
+		return -1;
+	}
+
+	session->devname = tapcfg_get_ifname(session->tapcfg);
+	jlog(L_DEBUG, "dnc]> devname: %s", session->devname);
 
 	return 0;
 }

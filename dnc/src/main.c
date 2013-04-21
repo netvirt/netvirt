@@ -1,6 +1,7 @@
 /*
  * Dynamic Network Directory Service
- * Copyright (C) 2010-2012 Nicolas Bouliane
+ * Copyright (C) 2009-2013
+ * Nicolas J. Bouliane <nib@dynvpn.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -9,40 +10,22 @@
  *
  */
 
+#include <libconfig.h>
 #include <unistd.h>
 
-#include <event.h>
-#include <journal.h>
-#include <net.h>
+#include <crypto.h>
+#include <logger.h>
 #include <netbus.h>
-#include <options.h>
-#include <xsched.h>
-
 #include "dnc.h"
-#include "session.h"
 
 #define CONFIG_FILE "/etc/dnds/dnc.conf"
-
-char *server_address = NULL;
-char *server_port = NULL;
-char *certificate = NULL;
-char *privatekey = NULL;
-char *trusted_authority = NULL;
-
-struct options opts[] = {
-
-	{ "server_address",	&server_address,	OPT_STR | OPT_MAN },
-	{ "server_port",	&server_port,		OPT_STR | OPT_MAN },
-	{ "certificate",	&certificate,		OPT_STR | OPT_MAN },
-	{ "privatekey",		&privatekey,		OPT_STR | OPT_MAN },
-	{ "trusted_authority",	&trusted_authority,	OPT_STR | OPT_MAN },
-	{ NULL }
-};
 
 int main(int argc, char *argv[])
 {
 	int opt;
 	char *prov_code = NULL;
+	struct dnc_cfg *dnc_cfg;
+	config_t cfg;
 
 	if (getuid() != 0) {
 		jlog(L_ERROR, "dnc]> You must be root !");
@@ -57,38 +40,68 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (option_parse(opts, CONFIG_FILE)) {
-		jlog(L_ERROR, "dnc]> option_parse() failed :: %s:%i", __FILE__, __LINE__);
+	config_init(&cfg);
+
+	/* Read the file. If there is an error, report it and exit. */
+        if (!config_read_file(&cfg, CONFIG_FILE)) {
+                fprintf(stderr, "Can't open %s\n", CONFIG_FILE);
+                return(EXIT_FAILURE);
+        }
+
+	dnc_cfg = calloc(1, sizeof(struct dnc_cfg));
+
+        if (config_lookup_string(&cfg, "server_address", &dnc_cfg->server_address))
+                jlog(L_DEBUG, "dnc]> server_address: %s", dnc_cfg->server_address);
+	else {
+		jlog(L_ERROR, "dnc]> server_address is not present !");
 		exit(EXIT_FAILURE);
 	}
 
-	option_dump(opts);
-
-	if (event_init()) {
-		jlog(L_ERROR, "dnc]> event_init() failed :: %s:%i", __FILE__, __LINE__);
+        if (config_lookup_string(&cfg, "server_port", &dnc_cfg->server_port))
+                jlog(L_DEBUG, "dnc]> server_port: %s", dnc_cfg->server_port);
+	else {
+		jlog(L_ERROR, "dnc]> server_port is not present !");
 		exit(EXIT_FAILURE);
 	}
 
-	if (scheduler_init()) {
-		jlog(L_ERROR, "dnc]> scheduler_init() failed :: %s:%i", __FILE__, __LINE__);
+        if (config_lookup_string(&cfg, "certificate", &dnc_cfg->certificate))
+                jlog(L_DEBUG, "dnc]> certificate: %s", dnc_cfg->certificate);
+	else {
+		jlog(L_ERROR, "dnc]> certificate is not present !");
 		exit(EXIT_FAILURE);
 	}
 
+        if (config_lookup_string(&cfg, "privatekey", &dnc_cfg->privatekey))
+                jlog(L_DEBUG, "dnc]> privatekey: %s", dnc_cfg->privatekey);
+	else {
+		jlog(L_ERROR, "dnc]> privatekey is not present !");
+		exit(EXIT_FAILURE);
+	}
+
+        if (config_lookup_string(&cfg, "trusted_cert", &dnc_cfg->trusted_cert))
+                jlog(L_DEBUG, "dnc]> trusted_cert: %s", dnc_cfg->trusted_cert);
+	else {
+		jlog(L_ERROR, "dnc]> trusted_cert is not present !");
+		exit(EXIT_FAILURE);
+	}
+/*
 	if (netbus_init()) {
 		jlog(L_ERROR, "dnc]> netbus_init() failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
 
-	krypt_init();
-
+	if (krypt_init()) {
+		jlog(L_ERROR, "dnc]> krypt_init failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
+	}
+*/
 	jlog(L_NOTICE, "dnc]> connecting...");
 
-	if (dnc_init(server_address, server_port, prov_code, certificate, privatekey, trusted_authority)) {
+	if (dnc_init(dnc_cfg)) {
 		jlog(L_ERROR, "dnc]> dnc_init() failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
 
-	scheduler();
 
 	return 0;
 }
