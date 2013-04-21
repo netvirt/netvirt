@@ -181,7 +181,9 @@ static int krypt_set_adh(krypt_t *kconn)
 	jlog(L_NOTICE, "krypt]> set adh");
 
 	SSL_CTX_set_cipher_list(kconn->ctx, "ADH");
-	SSL_CTX_set_tmp_dh(kconn->ctx, get_dh_1024());
+	DH *dh = get_dh_1024();
+	SSL_CTX_set_tmp_dh(kconn->ctx, dh);
+	DH_free(dh);
 
 	SSL_CTX_set_tmp_dh_callback(kconn->ctx, tmp_dh_callback);
 	SSL_CTX_set_verify(kconn->ctx, SSL_VERIFY_NONE, NULL);
