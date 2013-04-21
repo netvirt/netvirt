@@ -27,18 +27,15 @@
 #include "dnc.h"
 #include "session.h"
 
-struct dnc_cfg *g_dnc_cfg;
-
-#if 0
-static void dispatch_operation(struct session *session, DNDSMessage_t *msg);
-
-//static ftable_t *ftable;
+struct dnc_cfg *dnc_cfg;
 struct session *master_session;
+static int g_shutdown = 0;
 
-static int g_shutdown = 0;	/* True if DNC is shutting down */
-#if 0
-static void tunnel_in(iface_t *iface)
+static void dispatch_op(struct session *session, DNDSMessage_t *msg);
+
+static void tunnel_in()
 {
+#if 0
 	DNDSMessage_t *msg = NULL;
 	struct session *session = NULL;
 	struct session *p2p_session = NULL;
@@ -76,17 +73,19 @@ static void tunnel_in(iface_t *iface)
 	net_send_msg(session->netc, msg);
 	DNDSMessage_del(msg);
 	iface->frame = NULL;
+#endif
 }
 
-static void tunnel_out(iface_t *iface, DNDSMessage_t *msg)
+static void tunnel_out(struct session *session, DNDSMessage_t *msg)
 {
+#if 0
 	uint8_t *frame;
 	size_t frame_size;
 
 	DNDSMessage_get_ethernet(msg, &frame, &frame_size);
 	iface->write(iface, frame, frame_size);
-}
 #endif
+}
 
 void terminate(struct session *session)
 {
@@ -97,8 +96,12 @@ void terminate(struct session *session)
 
 void transmit_netinfo_request(struct session *session)
 {
-	inet_get_local_ip(session->ip_local, INET_ADDRSTRLEN);
-	inet_get_iface_mac_address(session->iface->devname, session->tun_mac_addr);
+	const char *hwaddr;
+	int hwaddrlen;
+	char ip_local[16];
+
+	inet_get_local_ip(ip_local, INET_ADDRSTRLEN);
+	hwaddr = tapcfg_iface_get_hwaddr(session->tapcfg, &hwaddrlen);
 
 	DNDSMessage_t *msg;
 
@@ -110,8 +113,8 @@ void transmit_netinfo_request(struct session *session)
 	DNMessage_set_ackNumber(msg, 0);
 	DNMessage_set_operation(msg, dnop_PR_netinfoRequest);
 
-	NetinfoRequest_set_ipLocal(msg, session->ip_local);
-	NetinfoRequest_set_macAddr(msg, session->tun_mac_addr);
+	NetinfoRequest_set_ipLocal(msg, strdup(ip_local));
+	NetinfoRequest_set_macAddr(msg, (uint8_t*)strdup(hwaddr));
 
 	net_send_msg(session->netc, msg);
 	DNDSMessage_del(msg);
@@ -130,7 +133,7 @@ void transmit_prov_request(netc_t *netc)
 	DNMessage_set_ackNumber(msg, 0);
 	DNMessage_set_operation(msg, dnop_PR_provRequest);
 
-	ProvRequest_set_provCode(msg, g_prov_code, strlen(g_prov_code));
+	ProvRequest_set_provCode(msg, dnc_cfg->prov_code, strlen(dnc_cfg->prov_code));
 
 	nbyte = net_send_msg(netc, msg);
 	DNDSMessage_del(msg);
@@ -193,8 +196,8 @@ static void on_disconnect(netc_t *netc)
 
 		jlog(L_NOTICE, "dnc]> connection retry...\n");
 
-		retry_netc = net_client(session->server_address,
-		session->server_port, NET_PROTO_UDT, NET_SECURE_ADH,
+		retry_netc = net_client(dnc_cfg->server_address,
+		dnc_cfg->server_port, NET_PROTO_UDT, NET_SECURE_ADH,
 		session->passport, on_disconnect, on_input, on_secure);
 
 		if (retry_netc) {
@@ -220,7 +223,7 @@ static void on_connect(netc_t *netc)
         }
 
         session->state = SESSION_STATE_AUTHED;
-        session->iface = master_session->iface;
+     //   session->iface = master_session->iface;
         session->netc = netc;
 	netc->ext_ptr = session;
 }
@@ -231,22 +234,18 @@ static void p2p_on_secure(netc_t *netc)
 
 static void on_secure(netc_t *netc)
 {
-	jlog(L_NOTICE, "dnc]> connection secured");
-
 	struct session *session;
 	session = netc->ext_ptr;
 
-	if (session->state == SESSION_STATE_NOT_AUTHED) {
+	jlog(L_NOTICE, "dnc]> connection secured");
 
-		/* XXX is there a better way to detect that we
-		 * have no certificate yet ? */
-		if (session->passport == NULL) {
+	if (session->state == SESSION_STATE_NOT_AUTHED) {
+		if (session->passport == NULL || dnc_cfg->prov_code != NULL) {
 			jlog(L_NOTICE, "dnc]> Provisioning mode...");
 			transmit_prov_request(netc);
 		}
-		else {
+		else
 			transmit_register(netc);
-		}
 	}
 }
 
@@ -261,29 +260,27 @@ static void on_input(netc_t *netc)
 	session = netc->ext_ptr;
 
 	while (*mbuf_itr != NULL) {
-
 		msg = (DNDSMessage_t *)(*mbuf_itr)->ext_buf;
-
 		DNDSMessage_get_pdu(msg, &pdu);
+
 		switch (pdu) {
-			case pdu_PR_dnm:
-				dispatch_operation(session, msg);
-				break;
+		case pdu_PR_dnm:
+			dispatch_op(session, msg);
+			break;
 
-			case pdu_PR_ethernet:
-				tunnel_out(session->iface, msg);
-				break;
+		case pdu_PR_ethernet:
+			tunnel_out(session, msg);
+			break;
 
-			default: /* Invalid PDU */
-				terminate(session);
-				return;
+		default: /* Invalid PDU */
+			terminate(session);
+			return;
 		}
-
 		mbuf_del(mbuf_itr, *mbuf_itr);
 	}
 }
 
-static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
+static void dispatch_op(struct session *session, DNDSMessage_t *msg)
 {
 	dnop_PR operation;
 	e_DNDSResult result;
@@ -306,135 +303,128 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 
 	DNMessage_get_operation(msg, &operation);
 
-	/* TODO all cases must be handled in seperate functions */
-
 	switch (operation) {
+	case dnop_PR_provResponse:
 
-		case dnop_PR_provResponse:
+		ProvResponse_get_certificate(msg, &certificate, &length);
 
-			ProvResponse_get_certificate(msg, &certificate, &length);
+		fp = fopen(dnc_cfg->certificate, "w");
+		fwrite(certificate, 1, strlen(certificate), fp);
+		fclose(fp);
 
-			fp = fopen(g_certificate, "w");
-			fwrite(certificate, 1, strlen(certificate), fp);
-			fclose(fp);
+		ProvResponse_get_certificateKey(msg, &certificatekey, &length);
+		fp = fopen(dnc_cfg->privatekey, "w");
+		fwrite(certificatekey, 1, strlen(certificatekey), fp);
+		fclose(fp);
 
-			ProvResponse_get_certificateKey(msg, &certificatekey, &length);
-			fp = fopen(g_privatekey, "w");
-			fwrite(certificatekey, 1, strlen(certificatekey), fp);
-			fclose(fp);
+		ProvResponse_get_trustedCert(msg, &trusted_authority, &length);
+		fp = fopen(dnc_cfg->trusted_cert, "w");
+		fwrite(trusted_authority, 1, strlen(trusted_authority), fp);
+		fclose(fp);
 
-			ProvResponse_get_trustedCert(msg, &trusted_authority, &length);
-			fp = fopen(g_trusted_authority, "w");
-			fwrite(trusted_authority, 1, strlen(trusted_authority), fp);
-			fclose(fp);
-
-			ProvResponse_get_ipAddress(msg, ipAddress);
-			printf("dnc]> ip address: %s\n", ipAddress);
-			fp = fopen("/etc/dnds/dnc.ip", "w");
-			fprintf(fp, "%s", ipAddress);
-			fclose(fp);
-
-
-			session->passport = pki_passport_load_from_file(g_certificate,
-							 g_privatekey,
-							 g_trusted_authority);
+		ProvResponse_get_ipAddress(msg, ipAddress);
+		printf("dnc]> ip address: %s\n", ipAddress);
+		fp = fopen("/etc/dnds/dnc.ip", "w");
+		fprintf(fp, "%s", ipAddress);
+		fclose(fp);
 
 
-			krypt_add_passport(session->netc->kconn, session->passport);
-			transmit_register(session->netc);
+		session->passport = pki_passport_load_from_file(dnc_cfg->certificate,
+						 dnc_cfg->privatekey,
+						 dnc_cfg->trusted_cert);
 
-			break;
 
-		case dnop_PR_authResponse:
+		krypt_add_passport(session->netc->kconn, session->passport);
+		transmit_register(session->netc);
 
-			AuthResponse_get_result(msg, &result);
+		break;
 
-			if (result == DNDSResult_success) {
-				jlog(L_NOTICE, "dnc]> session authenticated");
-				transmit_netinfo_request(session);
-			}
-			else if (result == DNDSResult_secureStepUp) {
-				jlog(L_NOTICE, "dnc]> server authentication require step up");
-				net_step_up(session->netc);
-			}
-			else {
-				jlog(L_NOTICE, "dnc]> unknown AuthResponse result (%i)", result);
-			}
+	case dnop_PR_authResponse:
 
-			break;
+		AuthResponse_get_result(msg, &result);
 
-		case dnop_PR_netinfoResponse:
+		if (result == DNDSResult_success) {
+			jlog(L_NOTICE, "dnc]> session authenticated");
+			transmit_netinfo_request(session);
+		}
+		else if (result == DNDSResult_secureStepUp) {
+			jlog(L_NOTICE, "dnc]> server authentication require step up");
+			net_step_up(session->netc);
+		}
+		else {
+			jlog(L_NOTICE, "dnc]> unknown AuthResponse result (%i)", result);
+		}
 
-			master_session = session;
+		break;
 
-			fp = fopen("/etc/dnds/dnc.ip", "r");
-			if (fp == NULL) {
-				jlog(L_ERROR, "/etc/dnds/dnc.ip doesn't exist, please reprovision your client");
-				exit(-1);
-				return;
-			}
-			fscanf(fp, "%s", ipAddress);
-			fclose(fp);
+	case dnop_PR_netinfoResponse:
 
-			tun_up(session->iface->devname, ipAddress);
-			session->state = SESSION_STATE_AUTHED;
+		master_session = session;
 
-			break;
+		fp = fopen("/etc/dnds/dnc.ip", "r");
+		if (fp == NULL) {
+			jlog(L_ERROR, "/etc/dnds/dnc.ip doesn't exist, please reprovision your client");
+			exit(-1);
+			return;
+		}
+		fscanf(fp, "%s", ipAddress);
+		fclose(fp);
 
-		case dnop_PR_p2pRequest:
+		tapcfg_iface_set_ipv4(session->tapcfg, ipAddress, 24);
+		session->state = SESSION_STATE_AUTHED;
 
-			P2pRequest_get_macAddrDst(msg, mac_dst);
-			P2pRequest_get_ipAddrDst(msg, dest_addr);
-			P2pRequest_get_port(msg, &port);
+		break;
 
-			snprintf(port_name, 6, "%d", port);
-			p2p_netc = net_p2p("0.0.0.0", dest_addr, port_name, NET_PROTO_UDT, NET_UNSECURE, state,
-						on_connect, p2p_on_secure, on_disconnect, on_input);
+	case dnop_PR_p2pRequest:
 
-			if (p2p_netc != NULL) {
-				jlog(L_NOTICE, "dnc]> p2p connected");
-				//ftable_insert(ftable, mac_dst, p2p_netc->ext_ptr);
-			} else {
-				jlog(L_NOTICE, "dnc]> p2p unable to connect");
-			}
+		P2pRequest_get_macAddrDst(msg, mac_dst);
+		P2pRequest_get_ipAddrDst(msg, dest_addr);
+		P2pRequest_get_port(msg, &port);
 
-			break;
+		snprintf(port_name, 6, "%d", port);
+		p2p_netc = net_p2p("0.0.0.0", dest_addr, port_name, NET_PROTO_UDT, NET_UNSECURE, state,
+					on_connect, p2p_on_secure, on_disconnect, on_input);
 
-                /* `terminateRequest` is a special case since it has no
-		 * response message associated with it, simply disconnect the client.
-		 */
-		case dnop_PR_NOTHING:
-		default:
-			jlog(L_NOTICE, "dnc]> not a valid DNM operation");
-		case dnop_PR_terminateRequest:
-			terminate(session);
-			break;
+		if (p2p_netc != NULL) {
+			jlog(L_NOTICE, "dnc]> p2p connected");
+			//ftable_insert(ftable, mac_dst, p2p_netc->ext_ptr);
+		} else {
+			jlog(L_NOTICE, "dnc]> p2p unable to connect");
+		}
+
+		break;
+
+	/* `terminateRequest` is a special case since it has no
+	 * response message associated with it, simply disconnect the client.
+	 */
+	case dnop_PR_NOTHING:
+	default:
+		jlog(L_NOTICE, "dnc]> not a valid DNM operation");
+	case dnop_PR_terminateRequest:
+		terminate(session);
+		break;
 	}
 }
 
-void dnc_fini(void *ext_ptr)
-{
-	g_shutdown = 1;
-}
-#endif
-
-int dnc_init(struct dnc_cfg *dnc_cfg)
+int dnc_init(struct dnc_cfg *cfg)
 {
 	struct session *session;
 
-	g_dnc_cfg = dnc_cfg;
-	session = calloc(0, sizeof(struct session));
-	session->passport = pki_passport_load_from_file(
-		dnc_cfg->certificate, dnc_cfg->privatekey, dnc_cfg->trusted_cert);
+	dnc_cfg = cfg;
+	session = calloc(1, sizeof(struct session));
 
-/*
+
+	if (dnc_cfg->prov_code == NULL)
+		session->passport = pki_passport_load_from_file(
+			dnc_cfg->certificate, dnc_cfg->privatekey, dnc_cfg->trusted_cert);
+
 	if (session->passport == NULL && dnc_cfg->prov_code == NULL) {
 		jlog(L_ERROR, "dnc]> Must provide a provisioning code: ./dnc -p ...");
 		return -1;
 	}
-*/
 
-/*
+
+
 	session->netc = net_client(dnc_cfg->server_address, dnc_cfg->server_port,
 			NET_PROTO_UDT, NET_SECURE_ADH, session->passport,
 			on_disconnect, on_input, on_secure);
@@ -443,14 +433,11 @@ int dnc_init(struct dnc_cfg *dnc_cfg)
 		free(session);
 		return -1;
 	}
-*/
+
 	session->tapcfg = NULL;
 	session->state = SESSION_STATE_NOT_AUTHED;
-//	session->netc->ext_ptr = session;
+	session->netc->ext_ptr = session;
 
-	/* Create the tunnel interface now, so when we register
-	 * we can extract the interface mac address needed by the server.
-	 */
 	session->tapcfg = tapcfg_init();
 	if (session->tapcfg == NULL) {
 		jlog(L_ERROR, "dnc]> tapcfg_init failed");
@@ -464,6 +451,11 @@ int dnc_init(struct dnc_cfg *dnc_cfg)
 
 	session->devname = tapcfg_get_ifname(session->tapcfg);
 	jlog(L_DEBUG, "dnc]> devname: %s", session->devname);
+
+
+	while(1) {
+		udtbus_poke_queue();
+	}
 
 	return 0;
 }

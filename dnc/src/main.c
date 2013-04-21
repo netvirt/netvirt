@@ -23,7 +23,6 @@
 int main(int argc, char *argv[])
 {
 	int opt;
-	char *prov_code = NULL;
 	struct dnc_cfg *dnc_cfg;
 	config_t cfg;
 
@@ -32,11 +31,13 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+	dnc_cfg = calloc(1, sizeof(struct dnc_cfg));
+
 	while ((opt = getopt(argc, argv, "p:")) != -1) {
 		switch (opt) {
 		case 'p':
-			jlog(L_DEBUG, "provisioning code: %s", optarg);
-			prov_code = strdup(optarg);
+			jlog(L_DEBUG, "dnc]> provisioning code: %s", optarg);
+			dnc_cfg->prov_code = strdup(optarg);
 		}
 	}
 
@@ -47,8 +48,6 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "Can't open %s\n", CONFIG_FILE);
                 return(EXIT_FAILURE);
         }
-
-	dnc_cfg = calloc(1, sizeof(struct dnc_cfg));
 
         if (config_lookup_string(&cfg, "server_address", &dnc_cfg->server_address))
                 jlog(L_DEBUG, "dnc]> server_address: %s", dnc_cfg->server_address);
@@ -84,17 +83,12 @@ int main(int argc, char *argv[])
 		jlog(L_ERROR, "dnc]> trusted_cert is not present !");
 		exit(EXIT_FAILURE);
 	}
-/*
-	if (netbus_init()) {
-		jlog(L_ERROR, "dnc]> netbus_init() failed :: %s:%i", __FILE__, __LINE__);
-		exit(EXIT_FAILURE);
-	}
 
 	if (krypt_init()) {
 		jlog(L_ERROR, "dnc]> krypt_init failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
-*/
+
 	jlog(L_NOTICE, "dnc]> connecting...");
 
 	if (dnc_init(dnc_cfg)) {
