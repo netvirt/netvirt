@@ -1,3 +1,4 @@
+set(CMAKE_C_FLAGS "-g -Wall")
 add_subdirectory(protocol)
 include_directories(protocol)
 
