@@ -31,60 +31,43 @@ struct dnc_cfg *dnc_cfg;
 struct session *master_session;
 static int g_shutdown = 0;
 
+static void on_input(netc_t *netc);
+static void on_secure(netc_t *netc);
 static void dispatch_op(struct session *session, DNDSMessage_t *msg);
 
-static void tunnel_in()
+static void tunnel_in(struct session* session)
 {
-#if 0
 	DNDSMessage_t *msg = NULL;
-	struct session *session = NULL;
-	struct session *p2p_session = NULL;
 	size_t frame_size = 0;
-
 	uint8_t macaddr_src[ETHER_ADDR_LEN];
 	uint8_t macaddr_dst[ETHER_ADDR_LEN];
-	uint8_t macaddr_dst_type;
+	char framebuf[2000];
 
-	session = (struct session*)iface->ext_ptr;
-	if (session->state != SESSION_STATE_AUTHED) {
-		return;	/* not authenticated yet ! */
-	}
+	if (session->state != SESSION_STATE_AUTHED)
+		return;
 
-	frame_size = iface->read(iface);
+	frame_size = tapcfg_read(session->tapcfg, framebuf, 2000);
 
-	inet_get_mac_addr_src(iface->frame, macaddr_src);
-	inet_get_mac_addr_dst(iface->frame, macaddr_dst);
-	macaddr_dst_type = inet_get_mac_addr_type(macaddr_dst);
+	inet_get_mac_addr_src(framebuf, macaddr_src);
+	inet_get_mac_addr_dst(framebuf, macaddr_dst);
 
 	DNDSMessage_new(&msg);
 	DNDSMessage_set_channel(msg, 0);
 	DNDSMessage_set_pdu(msg, pdu_PR_ethernet);
-	DNDSMessage_set_ethernet(msg, iface->frame, frame_size);
+	DNDSMessage_set_ethernet(msg, (uint8_t*)framebuf, frame_size);
 
-	/* Any p2p connection already established ? if so, route the packet to the p2p link.
-	 * Otherwise the packet is sent to the server, where it will be switched to the right node.
-
-	FIXME: still in alpha, must become asynchronous
-
-	p2p_session = ftable_find(ftable, macaddr_dst);
-	if (p2p_session && p2p_session->state == SESSION_STATE_AUTHED) {
-		session = p2p_session;
-	}*/
 	net_send_msg(session->netc, msg);
+	DNDSMessage_set_ethernet(msg, NULL, 0);
 	DNDSMessage_del(msg);
-	iface->frame = NULL;
-#endif
 }
 
 static void tunnel_out(struct session *session, DNDSMessage_t *msg)
 {
-#if 0
-	uint8_t *frame;
-	size_t frame_size;
+	uint8_t *framebuf;
+	size_t framebufsz;
 
-	DNDSMessage_get_ethernet(msg, &frame, &frame_size);
-	iface->write(iface, frame, frame_size);
-#endif
+	DNDSMessage_get_ethernet(msg, &framebuf, &framebufsz);
+	tapcfg_write(session->tapcfg, framebuf, framebufsz);
 }
 
 void terminate(struct session *session)
@@ -113,8 +96,8 @@ void transmit_netinfo_request(struct session *session)
 	DNMessage_set_ackNumber(msg, 0);
 	DNMessage_set_operation(msg, dnop_PR_netinfoRequest);
 
-	NetinfoRequest_set_ipLocal(msg, strdup(ip_local));
-	NetinfoRequest_set_macAddr(msg, (uint8_t*)strdup(hwaddr));
+	NetinfoRequest_set_ipLocal(msg, ip_local);
+	NetinfoRequest_set_macAddr(msg, (uint8_t*)hwaddr);
 
 	net_send_msg(session->netc, msg);
 	DNDSMessage_del(msg);
@@ -172,28 +155,22 @@ void transmit_register(netc_t *netc)
                 jlog(L_NOTICE, "dnc]> malformed message: %d\n", nbyte);
                 return;
         }
-
 	session->state = SESSION_STATE_WAIT_ANSWER;
-
         return;
 }
-
-static void on_input(netc_t *netc);
-static void on_secure(netc_t *netc);
 
 static void on_disconnect(netc_t *netc)
 {
 	jlog(L_NOTICE, "dnc]> disconnected...\n");
 
-	netc_t *retry_netc = NULL;
 	struct session *session;
+	netc_t *retry_netc = NULL;
 
 	session = netc->ext_ptr;
 	session->state = SESSION_STATE_DOWN;
 
 	do {
 		sleep(5);
-
 		jlog(L_NOTICE, "dnc]> connection retry...\n");
 
 		retry_netc = net_client(dnc_cfg->server_address,
@@ -206,30 +183,7 @@ static void on_disconnect(netc_t *netc)
 			retry_netc->ext_ptr = session;
 			return;
 		}
-
 	} while (!g_shutdown);
-}
-
-/* only used by P2P */
-static void on_connect(netc_t *netc)
-{
-	struct session *session = NULL;
-        session = malloc(sizeof(struct session));
-
-        if (netc->conn_type == NET_P2P_CLIENT) {
-                session->type = SESSION_TYPE_P2P_CLIENT;
-        } else {
-                session->type = SESSION_TYPE_P2P_SERVER;
-        }
-
-        session->state = SESSION_STATE_AUTHED;
-     //   session->iface = master_session->iface;
-        session->netc = netc;
-	netc->ext_ptr = session;
-}
-
-static void p2p_on_secure(netc_t *netc)
-{
 }
 
 static void on_secure(netc_t *netc)
@@ -280,118 +234,105 @@ static void on_input(netc_t *netc)
 	}
 }
 
-static void dispatch_op(struct session *session, DNDSMessage_t *msg)
+static void op_netinfo_response(struct session *session, DNDSMessage_t *msg)
 {
-	dnop_PR operation;
+        char ipAddress[INET_ADDRSTRLEN];
+	FILE *fp = NULL;
+
+	fp = fopen("/etc/dnds/dnc.ip", "r");
+	if (fp == NULL) {
+		jlog(L_ERROR, "/etc/dnds/dnc.ip doesn't exist,
+				reprovision your client");
+		return;
+	}
+	fscanf(fp, "%s", ipAddress);
+	fclose(fp);
+
+	tapcfg_iface_set_ipv4(session->tapcfg, ipAddress, 24);
+	tapcfg_iface_set_status(session->tapcfg, TAPCFG_STATUS_IPV4_UP);
+	session->state = SESSION_STATE_AUTHED;
+}
+
+static void op_auth_response(struct session *session, DNDSMessage_t *msg)
+{
 	e_DNDSResult result;
+	AuthResponse_get_result(msg, &result);
 
-	char dest_addr[INET_ADDRSTRLEN];
-	uint32_t port;
-	char port_name[6];
-	netc_t *p2p_netc = NULL;
-	uint8_t state;
-	uint8_t mac_dst[ETHER_ADDR_LEN];
-	char ip_addr[INET_ADDRSTRLEN];
+	switch (result) {
+	case DNDSResult_success:
+		jlog(L_NOTICE, "dnc]> session authenticated");
+		transmit_netinfo_request(session);
+		break;
 
+	case DNDSResult_secureStepUp:
+		jlog(L_NOTICE, "dnc]> server authentication require step up");
+		net_step_up(session->netc);
+		break;
+
+	default:
+		jlog(L_NOTICE, "dnc]> unknown AuthResponse result (%i)", result);
+	}
+}
+
+static void op_prov_response(struct session *session, DNDSMessage_t *msg)
+{
 	size_t length;
 	char *certificate = NULL;
 	char *certificatekey = NULL;
 	char *trusted_authority = NULL;
         char ipAddress[INET_ADDRSTRLEN];
-
 	FILE *fp = NULL;
 
+	ProvResponse_get_certificate(msg, &certificate, &length);
+
+	fp = fopen(dnc_cfg->certificate, "w");
+	fwrite(certificate, 1, strlen(certificate), fp);
+	fclose(fp);
+
+	ProvResponse_get_certificateKey(msg, &certificatekey, &length);
+	fp = fopen(dnc_cfg->privatekey, "w");
+	fwrite(certificatekey, 1, strlen(certificatekey), fp);
+	fclose(fp);
+
+	ProvResponse_get_trustedCert(msg, &trusted_authority, &length);
+	fp = fopen(dnc_cfg->trusted_cert, "w");
+	fwrite(trusted_authority, 1, strlen(trusted_authority), fp);
+	fclose(fp);
+
+	ProvResponse_get_ipAddress(msg, ipAddress);
+	printf("dnc]> ip address: %s\n", ipAddress);
+	fp = fopen("/etc/dnds/dnc.ip", "w");
+	fprintf(fp, "%s", ipAddress);
+	fclose(fp);
+
+	session->passport = pki_passport_load_from_file(dnc_cfg->certificate,
+					 dnc_cfg->privatekey,
+					 dnc_cfg->trusted_cert);
+
+	krypt_add_passport(session->netc->kconn, session->passport);
+	transmit_register(session->netc);
+}
+
+static void dispatch_op(struct session *session, DNDSMessage_t *msg)
+{
+	dnop_PR operation;
 	DNMessage_get_operation(msg, &operation);
 
 	switch (operation) {
 	case dnop_PR_provResponse:
-
-		ProvResponse_get_certificate(msg, &certificate, &length);
-
-		fp = fopen(dnc_cfg->certificate, "w");
-		fwrite(certificate, 1, strlen(certificate), fp);
-		fclose(fp);
-
-		ProvResponse_get_certificateKey(msg, &certificatekey, &length);
-		fp = fopen(dnc_cfg->privatekey, "w");
-		fwrite(certificatekey, 1, strlen(certificatekey), fp);
-		fclose(fp);
-
-		ProvResponse_get_trustedCert(msg, &trusted_authority, &length);
-		fp = fopen(dnc_cfg->trusted_cert, "w");
-		fwrite(trusted_authority, 1, strlen(trusted_authority), fp);
-		fclose(fp);
-
-		ProvResponse_get_ipAddress(msg, ipAddress);
-		printf("dnc]> ip address: %s\n", ipAddress);
-		fp = fopen("/etc/dnds/dnc.ip", "w");
-		fprintf(fp, "%s", ipAddress);
-		fclose(fp);
-
-
-		session->passport = pki_passport_load_from_file(dnc_cfg->certificate,
-						 dnc_cfg->privatekey,
-						 dnc_cfg->trusted_cert);
-
-
-		krypt_add_passport(session->netc->kconn, session->passport);
-		transmit_register(session->netc);
-
+		op_prov_response(session, msg);
 		break;
 
 	case dnop_PR_authResponse:
-
-		AuthResponse_get_result(msg, &result);
-
-		if (result == DNDSResult_success) {
-			jlog(L_NOTICE, "dnc]> session authenticated");
-			transmit_netinfo_request(session);
-		}
-		else if (result == DNDSResult_secureStepUp) {
-			jlog(L_NOTICE, "dnc]> server authentication require step up");
-			net_step_up(session->netc);
-		}
-		else {
-			jlog(L_NOTICE, "dnc]> unknown AuthResponse result (%i)", result);
-		}
-
+		op_auth_response(session, msg);
 		break;
 
 	case dnop_PR_netinfoResponse:
-
-		master_session = session;
-
-		fp = fopen("/etc/dnds/dnc.ip", "r");
-		if (fp == NULL) {
-			jlog(L_ERROR, "/etc/dnds/dnc.ip doesn't exist, please reprovision your client");
-			exit(-1);
-			return;
-		}
-		fscanf(fp, "%s", ipAddress);
-		fclose(fp);
-
-		tapcfg_iface_set_ipv4(session->tapcfg, ipAddress, 24);
-		session->state = SESSION_STATE_AUTHED;
-
+		op_netinfo_response(session, msg);
 		break;
 
 	case dnop_PR_p2pRequest:
-
-		P2pRequest_get_macAddrDst(msg, mac_dst);
-		P2pRequest_get_ipAddrDst(msg, dest_addr);
-		P2pRequest_get_port(msg, &port);
-
-		snprintf(port_name, 6, "%d", port);
-		p2p_netc = net_p2p("0.0.0.0", dest_addr, port_name, NET_PROTO_UDT, NET_UNSECURE, state,
-					on_connect, p2p_on_secure, on_disconnect, on_input);
-
-		if (p2p_netc != NULL) {
-			jlog(L_NOTICE, "dnc]> p2p connected");
-			//ftable_insert(ftable, mac_dst, p2p_netc->ext_ptr);
-		} else {
-			jlog(L_NOTICE, "dnc]> p2p unable to connect");
-		}
-
+		// TODO
 		break;
 
 	/* `terminateRequest` is a special case since it has no
@@ -413,7 +354,6 @@ int dnc_init(struct dnc_cfg *cfg)
 	dnc_cfg = cfg;
 	session = calloc(1, sizeof(struct session));
 
-
 	if (dnc_cfg->prov_code == NULL)
 		session->passport = pki_passport_load_from_file(
 			dnc_cfg->certificate, dnc_cfg->privatekey, dnc_cfg->trusted_cert);
@@ -422,8 +362,6 @@ int dnc_init(struct dnc_cfg *cfg)
 		jlog(L_ERROR, "dnc]> Must provide a provisioning code: ./dnc -p ...");
 		return -1;
 	}
-
-
 
 	session->netc = net_client(dnc_cfg->server_address, dnc_cfg->server_port,
 			NET_PROTO_UDT, NET_SECURE_ADH, session->passport,
@@ -452,9 +390,10 @@ int dnc_init(struct dnc_cfg *cfg)
 	session->devname = tapcfg_get_ifname(session->tapcfg);
 	jlog(L_DEBUG, "dnc]> devname: %s", session->devname);
 
-
-	while(1) {
+	while (!g_shutdown) {
 		udtbus_poke_queue();
+		if (tapcfg_wait_readable(session->tapcfg, 0))
+			tunnel_in(session);
 	}
 
 	return 0;

@@ -142,6 +142,18 @@ int NetinfoResponse_get_netmask(DNDSMessage_t *msg, char *netmask);
 int NetinfoResponse_set_result(DNDSMessage_t *msg, e_DNDSResult result);
 int NetinfoResponse_get_result(DNDSMessage_t *msg, e_DNDSResult *result);
 
+// ProvRequest
+int ProvRequest_set_provCode(DNDSMessage_t *msg, char *provCode, size_t length);
+int ProvRequest_get_provCode(DNDSMessage_t *msg, char **provCode, size_t *length);
+int ProvResponse_set_certificate(DNDSMessage_t *msg, char *certificate, size_t length);
+int ProvResponse_get_certificate(DNDSMessage_t *msg, char **certificate, size_t *length);
+int ProvResponse_set_certificateKey(DNDSMessage_t *msg, char *certificateKey, size_t length);
+int ProvResponse_get_certificateKey(DNDSMessage_t *msg, char **certificateKey, size_t *length);
+int ProvResponse_set_trustedCert(DNDSMessage_t *msg, char *trustedCert, size_t length);
+int ProvResponse_get_trustedCert(DNDSMessage_t *msg, char **trustedCert, size_t *length);
+int ProvResponse_get_ipAddress(DNDSMessage_t *msg, char *ipAddress);
+int ProvResponse_set_ipAddress(DNDSMessage_t *msg, char *ipAddress);
+
 // P2pRequest
 int P2pRequest_set_macAddrDst(DNDSMessage_t *msg, uint8_t *macAddrDst);
 int P2pRequest_get_macAddrDst(DNDSMessage_t *msg, uint8_t *macAddrDst);
