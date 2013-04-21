@@ -27,10 +27,6 @@
 #define SESSION_TYPE_P2P_SERVER		0x04
 
 struct session {
-
-	char ip_local[INET_ADDRSTRLEN];
-	char tun_mac_addr[ETHER_ADDR_LEN];
-
 	passport_t *passport;
 	netc_t *netc;
 	tapcfg_t *tapcfg;
