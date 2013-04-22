@@ -241,8 +241,7 @@ static void op_netinfo_response(struct session *session, DNDSMessage_t *msg)
 
 	fp = fopen("/etc/dnds/dnc.ip", "r");
 	if (fp == NULL) {
-		jlog(L_ERROR, "/etc/dnds/dnc.ip doesn't exist,
-				reprovision your client");
+		jlog(L_ERROR, "/etc/dnds/dnc.ip doesn't exist, reprovision your client");
 		return;
 	}
 	fscanf(fp, "%s", ipAddress);
