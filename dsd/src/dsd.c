@@ -1,6 +1,7 @@
 /*
  * Dynamic Network Directory Service
- * Copyright (C) 2010-2012 Nicolas Bouliane
+ * Copyright (C) 2009-2013
+ * Nicolas J. Bouliane <nib@dynvpn.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -10,9 +11,8 @@
  */
 
 #include <dnds.h>
-#include <event.h>
-#include <journal.h>
-#include <net.h>
+#include <logger.h>
+#include <netbus.h>
 
 #include "dao.h"
 #include "dsd.h"
@@ -20,7 +20,6 @@
 #include "request.h"
 
 passport_t *g_dsd_passport;
-
 
 static void session_free(struct session *session)
 {
@@ -30,7 +29,7 @@ static void session_free(struct session *session)
 static struct session *session_new()
 {
 	struct session *session = calloc(1, sizeof(struct session));
-	session->status = SESSION_STATUS_NOT_AUTHED;
+	session->state = SESSION_STATE_NOT_AUTHED;
 
 	return session;
 }
@@ -166,8 +165,6 @@ void dsd_fini(void *ext_ptr)
 int dsd_init(char *ip_address, char *port, char *certificate, char *privatekey, char *trusted_authority)
 {
 	int ret;
-
-	event_register(EVENT_EXIT, "dsd_fini", dsd_fini, PRIO_AGNOSTIC);
 
 	g_dsd_passport = pki_passport_load_from_file(certificate, privatekey, trusted_authority);
 

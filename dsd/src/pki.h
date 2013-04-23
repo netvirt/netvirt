@@ -1,6 +1,7 @@
 /*
  * Dynamic Network Directory Service
- * Copyright (C) 2010-2012 Nicolas Bouliane
+ * Copyright (C) 2009-2013
+ * Nicolas J. Bouliane <nib@dynvpn.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -9,15 +10,15 @@
  *
  */
 
-#ifndef DNDS_PKI_H
-#define DNDS_PKI_H
+#ifndef PKI_H
+#define PKI_H
 
 #include <stdbool.h>
 #include <stdint.h>
 
 #include <openssl/ssl.h>
 
-#include <krypt.h>
+#include <crypto.h>
 
 typedef struct digital_id {
 

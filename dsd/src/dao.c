@@ -1,6 +1,7 @@
 /*
  * Dynamic Network Directory Service
- * Copyright (C) 2010-2012 Nicolas Bouliane
+ * Copyright (C) 2009-2013
+ * Nicolas J. Bouliane <nib@dynvpn.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,13 +20,10 @@
 #include <postgresql/libpq-fe.h>
 #include <ossp/uuid.h>
 
-#include <journal.h>
+#include <logger.h>
 
 #include "dao.h"
 #include "pki.h"
-
-
-/* TODO This prototype is highly fragile, must handle all errors.. */
 
 char *uuid_v4(void)
 {

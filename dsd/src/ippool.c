@@ -1,6 +1,7 @@
 /*
  * Dynamic Network Directory Service
- * Copyright (C) 2010-2013 Nicolas Bouliane
+ * Copyright (C) 2009-2013
+ * Nicolas J. Bouliane <nib@dynvpn.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,7 +21,7 @@
 #include <arpa/inet.h>
 
 #include "ippool.h"
-#include "journal.h"
+#include "logger.h"
 
 /* TODO write complete u-test to test the limit
  * and to handle properly any errors */

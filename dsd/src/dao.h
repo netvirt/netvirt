@@ -1,6 +1,7 @@
 /*
  * Dynamic Network Directory Service
- * Copyright (C) 2010-2012 Nicolas Bouliane
+ * Copyright (C) 2009-2013
+ * Nicolas J. Bouliane <nib@dynvpn.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -9,8 +10,8 @@
  *
  */
 
-#ifndef DSD_DAO_H
-#define DSD_DAO_h
+#ifndef DAO_H
+#define DAO_H
 
 int dao_connect(char *host, char *username, char *password, char *dbname);
 /*int dao_fetch_context_by_client_id(char *client_id,

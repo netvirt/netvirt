@@ -3,9 +3,7 @@ else (PostgreSQL_TYPE_INCLUDE_DIR)
 	set (PostgreSQL_TYPE_INCLUDE_DIR ${PostgreSQL_INCLUDE_DIR})
 endif (PostgreSQL_TYPE_INCLUDE_DIR)
 
-#find_package(PostgreSQL REQUIRED)
-
-set(CMAKE_C_FLAGS "-g")
+set(CMAKE_C_FLAGS "-g -Wall")
 add_executable(dsd
 	dao.c
 	dsd.c
@@ -15,12 +13,13 @@ add_executable(dsd
 	request.c
 )
 
-include_directories("${CMAKE_SOURCE_DIR}/../libdnds/src/protocol/")
+include_directories("${CMAKE_SOURCE_DIR}/libdnds/src/protocol/")
 target_link_libraries(dsd
-	${CMAKE_SOURCE_DIR}/../libdnds/src/libdnds.so
-	#${PostgreSQL_LIBRARIES}
+	dnds
 	pq
-	ossp-uuid)
+	ossp-uuid
+	config
+)
 
 install(TARGETS dsd
 	DESTINATION bin)

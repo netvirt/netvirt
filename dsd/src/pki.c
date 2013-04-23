@@ -1,7 +1,7 @@
 /*
- * pki.c: Public key infrastructure API
- *
- * Copyright (C) 2010 Nicolas Bouliane
+ * Dynamic Network Directory Service
+ * Copyright (C) 2009-2013
+ * Nicolas J. Bouliane <nib@dynvpn.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,7 +17,7 @@
 #include <openssl/pem.h>
 #include <openssl/x509v3.h>
 
-#include "journal.h"
+#include "logger.h"
 #include "pki.h"
 
 // openssl x509 -in ./certificate.pem -text

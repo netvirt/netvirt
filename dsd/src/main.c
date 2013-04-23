@@ -1,6 +1,7 @@
 /*
  * Dynamic Network Directory Service
- * Copyright (C) 2010-2012 Nicolas Bouliane
+ * Copyright (C) 2009-2013
+ * Nicolas J. Bouliane <nib@dynvpn.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -15,105 +16,136 @@
 
 #include <sys/stat.h>
 
+#include <libconfig.h>
+
 #include <dnds.h>
-#include <event.h>
-#include <journal.h>
+#include <logger.h>
 #include <netbus.h>
-#include <options.h>
 #include <utils.h>
-#include <xsched.h>
 
 #include "dao.h"
 #include "dsd.h"
 
 #define CONFIG_FILE "/etc/dnds/dsd.conf"
 
-char *listen_address = NULL;
-char *port = NULL;
+int parse_config(config_t *cfg, struct dsd_cfg *dsd_cfg)
+{
+	if (!config_read_file(cfg, CONFIG_FILE)) {
+		jlog(L_ERROR, "Can't open %s\n", CONFIG_FILE);
+		return -1;
+	}
 
-char *database_host = NULL;
-char *database_username = NULL;
-char *database_password = NULL;
-char *database_name = NULL;
+	if (config_lookup_string(cfg, "ipaddr", &dsd_cfg->ipaddr))
+		jlog(L_DEBUG, "dsd]> ipaddr: %s", dsd_cfg->ipaddr);
+	else {
+		jlog(L_ERROR, "ipaddr is not present !");
+		return -1;
+	}
 
-char *certificate = NULL;
-char *privatekey = NULL;
-char *trusted_authority = NULL;
+	if (config_lookup_string(cfg, "port", &dsd_cfg->port))
+		jlog(L_DEBUG, "dsd]> port: %s", dsd_cfg->port);
+	else {
+		jlog(L_ERROR, "port is not present !");
+		return -1;
+	}
 
-struct options opts[] = {
+	if (config_lookup_string(cfg, "db_host", &dsd_cfg->db_host))
+		jlog(L_DEBUG, "dsd]> db_host: %s", dsd_cfg->db_host);
+	else {
+		jlog(L_ERROR, "db_host is not present !");
+		return -1;
+	}
 
-	{ "listen_address",	&listen_address,	OPT_STR | OPT_MAN },
-	{ "port",		&port,			OPT_STR | OPT_MAN },
-	{ "database_host",	&database_host,		OPT_STR | OPT_MAN },
-	{ "database_username",	&database_username,	OPT_STR | OPT_MAN },
-	{ "database_password",	&database_password,	OPT_STR | OPT_MAN },
-	{ "database_name",	&database_name,		OPT_STR | OPT_MAN },
-	{ "certificate",	&certificate,		OPT_STR | OPT_MAN },
-	{ "privatekey",		&privatekey,		OPT_STR | OPT_MAN },
-	{ "trusted_authority",	&trusted_authority,	OPT_STR | OPT_MAN },
+	if (config_lookup_string(cfg, "db_user", &dsd_cfg->db_user))
+		jlog(L_DEBUG, "dsd]> db_user: %s", dsd_cfg->db_user);
+	else {
+		jlog(L_ERROR, "db_user is not present !");
+		return -1;
+	}
 
-	{ NULL }
-};
+	if (config_lookup_string(cfg, "db_pwd", &dsd_cfg->db_pwd))
+		jlog(L_DEBUG, "dsd]> db_pwd: %s", dsd_cfg->db_pwd);
+	else {
+		jlog(L_ERROR, "db_pwd is not present !");
+		return -1;
+	}
+
+	if (config_lookup_string(cfg, "db_name", &dsd_cfg->db_name))
+		jlog(L_DEBUG, "dsd]> db_name: %s", dsd_cfg->db_name);
+	else {
+		jlog(L_ERROR, "db_name is not present !");
+		return -1;
+	}
+
+	if (config_lookup_string(cfg, "certificate", &dsd_cfg->certificate))
+		jlog(L_DEBUG, "dsd]> certificate: %s", dsd_cfg->certificate);
+	else {
+		jlog(L_ERROR, "certificate is not present !");
+		return -1;
+	}
+
+	if (config_lookup_string(cfg, "privatekey", &dsd_cfg->privatekey))
+		jlog(L_DEBUG, "dsd]> privatekey: %s", dsd_cfg->privatekey);
+	else {
+		jlog(L_ERROR, "privatekey is not present !");
+		return -1;
+	}
+
+	if (config_lookup_string(cfg, "trusted_cert", &dsd_cfg->trusted_cert))
+		jlog(L_DEBUG, "dsd]> trusted_cert: %s", dsd_cfg->trusted_cert);
+	else {
+		jlog(L_ERROR, "trusted_cert is not present !");
+		return -1;
+	}
+
+	return 0;
+}
 
 int main(int argc, char *argv[])
 {
 	int opt, D_FLAG = 0;
+	struct dsd_cfg *dsd_cfg;
+	config_t cfg;
 
 	if (getuid() != 0) {
 		jlog(L_NOTICE, "%s must be run as root", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 
+	dsd_cfg = calloc(1, sizeof(struct dsd_cfg));
+
 	while ((opt = getopt(argc, argv, "dv")) != -1) {
 		switch (opt) {
-			case 'd':
-				D_FLAG = 1;
-				break;
-			case 'v':
-				printf("beta version\n");
-				exit(EXIT_SUCCESS);
-	    		default:
-				printf("-d , -v\n");
-				jlog(L_NOTICE, "dsd]> getopt() failed :: %s:%i", __FILE__, __LINE__);
-				exit(EXIT_FAILURE);
+		case 'd':
+			D_FLAG = 1;
+			break;
+		case 'v':
+			printf("beta version\n");
+			exit(EXIT_SUCCESS);
+		default:
+			printf("-d , -v\n");
+			jlog(L_NOTICE, "dsd]> getopt() failed :: %s:%i", __FILE__, __LINE__);
+			exit(EXIT_FAILURE);
 		}
 	}
 
-	/* State initialization */
-	if (option_parse(opts, CONFIG_FILE)) {
-		jlog(L_NOTICE, "dsd]> option_parse() failed :: %s:%i", __FILE__, __LINE__);
+	config_init(&cfg);
+	if (parse_config(&cfg, dsd_cfg)) {
+		jlog(L_ERROR, "dnd]> parse_config failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
 
-	option_dump(opts);
-
-	/* System initialization */
-	if (event_init()) {
-		jlog(L_NOTICE, "dsd]> event_init() failed :: %s:%i", __FILE__, __LINE__);
-		exit(EXIT_FAILURE);
-	}
-
-	if (scheduler_init()) {
-		jlog(L_NOTICE, "dsd]> scheduler_init() failed :: %s:%i\n", __FILE__, __LINE__);
-		exit(EXIT_FAILURE);
-	}
-
-	if (netbus_init()) {
-		jlog(L_NOTICE, "dsd]> netbus_init() failed. :: %s:%i\n", __FILE__, __LINE__);
-		exit(EXIT_FAILURE);
-	}
-
+	return;
+/*
 	if (krypt_init()) {
 		jlog(L_ERROR, "dnd]> krypt_init() failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
 
-	/* TODO handle errors */
 	pki_init();
-	dao_connect(database_host, database_username, database_password, database_name);
+	dao_connect(dsd_cfg);
 
-	/* Server initialization */
-	if (dsd_init(listen_address, port, certificate, privatekey, trusted_authority)) {
+	if (dsd_init(dsd_cfg)) {
 		jlog(L_NOTICE, "dsd]> dnds_init() failed. :: %s:%i\n", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
@@ -121,9 +153,6 @@ int main(int argc, char *argv[])
 	if (D_FLAG) {
 		daemonize();
 	}
-
-	/* Now... run ! */
-	scheduler();
-
+*/
 	return 0;
 }
