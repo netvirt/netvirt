@@ -10,8 +10,9 @@
  *
  */
 
-#include <libconfig.h>
 #include <unistd.h>
+
+#include <libconfig.h>
 
 #include <crypto.h>
 #include <logger.h>
