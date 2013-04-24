@@ -22,6 +22,7 @@ void delRequest(struct session *session, DNDSMessage_t *msg);
 void modifyRequest(struct session *session, DNDSMessage_t *msg);
 void searchRequest(struct session *session, DNDSMessage_t *msg);
 void peerConnectInfo(struct session *session, DNDSMessage_t *req_msg);
+void nodeConnectInfo(struct session *session, DNDSMessage_t *req_msg);
 
 #endif
 

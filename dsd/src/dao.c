@@ -40,11 +40,11 @@ char *uuid_v4(void)
 }
 
 PGconn *dbconn = NULL;
-int dao_connect(char *host, char *username, char *password, char *dbname)
+int dao_connect(const char *db_host, const char *db_user, const char *db_pwd, const char *db_name)
 {
 	char conn_str[128];
 	snprintf(conn_str, sizeof(conn_str), "dbname = %s user = %s password = %s host = %s",
-						dbname, username, password, host);
+						db_name, db_user, db_pwd, db_host);
 
 	dbconn = PQconnectdb(conn_str);
 

@@ -124,26 +124,24 @@ int main(int argc, char *argv[])
 			exit(EXIT_SUCCESS);
 		default:
 			printf("-d , -v\n");
-			jlog(L_NOTICE, "dsd]> getopt() failed :: %s:%i", __FILE__, __LINE__);
+			jlog(L_NOTICE, "dsd]> getopt failed :: %s:%i", __FILE__, __LINE__);
 			exit(EXIT_FAILURE);
 		}
 	}
 
 	config_init(&cfg);
+
 	if (parse_config(&cfg, dsd_cfg)) {
 		jlog(L_ERROR, "dnd]> parse_config failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
 
-	return;
-/*
 	if (krypt_init()) {
-		jlog(L_ERROR, "dnd]> krypt_init() failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "dnd]> krypt_init failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
 
-	pki_init();
-	dao_connect(dsd_cfg);
+	dao_connect(dsd_cfg->db_host, dsd_cfg->db_user, dsd_cfg->db_pwd, dsd_cfg->db_name);
 
 	if (dsd_init(dsd_cfg)) {
 		jlog(L_NOTICE, "dsd]> dnds_init() failed. :: %s:%i\n", __FILE__, __LINE__);
@@ -153,6 +151,6 @@ int main(int argc, char *argv[])
 	if (D_FLAG) {
 		daemonize();
 	}
-*/
+
 	return 0;
 }

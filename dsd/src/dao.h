@@ -13,7 +13,7 @@
 #ifndef DAO_H
 #define DAO_H
 
-int dao_connect(char *host, char *username, char *password, char *dbname);
+int dao_connect(const char *db_host, const char *db_user, const char *db_pwd, const char *db_name);
 /*int dao_fetch_context_by_client_id(char *client_id,
 			char **id,
 			char **topology_id,

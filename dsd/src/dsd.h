@@ -41,6 +41,6 @@ struct session {
 	uint8_t state;
 };
 
-extern int dsd_init(char *liste_addr, char *port, char *certificate, char *privatekey, char *trusted_authority);
+int dsd_init(struct dsd_cfg *dsd_cfg);
 
 #endif

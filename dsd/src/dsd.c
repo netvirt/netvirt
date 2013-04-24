@@ -40,64 +40,50 @@ static void terminate(struct session *session)
 	session_free(session);
 }
 
-static int validate_msg(DNDSMessage_t *msg)
-{
-	pdu_PR pdu;
-	DNDSMessage_get_pdu(msg, &pdu);
-
-	if (pdu != pdu_PR_dsm) {
-		jlog(L_NOTICE, "dsd]> not a valid DSM data unit");
-		return -1;
-	}
-
-	return 0;
-}
-
 static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 {
 	dsop_PR operation;
 	DSMessage_get_operation(msg, &operation);
 
 	switch (operation) {
+	case dsop_PR_nodeConnectInfo:
+		nodeConnectInfo(session, msg);
+		break;
 
-		case dsop_PR_nodeConnectInfo:
-			nodeConnectInfo(session, msg);
-			break;
+	case dsop_PR_addRequest:
+		addRequest(session, msg);
+		break;
 
-		case dsop_PR_addRequest:
-			addRequest(session, msg);
-			break;
+	case dsop_PR_delRequest:
+		delRequest(session, msg);
+		break;
 
-		case dsop_PR_delRequest:
-			delRequest(session, msg);
-			break;
+	case dsop_PR_modifyRequest:
+		modifyRequest(session, msg);
+		break;
 
-		case dsop_PR_modifyRequest:
-			modifyRequest(session, msg);
-			break;
+	case dsop_PR_searchRequest:
+		searchRequest(session, msg);
+		break;
 
-		case dsop_PR_searchRequest:
-			searchRequest(session, msg);
-			break;
-
-		/* terminateRequest is a special case since
-		 * it has no Response message associated with it.
-		 * simply disconnect the client;
-		 */
-		case dsop_PR_NOTHING:
-		default:
-			jlog(L_NOTICE, "dsd]> not a valid DSM operation");
-		case dsop_PR_terminateRequest:
-			terminate(session);
-			break;
+	/* terminateRequest is a special case since
+	 * it has no Response message associated with it.
+	 * simply disconnect the client;
+	 */
+	case dsop_PR_NOTHING:
+	default:
+		jlog(L_NOTICE, "dsd]> not a valid DSM operation");
+	case dsop_PR_terminateRequest:
+		terminate(session);
+		break;
 	}
 }
 
 static void on_secure(netc_t *netc)
 {
-	jlog(L_DEBUG, "on secure!\n");
+	jlog(L_DEBUG, "dsd]> connection secured\n");
 	if (!strncmp("dnd", netc->kconn->client_cn, 3)) {
-		jlog(L_NOTICE, "dsd]> %s authenticated !\n", netc->kconn->client_cn);
+		jlog(L_NOTICE, "dsd]> %s authenticated\n", netc->kconn->client_cn);
 		g_dnd_netc = netc;
 	}
 }
@@ -107,47 +93,40 @@ static void on_input(netc_t *netc)
 	DNDSMessage_t *msg;
 	struct session *session;
 	mbuf_t **mbuf_itr;
+	pdu_PR pdu;
 
 	mbuf_itr = &netc->queue_msg;
-	session = (struct session *)netc->ext_ptr;
+	session = netc->ext_ptr;
 
 	while (*mbuf_itr != NULL) {
-
 		msg = (DNDSMessage_t *)(*mbuf_itr)->ext_buf;
-		DNDSMessage_printf(msg);
+		DNDSMessage_get_pdu(msg, &pdu);
 
-		if (validate_msg(msg) == 0)
+		switch (pdu) {
+		case pdu_PR_dsm:
 			dispatch_operation(session, msg);
-		else {
+			break;
+		default:
 			terminate(session);
 			return;
 		}
-
 		mbuf_del(mbuf_itr, *mbuf_itr);
 	}
-
-	return;
 }
 
 static void on_disconnect(netc_t *netc)
 {
 	struct session *session;
-	session = (struct session *)netc->ext_ptr;
+	session = netc->ext_ptr;
 
 	session_free(session);
-}
-
-/* TODO having a timeout per session */
-static void timeout_session(struct session *session)
-{
-	terminate(session);
 }
 
 static void on_connect(netc_t *netc)
 {
 	struct session *session;
-
 	session = session_new();
+
 	if (session == NULL) {
 		net_disconnect(netc);
 		return;
@@ -157,18 +136,13 @@ static void on_connect(netc_t *netc)
 	netc->ext_ptr = session;
 }
 
-void dsd_fini(void *ext_ptr)
-{
-
-}
-
-int dsd_init(char *ip_address, char *port, char *certificate, char *privatekey, char *trusted_authority)
+int dsd_init(struct dsd_cfg *dsd_cfg)
 {
 	int ret;
 
-	g_dsd_passport = pki_passport_load_from_file(certificate, privatekey, trusted_authority);
+	g_dsd_passport = pki_passport_load_from_file(dsd_cfg->certificate, dsd_cfg->privatekey, dsd_cfg->trusted_cert);
 
-	ret = net_server(ip_address, port, NET_PROTO_TCP, NET_SECURE_RSA, g_dsd_passport,
+	ret = net_server(dsd_cfg->ipaddr, dsd_cfg->port, NET_PROTO_TCP, NET_SECURE_RSA, g_dsd_passport,
 			on_connect, on_disconnect, on_input, on_secure);
 
 	if (ret < 0) {

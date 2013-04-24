@@ -1,6 +1,6 @@
-#ifndef DNDS_UTILS_H
-#define DNDS_UTILS_H
+#ifndef UTILS_H
+#define UTILS_H
 
-extern char *trim(char *str);
+extern int daemonize();
 
-#endif /* DNDS_UTILS_H */
+#endif
