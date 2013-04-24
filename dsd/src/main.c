@@ -31,70 +31,70 @@
 int parse_config(config_t *cfg, struct dsd_cfg *dsd_cfg)
 {
 	if (!config_read_file(cfg, CONFIG_FILE)) {
-		jlog(L_ERROR, "Can't open %s\n", CONFIG_FILE);
+		jlog(L_ERROR, "dsd]> Can't open %s\n", CONFIG_FILE);
 		return -1;
 	}
 
 	if (config_lookup_string(cfg, "ipaddr", &dsd_cfg->ipaddr))
 		jlog(L_DEBUG, "dsd]> ipaddr: %s", dsd_cfg->ipaddr);
 	else {
-		jlog(L_ERROR, "ipaddr is not present !");
+		jlog(L_ERROR, "dsd]> ipaddr is not present !");
 		return -1;
 	}
 
 	if (config_lookup_string(cfg, "port", &dsd_cfg->port))
 		jlog(L_DEBUG, "dsd]> port: %s", dsd_cfg->port);
 	else {
-		jlog(L_ERROR, "port is not present !");
+		jlog(L_ERROR, "dsd]> port is not present !");
 		return -1;
 	}
 
 	if (config_lookup_string(cfg, "db_host", &dsd_cfg->db_host))
 		jlog(L_DEBUG, "dsd]> db_host: %s", dsd_cfg->db_host);
 	else {
-		jlog(L_ERROR, "db_host is not present !");
+		jlog(L_ERROR, "dsd]> db_host is not present !");
 		return -1;
 	}
 
 	if (config_lookup_string(cfg, "db_user", &dsd_cfg->db_user))
 		jlog(L_DEBUG, "dsd]> db_user: %s", dsd_cfg->db_user);
 	else {
-		jlog(L_ERROR, "db_user is not present !");
+		jlog(L_ERROR, "dsd]> db_user is not present !");
 		return -1;
 	}
 
 	if (config_lookup_string(cfg, "db_pwd", &dsd_cfg->db_pwd))
 		jlog(L_DEBUG, "dsd]> db_pwd: %s", dsd_cfg->db_pwd);
 	else {
-		jlog(L_ERROR, "db_pwd is not present !");
+		jlog(L_ERROR, "dsd]> db_pwd is not present !");
 		return -1;
 	}
 
 	if (config_lookup_string(cfg, "db_name", &dsd_cfg->db_name))
 		jlog(L_DEBUG, "dsd]> db_name: %s", dsd_cfg->db_name);
 	else {
-		jlog(L_ERROR, "db_name is not present !");
+		jlog(L_ERROR, "dsd]> db_name is not present !");
 		return -1;
 	}
 
 	if (config_lookup_string(cfg, "certificate", &dsd_cfg->certificate))
 		jlog(L_DEBUG, "dsd]> certificate: %s", dsd_cfg->certificate);
 	else {
-		jlog(L_ERROR, "certificate is not present !");
+		jlog(L_ERROR, "dsd]> certificate is not present !");
 		return -1;
 	}
 
 	if (config_lookup_string(cfg, "privatekey", &dsd_cfg->privatekey))
 		jlog(L_DEBUG, "dsd]> privatekey: %s", dsd_cfg->privatekey);
 	else {
-		jlog(L_ERROR, "privatekey is not present !");
+		jlog(L_ERROR, "dsd]> privatekey is not present !");
 		return -1;
 	}
 
 	if (config_lookup_string(cfg, "trusted_cert", &dsd_cfg->trusted_cert))
 		jlog(L_DEBUG, "dsd]> trusted_cert: %s", dsd_cfg->trusted_cert);
 	else {
-		jlog(L_ERROR, "trusted_cert is not present !");
+		jlog(L_ERROR, "dsd]> trusted_cert is not present !");
 		return -1;
 	}
 
@@ -141,10 +141,13 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	dao_connect(dsd_cfg->db_host, dsd_cfg->db_user, dsd_cfg->db_pwd, dsd_cfg->db_name);
+	if (dao_connect(dsd_cfg)) {
+		jlog(L_ERROR, "dsd]> dao_connect failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
+	}
 
 	if (dsd_init(dsd_cfg)) {
-		jlog(L_NOTICE, "dsd]> dnds_init() failed. :: %s:%i\n", __FILE__, __LINE__);
+		jlog(L_NOTICE, "dsd]> dnds_init failed :: %s:%i\n", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
 

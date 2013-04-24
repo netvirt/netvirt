@@ -13,7 +13,9 @@
 #ifndef DAO_H
 #define DAO_H
 
-int dao_connect(const char *db_host, const char *db_user, const char *db_pwd, const char *db_name);
+#include "dsd.h"
+int dao_connect(struct dsd_cfg *dsd_cfg);
+
 /*int dao_fetch_context_by_client_id(char *client_id,
 			char **id,
 			char **topology_id,

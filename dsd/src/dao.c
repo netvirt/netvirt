@@ -22,7 +22,7 @@
 
 #include <logger.h>
 
-#include "dao.h"
+#include "dsd.h"
 #include "pki.h"
 
 char *uuid_v4(void)
@@ -40,11 +40,11 @@ char *uuid_v4(void)
 }
 
 PGconn *dbconn = NULL;
-int dao_connect(const char *db_host, const char *db_user, const char *db_pwd, const char *db_name)
+int dao_connect(struct dsd_cfg *dsd_cfg)
 {
 	char conn_str[128];
 	snprintf(conn_str, sizeof(conn_str), "dbname = %s user = %s password = %s host = %s",
-						db_name, db_user, db_pwd, db_host);
+						dsd_cfg->db_name, dsd_cfg->db_user, dsd_cfg->db_pwd, dsd_cfg->db_host);
 
 	dbconn = PQconnectdb(conn_str);
 
