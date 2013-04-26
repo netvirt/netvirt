@@ -1,7 +1,7 @@
 /*
- * linkstate.c: Active link-state topology control
- *
- * Copyright (C) 2011 Nicolas Bouliane
+ * Dynamic Network Directory Service
+ * Copyright (C) 2009-2013
+ * Nicolas J. Bouliane <nib@dynvpn.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

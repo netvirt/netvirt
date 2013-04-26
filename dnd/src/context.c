@@ -1,6 +1,7 @@
 /*
  * Dynamic Network Directory Service
- * Copyright (C) 2010-2012 Nicolas Bouliane
+ * Copyright (C) 2009-2013
+ * Nicolas J. Bouliane <nib@dynvpn.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -13,10 +14,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <bitpool.h>
-#include <event.h>
-#include <journal.h>
-#include <krypt.h>
+#include <bitv.h>
+#include <logger.h>
+#include <crypto.h>
 #include <netbus.h>
 #include <inet.h>
 
@@ -126,7 +126,6 @@ void context_fini(void *ext_ptr)
 
 int context_init()
 {
-	event_register(EVENT_EXIT, "context:context_fini()", context_fini, PRIO_AGNOSTIC);
 
 	return 0;
 }

@@ -1,4 +1,4 @@
-set(CMAKE_C_FLAGS "-g")
+set(CMAKE_C_FLAGS "-g -Wall")
 add_executable(dnd
 	context.c
 	dnd.c
@@ -12,10 +12,11 @@ add_executable(dnd
 	session.c
 )
 
-include_directories("${CMAKE_SOURCE_DIR}/../libdnds/src/")
-include_directories("${CMAKE_SOURCE_DIR}/../libdnds/src/protocol/")
+include_directories("${CMAKE_SOURCE_DIR}/libdnds/src/")
+include_directories("${CMAKE_SOURCE_DIR}/libdnds/src/protocol/")
 target_link_libraries(dnd
-        ${CMAKE_SOURCE_DIR}/../libdnds/src/libdnds.so
+	dnds
+	config
 )
 
 install(TARGETS dnd

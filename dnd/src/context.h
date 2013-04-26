@@ -1,7 +1,19 @@
-#ifndef DND_CONTEXT_H
-#define DND_CONTEXT_H
+/*
+ * Dynamic Network Directory Service
+ * Copyright (C) 2009-2013
+ * Nicolas J. Bouliane <nib@dynvpn.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; version 2
+ * of the License.
+ *
+ */
 
-#include <krypt.h>
+#ifndef CONTEXT_H
+#define CONTEXT_H
+
+#include <crypto.h>
 #include <netbus.h>
 #include <mbuf.h>
 
@@ -32,5 +44,4 @@ context_t *context_lookup(uint32_t id);
 void context_fini(void *ext_ptr);
 int context_init();
 
-
-#endif /* DND_CONTEXT_H */
+#endif

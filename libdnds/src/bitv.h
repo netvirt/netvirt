@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef DNDS_BITPOOL_H
-#define DNDS_BITPOOL_H
+#ifndef BITV_H
+#define BITV_H
 
 #include <stdint.h>
 

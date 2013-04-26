@@ -31,7 +31,7 @@
 int parse_config(config_t *cfg, struct dsd_cfg *dsd_cfg)
 {
 	if (!config_read_file(cfg, CONFIG_FILE)) {
-		jlog(L_ERROR, "dsd]> Can't open %s\n", CONFIG_FILE);
+		jlog(L_ERROR, "dsd]> Can't open %s", CONFIG_FILE);
 		return -1;
 	}
 
@@ -132,12 +132,12 @@ int main(int argc, char *argv[])
 	config_init(&cfg);
 
 	if (parse_config(&cfg, dsd_cfg)) {
-		jlog(L_ERROR, "dnd]> parse_config failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "dsd]> parse_config failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
 
 	if (krypt_init()) {
-		jlog(L_ERROR, "dnd]> krypt_init failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "dsd]> krypt_init failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
 

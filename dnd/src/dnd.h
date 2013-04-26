@@ -1,6 +1,7 @@
 /*
  * Dynamic Network Directory Service
- * Copyright (C) 2010-2012 Nicolas Bouliane
+ * Copyright (C) 2009-2013
+ * Nicolas J. Bouliane <nib@dynvpn.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -9,12 +10,24 @@
  *
  */
 
-#ifndef DND_DND_H
-#define DND_DND_H
+#ifndef DND_H
+#define DND_H
 
-#include <net.h>
 #include "context.h"
 
-extern int dnd_init(char *listen_addr, char *port);
+struct dnd_cfg {
+
+	const char *ipaddr;
+	const char *port;
+
+	const char *dsd_ipaddr;
+	const char *dsd_port;
+
+	const char *certificate;
+	const char *privatekey;
+	const char *trusted_cert;
+};
+
+int dnd_init(struct dnd_cfg *dnd_cfg);
 
 #endif

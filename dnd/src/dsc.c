@@ -1,6 +1,7 @@
 /*
  * Dynamic Network Directory Service
- * Copyright (C) 2010-2012 Nicolas Bouliane
+ * Copyright (C) 2009-2013
+ * Nicolas J. Bouliane <nib@dynvpn.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -12,17 +13,17 @@
 #include <unistd.h>
 
 #include <dnds.h>
-#include <journal.h>
-#include <net.h>
+#include <logger.h>
+#include <netbus.h>
 
 #include "context.h"
+#include "dnd.h"
 #include "dsc.h"
 #include "session.h"
 
 netc_t *dsc_netc = NULL;
 static passport_t *dnd_passport = NULL;
-static char *dsc_address = NULL;
-static char *dsc_port = NULL;
+struct dnd_cfg *dnd_cfg;
 
 /* TODO extend this tracking table into a subsystem in it's own */
 #define MAX_SESSION 1024
@@ -266,7 +267,7 @@ static void on_disconnect(netc_t *netc)
 	do {
 		sleep(5);
 		printf("connection retry...\n");
-		retry_netc = net_client(dsc_address, dsc_port,
+		retry_netc = net_client(dnd_cfg->dsd_ipaddr, dnd_cfg->dsd_port,
 		    NET_PROTO_TCP, NET_SECURE_RSA, dnd_passport,
 		    on_disconnect, on_input, on_secure);
 	} while (retry_netc == NULL);
@@ -279,13 +280,12 @@ void dsc_fini(void *ext_ptr)
 
 }
 
-int dsc_init(char *ip_address, char *port, char *certificate, char *privatekey, char *trusted_authority)
+int dsc_init(struct dnd_cfg *cfg)
 {
-	dnd_passport = pki_passport_load_from_file(certificate, privatekey, trusted_authority);
-	dsc_address = ip_address;
-	dsc_port = port;
+	dnd_cfg = cfg;
 
-	dsc_netc = net_client(ip_address, port, NET_PROTO_TCP, NET_SECURE_RSA, dnd_passport,
+	dnd_passport = pki_passport_load_from_file(dnd_cfg->certificate, dnd_cfg->privatekey, dnd_cfg->trusted_cert);
+	dsc_netc = net_client(dnd_cfg->dsd_ipaddr, dnd_cfg->dsd_port, NET_PROTO_UDT, NET_SECURE_RSA, dnd_passport,
 				on_disconnect, on_input, on_secure);
 
 	if (dsc_netc == NULL) {
