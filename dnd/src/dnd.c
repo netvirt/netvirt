@@ -41,7 +41,7 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 	struct session *session_src = NULL;
 	struct session *session_list = NULL;
 
-	if (session->status != SESSION_STATUS_AUTHED)
+	if (session->state != SESSION_STATE_AUTHED)
 		return;
 
 	DNDSMessage_get_ethernet(msg, &frame, &frame_size);
@@ -167,10 +167,10 @@ static void on_secure(netc_t *netc)
 	struct session *session;
 	session = netc->ext_ptr;
 
-	if (session->status == SESSION_STATUS_WAIT_STEPUP) {
+	if (session->state == SESSION_STATE_WAIT_STEPUP) {
 
 		/* Set the session as authenticated */
-		session->status = SESSION_STATUS_AUTHED;
+		session->state = SESSION_STATE_AUTHED;
 
 		/* Send a message to acknowledge the client */
 		DNDSMessage_t *msg = NULL;
@@ -250,7 +250,7 @@ static void on_disconnect(netc_t *netc)
 
 	session = netc->ext_ptr;
 
-	if (session->status == SESSION_STATUS_NOT_AUTHED) {
+	if (session->state == SESSION_STATE_NOT_AUTHED) {
 		session_free(session);
 		return;
 	}
