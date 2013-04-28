@@ -90,18 +90,6 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 	}
 }
 
-static int validate_msg(DNDSMessage_t *msg)
-{
-	pdu_PR pdu;
-	DNDSMessage_get_pdu(msg, &pdu);
-
-	if (pdu != pdu_PR_dnm) {
-		jlog(L_DEBUG, "dnd]> not a valid DNM pdu");
-		return -1;
-	}
-	return 0;
-}
-
 void transmit_netinfo_response(netc_t *netc)
 {
 	char *ip_address;
