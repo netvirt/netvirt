@@ -29,7 +29,7 @@ struct session *session_new()
 	session->id = 0;
 	session->mac_list = NULL;
 
-	session->status = SESSION_STATUS_NOT_AUTHED;
+	session->state = SESSION_STATE_NOT_AUTHED;
 
 	return session;
 }

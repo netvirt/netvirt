@@ -42,7 +42,7 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 	AuthRequest_printf(req_msg);
 	AuthRequest_get_certName(req_msg, &certName, &length);
 
-	if (session->status != SESSION_STATUS_NOT_AUTHED) {
+	if (session->state != SESSION_STATE_NOT_AUTHED) {
 		jlog(L_NOTICE, "dnd]> authRequest duplicate");
 		return -1;
 	}
@@ -73,7 +73,7 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 			AuthResponse_set_result(msg, DNDSResult_success);
 			nbyte = net_send_msg(session->netc, msg);
 
-			session->status = SESSION_STATUS_AUTHED;
+			session->state = SESSION_STATE_AUTHED;
 			session->netc->on_secure(session->netc);
 
 		} else {
@@ -82,7 +82,7 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 			nbyte = net_send_msg(session->netc, msg);
 
 			krypt_add_passport(session->netc->kconn, session->context->passport);
-			session->status = SESSION_STATUS_WAIT_STEPUP;
+			session->state = SESSION_STATE_WAIT_STEPUP;
 			net_step_up(session->netc);
 		}
 	} else {
