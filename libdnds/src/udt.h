@@ -26,4 +26,4 @@ typedef struct peer {
 
 } peer_t;
 
-#endif // DNDS_UDTBUS_H
+#endif

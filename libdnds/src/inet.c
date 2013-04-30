@@ -204,7 +204,6 @@ int inet_get_iface_mac_address(char *iface_name, uint8_t *mac_address)
 	return 0;
 #endif
 #if defined(OPENBSD)
-
         struct sockaddr_dl *lladdr;
         struct ifaddrs *ifap, *if_itr;
 
@@ -230,8 +229,9 @@ int inet_get_iface_mac_address(char *iface_name, uint8_t *mac_address)
 
         freeifaddrs(ifap);
         return -1
-
 #endif
+
+	return 0;
 
 }
 

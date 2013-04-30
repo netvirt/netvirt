@@ -195,14 +195,13 @@ static int krypt_set_adh(krypt_t *kconn)
 int krypt_set_rsa(krypt_t *kconn)
 {
 	jlog(L_NOTICE, "krypt]> set rsa");
-	int ret;
 
 	if (kconn->security_level == KRYPT_RSA) {
 		jlog(L_NOTICE, "krypt]> the security level is already set to RSA");
 		return 0;
 	}
 
-	ret = SSL_set_cipher_list(kconn->ssl, "RSA");
+	SSL_set_cipher_list(kconn->ssl, "RSA");
 
 	// Load the trusted certificate store into our SSL_CTX
 	SSL_CTX_set_cert_store(kconn->ctx, kconn->passport->trusted_authority);
@@ -211,14 +210,14 @@ int krypt_set_rsa(krypt_t *kconn)
 	SSL_set_verify(kconn->ssl, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, verify_callback);
 
 	// Set the certificate and key
-	ret = SSL_use_certificate(kconn->ssl, kconn->passport->certificate);
-	ret = SSL_use_PrivateKey(kconn->ssl, kconn->passport->keyring);
+	SSL_use_certificate(kconn->ssl, kconn->passport->certificate);
+	SSL_use_PrivateKey(kconn->ssl, kconn->passport->keyring);
 
 	if (kconn->conn_type == KRYPT_SERVER) {
 		jlog(L_NOTICE, "KRYPT]> set verify\n");
 
 			// Change the session id to avoid resuming ADH session
-		ret = SSL_set_session_id_context(kconn->ssl, (void*)&s_server_auth_session_id_context,
+		SSL_set_session_id_context(kconn->ssl, (void*)&s_server_auth_session_id_context,
 							sizeof(s_server_auth_session_id_context));
 	}
 
@@ -351,9 +350,6 @@ int krypt_encrypt_buf(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 	int error = 0;
 	int status = 0;
 
-	int ret;
-	char peek;
-
 	nbyte = BIO_ctrl_pending(kconn->network_bio);
 
 	switch ( SSL_want(kconn->ssl) ) {
@@ -399,8 +395,6 @@ int krypt_encrypt_buf(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 
 int krypt_secure_connection(krypt_t *kconn, uint8_t protocol, uint8_t conn_type, uint8_t security_level)
 {
-	int ret = 0;
-
 	switch (protocol) {
 
 		case KRYPT_TLS:
@@ -425,15 +419,8 @@ int krypt_secure_connection(krypt_t *kconn, uint8_t protocol, uint8_t conn_type,
 	if (security_level == KRYPT_ADH)
 		krypt_set_adh(kconn);
 
-/*
-	else {
-		jlog(L_ERROR, "krypt]> unknown security level (provided: %d)", security_level);
-		return -1;
-	}
-*/
-
 	// Create the BIO pair
-	ret = BIO_new_bio_pair(&kconn->internal_bio, 0, &kconn->network_bio, 0);
+	BIO_new_bio_pair(&kconn->internal_bio, 0, &kconn->network_bio, 0);
 
 	// Create the SSL object
 	kconn->ssl = SSL_new(kconn->ctx);

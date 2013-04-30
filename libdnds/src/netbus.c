@@ -342,7 +342,6 @@ static void net_on_disconnect(peer_t *peer)
 
 static void net_on_connect(peer_t *peer)
 {
-	int ret;
 	netc_t *netc, *new_netc;
 
 	netc = peer->ext_ptr;
@@ -376,7 +375,7 @@ static void net_on_connect(peer_t *peer)
 
 		new_netc->kconn->passport = netc->kconn->passport;
 
-		ret = krypt_secure_connection(new_netc->kconn, KRYPT_TLS, KRYPT_SERVER, krypt_security_level);
+		krypt_secure_connection(new_netc->kconn, KRYPT_TLS, KRYPT_SERVER, krypt_security_level);
 	}
 
 	new_netc->on_connect(new_netc);
@@ -401,7 +400,6 @@ void net_step_up(netc_t *netc)
 int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 {
 	asn_enc_rval_t ec;
-	peer_t *peer = NULL;
 	size_t nbyte;
 	int ret;
 
