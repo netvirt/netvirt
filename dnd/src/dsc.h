@@ -15,6 +15,7 @@
 
 #include <dnds.h>
 
+int transmit_provisioning(struct session *session, char *provCode, uint32_t length);
 int transmit_peerconnectinfo(e_ConnectState state, char *ipAddress, char *certName);
 int dsc_init(struct dnd_cfg *cfg);
 

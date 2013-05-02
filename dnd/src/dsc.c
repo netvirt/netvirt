@@ -28,7 +28,7 @@ struct dnd_cfg *dnd_cfg;
 /* TODO extend this tracking table into a subsystem in it's own */
 #define MAX_SESSION 1024
 struct session *session_tracking_table[MAX_SESSION];
-static tracking_id = 0;
+static uint32_t tracking_id = 0;
 
 int transmit_provisioning(struct session *session, char *provCode, uint32_t length)
 {
@@ -59,6 +59,8 @@ int transmit_provisioning(struct session *session, char *provCode, uint32_t leng
 
 	session_tracking_table[tracking_id % MAX_SESSION] = session;
 	tracking_id++;
+
+	return 0;
 }
 
 int transmit_node_connectinfo(e_ConnectState state, char *ipAddress, char *certName)
@@ -214,11 +216,7 @@ static void dispatch_operation(netc_t *netc, DNDSMessage_t *msg)
 	jlog(L_DEBUG, "dispatch operation\n");
 	DSMessage_get_operation(msg, &operation);
 
-//	switch (operation) {
-//	case dsop_PR_contextInfo:
-		handle_SearchResponse(netc, msg);
-//		break;
-//	}
+	handle_SearchResponse(netc, msg);
 }
 
 static void on_input(netc_t *netc)
@@ -235,22 +233,17 @@ static void on_input(netc_t *netc)
 		DNDSMessage_get_pdu(msg, &pdu);
 
 		switch (pdu) {
-			case pdu_PR_dsm:	/* DNDS protocol */
-				dispatch_operation(netc, msg);
-				break;
-			default:
-				/* TODO disconnect session */
-				jlog(L_ERROR, "dnd]> invalid PDU");
-				break;
+		case pdu_PR_dsm:	/* DNDS protocol */
+			dispatch_operation(netc, msg);
+			break;
+		default:
+			/* TODO disconnect session */
+			jlog(L_ERROR, "dnd]> invalid PDU");
+			break;
 		}
 
 		mbuf_del(mbuf_itr, *mbuf_itr);
 	}
-}
-
-static void on_connect(netc_t *netc)
-{
-	jlog(L_DEBUG, "dsc on connect");
 }
 
 static void on_disconnect(netc_t *netc)
@@ -273,11 +266,6 @@ static void on_disconnect(netc_t *netc)
 	} while (retry_netc == NULL);
 
 	dsc_netc = retry_netc;
-}
-
-void dsc_fini(void *ext_ptr)
-{
-
 }
 
 int dsc_init(struct dnd_cfg *cfg)

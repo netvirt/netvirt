@@ -92,7 +92,6 @@ int main(int argc, char *argv[])
 	}
 
 	dnd_cfg = calloc(1, sizeof(struct dnd_cfg));
-
 	config_init(&cfg);
 
 	if (parse_config(&cfg, dnd_cfg)) {

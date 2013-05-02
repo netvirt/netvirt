@@ -33,6 +33,7 @@ typedef enum DNDS_retcode {
 // DNDS API functions
 char *DNDSResult_str(e_DNDSResult result);
 char *DNDS_strerror(DNDS_retcode_t retcode);
+char *SearchType_str(e_SearchType searchtype);
 
 // DNDSMessage
 int DNDSMessage_new(DNDSMessage_t **msg);
@@ -66,8 +67,15 @@ int DSMessage_get_operation(DNDSMessage_t *msg, dsop_PR *operation);
 int DNDSObject_set_objectType(DNDSObject_t *object, DNDSObject_PR type);
 int DNDSObject_get_objectType(DNDSObject_t *object, DNDSObject_PR *type);
 
-// ContextInfo
+// NodeConnectInfo
+int NodeConnectInfo_set_certName(DNDSMessage_t *msg, char *name, size_t length);
+int NodeConnectInfo_get_certName(DNDSMessage_t *msg, char **name, size_t *length);
+int NodeConnectInfo_set_ipAddr(DNDSMessage_t *msg, char *ipAddress);
+int NodeConnectInfo_get_ipAddr(DNDSMessage_t *msg, char *ipAddress);
+int NodeConnectInfo_set_state(DNDSMessage_t *msg, e_ConnectState state);
+int NodeConnectInfo_get_state(DNDSMessage_t *msg, e_ConnectState *state);
 
+// ContextInfo
 int ContextInfo_set_id(DNDSMessage_t *msg, uint32_t id);
 int ContextInfo_get_id(DNDSMessage_t *msg, uint32_t *id);
 int ContextInfo_set_topology(DNDSMessage_t *msg, e_Topology topology);
@@ -185,6 +193,8 @@ int SearchRequest_set_object(DNDSMessage_t *msg, DNDSObject_t *object);
 int SearchRequest_get_object(DNDSMessage_t *msg, DNDSObject_t **object);
 
 // SearchResponse
+int SearchResponse_set_searchType(DNDSMessage_t *msg, e_SearchType SearchType);
+int SearchResponse_get_searchType(DNDSMessage_t *msg, e_SearchType *SearchType);
 int SearchResponse_set_result(DNDSMessage_t *msg, e_DNDSResult result);
 int SearchResponse_get_result(DNDSMessage_t *msg, e_DNDSResult *result);
 int SearchResponse_add_object(DNDSMessage_t *msg, DNDSObject_t *object);
@@ -272,6 +282,9 @@ int Host_set_status(DNDSObject_t *HostObject, uint8_t status);
 int Host_get_status(DNDSObject_t *HostObject, uint8_t *status);
 
 // Node
+
+int Node_set_contextId(DNDSObject_t *object, uint32_t contextId);
+int Node_get_contextId(DNDSObject_t *object, uint32_t *contextId);
 int Node_set_id(DNDSObject_t *NodeObject, uint32_t id);
 int Node_get_id(DNDSObject_t *NodeObject, uint32_t *id);
 int Node_set_name(DNDSObject_t *NodeObject, char *name, size_t length);
@@ -280,6 +293,8 @@ int Node_set_certificate(DNDSObject_t *NodeObject, char *certificate, size_t len
 int Node_get_certificate(DNDSObject_t *NodeObject, char **certificate, size_t *length);
 int Node_set_certificateKey(DNDSObject_t *NodeObject, uint8_t *certificateKey, size_t length);
 int Node_get_certificateKey(DNDSObject_t *NodeObject, uint8_t **certificateKey, size_t *length);
+int Node_set_trustedCert(DNDSObject_t *object, uint8_t *trustedCert, size_t length);
+int Node_get_trustedCert(DNDSObject_t *object, uint8_t **trustedCert, size_t *length);
 int Node_set_ipAddress(DNDSObject_t *NodeObject, char *ipAddress);
 int Node_get_ipAddress(DNDSObject_t *NodeObject, char *ipAddress);
 int Node_set_status(DNDSObject_t *NodeObject, uint8_t status);

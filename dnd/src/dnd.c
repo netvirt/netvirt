@@ -108,9 +108,9 @@ void transmit_netinfo_response(netc_t *netc)
 	DNMessage_set_operation(msg, dnop_PR_netinfoResponse);
 
 	net_send_msg(session->netc, msg);
+	DNDSMessage_del(msg);
 	transmit_node_connectinfo(ConnectState_connected,
 				session->ip, session->cert_name);
-	DNDSMessage_del(msg);
 }
 
 void handle_netinfo_request(struct session *session, DNDSMessage_t *msg)
@@ -186,9 +186,7 @@ static void on_secure(netc_t *netc)
 		nbyte = net_send_msg(session->netc, msg);
 		DNDSMessage_del(msg);
 
-		/*context_show_session_list(session->context);*/
 		context_add_session(session->context, session);
-		/*context_show_session_list(session->context);*/
 		jlog(L_DEBUG, "dnd]> session ID [%d]\n", session->id);
 	}
 }

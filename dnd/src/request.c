@@ -14,10 +14,11 @@
 #include <logger.h>
 
 #include "context.h"
+#include "dsc.h"
 #include "request.h"
 #include "session.h"
 
-int provRequest(struct session *session, DNDSMessage_t *req_msg)
+void provRequest(struct session *session, DNDSMessage_t *req_msg)
 {
 	jlog(L_DEBUG, "PROV REQUEST !\n");
 
@@ -34,9 +35,6 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 {
 	char *certName;
 	size_t length;
-	size_t nbyte;
-	uint8_t valid;
-	uint8_t step_up;
 	uint32_t context_id;
 
 	AuthRequest_printf(req_msg);
@@ -71,7 +69,7 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 		if (session->netc->security_level == NET_UNSECURE) {
 
 			AuthResponse_set_result(msg, DNDSResult_success);
-			nbyte = net_send_msg(session->netc, msg);
+			net_send_msg(session->netc, msg);
 
 			session->state = SESSION_STATE_AUTHED;
 			session->netc->on_secure(session->netc);
@@ -79,7 +77,7 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 		} else {
 
 			AuthResponse_set_result(msg, DNDSResult_secureStepUp);
-			nbyte = net_send_msg(session->netc, msg);
+			net_send_msg(session->netc, msg);
 
 			krypt_add_passport(session->netc->kconn, session->context->passport);
 			session->state = SESSION_STATE_WAIT_STEPUP;
@@ -88,7 +86,7 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 	} else {
 
 		AuthResponse_set_result(msg, DNDSResult_insufficientAccessRights);
-		nbyte = net_send_msg(session->netc, msg);
+		net_send_msg(session->netc, msg);
 		DNDSMessage_del(msg);
 
 		return -1;
