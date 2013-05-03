@@ -17,5 +17,6 @@
 
 int authRequest(struct session *session, DNDSMessage_t *msg);
 void p2pRequest(struct session *session_a, struct session *session_b);
+void provRequest(struct session *session, DNDSMessage_t *req_msg);
 
 #endif

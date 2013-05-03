@@ -113,19 +113,7 @@ int context_create(uint32_t id, char *address, char *netmask,
 	return 0;
 }
 
-void context_fini(void *ext_ptr)
-{
-	int i = 0;
-	context_t *context;
-
-	while (context_table[i] != NULL) {
-		context = context_table[i];
-		i++;
-	}
-}
-
 int context_init()
 {
-
 	return 0;
 }

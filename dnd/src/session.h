@@ -52,5 +52,6 @@ void session_free(struct session *session);
 void session_terminate(struct session *session);
 void *session_itemdup(const void *item);
 void session_itemrel(void *item);
+void session_add_mac(struct session *session, uint8_t *mac_addr);
 
 #endif

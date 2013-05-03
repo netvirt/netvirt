@@ -115,8 +115,8 @@ static void handle_SearchResponse_Node(netc_t *netc, DNDSMessage_t *msg)
 	uint32_t length;
 
 	char *certificate = NULL;
-	char *certificateKey = NULL;
-	char *trustedCert = NULL;
+	uint8_t *certificateKey = NULL;
+	uint8_t *trustedCert = NULL;
         char ipAddress[INET_ADDRSTRLEN];
 
 	SearchResponse_get_object_count(msg, &count);

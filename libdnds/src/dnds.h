@@ -282,23 +282,24 @@ int Host_set_status(DNDSObject_t *HostObject, uint8_t status);
 int Host_get_status(DNDSObject_t *HostObject, uint8_t *status);
 
 // Node
-
 int Node_set_contextId(DNDSObject_t *object, uint32_t contextId);
 int Node_get_contextId(DNDSObject_t *object, uint32_t *contextId);
-int Node_set_id(DNDSObject_t *NodeObject, uint32_t id);
-int Node_get_id(DNDSObject_t *NodeObject, uint32_t *id);
-int Node_set_name(DNDSObject_t *NodeObject, char *name, size_t length);
-int Node_get_name(DNDSObject_t *NodeObject, char **name, size_t *length);
-int Node_set_certificate(DNDSObject_t *NodeObject, char *certificate, size_t length);
-int Node_get_certificate(DNDSObject_t *NodeObject, char **certificate, size_t *length);
-int Node_set_certificateKey(DNDSObject_t *NodeObject, uint8_t *certificateKey, size_t length);
-int Node_get_certificateKey(DNDSObject_t *NodeObject, uint8_t **certificateKey, size_t *length);
+int Node_set_description(DNDSObject_t *object, char *description, size_t length);
+int Node_get_description(DNDSObject_t *object, char **description, size_t *length);
+int Node_set_uuid(DNDSObject_t *object, char *uuid, size_t length);
+int Node_get_uuid(DNDSObject_t *object, char **uuid, size_t *length);
+int Node_set_provCode(DNDSObject_t *object, char *provCode, size_t length);
+int Node_get_provCode(DNDSObject_t *object, char **provCode, size_t *length);
+int Node_set_certificate(DNDSObject_t *object, char *certificate, size_t length);
+int Node_get_certificate(DNDSObject_t *object, char **certificate, size_t *length);
+int Node_set_certificateKey(DNDSObject_t *object, uint8_t *certificateKey, size_t length);
+int Node_get_certificateKey(DNDSObject_t *object, uint8_t **certificateKey, size_t *length);
 int Node_set_trustedCert(DNDSObject_t *object, uint8_t *trustedCert, size_t length);
 int Node_get_trustedCert(DNDSObject_t *object, uint8_t **trustedCert, size_t *length);
-int Node_set_ipAddress(DNDSObject_t *NodeObject, char *ipAddress);
-int Node_get_ipAddress(DNDSObject_t *NodeObject, char *ipAddress);
-int Node_set_status(DNDSObject_t *NodeObject, uint8_t status);
-int Node_get_status(DNDSObject_t *NodeObject, uint8_t *status);
+int Node_set_ipAddress(DNDSObject_t *object, char *ipAddress);
+int Node_get_ipAddress(DNDSObject_t *object, char *ipAddress);
+int Node_set_status(DNDSObject_t *object, uint8_t status);
+int Node_get_status(DNDSObject_t *object, uint8_t *status);
 
 // Permission
 int Permission_set_id();

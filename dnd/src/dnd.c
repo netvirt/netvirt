@@ -29,7 +29,6 @@
 
 static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 {
-	int ret;
 	uint8_t *frame;
 	size_t frame_size;
 
@@ -73,7 +72,7 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 		&& session_dst->netc != NULL) {		/* AND the session is up */
 
 			/*jlog(L_DEBUG, "dnd]> forwarding the packet to [%s]", session_dst->ip);*/
-			ret = net_send_msg(session_dst->netc, msg);
+			net_send_msg(session_dst->netc, msg);
 
 	/* Switch flooding */
 	} else if (macaddr_dst_type == ADDR_BROADCAST ||	/* This packet has to be broadcasted */
@@ -81,7 +80,7 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 
 			session_list = session->context->session_list;
 			while (session_list != NULL) {
-				ret = net_send_msg(session_list->netc, msg);
+				net_send_msg(session_list->netc, msg);
 				/*jlog(L_DEBUG, "dnd]> flooding the packet to [%s]", session_list->ip);*/
 				session_list = session_list->next;
 			}
@@ -92,11 +91,7 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 
 void transmit_netinfo_response(netc_t *netc)
 {
-	char *ip_address;
 	struct session *session = netc->ext_ptr;
-
-	context_t *context = NULL;
-	context = session->context;
 
 	DNDSMessage_t *msg = NULL;
 	DNDSMessage_new(&msg);
@@ -163,7 +158,6 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 
 static void on_secure(netc_t *netc)
 {
-	size_t nbyte;
 	struct session *session;
 	session = netc->ext_ptr;
 
@@ -183,7 +177,7 @@ static void on_secure(netc_t *netc)
 		DNMessage_set_operation(msg, dnop_PR_authResponse);
 
 		AuthResponse_set_result(msg, DNDSResult_success);
-		nbyte = net_send_msg(session->netc, msg);
+		net_send_msg(session->netc, msg);
 		DNDSMessage_del(msg);
 
 		context_add_session(session->context, session);
@@ -242,7 +236,6 @@ static void on_disconnect(netc_t *netc)
 {
 	jlog(L_DEBUG, "dnd]> disconnect");
 
-	int ret = 0;
 	struct session *session = NULL;
 	struct mac_list *mac_itr = NULL;
 
