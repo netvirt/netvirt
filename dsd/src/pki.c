@@ -27,18 +27,6 @@
  * use journal instead of printf
  */
 
-static void openssl_error_stack()
-{
-	const char *file;
-	int line;
-	unsigned long e;
-
-	do {
-		e = ERR_get_error_line(&file, &line);
-		jlog(L_ERROR, "openssl]> %s", ERR_error_string(e, NULL));
-	} while (e);
-}
-
 static EVP_PKEY *pki_generate_keyring()
 {
 	jlog(L_NOTICE, "pki_generate_keyring\n");
@@ -86,12 +74,12 @@ static X509_REQ *pki_certificate_request(EVP_PKEY *keyring, digital_id_t *digita
 	// set certificate request 'Subject:'
 	subject = X509_NAME_new();
 
-	X509_NAME_add_entry_by_txt(subject, "commonName", MBSTRING_ASC, digital_id->commonName, -1, -1, 0);
-	X509_NAME_add_entry_by_txt(subject, "countryName", MBSTRING_ASC, digital_id->countryName, -1, -1, 0);
-	X509_NAME_add_entry_by_txt(subject, "stateOrProvinceName", MBSTRING_ASC, digital_id->stateOrProvinceName, -1, -1, 0);
-	X509_NAME_add_entry_by_txt(subject, "localityName", MBSTRING_ASC, digital_id->localityName, -1, -1, 0);
-	X509_NAME_add_entry_by_txt(subject, "emailAddress", MBSTRING_ASC, digital_id->emailAddress, -1, -1, 0);
-	X509_NAME_add_entry_by_txt(subject, "organizationName", MBSTRING_ASC, digital_id->organizationName, -1, -1, 0);
+	X509_NAME_add_entry_by_txt(subject, "commonName", MBSTRING_ASC, (unsigned char*)digital_id->commonName, -1, -1, 0);
+	X509_NAME_add_entry_by_txt(subject, "countryName", MBSTRING_ASC, (unsigned char*)digital_id->countryName, -1, -1, 0);
+	X509_NAME_add_entry_by_txt(subject, "stateOrProvinceName", MBSTRING_ASC, (unsigned char*)digital_id->stateOrProvinceName, -1, -1, 0);
+	X509_NAME_add_entry_by_txt(subject, "localityName", MBSTRING_ASC, (unsigned char*)digital_id->localityName, -1, -1, 0);
+	X509_NAME_add_entry_by_txt(subject, "emailAddress", MBSTRING_ASC, (unsigned char*)digital_id->emailAddress, -1, -1, 0);
+	X509_NAME_add_entry_by_txt(subject, "organizationName", MBSTRING_ASC, (unsigned char*)digital_id->organizationName, -1, -1, 0);
 
 	X509_REQ_set_subject_name(cert_req, subject);
 	X509_NAME_free(subject);

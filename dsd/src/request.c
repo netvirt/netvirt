@@ -20,7 +20,7 @@
 #include "pki.h"
 #include "request.h"
 
-void CB_searchRequest_context_by_client_id(DNDSMessage_t *msg,
+int CB_searchRequest_context_by_client_id(void *msg,
 						char *id,
 						char *topology_id,
 						char *description,
@@ -48,6 +48,8 @@ void CB_searchRequest_context_by_client_id(DNDSMessage_t *msg,
 	Context_set_trustedCert(objContext, trustedCert, strlen(trustedCert));
 
 	SearchResponse_add_object(msg, objContext);
+
+	return 0;
 }
 
 void nodeConnectInfo(struct session *session, DNDSMessage_t *req_msg)
@@ -70,7 +72,6 @@ void AddRequest_client(struct session *session, DNDSMessage_t *msg)
 	int ret = 0;
 	size_t length = 0;
 	uint32_t id = 0;
-	char *username = NULL;
 	char *password = NULL;
 	char *firstname = NULL;
 	char *lastname = NULL;
@@ -118,8 +119,6 @@ void AddRequest_context(struct session *session, DNDSMessage_t *msg)
 	DNDSObject_t *obj;
 	AddRequest_get_object(msg, &obj);
 	DNDSObject_printf(obj);
-
-	int ret;
 
 	size_t length;
 
@@ -181,7 +180,7 @@ void AddRequest_context(struct session *session, DNDSMessage_t *msg)
 	ipcalc(ippool, "44.128.0.0", "255.255.0.0");
 	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
 
-	ret = dao_add_context(client_id_str,
+	dao_add_context(client_id_str,
 				description,
 				"1",
 				"44.128.0.0/16",
@@ -303,7 +302,7 @@ void AddRequest_node(struct session *session, DNDSMessage_t *msg)
 
 	ippool = ippool_new("44.128.0.0", "255.255.0.0");
 	free(ippool->pool);
-	ippool->pool = ippool_bin;
+	ippool->pool = (uint8_t*)ippool_bin;
 	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
 	ip = ippool_get_ip(ippool);
 
@@ -313,7 +312,7 @@ void AddRequest_node(struct session *session, DNDSMessage_t *msg)
 		return;
 	}
 
-	ret = dao_update_context_ippool(context_id_str, ippool->pool, pool_size);
+	ret = dao_update_context_ippool(context_id_str, (char*)ippool->pool, pool_size);
 	if (ret == -1) {
 		jlog(L_ERROR, "failled to update embassy ippool\n");
 		return;
@@ -435,7 +434,7 @@ void searchRequest_context_by_client_id(struct session *session, DNDSMessage_t *
 	DNDSMessage_del(msg);
 }
 
-void CB_searchRequest_context(DNDSMessage_t *msg,
+void CB_searchRequest_context(void *msg,
 				char *id,
 				char *topology_id,
 				char *description,
@@ -468,15 +467,6 @@ void CB_searchRequest_context(DNDSMessage_t *msg,
 
 void searchRequest_context(struct session *session, DNDSMessage_t *req_msg)
 {
-	char *id = NULL;
-	char *topology_id = NULL;
-	char *description = NULL;
-	char *network = NULL;
-	char *netmask = NULL;
-	char *serverCert = NULL;
-	char *serverPrivkey = NULL;
-	char *trustedCert = NULL;
-
         DNDSMessage_t *msg;
         DNDSMessage_new(&msg);
         DNDSMessage_set_channel(msg, 0);
@@ -494,7 +484,7 @@ void searchRequest_context(struct session *session, DNDSMessage_t *req_msg)
 	DNDSMessage_del(msg);
 }
 
-void CB_searchRequest_node_by_context_id(DNDSMessage_t *msg, char *uuid, char *description, char *provcode, char *ipaddress)
+int CB_searchRequest_node_by_context_id(void *msg, char *uuid, char *description, char *provcode, char *ipaddress)
 {
 	DNDSObject_t *objNode;
 	DNDSObject_new(&objNode);
@@ -507,6 +497,8 @@ void CB_searchRequest_node_by_context_id(DNDSMessage_t *msg, char *uuid, char *d
 
 	SearchResponse_set_searchType(msg, SearchType_object);
 	SearchResponse_add_object(msg, objNode);
+
+	return 0;
 }
 
 void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
@@ -539,11 +531,6 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 	if (contextid > 0) { /* searching by context ID */
 
 		jlog(L_DEBUG, "context ID to search: %d\n", contextid);
-
-		char *description = NULL;
-		char *uuid = NULL;
-		char *provcode = NULL;
-
 		snprintf(str_contextid, sizeof(str_contextid), "%d", contextid);
 
 		ret = dao_fetch_node_from_context_id(str_contextid, msg,
@@ -577,8 +564,8 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 		}
 
 		Node_set_certificate(objNode, certificate, strlen(certificate));
-		Node_set_certificateKey(objNode, private_key, strlen(private_key));
-		Node_set_trustedCert(objNode, trustedcert, strlen(trustedcert));
+		Node_set_certificateKey(objNode, (uint8_t*)private_key, strlen(private_key));
+		Node_set_trustedCert(objNode, (uint8_t*)trustedcert, strlen(trustedcert));
 		Node_set_ipAddress(objNode, ipAddress);
 
 		SearchResponse_set_result(msg, DNDSResult_success);
@@ -617,6 +604,8 @@ void searchRequest(struct session *session, DNDSMessage_t *req_msg)
 			break;
 		case DNDSObject_PR_context:
 			searchRequest_context_by_client_id(session, req_msg);
+			break;
+		case DNDSObject_PR_NOTHING:
 			break;
 		}
 	}

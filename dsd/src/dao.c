@@ -25,6 +25,8 @@
 #include "dsd.h"
 #include "pki.h"
 
+PGconn *dbconn = NULL;
+
 char *uuid_v4(void)
 {
 	uuid_t *uuid = NULL;
@@ -39,7 +41,142 @@ char *uuid_v4(void)
 	return str;
 }
 
-PGconn *dbconn = NULL;
+/*
+create or replace function inet_mask(inet,inet) returns inet language sql
+immutable as $f$ select set_masklen($1,i)
+from generate_series(0, case when family($2)=4 then 32 else 128 end) i
+where netmask(set_masklen($1::cidr, i)) = $2; $f$;
+*/
+
+int dao_prepare_statements()
+{
+	PQprepare(dbconn,
+			"dao_add_client",
+			"INSERT INTO client "
+			"(firstname, lastname, email, company, phone, country, state_province, city, postal_code, password) "
+			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, crypt($10, gen_salt('bf')));",
+			0,
+			NULL);
+
+	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+
+	PQprepare(dbconn,
+			"dao_fetch_client_id",
+			"SELECT id "
+			"FROM CLIENT "
+			"WHERE email = $1 "
+			"AND password = crypt($2, password);",
+			0,
+			NULL);
+
+	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+
+	PQprepare(dbconn,
+			"dao_add_context",
+			"INSERT INTO CONTEXT "
+			"(client_id, description, topology_id, network, "
+				"embassy_certificate, embassy_privatekey, embassy_serial, "
+				"passport_certificate, passport_privatekey, ippool)"
+			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::bytea);",
+			0,
+			NULL);
+
+	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+
+	PQprepare(dbconn,
+			"dao_fetch_context_id",
+			"SELECT id "
+			"FROM CONTEXT "
+			"WHERE client_id = $1 "
+			"AND description = $2;",
+			0,
+			NULL);
+
+	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+
+	PQprepare(dbconn,
+			"dao_fetch_context_embassy",
+			"SELECT embassy_certificate, embassy_privatekey, embassy_serial, ippool "
+			"FROM CONTEXT "
+			"WHERE id = $1;",
+			0,
+			NULL);
+
+	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+
+	PQprepare(dbconn,
+			"dao_add_node",
+			"INSERT INTO NODE "
+			"(context_id, uuid, certificate, privatekey, provcode, description, ipaddress) "
+			"VALUES ($1, $2, $3, $4, $5, $6, $7);",
+			0,
+			NULL);
+
+	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+
+	PQprepare(dbconn,
+			"dao_update_context_ippool",
+			"UPDATE context "
+			"SET ippool = $2::bytea "
+			"WHERE Id = $1;",
+			0,
+			NULL);
+
+	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+
+	PQprepare(dbconn,
+			"dao_update_embassy_serial",
+			"UPDATE context "
+			"SET embassy_serial = $2 "
+			"WHERE id = $1;",
+			0,
+			NULL);
+
+	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+
+	PQprepare(dbconn,
+			"dao_fetch_context_by_client_id",
+			"SELECT id, topology_id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
+			"FROM context "
+			"WHERE client_id = $1;",
+			0,
+			NULL);
+
+	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+
+	PQprepare(dbconn,
+			"dao_fetch_context_by_client_id_desc",
+			"SELECT id, topology_id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
+			"FROM context "
+			"WHERE client_id = $1 and description = $2;",
+			0,
+			NULL);
+
+	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+
+
+	PQprepare(dbconn,
+			"dao_fetch_context",
+			"SELECT id, topology_id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
+			"FROM context;",
+			0,
+			NULL);
+
+	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+
+	PQprepare(dbconn,
+			"dao_fetch_node_from_context_id",
+			"SELECT uuid, description, provcode, ipaddress "
+			"FROM node "
+			"WHERE context_id = $1;",
+			0,
+			NULL);
+
+	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+
+	return 0;
+}
+
 int dao_connect(struct dsd_cfg *dsd_cfg)
 {
 	char conn_str[128];
@@ -59,142 +196,6 @@ int dao_connect(struct dsd_cfg *dsd_cfg)
 	dao_prepare_statements();
 
 	return 0;
-}
-
-/*
-create or replace function inet_mask(inet,inet) returns inet language sql
-immutable as $f$ select set_masklen($1,i)
-from generate_series(0, case when family($2)=4 then 32 else 128 end) i
-where netmask(set_masklen($1::cidr, i)) = $2; $f$;
-*/
-
-int dao_prepare_statements()
-{
-	PGresult *result;
-
-	result = PQprepare(dbconn,
-			"dao_add_client",
-			"INSERT INTO client "
-			"(firstname, lastname, email, company, phone, country, state_province, city, postal_code, password) "
-			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, crypt($10, gen_salt('bf')));",
-			0,
-			NULL);
-
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
-
-	result = PQprepare(dbconn,
-			"dao_fetch_client_id",
-			"SELECT id "
-			"FROM CLIENT "
-			"WHERE email = $1 "
-			"AND password = crypt($2, password);",
-			0,
-			NULL);
-
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
-
-	result = PQprepare(dbconn,
-			"dao_add_context",
-			"INSERT INTO CONTEXT "
-			"(client_id, description, topology_id, network, "
-				"embassy_certificate, embassy_privatekey, embassy_serial, "
-				"passport_certificate, passport_privatekey, ippool)"
-			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::bytea);",
-			0,
-			NULL);
-
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
-
-	result = PQprepare(dbconn,
-			"dao_fetch_context_id",
-			"SELECT id "
-			"FROM CONTEXT "
-			"WHERE client_id = $1 "
-			"AND description = $2;",
-			0,
-			NULL);
-
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
-
-	result = PQprepare(dbconn,
-			"dao_fetch_context_embassy",
-			"SELECT embassy_certificate, embassy_privatekey, embassy_serial, ippool "
-			"FROM CONTEXT "
-			"WHERE id = $1;",
-			0,
-			NULL);
-
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
-
-	result = PQprepare(dbconn,
-			"dao_add_node",
-			"INSERT INTO NODE "
-			"(context_id, uuid, certificate, privatekey, provcode, description, ipaddress) "
-			"VALUES ($1, $2, $3, $4, $5, $6, $7);",
-			0,
-			NULL);
-
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
-
-	result = PQprepare(dbconn,
-			"dao_update_context_ippool",
-			"UPDATE context "
-			"SET ippool = $2::bytea "
-			"WHERE Id = $1;",
-			0,
-			NULL);
-
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
-
-	result = PQprepare(dbconn,
-			"dao_update_embassy_serial",
-			"UPDATE context "
-			"SET embassy_serial = $2 "
-			"WHERE id = $1;",
-			0,
-			NULL);
-
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
-
-	result = PQprepare(dbconn,
-			"dao_fetch_context_by_client_id",
-			"SELECT id, topology_id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
-			"FROM context "
-			"WHERE client_id = $1;",
-			0,
-			NULL);
-
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
-
-	result = PQprepare(dbconn,
-			"dao_fetch_context_by_client_id_desc",
-			"SELECT id, topology_id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
-			"FROM context "
-			"WHERE client_id = $1 and description = $2;",
-			0,
-			NULL);
-
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
-
-
-	result = PQprepare(dbconn,
-			"dao_fetch_context",
-			"SELECT id, topology_id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
-			"FROM context;",
-			0,
-			NULL);
-
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
-
-	result = PQprepare(dbconn,
-			"dao_fetch_node_from_context_id",
-			"SELECT uuid, description, provcode, ipaddress "
-			"FROM node "
-			"WHERE context_id = $1;",
-			0,
-			NULL);
-
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
 }
 
 void dao_dump_statements()
@@ -421,6 +422,8 @@ int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatek
 
 		return -1;
 	}
+
+	return 0;
 }
 
 int dao_add_context(char *client_id,
@@ -432,7 +435,7 @@ int dao_add_context(char *client_id,
 			char *embassy_serial,
 			char *passport_certificate,
 			char *passport_privatekey,
-			char *ippool,
+			const unsigned char *ippool,
 			size_t pool_size)
 {
 	const char *paramValues[10];
@@ -497,6 +500,8 @@ int dao_add_context(char *client_id,
 
 		return -1;
 	}
+
+	return 0;
 }
 
 int dao_fetch_context_id(char **context_id, char *client_id, char *description)
@@ -548,6 +553,8 @@ int dao_fetch_context_id(char **context_id, char *client_id, char *description)
 	if (tuples > 0 && fields > 0) {
 		*context_id = PQgetvalue(result, 0, 0);
 	}
+
+	return 0;
 }
 
 int dao_fetch_context_embassy(char *context_id,
@@ -559,7 +566,7 @@ int dao_fetch_context_embassy(char *context_id,
 	const char *paramValues[1];
 	int paramLengths[1];
 	PGresult *result;
-	int tuples, fields, i;
+	int tuples, fields;
 	char *ippool_ptr;
 	size_t ippool_size;
 
@@ -745,6 +752,8 @@ int dao_fetch_embassy(char *context_id,
 			PQresultErrorMessage(result));
 		break;
 	}
+
+	return 0;
 }
 
 int dao_fetch_node_from_context_id(char *context_id, void *data, int (*cb_data_handler)(void *data,
@@ -756,7 +765,6 @@ int dao_fetch_node_from_context_id(char *context_id, void *data, int (*cb_data_h
 	const char *paramValues[1];
 	int paramLengths[1];
 	int tuples;
-	int fields;
 	PGresult *result;
 
 	if (!context_id) {
@@ -792,7 +800,6 @@ int dao_fetch_node_from_context_id(char *context_id, void *data, int (*cb_data_h
 	}
 
 	tuples = PQntuples(result);
-	fields = PQnfields(result);
 
 	int i;
 	for (i = 0; i < tuples; i++) {
@@ -882,7 +889,6 @@ int dao_fetch_context_by_client_id(
 	const char *paramValues[1];
 	int paramLengths[1];
 	int tuples;
-	int fields;
 	PGresult *result;
 
 	if (!client_id) {
@@ -914,7 +920,6 @@ int dao_fetch_context_by_client_id(
 	}
 
 	tuples = PQntuples(result);
-	fields = PQnfields(result);
 
 	int i;
 	for (i = 0; i < tuples; i++) {
@@ -949,7 +954,6 @@ int dao_fetch_context_by_client_id_desc(char *client_id, char *description,
 	const char *paramValues[2];
 	int paramLengths[2];
 	int tuples;
-	int fields;
 	PGresult *result;
 
 	if (!client_id) {
@@ -984,7 +988,6 @@ int dao_fetch_context_by_client_id_desc(char *client_id, char *description,
 	}
 
 	tuples = PQntuples(result);
-	fields = PQnfields(result);
 
 	int i;
 	for (i = 0; i < tuples; i++) {
@@ -1015,7 +1018,6 @@ int dao_fetch_context(void *data, void (*cb_data_handler)(void *data,
 							char *trustedCert))
 {
 	int tuples;
-	int fields;
 	PGresult *result;
 
 	result = PQexecPrepared(dbconn, "dao_fetch_context", 0, NULL, NULL, NULL, 0);
@@ -1039,7 +1041,6 @@ int dao_fetch_context(void *data, void (*cb_data_handler)(void *data,
 	}
 
 	tuples = PQntuples(result);
-	fields = PQnfields(result);
 
 	int i;
 	for (i = 0; i < tuples; i++) {

@@ -301,6 +301,32 @@ int Node_get_ipAddress(DNDSObject_t *object, char *ipAddress);
 int Node_set_status(DNDSObject_t *object, uint8_t status);
 int Node_get_status(DNDSObject_t *object, uint8_t *status);
 
+// Node
+int Client_set_id(DNDSObject_t *object, uint32_t id);
+int Client_get_id(DNDSObject_t *object, uint32_t *id);
+int Client_set_password(DNDSObject_t *object, char *password, size_t length);
+int Client_get_password(DNDSObject_t *object, char **password, size_t *length);
+int Client_set_firstname(DNDSObject_t *object, char *firstname, size_t length);
+int Client_get_firstname(DNDSObject_t *object, char **firstname, size_t *length);
+int Client_set_lastname(DNDSObject_t *object, char *lastname, size_t length);
+int Client_get_lastname(DNDSObject_t *object, char **lastname, size_t *length);
+int Client_set_email(DNDSObject_t *object, char *email, size_t length);
+int Client_get_email(DNDSObject_t *object, char **email, size_t *length);
+int Client_set_company(DNDSObject_t *object, char *company, size_t length);
+int Client_get_company(DNDSObject_t *object, char **company, size_t *length);
+int Client_set_phone(DNDSObject_t *object, char *phone, size_t length);
+int Client_get_phone(DNDSObject_t *object, char **phone, size_t *length);
+int Client_set_country(DNDSObject_t *object, char *country, size_t length);
+int Client_get_country(DNDSObject_t *object, char **country, size_t *length);
+int Client_set_stateProvince(DNDSObject_t *object, char *stateProvince, size_t length);
+int Client_get_stateProvince(DNDSObject_t *object, char **stateProvince, size_t *length);
+int Client_set_city(DNDSObject_t *object, char *city, size_t length);
+int Client_get_city(DNDSObject_t *object, char **city, size_t *length);
+int Client_set_postalCode(DNDSObject_t *object, char *postalCode, size_t length);
+int Client_get_postalCode(DNDSObject_t *object, char **postalCode, size_t *length);
+int Client_set_status(DNDSObject_t *object, uint8_t status);
+int Client_get_status(DNDSObject_t *object, uint8_t *status);
+
 // Permission
 int Permission_set_id();
 int Permission_set_name();
@@ -346,6 +372,7 @@ void DNMessage_printf(DNDSMessage_t *msg);
 void PeerConnectInfo_printf(DNDSMessage_t *msg);
 void AddRequest_printf(DNDSMessage_t *msg);
 void AddResponse_printf(DNDSMessage_t *msg);
+void NodeConnectInfo_printf(DNDSMessage_t *msg);
 void P2pRequest_printf(DNDSMessage_t *msg);
 void P2pResponse_printf(DNDSMessage_t *msg);
 void AuthRequest_printf(DNDSMessage_t *msg);

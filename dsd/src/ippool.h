@@ -32,5 +32,6 @@ typedef struct ippool {
 extern char *ippool_get_ip(ippool_t *);
 extern void ippool_release_ip(ippool_t *, char *);
 extern ippool_t *ippool_new(char *, char *);
+extern void ipcalc(ippool_t *ippool, char *address, char *netmask);
 
 #endif
