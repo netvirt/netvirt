@@ -13,14 +13,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-
-#include <arpa/inet.h>
-
-#include <netinet/in.h>
-#include <net/if.h>
-#include <net/if_arp.h>
-#include <netinet/if_ether.h>
 
 #include "DNDSMessage.h"
 #include "dnds.h"
@@ -28,6 +20,27 @@
 /* TODO
  * check for DNDS_value_not_present (on id ?)
  */
+
+#ifdef _WIN32
+#include "Winsock2.h"
+const char* inet_ntop(int af, const void* src, char* dst, int cnt){
+ 
+    struct sockaddr_in srcaddr;
+ 
+    memset(&srcaddr, 0, sizeof(struct sockaddr_in));
+    memcpy(&(srcaddr.sin_addr), src, sizeof(srcaddr.sin_addr));
+ 
+    srcaddr.sin_family = af;
+    if (WSAAddressToString((struct sockaddr*) &srcaddr, sizeof(struct sockaddr_in), 0, dst, (LPDWORD) &cnt) != 0) {
+        DWORD rv = WSAGetLastError();
+        printf("WSAAddressToString() : %d\n",rv);
+        return NULL;
+    }
+    return dst;
+}
+#else
+#include <arpa/inet.h>
+#endif
 
 // DNDSMessage
 int DNDSMessage_new(DNDSMessage_t **msg)

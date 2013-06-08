@@ -1,12 +1,6 @@
 #ifndef DNDS_PROTOCOL_H
 #define DNDS_PROTOCOL_H
 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <net/if.h>
-#include <net/if_arp.h>
-#include <netinet/if_ether.h>
-
 #include "DNDSMessage.h"
 
 #ifndef ETHER_ADDR_LEN
