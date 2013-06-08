@@ -1,6 +1,8 @@
 #ifndef DNDS_UDTBUS_H
 #define DNDS_UDTBUS_H
 
+#include <stdint.h>
+
 typedef struct peer {
 
 	int type;

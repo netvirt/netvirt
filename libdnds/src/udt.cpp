@@ -10,10 +10,16 @@
  *
  */
 
+#if _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
+#include <netdb.h>
+#endif
+
 #include <unistd.h>
 #include <cstdlib>
 #include <cstring>
-#include <netdb.h>
 #include <iostream>
 #include <list>
 
