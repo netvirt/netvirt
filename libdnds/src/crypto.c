@@ -10,11 +10,21 @@
  *
  */
 
+/*
+	x509.h undef X509_NAME because wincrypt.h define it.
+	use winsock2.h, because it includes wincrypt.h and other usefull stuff
+*/
+
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
+
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
 #include "crypto.h"
 #include "logger.h"
+
 
 static int s_server_session_id_context = 1;
 static int s_server_auth_session_id_context = 2;
