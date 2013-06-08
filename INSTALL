@@ -2,16 +2,16 @@
  INSTALLATION ON THE LINUX PLATEFORM
  -----------------------------------
 
- To install DNDS you will need:
-
-  * CMake 2.6 or higher
-
  Quick Start
  -----------
 
- apt-get install cmake
+ apt-get install cmake # 2.6 or higher
  apt-get install libpq-dev
  apt-get install libossp-uuid-dev
+ apt-get install libssl-dev
+ apt-get install libconfig-dev
+ apt-get install build-essentials
+ apt-get install scons # to build tapcfg-1.0.0
 
  Getting UDT
  -----------
@@ -23,44 +23,31 @@
 
  Place the udt4 directory into the DNDS directory.
 
-	 DNDS/udt4/
+	DNDS/udt4/
 
  You can now build udt by invoking `make`. You DON'T NEED to `make install` it.
 
- Installing libdnds
+
+ Getting tapcfg-1.0.0
+ --------------------
+
+	https://code.google.com/p/tapcfg/
+
+ Installing tapcfg
  -----------------
 
-	 $ cd DNDS/libdnds/
-	 $ cmake .
-	 $ make
-	 $ sudo make install
+ Place the tapcfg-1.0.0 into the DNDS directory.
 
- Installing DSD - Directory Service Daemon
- ---------------------------------------
+	DNDS/tapcfg-1.0.0
 
-	 $ cd DNDS/dsd
-	 $ cmake .
-	 $ make
-	 $ sudo make install
+	run ./buildall.sh as root
 
+ Compiling DNDS
+ -----------------
 
- Installing DND - Dynamic Network Daemon
- ---------------------------------------
-
-	 $ cd DNDS/dnd
-	 $ cmake .
-	 $ make
-	 $ sudo make install
-
-
- Installing DNC - Dynamic Network Client
- ---------------------------------------
-
-	 $ cd DNDS/dnc
-	 $ cmake .
-	 $ make
-	 $ sudo make install
-
+	$ cd DNDS/
+	$ cmake .
+	$ make
 
  Database - postgresql
  ---------------------------------------
