@@ -36,6 +36,26 @@ const char* inet_ntop(int af, const void* src, char* dst, int cnt)
 	}
 	return dst;
 }
+
+int inet_pton(int af, const char *src, void *dst)
+{
+	struct sockaddr_storage ss;
+	int size = sizeof(ss);
+	char src_tmp[INET_ADDRSTRLEN+1];
+
+	ZeroMemory(&ss, sizeof(ss));
+	strncpy (src_tmp, src, INET_ADDRSTRLEN+1);
+	src_tmp[INET_ADDRSTRLEN] = 0;
+
+	if (WSAStringToAddress(src_tmp, af, NULL, (struct sockaddr *)&ss, &size) == 0) {
+		switch(af) {
+		case AF_INET:
+			*(struct in_addr *)dst = ((struct sockaddr_in *)&ss)->sin_addr;
+			return 1;
+		}
+ 	}
+	return 0;
+}
 #else
 #include <arpa/inet.h>
 #endif
