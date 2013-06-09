@@ -19,27 +19,28 @@ find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 include_directories(${CMAKE_SOURCE_DIR}/udt4/src/)
-set(UDT_LIBRARIES ${CMAKE_SOURCE_DIR}/udt4/src/libudt.a)
 
 target_link_libraries(dnds
 	${UDT_LIBRARIES}
 	${OPENSSL_LIBRARIES}
 	dnds_protocol
 	pthread
-	crypto
-	ssl
 )
 
 if(WIN32)
+	set(UDT_LIBRARIES ${CMAKE_SOURCE_DIR}/udt4/src/libudt_dll.a)
 	target_link_libraries(dnds
-		wsock32
 		ws2_32
 	)
 else()
+	set(UDT_LIBRARIES ${CMAKE_SOURCE_DIR}/udt4/src/libudt.a)
 	target_link_libraries(dnds
 		dl
+		crypto
+		ssl
 	)
+
+	install(TARGETS dnds
+		LIBRARY DESTINATION lib)
 endif()
 
-#install(TARGETS dnds
-#	LIBRARY DESTINATION lib)
