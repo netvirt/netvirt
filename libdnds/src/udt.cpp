@@ -355,6 +355,12 @@ extern "C" peer_t *udtbus_rendezvous(const char *listen_addr,
 
 	freeaddrinfo(local);
 
+	memset(&hints, 0, sizeof(struct addrinfo));
+
+	hints.ai_flags = AI_PASSIVE;
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+
 	ret = getaddrinfo(dest_addr, port, &hints, &server);
 	if (ret != 0) {
 		cout << "incorrect server address (" << gai_strerror(ret) << ")" << endl;
