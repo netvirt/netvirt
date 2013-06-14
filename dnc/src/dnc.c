@@ -10,6 +10,10 @@
  *
  */
 
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -27,6 +31,12 @@
 #include "dnc.h"
 #include "session.h"
 
+#ifdef _WIN32
+	#define DNC_IP_FILE	"dnc.ip"
+#else
+	#define DNC_IP_FILE	"/etc/dnds/dnc.ip"
+#endif
+
 struct dnc_cfg *dnc_cfg;
 struct session *master_session;
 static int g_shutdown = 0;
@@ -39,17 +49,12 @@ static void tunnel_in(struct session* session)
 {
 	DNDSMessage_t *msg = NULL;
 	size_t frame_size = 0;
-	uint8_t macaddr_src[ETHER_ADDR_LEN];
-	uint8_t macaddr_dst[ETHER_ADDR_LEN];
 	char framebuf[2000];
 
 	if (session->state != SESSION_STATE_AUTHED)
 		return;
 
 	frame_size = tapcfg_read(session->tapcfg, framebuf, 2000);
-
-	inet_get_mac_addr_src(framebuf, macaddr_src);
-	inet_get_mac_addr_dst(framebuf, macaddr_dst);
 
 	DNDSMessage_new(&msg);
 	DNDSMessage_set_channel(msg, 0);
@@ -79,11 +84,12 @@ void terminate(struct session *session)
 
 void transmit_netinfo_request(struct session *session)
 {
+
 	const char *hwaddr;
 	int hwaddrlen;
 	char ip_local[16];
 
-	inet_get_local_ip(ip_local, INET_ADDRSTRLEN);
+//	inet_get_local_ip(ip_local, INET_ADDRSTRLEN);
 	hwaddr = tapcfg_iface_get_hwaddr(session->tapcfg, &hwaddrlen);
 
 	DNDSMessage_t *msg;
@@ -96,11 +102,12 @@ void transmit_netinfo_request(struct session *session)
 	DNMessage_set_ackNumber(msg, 0);
 	DNMessage_set_operation(msg, dnop_PR_netinfoRequest);
 
-	NetinfoRequest_set_ipLocal(msg, ip_local);
+	NetinfoRequest_set_ipLocal(msg, ip_local); // Is it still usefull ?
 	NetinfoRequest_set_macAddr(msg, (uint8_t*)hwaddr);
 
 	net_send_msg(session->netc, msg);
 	DNDSMessage_del(msg);
+
 }
 
 void transmit_prov_request(netc_t *netc)
@@ -239,9 +246,9 @@ static void op_netinfo_response(struct session *session, DNDSMessage_t *msg)
         char ipAddress[INET_ADDRSTRLEN];
 	FILE *fp = NULL;
 
-	fp = fopen("/etc/dnds/dnc.ip", "r");
+	fp = fopen(DNC_IP_FILE, "r");
 	if (fp == NULL) {
-		jlog(L_ERROR, "/etc/dnds/dnc.ip doesn't exist, reprovision your client");
+		jlog(L_ERROR, "%s doesn't exist, reprovision your client", DNC_IP_FILE);
 		return;
 	}
 	fscanf(fp, "%s", ipAddress);
@@ -300,7 +307,7 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 
 	ProvResponse_get_ipAddress(msg, ipAddress);
 	printf("dnc]> ip address: %s\n", ipAddress);
-	fp = fopen("/etc/dnds/dnc.ip", "w");
+	fp = fopen(DNC_IP_FILE, "w");
 	fprintf(fp, "%s", ipAddress);
 	fclose(fp);
 
@@ -367,6 +374,7 @@ int dnc_init(struct dnc_cfg *cfg)
 			on_disconnect, on_input, on_secure);
 
 	if (session->netc == NULL) {
+		printf("netc is null\n");
 		free(session);
 		return -1;
 	}
