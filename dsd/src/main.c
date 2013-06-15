@@ -28,6 +28,42 @@
 
 #define CONFIG_FILE "/etc/dnds/dsd.conf"
 
+int daemonize()
+{
+	pid_t pid, sid;
+
+	if (getppid() == 1)
+		return 0;
+
+	pid = fork();
+	if (pid < 0)
+		exit(EXIT_FAILURE);
+
+	if (pid > 0)
+		exit(EXIT_SUCCESS);
+
+	umask(0);
+
+	sid = setsid();
+
+	if (sid < 0)
+		exit(EXIT_FAILURE);
+
+	if ((chdir("/")) < 0)
+		exit(EXIT_FAILURE);
+
+	if (freopen("/dev/null", "r", stdin) == NULL)
+		return -1;
+
+	if (freopen("/dev/null", "w", stdout) == NULL)
+		return -1;
+
+	if (freopen("/dev/null", "w", stderr) == NULL)
+		return -1;
+
+	return 0;
+}
+
 int parse_config(config_t *cfg, struct dsd_cfg *dsd_cfg)
 {
 	if (!config_read_file(cfg, CONFIG_FILE)) {

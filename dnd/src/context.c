@@ -18,10 +18,10 @@
 #include <logger.h>
 #include <crypto.h>
 #include <netbus.h>
-#include <inet.h>
 
 #include "context.h"
 #include "hash.h"
+#include "inet.h"
 #include "session.h"
 
 /* XXX the context list should be a tree, or a hashlist */

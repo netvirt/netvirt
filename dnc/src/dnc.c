@@ -26,7 +26,6 @@
 #include <logger.h>
 #include <mbuf.h>
 #include <netbus.h>
-#include <inet.h>
 
 #include "dnc.h"
 #include "session.h"

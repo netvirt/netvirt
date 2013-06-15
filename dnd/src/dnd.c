@@ -18,12 +18,12 @@
 
 #include <logger.h>
 #include <netbus.h>
-#include <inet.h>
 #include <dnds.h>
 
 #include "context.h"
 #include "dnd.h"
 #include "dsc.h"
+#include "inet.h"
 #include "request.h"
 #include "session.h"
 

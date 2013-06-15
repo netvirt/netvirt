@@ -5,6 +5,7 @@ add_executable(dnd
 	dsc.c
 	ftable.c
 	hash.c
+	inet.c
 	jsw_hlib.c
 	linkst.c
 	main.c
