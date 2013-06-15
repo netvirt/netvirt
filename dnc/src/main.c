@@ -19,7 +19,11 @@
 #include <netbus.h>
 #include "dnc.h"
 
-#define CONFIG_FILE "/etc/dnds/dnc.conf"
+#ifdef _WIN32
+	#define CONFIG_FILE "dnc.conf"
+#else
+	#define CONFIG_FILE "/etc/dnds/dnc.conf"
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -27,10 +31,12 @@ int main(int argc, char *argv[])
 	struct dnc_cfg *dnc_cfg;
 	config_t cfg;
 
+#ifndef _WIN32
 	if (getuid() != 0) {
 		jlog(L_ERROR, "dnc]> You must be root !");
 		return -1;
 	}
+#endif
 
 	dnc_cfg = calloc(1, sizeof(struct dnc_cfg));
 
@@ -96,7 +102,6 @@ int main(int argc, char *argv[])
 		jlog(L_ERROR, "dnc]> dnc_init() failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
-
 
 	return 0;
 }

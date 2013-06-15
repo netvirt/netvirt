@@ -10,7 +10,6 @@ set(DNDS_SRCS
 	mbuf.c
 	netbus.c
 	udt.cpp
-	utils.c
 )
 
 add_library(dnds SHARED ${DNDS_SRCS})
@@ -20,15 +19,8 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 
 include_directories(${CMAKE_SOURCE_DIR}/udt4/src/)
 
-target_link_libraries(dnds
-	${UDT_LIBRARIES}
-	${OPENSSL_LIBRARIES}
-	dnds_protocol
-	pthread
-)
-
 if(WIN32)
-	set(UDT_LIBRARIES ${CMAKE_SOURCE_DIR}/udt4/src/libudt_dll.a)
+	set(UDT_LIBRARIES ${CMAKE_SOURCE_DIR}/udt4/src/libudt.dll)
 	target_link_libraries(dnds
 		ws2_32
 	)
@@ -43,4 +35,12 @@ else()
 	install(TARGETS dnds
 		LIBRARY DESTINATION lib)
 endif()
+
+target_link_libraries(dnds
+	${UDT_LIBRARIES}
+	${OPENSSL_LIBRARIES}
+	dnds_protocol
+	pthread
+)
+
 
