@@ -1,0 +1,21 @@
+Compiling DNDS client with mingw for Windows
+============================================
+
+DNDS/libconfig-1.4.9/
+---------------------
+	# ./configure --host=i686-w64-mingw32
+	# make
+
+DNDS/tapcfg-1.0.0/
+-----------------
+	modify => scons_tools/crossmingw.py => "i686-w64-mingw32-"
+	# scons --force-mingw32
+
+DNDS/udt4/
+----------
+	# make CXX='i686-w64-mingw32-g++' os=WIN32
+
+DNDS/
+-----
+	# cmake -DCMAKE_TOOLCHAIN_FILE=./toolchain-ming32.cmake .
+	# make
