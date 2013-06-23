@@ -21,7 +21,6 @@
 #include <dnds.h>
 #include <logger.h>
 #include <netbus.h>
-#include <utils.h>
 
 #include "dao.h"
 #include "dsd.h"
