@@ -10,26 +10,19 @@
  *
  */
 
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
-#include <libconfig.h>
-
-#include <crypto.h>
 #include <logger.h>
-#include <netbus.h>
+#include "config.h"
 #include "dnc.h"
-
-#ifdef _WIN32
-	#define CONFIG_FILE "dnc.conf"
-#else
-	#define CONFIG_FILE "/etc/dnds/dnc.conf"
-#endif
 
 int main(int argc, char *argv[])
 {
 	int opt;
 	struct dnc_cfg *dnc_cfg;
-	config_t cfg;
+	dnc_cfg = calloc(1, sizeof(struct dnc_cfg));
 
 #ifndef _WIN32
 	if (getuid() != 0) {
@@ -37,8 +30,6 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 #endif
-
-	dnc_cfg = calloc(1, sizeof(struct dnc_cfg));
 
 	while ((opt = getopt(argc, argv, "p:")) != -1) {
 		switch (opt) {
@@ -48,51 +39,8 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	config_init(&cfg);
-
-	/* Read the file. If there is an error, report it and exit. */
-        if (!config_read_file(&cfg, CONFIG_FILE)) {
-                fprintf(stderr, "Can't open %s\n", CONFIG_FILE);
-                return(EXIT_FAILURE);
-        }
-
-        if (config_lookup_string(&cfg, "server_address", &dnc_cfg->server_address))
-                jlog(L_DEBUG, "dnc]> server_address: %s", dnc_cfg->server_address);
-	else {
-		jlog(L_ERROR, "dnc]> server_address is not present !");
-		exit(EXIT_FAILURE);
-	}
-
-        if (config_lookup_string(&cfg, "server_port", &dnc_cfg->server_port))
-                jlog(L_DEBUG, "dnc]> server_port: %s", dnc_cfg->server_port);
-	else {
-		jlog(L_ERROR, "dnc]> server_port is not present !");
-		exit(EXIT_FAILURE);
-	}
-
-        if (config_lookup_string(&cfg, "certificate", &dnc_cfg->certificate))
-                jlog(L_DEBUG, "dnc]> certificate: %s", dnc_cfg->certificate);
-	else {
-		jlog(L_ERROR, "dnc]> certificate is not present !");
-		exit(EXIT_FAILURE);
-	}
-
-        if (config_lookup_string(&cfg, "privatekey", &dnc_cfg->privatekey))
-                jlog(L_DEBUG, "dnc]> privatekey: %s", dnc_cfg->privatekey);
-	else {
-		jlog(L_ERROR, "dnc]> privatekey is not present !");
-		exit(EXIT_FAILURE);
-	}
-
-        if (config_lookup_string(&cfg, "trusted_cert", &dnc_cfg->trusted_cert))
-                jlog(L_DEBUG, "dnc]> trusted_cert: %s", dnc_cfg->trusted_cert);
-	else {
-		jlog(L_ERROR, "dnc]> trusted_cert is not present !");
-		exit(EXIT_FAILURE);
-	}
-
-	if (krypt_init()) {
-		jlog(L_ERROR, "dnc]> krypt_init failed :: %s:%i", __FILE__, __LINE__);
+	if (dnc_config_init(dnc_cfg)) {
+		jlog(L_ERROR, "dnc]> dnc_config_init failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
 

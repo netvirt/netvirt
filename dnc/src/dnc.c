@@ -359,6 +359,11 @@ int dnc_init(struct dnc_cfg *cfg)
 	dnc_cfg = cfg;
 	session = calloc(1, sizeof(struct session));
 
+	if (krypt_init()) {
+		jlog(L_ERROR, "dnc]> krypt_init failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
+	}
+
 	if (dnc_cfg->prov_code == NULL)
 		session->passport = pki_passport_load_from_file(
 			dnc_cfg->certificate, dnc_cfg->privatekey, dnc_cfg->trusted_cert);

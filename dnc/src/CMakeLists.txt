@@ -1,5 +1,6 @@
 set(CMAKE_C_FLAGS "-g -Wall")
 add_executable(dnc
+	config.c
 	main.c
 	dnc.c
 	session.c
