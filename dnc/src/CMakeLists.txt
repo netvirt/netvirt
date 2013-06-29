@@ -1,10 +1,35 @@
 set(CMAKE_C_FLAGS "-g -Wall")
-add_executable(dnc
+
+set(dnc_sources
 	config.c
-	main.c
 	dnc.c
-	session.c
-)
+	session.c)
+
+if (0)
+	find_package(Qt4 REQUIRED)
+	set(gui_sources
+		gui/main.cpp
+		gui/MyWindow.cpp)
+
+	set(gui_headers
+		gui/MyWindow.h)
+
+	QT4_WRAP_CPP(gui_headers_moc ${gui_headers})
+
+	include(${QT_USE_FILE})
+	add_definitions(${QT_DEFINITIONS})
+
+	add_executable(dnc ${dnc_sources} ${gui_sources} ${gui_headers_moc})
+
+	target_link_libraries(dnc ${QT_LIBRARIES})
+
+else()
+
+	set(cli_sources
+		cli/main.c)
+
+	add_executable(dnc ${dnc_sources} ${cli_sources})
+endif()
 
 find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
