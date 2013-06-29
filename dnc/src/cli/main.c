@@ -15,8 +15,8 @@
 #include <unistd.h>
 
 #include <logger.h>
-#include "config.h"
-#include "dnc.h"
+#include "../config.h"
+#include "../dnc.h"
 
 int main(int argc, char *argv[])
 {
