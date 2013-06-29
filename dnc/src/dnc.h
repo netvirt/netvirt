@@ -22,6 +22,14 @@ struct dnc_cfg {
 	char *prov_code;
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int dnc_init(struct dnc_cfg *dnc_cfg);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

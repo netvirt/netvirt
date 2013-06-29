@@ -14,7 +14,16 @@
 #define CONFIG_H
 
 #include "dnc.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int dnc_config_init(struct dnc_cfg *dnc_cfg);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
