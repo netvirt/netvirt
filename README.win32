@@ -17,5 +17,10 @@ DNDS/udt4/
 
 DNDS/
 -----
-	# cmake -DCMAKE_TOOLCHAIN_FILE=./toolchain-mingw32.cmake .
+	## You will have to copy/link {ssl,lib}eay32.dll from bin to lib in OpenSSL
+	## tarball for cmake to detect them
+	# cmake -DCMAKE_TOOLCHAIN_FILE=./toolchain-mingw32.cmake \
+	        -DOPENSSL_ROOT_DIR="./mingw32" \
+	        -DCROSS_COMPILER="i686-w64-mingw32" \
+	        .
 	# make
