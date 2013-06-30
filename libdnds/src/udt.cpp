@@ -406,5 +406,16 @@ extern "C" int udtbus_init()
 	// use this function to initialize the UDT library
 	UDT::startup();
 
+#ifdef _WIN32
+	int iResult;
+	WSADATA wsaData;
+
+	// Initialize Winsock
+	iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
+	if (iResult != 0) {
+		printf("WSAStartup failed: %d\n", iResult);
+		return -1;
+	}
+#endif
 	return 0;
 }

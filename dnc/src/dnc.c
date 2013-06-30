@@ -359,6 +359,11 @@ int dnc_init(struct dnc_cfg *cfg)
 	dnc_cfg = cfg;
 	session = calloc(1, sizeof(struct session));
 
+	if (netbus_init()) {
+		jlog(L_ERROR, "dnc]> netbus_init failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
+	}
+
 	if (krypt_init()) {
 		jlog(L_ERROR, "dnc]> krypt_init failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);

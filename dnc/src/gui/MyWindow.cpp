@@ -31,14 +31,14 @@ void MyWindow::connect()
 	dnc_cfg = (struct dnc_cfg*)calloc(1, sizeof(struct dnc_cfg));
 
 	if (dnc_config_init(dnc_cfg)) {
-		//jlog(L_ERROR, "dnc]> dnc_config_init failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "dnc]> dnc_config_init failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
 
 	jlog(L_NOTICE, "dnc]> connecting...");
 
 	if (dnc_init(dnc_cfg)) {
-		//jlog(L_ERROR, "dnc]> dnc_init() failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "dnc]> dnc_init() failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
 }

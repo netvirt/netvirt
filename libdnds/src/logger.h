@@ -6,6 +6,14 @@
 #define L_ERROR		0x04
 #define L_DEBUG		0x08
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void jlog(int level, char *format, ...);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

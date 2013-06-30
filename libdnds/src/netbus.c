@@ -448,6 +448,10 @@ void net_disconnect(netc_t *netc)
 	net_connection_free(netc);
 }
 
+int netbus_init()
+{
+	return udtbus_init();
+}
 
 netc_t *net_client(const char *listen_addr,
 			const char *port,
