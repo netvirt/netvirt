@@ -17,5 +17,5 @@ DNDS/udt4/
 
 DNDS/
 -----
-	# cmake -DCMAKE_TOOLCHAIN_FILE=./toolchain-ming32.cmake .
+	# cmake -DCMAKE_TOOLCHAIN_FILE=./toolchain-mingw32.cmake .
 	# make
