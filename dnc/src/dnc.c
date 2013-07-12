@@ -14,6 +14,7 @@
 #include <winsock2.h>
 #endif
 
+#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -352,6 +353,15 @@ static void dispatch_op(struct session *session, DNDSMessage_t *msg)
 	}
 }
 
+static void *dnc_loop(void *session)
+{
+	while (!g_shutdown) {
+		udtbus_poke_queue();
+		if (tapcfg_wait_readable(((struct session *)session)->tapcfg, 0))
+			tunnel_in((struct session *)session);
+	}
+}
+
 int dnc_init(struct dnc_cfg *cfg)
 {
 	struct session *session;
@@ -406,11 +416,8 @@ int dnc_init(struct dnc_cfg *cfg)
 	session->devname = tapcfg_get_ifname(session->tapcfg);
 	jlog(L_DEBUG, "dnc]> devname: %s", session->devname);
 
-	while (!g_shutdown) {
-		udtbus_poke_queue();
-		if (tapcfg_wait_readable(session->tapcfg, 0))
-			tunnel_in(session);
-	}
+	pthread_t thread_loop;
+	pthread_create(&thread_loop, NULL, dnc_loop, session);
 
 	return 0;
 }

@@ -13,15 +13,19 @@
 #include <QtGui/QMainWindow>
 #include <QtGui/QPushButton>
 
+#include <QLineEdit>
+
 class MyWindow : public QMainWindow
 {
 	Q_OBJECT
 
 	public:
 		MyWindow(QMainWindow *parent = 0, Qt::WFlags fl = Qt::Window);
+		QLineEdit *provCode;
 
 	virtual ~MyWindow();
 
 	public slots:
 		void connect();
+
 };

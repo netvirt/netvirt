@@ -64,6 +64,7 @@ target_link_libraries(dnc
 	${TAPCFG_LIBRARIES}
 	${LIBCONFIG_LIBRARIES}
 	dnds
+	pthread
 )
 
 install(TARGETS dnc

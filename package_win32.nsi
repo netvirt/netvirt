@@ -5,7 +5,7 @@
 
 # /!\ You need to edit that section
 !define MINGW_PATH /usr/lib/gcc/i686-w64-mingw32/4.6/
-!define PTHREAD_PATH /usr/x86_64-w64-mingw32/lib
+!define PTHREAD_PATH /usr/i686-w64-mingw32/lib/
 !define OPENSSL_PATH /opt/mingw32/mingw32/bin
 !define QT_PATH /media/nib/Windows7_OS/Qt/4.8.4/bin
 

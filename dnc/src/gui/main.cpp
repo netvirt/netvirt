@@ -11,6 +11,7 @@
  */
 
 #include <QApplication>
+#include <QLineEdit>
 #include <QPushButton>
 #include <QFont>
 
@@ -21,7 +22,14 @@ int main(int argc, char *argv[])
 	QApplication app(argc, argv);
 	MyWindow w;
 
+	w.resize(500, 150);
+
 	QPushButton connect("Connect", &w);
+
+	w.provCode = new QLineEdit("", &w);
+	w.provCode->move(0,60);
+	w.provCode->resize(300, 30);
+
 	QObject::connect(&connect, SIGNAL(clicked()), &w, SLOT(connect()));
 
 	w.show();
