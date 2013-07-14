@@ -22,7 +22,7 @@ class MyWindow : public QMainWindow
 	Q_OBJECT
 
 	public:
-		MyWindow(QMainWindow *parent = 0, Qt::WFlags fl = Qt::Window);
+		MyWindow(QMainWindow *parent = NULL, Qt::WFlags fl = Qt::Window);
 
 	virtual ~MyWindow();
 

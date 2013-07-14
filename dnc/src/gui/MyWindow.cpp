@@ -17,7 +17,8 @@
 #include "../config.h"
 #include "../dnc.h"
 
-MyWindow::MyWindow(QMainWindow *parent, Qt::WFlags fl) : QMainWindow(parent, fl)
+MyWindow::MyWindow(QMainWindow *parent, Qt::WFlags flags)
+    : QMainWindow(parent, flags)
 {
     ui.setupUi(this);
 }
@@ -28,8 +29,7 @@ MyWindow::~MyWindow()
 
 void MyWindow::on_connect_button_clicked()
 {
-	struct dnc_cfg *dnc_cfg;
-	dnc_cfg = (struct dnc_cfg*)calloc(1, sizeof(struct dnc_cfg));
+	struct dnc_cfg *dnc_cfg = (struct dnc_cfg*)calloc(1, sizeof(struct dnc_cfg));
 
 	QString provisioning_code = this->ui.provisioning_code_input->text();
 
@@ -49,5 +49,4 @@ void MyWindow::on_connect_button_clicked()
 		jlog(L_ERROR, "dnc]> dnc_init() failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
-
-	}
+}
