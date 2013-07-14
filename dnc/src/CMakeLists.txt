@@ -15,11 +15,12 @@ if (0)
 		gui/MyWindow.h)
 
 	QT4_WRAP_CPP(gui_headers_moc ${gui_headers})
+	QT4_WRAP_UI(gui_form_headers gui/dnc.ui)
 
 	include(${QT_USE_FILE})
 	add_definitions(${QT_DEFINITIONS})
 
-	add_executable(dnc ${dnc_sources} ${gui_sources} ${gui_headers_moc})
+	add_executable(dnc ${dnc_sources} ${gui_sources} ${gui_headers_moc} ${gui_form_headers})
 
 	target_link_libraries(dnc ${QT_LIBRARIES})
 
