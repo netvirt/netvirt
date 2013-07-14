@@ -17,28 +17,24 @@
 #include "../config.h"
 #include "../dnc.h"
 
-MyWindow::MyWindow(QMainWindow *parent, Qt::WFlags fl) : QMainWindow(parent, fl)
+MyWindow::MyWindow(QMainWindow *parent, Qt::WFlags flags)
+    : QMainWindow(parent, flags)
 {
-	provCode = new QLineEdit;
-	provCode->setFocus();
+    ui.setupUi(this);
 }
 
 MyWindow::~MyWindow()
 {
 }
 
-void MyWindow::connect()
+void MyWindow::on_connect_button_clicked()
 {
-	struct dnc_cfg *dnc_cfg;
-	dnc_cfg = (struct dnc_cfg*)calloc(1, sizeof(struct dnc_cfg));
+	struct dnc_cfg *dnc_cfg = (struct dnc_cfg*)calloc(1, sizeof(struct dnc_cfg));
 
-	const char *str = NULL;
-	QString qt_str;
+	QString provisioning_code = this->ui.provisioning_code_input->text();
 
-	if (provCode->text().length() > 0) {
-		qt_str = provCode->text();
-		str = qt_str.toStdString().c_str();
-
+	if (! provisioning_code.isEmpty()) {
+		const char *str = provisioning_code.toStdString().c_str();
 		dnc_cfg->prov_code = strdup(str);
 	}
 
@@ -53,5 +49,4 @@ void MyWindow::connect()
 		jlog(L_ERROR, "dnc]> dnc_init() failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
-
-	}
+}

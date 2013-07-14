@@ -15,17 +15,21 @@
 
 #include <QLineEdit>
 
+#include "../ui_dnc.h"
+
 class MyWindow : public QMainWindow
 {
 	Q_OBJECT
 
 	public:
-		MyWindow(QMainWindow *parent = 0, Qt::WFlags fl = Qt::Window);
-		QLineEdit *provCode;
+		MyWindow(QMainWindow *parent = NULL, Qt::WFlags fl = Qt::Window);
 
 	virtual ~MyWindow();
 
 	public slots:
-		void connect();
+		void on_connect_button_clicked();
+
+	private:
+		Ui::MainWindow ui;
 
 };
