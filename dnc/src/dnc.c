@@ -292,22 +292,39 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 	ProvResponse_get_certificate(msg, &certificate, &length);
 
 	fp = fopen(dnc_cfg->certificate, "w");
+	if (fp == NULL) {
+		jlog(L_ERROR, "dnc]> can't write certifcate in file '%s'\n", dnc_cfg->certificate);
+		exit(EXIT_FAILURE);
+	}
 	fwrite(certificate, 1, strlen(certificate), fp);
 	fclose(fp);
 
 	ProvResponse_get_certificateKey(msg, &certificatekey, &length);
 	fp = fopen(dnc_cfg->privatekey, "w");
+	if (fp == NULL) {
+		jlog(L_ERROR, "dnc]> can't write private key in file '%s'\n", dnc_cfg->privatekey);
+		exit(EXIT_FAILURE);
+	}
 	fwrite(certificatekey, 1, strlen(certificatekey), fp);
 	fclose(fp);
 
 	ProvResponse_get_trustedCert(msg, &trusted_authority, &length);
 	fp = fopen(dnc_cfg->trusted_cert, "w");
+	if (fp == NULL) {
+		jlog(L_ERROR, "dnc]> can't write trusted certificate in file '%s'\n", dnc_cfg->trusted_cert);
+		exit(EXIT_FAILURE);
+	}
 	fwrite(trusted_authority, 1, strlen(trusted_authority), fp);
 	fclose(fp);
 
 	ProvResponse_get_ipAddress(msg, ipAddress);
-	printf("dnc]> ip address: %s\n", ipAddress);
+	jlog(L_NOTICE, "dnc]> ip address: %s\n", ipAddress);
+
 	fp = fopen(DNC_IP_FILE, "w");
+	if (fp == NULL) {
+		jlog(L_ERROR, "dnc]> can't write IP address in file '%s'\n", DNC_IP_FILE);
+		exit(EXIT_FAILURE);
+	}
 	fprintf(fp, "%s", ipAddress);
 	fclose(fp);
 
