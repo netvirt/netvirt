@@ -5,6 +5,9 @@ set(dnc_sources
 	dnc.c
 	session.c)
 
+link_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9/lib/.libs")
+link_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0/build")
+
 if (0)
 	find_package(Qt4 REQUIRED)
 	set(gui_sources
@@ -39,33 +42,11 @@ include_directories("${CMAKE_SOURCE_DIR}/libdnds/src/protocol/")
 include_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0/src/include/")
 include_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9/lib")
 
-if(WIN32)
-
-	set(TAPCFG_LIBRARIES ${CMAKE_SOURCE_DIR}/tapcfg-1.0.0/build/tapcfg.dll)
-	set(LIBCONFIG_LIBRARIES ${CMAKE_SOURCE_DIR}/libconfig-1.4.9/lib/.libs/libconfig-9.dll)
-
-	target_link_libraries(dnc
-		${TAPCFG_LIBRARIES}
-		${LIBCONFIG_LIBRARIES}
-		dnds
-	)
-
-else()
-	set(TAPCFG_LIBRARIES ${CMAKE_SOURCE_DIR}/tapcfg-1.0.0/build/libtapcfg.a)
-
-	target_link_libraries(dnc
-		${TAPCFG_LIBRARIES}
-		${LIBCONFIG_LIBRARIES}
-		dnds
-		config
-	)
-endif()
-
 target_link_libraries(dnc
-	${TAPCFG_LIBRARIES}
-	${LIBCONFIG_LIBRARIES}
+    config
 	dnds
 	pthread
+    tapcfg
 )
 
 install(TARGETS dnc
