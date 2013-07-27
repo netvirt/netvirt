@@ -43,10 +43,10 @@ include_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0/src/include/")
 include_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9/lib")
 
 target_link_libraries(dnc
-    config
+	config
 	dnds
 	pthread
-    tapcfg
+	tapcfg
 )
 
 install(TARGETS dnc
