@@ -17,13 +17,14 @@ if (0)
 	set(gui_headers
 		gui/MyWindow.h)
 
+	QT4_ADD_RESOURCES(gui_rccs_srcs "./gui/systray.qrc")
 	QT4_WRAP_CPP(gui_headers_moc ${gui_headers})
 	QT4_WRAP_UI(gui_form_headers gui/dnc.ui)
 
 	include(${QT_USE_FILE})
 	add_definitions(${QT_DEFINITIONS})
 
-	add_executable(dnc ${dnc_sources} ${gui_sources} ${gui_headers_moc} ${gui_form_headers})
+	add_executable(dnc ${dnc_sources} ${gui_sources} ${gui_headers_moc} ${gui_form_headers} ${gui_rccs_srcs})
 
 	target_link_libraries(dnc ${QT_LIBRARIES})
 
