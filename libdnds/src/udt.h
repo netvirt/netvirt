@@ -28,4 +28,12 @@ typedef struct peer {
 
 } peer_t;
 
+#ifdef __cplusplus
+extern "C"
+#endif
+peer_t *udtbus_client(const char *listen_addr,
+                                 const char *port,
+                                 void (*on_disconnect)(peer_t *),
+                                 void (*on_input)(peer_t *));
+
 #endif
