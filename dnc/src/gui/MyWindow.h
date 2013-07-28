@@ -13,7 +13,10 @@
 #include <QtGui/QMainWindow>
 #include <QtGui/QPushButton>
 
+#include <QCloseEvent>
 #include <QLineEdit>
+#include <QMenu>
+#include <QSystemTrayIcon>
 
 #include "../ui_dnc.h"
 
@@ -28,8 +31,19 @@ class MyWindow : public QMainWindow
 
 	public slots:
 		void on_connect_button_clicked();
+		void trayIconClicked(QSystemTrayIcon::ActivationReason);
 
 	private:
+		void createActions();
+		void createTrayIcon();
+		void setIcon();
+		void closeEvent(QCloseEvent *); // Override the window's close event
+
 		Ui::MainWindow ui;
 
+		QSystemTrayIcon *trayIcon;
+		QMenu *trayIconMenu;
+
+		QAction *open;
+		QAction *close;
 };

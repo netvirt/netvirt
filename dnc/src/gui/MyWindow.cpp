@@ -20,11 +20,21 @@
 MyWindow::MyWindow(QMainWindow *parent, Qt::WFlags flags)
     : QMainWindow(parent, flags)
 {
-    ui.setupUi(this);
+	ui.setupUi(this);
+
+	createActions();
+	createTrayIcon();
+	setIcon();
+
+	trayIcon->show();
 }
 
 MyWindow::~MyWindow()
 {
+	delete trayIcon;
+	delete trayIconMenu;
+	delete open;
+	delete close;
 }
 
 void MyWindow::on_connect_button_clicked()
@@ -48,5 +58,54 @@ void MyWindow::on_connect_button_clicked()
 	if (dnc_init(dnc_cfg)) {
 		jlog(L_ERROR, "dnc]> dnc_init() failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
+	}
+}
+
+void MyWindow::createActions()
+{
+	open = new QAction(tr("&Open"), this);
+	connect(open, SIGNAL(triggered()), this, SLOT(show()));
+
+	close = new QAction(tr("&Quit"), this);
+	connect(close, SIGNAL(triggered()), qApp, SLOT(quit()));
+}
+
+void MyWindow::createTrayIcon()
+{
+	trayIconMenu = new QMenu(this);
+
+	trayIconMenu->addAction(open);
+	trayIconMenu->addSeparator();
+	trayIconMenu->addAction(close);
+
+	trayIcon = new QSystemTrayIcon(this);
+	trayIcon->setContextMenu(trayIconMenu);
+
+	connect(trayIcon,
+		SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
+		this,
+		SLOT(trayIconClicked(QSystemTrayIcon::ActivationReason))
+	);
+}
+
+void MyWindow::setIcon()
+{
+	trayIcon->setIcon(QIcon(":dnc.ico"));
+}
+
+void MyWindow::trayIconClicked(QSystemTrayIcon::ActivationReason reason)
+{
+	if (reason == QSystemTrayIcon::Trigger)
+		this->show();
+}
+
+void MyWindow::closeEvent(QCloseEvent *event)
+{
+	if (trayIcon->isVisible()) {
+		trayIcon->showMessage(tr("Still here !"),
+		tr("This application is still running. To quit please click this icon and select Quit"));
+		hide();
+
+		event->ignore();
 	}
 }
