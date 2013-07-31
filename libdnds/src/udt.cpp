@@ -208,7 +208,7 @@ extern "C" void udtbus_poke_queue()
 	}
 }
 
-extern "C" peer_t *udtbus_client(const char *listen_addr,
+peer_t *udtbus_client(const char *listen_addr,
 				const char *port,
 				void (*on_disconnect)(peer_t *),
 				void (*on_input)(peer_t *))
