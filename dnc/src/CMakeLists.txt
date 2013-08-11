@@ -26,6 +26,10 @@ if (0)
 
 	add_executable(dnc ${dnc_sources} ${gui_sources} ${gui_headers_moc} ${gui_form_headers} ${gui_rccs_srcs})
 
+	if (WIN32)
+		set_target_properties(dnc PROPERTIES LINK_FLAGS "-mwindows")
+	endif()
+
 	target_link_libraries(dnc ${QT_LIBRARIES})
 
 else()
@@ -41,7 +45,7 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 
 include_directories("${CMAKE_SOURCE_DIR}/libdnds/src/protocol/")
 include_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0/src/include/")
-include_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9/lib")
+include_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9/lib/")
 
 target_link_libraries(dnc
 	config

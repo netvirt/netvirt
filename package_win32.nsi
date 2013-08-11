@@ -65,12 +65,12 @@ SetCompressor /FINAL /SOLID lzma
 		File ${QT_PATH}/QtGui4.dll
 
 		; Create uninstaller
-		WriteUninstaller "$INSTDIR\Uninstall.exe"
+		WriteUninstaller "$INSTDIR\dnc-uninstall.exe"
 
 		!insertmacro MUI_STARTMENU_WRITE_BEGIN Application
 			CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
 			CreateShortCut  "$SMPROGRAMS\$StartMenuFolder\dnc.lnk" "$INSTDIR\dnc.exe"
-			CreateShortCut  "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
+			CreateShortCut  "$SMPROGRAMS\$StartMenuFolder\dnc-uninstall.lnk" "$INSTDIR\dnc-uninstall.exe"
 		!insertmacro MUI_STARTMENU_WRITE_END
 	sectionEnd
 
@@ -80,6 +80,7 @@ SetCompressor /FINAL /SOLID lzma
 
 		File tap-driver-32_64/32-bit/*
 		DetailPrint "TAP INSTALL (May need confirmation)"
+		nsExec::ExecToLog '"$TEMP\tapdriver\deltapall.bat" /S /SELECT_UTILITIES=1'
 		nsExec::ExecToLog '"$TEMP\tapdriver\addtap.bat" /S /SELECT_UTILITIES=1'
 		RMDir "$TEMP\tapdriver"
 	sectionEnd
@@ -93,7 +94,7 @@ SetCompressor /FINAL /SOLID lzma
 		!insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
 
 		Delete "$SMPROGRAMS\$StartMenuFolder\dnc.lnk"
-		Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk"
+		Delete "$SMPROGRAMS\$StartMenuFolder\dnc-uninstall.lnk"
 		RMDir "$SMPROGRAMS\$StartMenuFolder"
 
 		DeleteRegKey /ifempty HKCU "Software\dnc"
