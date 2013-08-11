@@ -95,17 +95,16 @@ void MyWindow::setIcon()
 
 void MyWindow::trayIconClicked(QSystemTrayIcon::ActivationReason reason)
 {
-	if (reason == QSystemTrayIcon::Trigger)
+	if (this->isVisible())
+		this->hide();
+	else
 		this->show();
 }
 
 void MyWindow::closeEvent(QCloseEvent *event)
 {
 	if (trayIcon->isVisible()) {
-		trayIcon->showMessage(tr("Still here !"),
-		tr("This application is still running. To quit please click this icon and select Quit"));
 		hide();
-
 		event->ignore();
 	}
 }
