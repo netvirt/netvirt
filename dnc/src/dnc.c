@@ -267,6 +267,7 @@ static void op_auth_response(struct session *session, DNDSMessage_t *msg)
 	switch (result) {
 	case DNDSResult_success:
 		jlog(L_NOTICE, "dnc]> session authenticated");
+		dnc_cfg->ev.on_connect(dnc_cfg->ev.obj);
 		transmit_netinfo_request(session);
 		break;
 

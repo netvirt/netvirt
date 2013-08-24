@@ -20,6 +20,11 @@ struct dnc_cfg {
 	const char *privatekey;
 	const char *trusted_cert;
 	char *prov_code;
+
+	struct {
+		void (*on_connect)(void *);
+		void *obj;
+	} ev;
 };
 
 #ifdef __cplusplus
