@@ -27,6 +27,19 @@ MyWindow::MyWindow(QMainWindow *parent, Qt::WFlags flags)
 	setIcon();
 
 	trayIcon->show();
+
+#ifdef _WIN32
+	QFile file("dnc.ip");
+#else
+	QFile file("/etc/dnds/dnc.ip");
+#endif
+	if (file.exists()) {
+		this->ui.connection_label->setText("Not connected");
+		this->ui.info_label->setText("");
+		this->ui.prov_key_checkBox->setCheckState(Qt::Unchecked);
+	}
+
+	connect(this->ui.exit_button, SIGNAL(clicked()), qApp, SLOT(quit()));
 }
 
 MyWindow::~MyWindow()
@@ -37,16 +50,25 @@ MyWindow::~MyWindow()
 	delete close;
 }
 
+void MyWindow::on_prov_key_checkBox_stateChanged(int checked)
+{
+	this->ui.provisioning_key_input->setEnabled(checked == Qt::Checked);
+}
+
 void MyWindow::on_connect_button_clicked()
 {
 	struct dnc_cfg *dnc_cfg = (struct dnc_cfg*)calloc(1, sizeof(struct dnc_cfg));
 
-	QString provisioning_code = this->ui.provisioning_code_input->text();
+	QString provisioning_key = this->ui.provisioning_key_input->text();
 
-	if (! provisioning_code.isEmpty()) {
-		const char *str = provisioning_code.toStdString().c_str();
+	if (! provisioning_key.isEmpty()) {
+		const char *str = provisioning_key.toStdString().c_str();
 		dnc_cfg->prov_code = strdup(str);
 	}
+
+	dnc_cfg->ev.on_connect = this->on_connect;
+	dnc_cfg->ev.obj = (void *)this;
+
 
 	if (dnc_config_init(dnc_cfg)) {
 		jlog(L_ERROR, "dnc]> dnc_config_init failed :: %s:%i", __FILE__, __LINE__);
@@ -59,6 +81,15 @@ void MyWindow::on_connect_button_clicked()
 		jlog(L_ERROR, "dnc]> dnc_init() failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
+}
+
+void MyWindow::on_connect(void *obj)
+{
+	MyWindow *_this = static_cast<MyWindow*>(obj);
+	_this->ui.connection_label->setText("Now connected !");
+	_this->ui.info_label->setText("");
+	_this->ui.prov_key_checkBox->setCheckState(Qt::Unchecked);
+	_this->ui.connect_button->setEnabled(false);
 }
 
 void MyWindow::createActions()

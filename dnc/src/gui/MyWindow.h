@@ -26,10 +26,12 @@ class MyWindow : public QMainWindow
 
 	public:
 		MyWindow(QMainWindow *parent = NULL, Qt::WFlags fl = Qt::Window);
+		static void on_connect(void *obj);
 
 	virtual ~MyWindow();
 
 	public slots:
+		void on_prov_key_checkBox_stateChanged(int checked);
 		void on_connect_button_clicked();
 		void trayIconClicked(QSystemTrayIcon::ActivationReason);
 
