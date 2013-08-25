@@ -1,5 +1,11 @@
 set(CMAKE_C_FLAGS "-g -Wall")
 
+if (WIN32)
+	set (win_rc_icon icon.rc)
+else()
+	set (win_rc_icon "")
+endif()
+
 set(dnc_sources
 	config.c
 	dnc.c
@@ -8,7 +14,7 @@ set(dnc_sources
 link_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9/lib/.libs")
 link_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0/build")
 
-if (0)
+if (1)
 	find_package(Qt4 REQUIRED)
 	set(gui_sources
 		gui/main.cpp
@@ -24,7 +30,7 @@ if (0)
 	include(${QT_USE_FILE})
 	add_definitions(${QT_DEFINITIONS})
 
-	add_executable(dnc ${dnc_sources} ${gui_sources} ${gui_headers_moc} ${gui_form_headers} ${gui_rccs_srcs})
+	add_executable(dnc ${dnc_sources} ${gui_sources} ${gui_headers_moc} ${gui_form_headers} ${gui_rccs_srcs} ${win_rc_icon})
 
 	if (WIN32)
 		set_target_properties(dnc PROPERTIES LINK_FLAGS "-mwindows")

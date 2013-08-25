@@ -20,9 +20,10 @@ struct dnc_cfg {
 	const char *privatekey;
 	const char *trusted_cert;
 	char *prov_code;
+	const char *log_file;
 
 	struct {
-		void (*on_connect)(void *);
+		void (*on_connect)(void *obj, const char *ip);
 		void *obj;
 	} ev;
 };

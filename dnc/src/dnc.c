@@ -40,6 +40,7 @@
 struct dnc_cfg *dnc_cfg;
 struct session *master_session;
 static int g_shutdown = 0;
+char ipAddress[INET_ADDRSTRLEN];
 
 static void on_input(netc_t *netc);
 static void on_secure(netc_t *netc);
@@ -243,7 +244,6 @@ static void on_input(netc_t *netc)
 
 static void op_netinfo_response(struct session *session, DNDSMessage_t *msg)
 {
-        char ipAddress[INET_ADDRSTRLEN];
 	FILE *fp = NULL;
 
 	fp = fopen(DNC_IP_FILE, "r");
@@ -263,11 +263,20 @@ static void op_auth_response(struct session *session, DNDSMessage_t *msg)
 {
 	e_DNDSResult result;
 	AuthResponse_get_result(msg, &result);
+	FILE *fp = NULL;
 
 	switch (result) {
 	case DNDSResult_success:
 		jlog(L_NOTICE, "dnc]> session authenticated");
-		dnc_cfg->ev.on_connect(dnc_cfg->ev.obj);
+
+		fp = fopen(DNC_IP_FILE, "r");
+		if (fp) {
+			fscanf(fp, "%s", ipAddress);
+			fclose(fp);
+		}
+		if (dnc_cfg->ev.on_connect)
+			dnc_cfg->ev.on_connect(dnc_cfg->ev.obj, ipAddress);
+
 		transmit_netinfo_request(session);
 		break;
 
@@ -287,7 +296,6 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 	char *certificate = NULL;
 	char *certificatekey = NULL;
 	char *trusted_authority = NULL;
-        char ipAddress[INET_ADDRSTRLEN];
 	FILE *fp = NULL;
 
 	ProvResponse_get_certificate(msg, &certificate, &length);

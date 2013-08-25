@@ -34,6 +34,10 @@ int dnc_config_init(struct dnc_cfg *dnc_cfg)
                 return(EXIT_FAILURE);
         }
 
+	if (config_lookup_string(&cfg, "log_file", &dnc_cfg->log_file)) {
+		jlog_init_file(dnc_cfg->log_file);
+	}
+
         if (config_lookup_string(&cfg, "server_address", &dnc_cfg->server_address))
                 jlog(L_DEBUG, "dnc]> server_address: %s", dnc_cfg->server_address);
 	else {
