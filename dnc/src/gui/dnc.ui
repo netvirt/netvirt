@@ -10,14 +10,30 @@
     <height>199</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>363</width>
+    <height>199</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>363</width>
+    <height>199</height>
+   </size>
+  </property>
   <property name="windowTitle">
    <string>DynVPN</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="systray.qrc">
+    <normaloff>:/dnc.ico</normaloff>:/dnc.ico</iconset>
   </property>
   <widget class="QWidget" name="central_widget">
    <widget class="QPushButton" name="exit_button">
     <property name="geometry">
      <rect>
-      <x>220</x>
+      <x>240</x>
       <y>80</y>
       <width>94</width>
       <height>27</height>
@@ -108,6 +124,9 @@
      <property name="scaledContents">
       <bool>true</bool>
      </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
     </widget>
     <widget class="QLabel" name="info_label">
      <property name="geometry">
@@ -124,61 +143,34 @@
      <property name="scaledContents">
       <bool>true</bool>
      </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
     </widget>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QPushButton" name="connect_button">
     <property name="geometry">
      <rect>
       <x>20</x>
       <y>80</y>
-      <width>179</width>
-      <height>29</height>
+      <width>177</width>
+      <height>27</height>
      </rect>
     </property>
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <spacer name="horizontalSpacer">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="connect_button">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="text">
-        <string>&amp;Connect</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer_2">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-    </layout>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="text">
+     <string>&amp;Connect</string>
+    </property>
    </widget>
   </widget>
  </widget>
- <resources/>
+ <resources>
+  <include location="systray.qrc"/>
+ </resources>
  <connections/>
 </ui>

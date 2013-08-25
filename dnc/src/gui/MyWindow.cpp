@@ -81,15 +81,20 @@ void MyWindow::on_connect_button_clicked()
 		jlog(L_ERROR, "dnc]> dnc_init() failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
+
+	this->ui.info_label->setText("");
+	this->ui.prov_key_checkBox->setCheckState(Qt::Unchecked);
+	this->ui.connect_button->setEnabled(false);
 }
 
-void MyWindow::on_connect(void *obj)
+void MyWindow::on_connect(void *obj, const char *ip)
 {
+	QString info_ip = QString("Your IP:%1").arg(QString::fromUtf8(ip));
+
 	MyWindow *_this = static_cast<MyWindow*>(obj);
+
 	_this->ui.connection_label->setText("Now connected !");
-	_this->ui.info_label->setText("");
-	_this->ui.prov_key_checkBox->setCheckState(Qt::Unchecked);
-	_this->ui.connect_button->setEnabled(false);
+	_this->ui.info_label->setText(info_ip);
 }
 
 void MyWindow::createActions()
@@ -134,8 +139,16 @@ void MyWindow::trayIconClicked(QSystemTrayIcon::ActivationReason reason)
 
 void MyWindow::closeEvent(QCloseEvent *event)
 {
-	if (trayIcon->isVisible()) {
-		hide();
+	QMessageBox::StandardButton reply;
+	reply = QMessageBox::warning(this, "DynVPN Client", "Are you sure you want to quit ?",
+					QMessageBox::Yes|QMessageBox::No);
+
+	if (reply == QMessageBox::No) {
 		event->ignore();
+	} else {
+
+		if (trayIcon->isVisible()) {
+			trayIcon->setVisible(false);
+		}
 	}
 }

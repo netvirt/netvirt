@@ -15,6 +15,7 @@
 
 #include <QCloseEvent>
 #include <QLineEdit>
+#include <QMessageBox>
 #include <QMenu>
 #include <QSystemTrayIcon>
 
@@ -26,7 +27,7 @@ class MyWindow : public QMainWindow
 
 	public:
 		MyWindow(QMainWindow *parent = NULL, Qt::WFlags fl = Qt::Window);
-		static void on_connect(void *obj);
+		static void on_connect(void *obj, const char *ip);
 
 	virtual ~MyWindow();
 
