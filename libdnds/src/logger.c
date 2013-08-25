@@ -15,6 +15,13 @@
 
 #include "logger.h"
 
+FILE *log_file = NULL;
+
+void jlog_init_file(const char *log_file_path)
+{
+	log_file = fopen(log_file_path, "a");
+}
+
 void jlog(int level, char *format, ...)
 {
 	char logline[256];
@@ -23,6 +30,12 @@ void jlog(int level, char *format, ...)
 	va_start(ap, format);
 
 	snprintf(logline, 256, "%s\n", format);
-	vfprintf(stdout, logline, ap);
+	if (log_file) {
+		vfprintf(log_file, logline, ap);
+		fflush(log_file);
+	}
+	else {
+		vfprintf(stdout, logline, ap);
+	}
 	va_end(ap);
 }
