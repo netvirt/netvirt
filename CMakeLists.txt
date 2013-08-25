@@ -8,7 +8,7 @@ endif(COMMAND cmake_policy)
 add_subdirectory(libdnds)
 add_subdirectory(dnc)
 
-if (NOT WIN32)
+if (NOT APPLE AND NOT WIN32)
 	add_subdirectory(dsd)
 	add_subdirectory(dnd)
 endif()

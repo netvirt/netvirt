@@ -61,4 +61,10 @@ target_link_libraries(dnc
 )
 
 install(TARGETS dnc
-	DESTINATION bin)
+    DESTINATION bin)
+if (APPLE)
+    install(FILES ${CMAKE_SOURCE_DIR}/libconfig-1.4.9/lib/.libs/libconfig.9.dylib
+            DESTINATION lib)
+    install(FILES ${CMAKE_SOURCE_DIR}/tapcfg-1.0.0/build/libtapcfg.dylib
+            DESTINATION lib)
+endif()
