@@ -12,11 +12,24 @@ SetCompressor /FINAL /SOLID lzma
 ; Include Modern UI
 	!include "MUI2.nsh"
 
+	!define MUI_ICON "./dnc/src/gui/dnc.ico"
+	!define MUI_UNICON "./dnc/src/gui/dnc.ico"
+
+	!define MUI_HEADERIMAGE
+	!define MUI_HEADERIMAGE_RIGH
+	!define MUI_HEADERIMAGE_BITMAP "./graphics/Header/orange-r.bmp"
+	!define MUI_HEADERIMAGE_UNBITMAP "./graphics/Header/orange-uninstall-r.bmp"
+
+	!define MUI_WELCOMEFINISHPAGE_BITMAP "./graphics/Wizard/orange.bmp"
+	!define MUI_UNWELCOMEFINISHPAGE_BITMAP "./graphics/Wizard/orange-uninstall.bmp"
+
 ; --------
 ; General
-	Name "DNDS Client"
-	OutFile "dnds-client_x86.exe"
-	InstallDir $PROGRAMFILES\dnds-client
+
+	!define /date NOW "%y.%m.%d"
+	Name "DynVPN Client"
+	OutFile "dynvpn-client-${NOW}_x86.exe"
+	InstallDir $PROGRAMFILES\dynvpn-client
 
 	; Ask admin privileges
 	RequestExecutionLevel admin
@@ -25,6 +38,8 @@ SetCompressor /FINAL /SOLID lzma
 
 ;-------
 ; Pages
+	; Install
+	!insertmacro MUI_PAGE_WELCOME
 	!insertmacro MUI_PAGE_COMPONENTS
 	!insertmacro MUI_PAGE_DIRECTORY
 
@@ -36,6 +51,9 @@ SetCompressor /FINAL /SOLID lzma
 	!insertmacro MUI_PAGE_STARTMENU Application $StartMenuFolder
 
 	!insertmacro MUI_PAGE_INSTFILES
+	!insertmacro MUI_PAGE_FINISH
+
+	; Uninstall
 	!insertmacro MUI_UNPAGE_CONFIRM
 	!insertmacro MUI_UNPAGE_INSTFILES
 
@@ -52,7 +70,7 @@ SetCompressor /FINAL /SOLID lzma
 		File dnc/dnc.conf
 		File libdnds/src/libdnds.dll
 		File udt4/src/libudt.dll
-		File libconfig-1.4.9/lib/.libs/libconfig-9.dll
+		File libconfig-1.4.9-win32/lib/.libs/libconfig-9.dll
 		File tapcfg-1.0.0/build/tapcfg.dll
 		File ${MINGW_PATH}/libgcc_s_sjlj-1.dll
 		File ${MINGW_PATH}/libstdc++-6.dll
@@ -69,8 +87,9 @@ SetCompressor /FINAL /SOLID lzma
 
 		!insertmacro MUI_STARTMENU_WRITE_BEGIN Application
 			CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-			CreateShortCut  "$SMPROGRAMS\$StartMenuFolder\dnc.lnk" "$INSTDIR\dnc.exe"
-			CreateShortCut  "$SMPROGRAMS\$StartMenuFolder\dnc-uninstall.lnk" "$INSTDIR\dnc-uninstall.exe"
+			CreateShortCut	"$DESKTOP\dynvpn-client.lnk" "$INSTDIR\dnc.exe"
+			CreateShortCut  "$SMPROGRAMS\$StartMenuFolder\dynvpn-client.lnk" "$INSTDIR\dnc.exe"
+			CreateShortCut  "$SMPROGRAMS\$StartMenuFolder\dynvpn-client-uninstall.lnk" "$INSTDIR\dnc-uninstall.exe"
 		!insertmacro MUI_STARTMENU_WRITE_END
 	sectionEnd
 
@@ -92,10 +111,16 @@ SetCompressor /FINAL /SOLID lzma
 		RMDir "$INSTDIR"
 
 		!insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
-
-		Delete "$SMPROGRAMS\$StartMenuFolder\dnc.lnk"
-		Delete "$SMPROGRAMS\$StartMenuFolder\dnc-uninstall.lnk"
+		Delete "$DESKTOP\dynvpn-client.lnk"
+		Delete "$SMPROGRAMS\$StartMenuFolder\dynvpn-client.lnk"
+		Delete "$SMPROGRAMS\$StartMenuFolder\dynvpn-client-uninstall.lnk"
 		RMDir "$SMPROGRAMS\$StartMenuFolder"
+
+		StrCpy $2 $INSTDIR "" 3
+		Delete "$LOCALAPPDATA\VirtualStore\$2\*"
+		RMDir "$LOCALAPPDATA\VirtualStore\$2"
 
 		DeleteRegKey /ifempty HKCU "Software\dnc"
 	SectionEnd
+
+
