@@ -25,7 +25,7 @@ SetCompressor /FINAL /SOLID lzma
 
 ; --------
 ; General
-
+	!include "x64.nsh"
 	!define /date NOW "%y.%m.%d"
 	Name "DynVPN Client"
 	OutFile "dynvpn-client-${NOW}_x86.exe"
@@ -63,7 +63,7 @@ SetCompressor /FINAL /SOLID lzma
 
 ;-------------------
 ; Installer section
-	Section "dnds client" dncExe
+	Section "DynVPN client" dncExe
 		setOutPath $INSTDIR
 
 		File dnc/src/dnc.exe
@@ -71,7 +71,7 @@ SetCompressor /FINAL /SOLID lzma
 		File libdnds/src/libdnds.dll
 		File udt4/src/libudt.dll
 		File libconfig-1.4.9-win32/lib/.libs/libconfig-9.dll
-		File tapcfg-1.0.0/build/tapcfg.dll
+		File tapcfg-1.0.0-win32/build/tapcfg.dll
 		File ${MINGW_PATH}/libgcc_s_sjlj-1.dll
 		File ${MINGW_PATH}/libstdc++-6.dll
 		File ${PTHREAD_PATH}/pthreadGC2.dll
@@ -97,10 +97,17 @@ SetCompressor /FINAL /SOLID lzma
 		SetOverwrite on
 		setOutPath "$TEMP\tapdriver"
 
-		File tap-driver-32_64/32-bit/*
+		File tap-driver-32_64/*
 		DetailPrint "TAP INSTALL (May need confirmation)"
-		nsExec::ExecToLog '"$TEMP\tapdriver\deltapall.bat" /S /SELECT_UTILITIES=1'
-		nsExec::ExecToLog '"$TEMP\tapdriver\addtap.bat" /S /SELECT_UTILITIES=1'
+
+		${If} ${RunningX64}
+			nsExec::ExecToLog '"$TEMP\tapdriver\deltapall-64.bat" /S /SELECT_UTILITIES=1'
+			nsExec::ExecToLog '"$TEMP\tapdriver\addtap-64.bat" /S /SELECT_UTILITIES=1'
+		${Else}
+			nsExec::ExecToLog '"$TEMP\tapdriver\deltapall.bat" /S /SELECT_UTILITIES=1'
+			nsExec::ExecToLog '"$TEMP\tapdriver\addtap.bat" /S /SELECT_UTILITIES=1'
+		${EndIf}
+
 		RMDir "$TEMP\tapdriver"
 	sectionEnd
 
