@@ -51,7 +51,6 @@ SetCompressor /FINAL /SOLID lzma
 	!insertmacro MUI_PAGE_STARTMENU Application $StartMenuFolder
 
 	!insertmacro MUI_PAGE_INSTFILES
-	!insertmacro MUI_PAGE_FINISH
 
 	; Uninstall
 	!insertmacro MUI_UNPAGE_CONFIRM
@@ -97,15 +96,15 @@ SetCompressor /FINAL /SOLID lzma
 		SetOverwrite on
 		setOutPath "$TEMP\tapdriver"
 
-		File tap-driver-32_64/*
+		File /r tap-driver-32_64/
 		DetailPrint "TAP INSTALL (May need confirmation)"
 
 		${If} ${RunningX64}
-			nsExec::ExecToLog '"$TEMP\tapdriver\deltapall-64.bat" /S /SELECT_UTILITIES=1'
-			nsExec::ExecToLog '"$TEMP\tapdriver\addtap-64.bat" /S /SELECT_UTILITIES=1'
+			nsExec::ExecToLog '"$TEMP\tapdriver\64-bit\deltapall.bat" /S /SELECT_UTILITIES=1'
+			nsExec::ExecToLog '"$TEMP\tapdriver\64-bit\addtap.bat" /S /SELECT_UTILITIES=1'
 		${Else}
-			nsExec::ExecToLog '"$TEMP\tapdriver\deltapall.bat" /S /SELECT_UTILITIES=1'
-			nsExec::ExecToLog '"$TEMP\tapdriver\addtap.bat" /S /SELECT_UTILITIES=1'
+			nsExec::ExecToLog '"$TEMP\tapdriver\32-bit\deltapall.bat" /S /SELECT_UTILITIES=1'
+			nsExec::ExecToLog '"$TEMP\tapdriver\32-bit\addtap.bat" /S /SELECT_UTILITIES=1'
 		${EndIf}
 
 		RMDir "$TEMP\tapdriver"
