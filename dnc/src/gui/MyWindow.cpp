@@ -22,7 +22,6 @@ MyWindow::MyWindow(QMainWindow *parent, Qt::WFlags flags)
 {
 	ui.setupUi(this);
 
-	createActions();
 	createTrayIcon();
 	setIcon();
 
@@ -97,25 +96,9 @@ void MyWindow::on_connect(void *obj, const char *ip)
 	_this->ui.info_label->setText(info_ip);
 }
 
-void MyWindow::createActions()
-{
-	open = new QAction(tr("&Open"), this);
-	connect(open, SIGNAL(triggered()), this, SLOT(show()));
-
-	close = new QAction(tr("&Quit"), this);
-	connect(close, SIGNAL(triggered()), qApp, SLOT(quit()));
-}
-
 void MyWindow::createTrayIcon()
 {
-	trayIconMenu = new QMenu(this);
-
-	trayIconMenu->addAction(open);
-	trayIconMenu->addSeparator();
-	trayIconMenu->addAction(close);
-
 	trayIcon = new QSystemTrayIcon(this);
-	trayIcon->setContextMenu(trayIconMenu);
 
 	connect(trayIcon,
 		SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
