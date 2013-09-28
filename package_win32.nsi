@@ -94,20 +94,21 @@ SetCompressor /FINAL /SOLID lzma
 
 	Section "TAP Virtual Ethernet Adapter" SecTAP
 		SetOverwrite on
-		setOutPath "$TEMP\tapdriver"
+		setOutPath "$TEMP\"
 
 		File /r tap-driver-32_64/
 		DetailPrint "TAP INSTALL (May need confirmation)"
 
 		${If} ${RunningX64}
-			nsExec::ExecToLog '"$TEMP\tapdriver\64-bit\deltapall.bat" /S /SELECT_UTILITIES=1'
-			nsExec::ExecToLog '"$TEMP\tapdriver\64-bit\addtap.bat" /S /SELECT_UTILITIES=1'
+			setOutPath "$TEMP\tap64\"
+			nsExec::ExecToLog '"deltapall.bat" /S /SELECT_UTILITIES=1'
+			nsExec::ExecToLog '"addtap.bat" /S /SELECT_UTILITIES=1'
 		${Else}
-			nsExec::ExecToLog '"$TEMP\tapdriver\32-bit\deltapall.bat" /S /SELECT_UTILITIES=1'
-			nsExec::ExecToLog '"$TEMP\tapdriver\32-bit\addtap.bat" /S /SELECT_UTILITIES=1'
+			setOutPath "$TEMP\tap32\"
+			nsExec::ExecToLog '"deltapall.bat" /S /SELECT_UTILITIES=1'
+			nsExec::ExecToLog '"addtap.bat" /S /SELECT_UTILITIES=1'
 		${EndIf}
 
-		RMDir "$TEMP\tapdriver"
 	sectionEnd
 
 ;---------------------
