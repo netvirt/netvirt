@@ -8,6 +8,10 @@
 
 SetCompressor /FINAL /SOLID lzma
 
+# Define the path of the build directory
+#
+!define BDIR "build.w32"
+
 ;-------------------
 ; Include Modern UI
 	!include "MUI2.nsh"
@@ -65,9 +69,9 @@ SetCompressor /FINAL /SOLID lzma
 	Section "DynVPN client" dncExe
 		setOutPath $INSTDIR
 
-		File dnc/src/dnc.exe
+		File ${BDIR}/dnc/src/dnc.exe
 		File dnc/dnc.conf
-		File libdnds/src/libdnds.dll
+		File ${BDIR}/libdnds/src/libdnds.dll
 		File udt4/src/libudt.dll
 		File libconfig-1.4.9-win32/lib/.libs/libconfig-9.dll
 		File tapcfg-1.0.0-win32/build/tapcfg.dll
