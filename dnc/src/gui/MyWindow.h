@@ -19,7 +19,7 @@
 #include <QMenu>
 #include <QSystemTrayIcon>
 
-#include "../ui_dnc.h"
+#include "ui_dnc.h"
 
 class MyWindow : public QMainWindow
 {
