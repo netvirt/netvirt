@@ -1,4 +1,5 @@
 set(CMAKE_C_FLAGS "-g -Wall")
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 if (WIN32)
 	set (win_rc_icon icon.rc)
@@ -11,8 +12,15 @@ set(dnc_sources
 	dnc.c
 	session.c)
 
-link_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9/lib/.libs")
-link_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0/build")
+message(STATUS "CMAKE_SOURCE_DIR" ${CMAKE_SOURCE_DIR})
+
+if (WIN32)
+	link_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9-win32/lib/.libs")
+	link_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-win32/build")
+else()
+	link_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9-linux/lib/.libs")
+	link_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-linux/build")
+endif()
 
 if (1)
 	find_package(Qt4 REQUIRED)
@@ -39,7 +47,6 @@ if (1)
 	target_link_libraries(dnc ${QT_LIBRARIES})
 
 else()
-
 	set(cli_sources
 		cli/main.c)
 
@@ -50,8 +57,14 @@ find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 include_directories("${CMAKE_SOURCE_DIR}/libdnds/src/protocol/")
-include_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0/src/include/")
-include_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9/lib/")
+
+if (WIN32)
+	include_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-win32/src/include/")
+	include_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9-win32/lib/")
+else()
+	include_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-linux/src/include/")
+	include_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9-linux/lib/")
+endif()
 
 target_link_libraries(dnc
 	config
