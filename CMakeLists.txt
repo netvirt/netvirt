@@ -5,6 +5,14 @@ if(COMMAND cmake_policy)
 	cmake_policy(SET CMP0003 NEW)
 endif(COMMAND cmake_policy)
 
+if(APPLE)
+set(apple_package dnc.app) #DynVPN_Client.app)
+set(library_dest_dir ${apple_package}/Contents/MacOS)
+set(qtconf_dest_dir ${apple_package}/Contents/Resources)
+else()
+set(library_dest_dir lib)
+endif()
+
 add_subdirectory(libdnds)
 add_subdirectory(dnc)
 

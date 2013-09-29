@@ -36,8 +36,7 @@ else()
 	)
 
 #	install(TARGETS dnds
-#		LIBRARY DESTINATION lib)
-
+#		LIBRARY DESTINATION ${library_dest_dir} COMPONENT Runtime)
 endif()
 
 target_link_libraries(dnds
