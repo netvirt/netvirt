@@ -17,9 +17,12 @@ message(STATUS "CMAKE_SOURCE_DIR" ${CMAKE_SOURCE_DIR})
 if (WIN32)
 	link_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9-win32/lib/.libs")
 	link_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-win32/build")
-else()
+elseif(LINUX)
 	link_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9-linux/lib/.libs")
 	link_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-linux/build")
+elseif(APPLE)
+	link_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9-macos/lib/.libs")
+	link_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-macos/build")
 endif()
 
 if (1)
@@ -38,7 +41,7 @@ if (1)
 	include(${QT_USE_FILE})
 	add_definitions(${QT_DEFINITIONS})
 
-	add_executable(dnc ${dnc_sources} ${gui_sources} ${gui_headers_moc} ${gui_form_headers} ${gui_rccs_srcs} ${win_rc_icon})
+	add_executable(dnc MACOSX_BUNDLE WIN32 ${dnc_sources} ${gui_sources} ${gui_headers_moc} ${gui_form_headers} ${gui_rccs_srcs} ${win_rc_icon})
 
 	if (WIN32)
 		set_target_properties(dnc PROPERTIES LINK_FLAGS "-mwindows")
@@ -61,11 +64,24 @@ include_directories("${CMAKE_SOURCE_DIR}/libdnds/src/protocol/")
 if (WIN32)
 	include_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-win32/src/include/")
 	include_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9-win32/lib/")
-else()
+elseif (LINUX)
 	include_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-linux/src/include/")
 	include_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9-linux/lib/")
+elseif (APPLE)
+	include_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-macos/src/include/")
+	include_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9-macos/lib/")
 endif()
 
+if (APPLE)
+target_link_libraries(dnc
+	${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-macos/build/libtapcfg.a
+	${CMAKE_SOURCE_DIR}/libconfig-1.4.9-macos/lib/.libs/libconfig.a
+	dnds
+	ssl
+	crypto
+	pthread
+)
+else()
 target_link_libraries(dnc
 	-Wl,-Bstatic
 	tapcfg
@@ -76,12 +92,24 @@ target_link_libraries(dnc
 	crypto
 	pthread
 )
+endif()
 
 install(TARGETS dnc
-    DESTINATION bin)
+    BUNDLE DESTINATION . COMPONENT Runtime
+    RUNTIME DESTINATION bin COMPONENT Runtime
+    )
+
 if (APPLE)
-    install(FILES ${CMAKE_SOURCE_DIR}/libconfig-1.4.9/lib/.libs/libconfig.9.dylib
-            DESTINATION lib)
-    install(FILES ${CMAKE_SOURCE_DIR}/tapcfg-1.0.0/build/libtapcfg.dylib
-            DESTINATION lib)
-endif()
+    install(CODE "
+        file(WRITE \"\${CMAKE_INSTALL_PREFIX}/${qtconf_dest_dir}/qt.conf\" \"\")
+        " COMPONENT Runtime)
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/osx/DynVPN-launcher.app DESTINATION . USE_SOURCE_PERMISSIONS COMPONENT Runtime)
+    set(DIRS ${QT_LIBRARY_DIRS})
+    set(APPS "\${CMAKE_INSTALL_PREFIX}/${apple_package}")
+    install(CODE "
+        file(GLOB_RECURSE QTPLUGINS
+          \"\${CMAKE_INSTALL_PREFIX}/${library_dest_dir}/plugins/*${CMAKE_SHARED_LIBRARY_SUFFIX}\")
+        include(BundleUtilities)
+        fixup_bundle(\"${APPS}\" \"\${QTPLUGINS}\" \"${DIRS}\")
+        " COMPONENT Runtime)
+endif ()
