@@ -13,10 +13,10 @@ set(DNDS_SRCS
 	udt.cpp
 )
 
-add_library(dnds SHARED ${DNDS_SRCS})
+add_library(dnds ${DNDS_SRCS})
 
-find_package(OpenSSL REQUIRED)
-include_directories(${OPENSSL_INCLUDE_DIR})
+#find_package(OpenSSL REQUIRED)
+#include_directories(${OPENSSL_INCLUDE_DIR})
 
 include_directories(${CMAKE_SOURCE_DIR}/udt4/src/)
 
@@ -28,20 +28,23 @@ if(WIN32)
 else()
 	set(UDT_LIBRARIES ${CMAKE_SOURCE_DIR}/udt4/src/libudt.a)
 	target_link_libraries(dnds
-		dl
-		crypto
-		ssl
+#		-Wl,-Bstatic
+#		dl
+#		crypto
+#		ssl
+#		-Wl,-Bdynamic
 	)
 
-	install(TARGETS dnds
-		LIBRARY DESTINATION lib)
+#	install(TARGETS dnds
+#		LIBRARY DESTINATION lib)
+
 endif()
 
 target_link_libraries(dnds
 	${UDT_LIBRARIES}
-	${OPENSSL_LIBRARIES}
+#	${OPENSSL_LIBRARIES}
 	dnds_protocol
-	pthread
+#	pthread
 )
 
 

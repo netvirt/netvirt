@@ -67,10 +67,14 @@ else()
 endif()
 
 target_link_libraries(dnc
+	-Wl,-Bstatic
+	tapcfg
 	config
 	dnds
+	ssl
+	-Wl,-Bdynamic
+	crypto
 	pthread
-	tapcfg
 )
 
 install(TARGETS dnc
