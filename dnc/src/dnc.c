@@ -33,6 +33,8 @@
 
 #ifdef _WIN32
 	#define DNC_IP_FILE	"dnc.ip"
+#elif __APPLE__
+	#define DNC_IP_FILE	"dnc.ip"
 #else
 	#define DNC_IP_FILE	"/etc/dnds/dnc.ip"
 #endif

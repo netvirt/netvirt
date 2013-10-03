@@ -19,6 +19,8 @@
 
 #ifdef _WIN32
 	#define CONFIG_FILE "dnc.conf"
+#elif __APPLE__
+	#define CONFIG_FILE "dnc.conf"
 #else
 	#define CONFIG_FILE "/etc/dnds/dnc.conf"
 #endif
