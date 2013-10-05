@@ -14,11 +14,20 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QFont>
+#include <unistd.h>
+#include <libgen.h>
 
 #include "MyWindow.h"
 
 int main(int argc, char *argv[])
 {
+	#if __APPLE__
+		/* On Mac OS, the current directory is /, but the
+		 * config file is beside the executable.
+		 */
+		char *executable_path = dirname(argv[0]);
+		chdir(executable_path);
+	#endif
 	QApplication app(argc, argv);
 	MyWindow w;
 
