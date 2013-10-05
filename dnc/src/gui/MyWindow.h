@@ -45,8 +45,4 @@ class MyWindow : public QMainWindow
 		Ui::MainWindow ui;
 
 		QSystemTrayIcon *trayIcon;
-		QMenu *trayIconMenu;
-
-		QAction *open;
-		QAction *close;
 };

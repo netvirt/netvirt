@@ -44,9 +44,6 @@ MyWindow::MyWindow(QMainWindow *parent, Qt::WFlags flags)
 MyWindow::~MyWindow()
 {
 	delete trayIcon;
-	delete trayIconMenu;
-	delete open;
-	delete close;
 }
 
 void MyWindow::on_prov_key_checkBox_stateChanged(int checked)
@@ -67,7 +64,6 @@ void MyWindow::on_connect_button_clicked()
 
 	dnc_cfg->ev.on_connect = this->on_connect;
 	dnc_cfg->ev.obj = (void *)this;
-
 
 	if (dnc_config_init(dnc_cfg)) {
 		jlog(L_ERROR, "dnc]> dnc_config_init failed :: %s:%i", __FILE__, __LINE__);
@@ -135,3 +131,4 @@ void MyWindow::closeEvent(QCloseEvent *event)
 		}
 	}
 }
+
