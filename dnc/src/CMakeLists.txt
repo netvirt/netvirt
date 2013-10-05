@@ -1,6 +1,8 @@
 set(CMAKE_C_FLAGS "-g -Wall")
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+option (WITH_GUI "WITH_GUI" ON)
+
 if (WIN32)
 	set (win_rc_icon icon.rc)
 else()
@@ -25,7 +27,7 @@ elseif(UNIX)
 	link_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-linux/build")
 endif()
 
-if (1)
+if (WITH_GUI)
 	find_package(Qt4 REQUIRED)
 	set(gui_sources
 		gui/main.cpp

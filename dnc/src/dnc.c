@@ -22,6 +22,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+
 
 #include <dnds.h>
 #include <logger.h>
@@ -292,6 +295,13 @@ static void op_auth_response(struct session *session, DNDSMessage_t *msg)
 	}
 }
 
+static void create_file_with_owner_right(const char *filename)
+{
+	int fd = 0;
+	fd = open(filename, O_CREAT, S_IRUSR|S_IWUSR);
+	close(fd);
+}
+
 static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 {
 	size_t length;
@@ -301,7 +311,7 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 	FILE *fp = NULL;
 
 	ProvResponse_get_certificate(msg, &certificate, &length);
-
+	create_file_with_owner_right(dnc_cfg->certificate);
 	fp = fopen(dnc_cfg->certificate, "w");
 	if (fp == NULL) {
 		jlog(L_ERROR, "dnc]> can't write certifcate in file '%s'\n", dnc_cfg->certificate);
@@ -311,6 +321,7 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 	fclose(fp);
 
 	ProvResponse_get_certificateKey(msg, &certificatekey, &length);
+	create_file_with_owner_right(dnc_cfg->privatekey);
 	fp = fopen(dnc_cfg->privatekey, "w");
 	if (fp == NULL) {
 		jlog(L_ERROR, "dnc]> can't write private key in file '%s'\n", dnc_cfg->privatekey);
@@ -320,6 +331,7 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 	fclose(fp);
 
 	ProvResponse_get_trustedCert(msg, &trusted_authority, &length);
+	create_file_with_owner_right(dnc_cfg->trusted_cert);
 	fp = fopen(dnc_cfg->trusted_cert, "w");
 	if (fp == NULL) {
 		jlog(L_ERROR, "dnc]> can't write trusted certificate in file '%s'\n", dnc_cfg->trusted_cert);
