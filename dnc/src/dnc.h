@@ -13,6 +13,14 @@
 #ifndef DNC_H
 #define DNC_H
 
+#ifdef _WIN32
+	#define DNC_IP_FILE	"dnc.ip"
+#elif __APPLE__
+	#define DNC_IP_FILE	"dnc.ip"
+#else
+	#define DNC_IP_FILE	"/etc/dnds/dnc.ip"
+#endif
+
 struct dnc_cfg {
 	const char *server_address;
 	const char *server_port;

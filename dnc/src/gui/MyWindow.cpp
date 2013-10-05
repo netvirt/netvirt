@@ -27,11 +27,8 @@ MyWindow::MyWindow(QMainWindow *parent, Qt::WFlags flags)
 
 	trayIcon->show();
 
-#ifdef _WIN32
-	QFile file("dnc.ip");
-#else
-	QFile file("/etc/dnds/dnc.ip");
-#endif
+	QFile file(DNC_IP_FILE);
+
 	if (file.exists()) {
 		this->ui.connection_label->setText("Not connected");
 		this->ui.info_label->setText("");

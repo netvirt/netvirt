@@ -34,14 +34,6 @@
 #include "dnc.h"
 #include "session.h"
 
-#ifdef _WIN32
-	#define DNC_IP_FILE	"dnc.ip"
-#elif __APPLE__
-	#define DNC_IP_FILE	"dnc.ip"
-#else
-	#define DNC_IP_FILE	"/etc/dnds/dnc.ip"
-#endif
-
 struct dnc_cfg *dnc_cfg;
 struct session *master_session;
 static int g_shutdown = 0;
