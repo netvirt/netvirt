@@ -22,7 +22,7 @@ void jlog_init_file(const char *log_file_path)
 	log_file = fopen(log_file_path, "a");
 }
 
-void jlog(int level, char *format, ...)
+void jlog(int level, const char *format, ...)
 {
 	char logline[256];
 
