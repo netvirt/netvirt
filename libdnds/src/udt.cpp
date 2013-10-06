@@ -170,7 +170,7 @@ static void on_connect(peer_t *peer)
 	npeer->on_connect(npeer);
 }
 
-extern "C" void udtbus_poke_queue()
+void udtbus_poke_queue()
 {
 	peer_t *peer;
 
@@ -256,12 +256,12 @@ peer_t *udtbus_client(const char *listen_addr,
 	return peer;
 }
 
-extern "C" int udtbus_server(const char *listen_addr,
-			const char *port,
-			void (*on_connect)(peer_t *),
-			void (*on_disconnect)(peer_t *),
-			void (*on_input)(peer_t *),
-			void *ext_ptr)
+int udtbus_server(const char *listen_addr,
+                  const char *port,
+                  void (*on_connect)(peer_t *),
+                  void (*on_disconnect)(peer_t *),
+                  void (*on_input)(peer_t *),
+                  void *ext_ptr)
 {
 	peer_t *peer;
 
@@ -322,12 +322,12 @@ extern "C" int udtbus_server(const char *listen_addr,
 }
 
 // FIXME need to be tested with DNDSMessage
-extern "C" peer_t *udtbus_rendezvous(const char *listen_addr,
-				const char *dest_addr,
-				const char *port,
-				void (*on_disconnect)(peer_t *),
-				void (*on_input)(peer_t *),
-				void *ext_ptr) {
+peer_t *udtbus_rendezvous(const char *listen_addr,
+                          const char *dest_addr,
+                          const char *port,
+                          void (*on_disconnect)(peer_t *),
+                          void (*on_input)(peer_t *),
+                          void *ext_ptr) {
 
 	int ret = 0;
 	peer_t *peer = NULL;
@@ -401,7 +401,7 @@ extern "C" void udtbus_fini()
 	return;
 }
 
-extern "C" int udtbus_init()
+int udtbus_init()
 {
 	// use this function to initialize the UDT library
 	UDT::startup();
