@@ -170,7 +170,7 @@ static void on_connect(peer_t *peer)
 	npeer->on_connect(npeer);
 }
 
-extern "C" void udtbus_poke_queue()
+void udtbus_poke_queue()
 {
 	peer_t *peer;
 
@@ -213,7 +213,6 @@ peer_t *udtbus_client(const char *listen_addr,
 				void (*on_disconnect)(peer_t *),
 				void (*on_input)(peer_t *))
 {
-	int ret;
 	struct addrinfo hints, *local, *serv_info;
 
 	peer_t *peer;
@@ -223,12 +222,12 @@ peer_t *udtbus_client(const char *listen_addr,
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 
-	ret = getaddrinfo(NULL, port, &hints, &local);
+	getaddrinfo(NULL, port, &hints, &local);
 
 	UDTSOCKET client = UDT::socket(local->ai_family, local->ai_socktype, local->ai_protocol);
 
 	freeaddrinfo(local);
-	ret = getaddrinfo(listen_addr, port, &hints, &serv_info);
+	getaddrinfo(listen_addr, port, &hints, &serv_info);
 
 	if (UDT::connect(client, serv_info->ai_addr, serv_info->ai_addrlen) == UDT::ERROR) {
 		cout << "connect: " << UDT::getlasterror().getErrorMessage() << endl;
@@ -256,12 +255,12 @@ peer_t *udtbus_client(const char *listen_addr,
 	return peer;
 }
 
-extern "C" int udtbus_server(const char *listen_addr,
-			const char *port,
-			void (*on_connect)(peer_t *),
-			void (*on_disconnect)(peer_t *),
-			void (*on_input)(peer_t *),
-			void *ext_ptr)
+int udtbus_server(const char *listen_addr,
+                  const char *port,
+                  void (*on_connect)(peer_t *),
+                  void (*on_disconnect)(peer_t *),
+                  void (*on_input)(peer_t *),
+                  void *ext_ptr)
 {
 	peer_t *peer;
 
@@ -322,12 +321,12 @@ extern "C" int udtbus_server(const char *listen_addr,
 }
 
 // FIXME need to be tested with DNDSMessage
-extern "C" peer_t *udtbus_rendezvous(const char *listen_addr,
-				const char *dest_addr,
-				const char *port,
-				void (*on_disconnect)(peer_t *),
-				void (*on_input)(peer_t *),
-				void *ext_ptr) {
+peer_t *udtbus_rendezvous(const char *listen_addr,
+                          const char *dest_addr,
+                          const char *port,
+                          void (*on_disconnect)(peer_t *),
+                          void (*on_input)(peer_t *),
+                          void *ext_ptr) {
 
 	int ret = 0;
 	peer_t *peer = NULL;
@@ -401,7 +400,7 @@ extern "C" void udtbus_fini()
 	return;
 }
 
-extern "C" int udtbus_init()
+int udtbus_init()
 {
 	// use this function to initialize the UDT library
 	UDT::startup();
