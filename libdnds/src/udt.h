@@ -29,11 +29,30 @@ typedef struct peer {
 } peer_t;
 
 #ifdef __cplusplus
-extern "C"
+extern "C" {
 #endif
+
+int udtbus_server(const char *listen_addr,
+                  const char *port,
+                  void (*on_connect)(peer_t *),
+                  void (*on_disconnect)(peer_t *),
+                  void (*on_input)(peer_t *),
+                  void *ext_ptr);
+peer_t *udtbus_rendezvous(const char *listen_addr,
+                          const char *dest_addr,
+                          const char *port,
+                          void (*on_disconnect)(peer_t *),
+                          void (*on_input)(peer_t *),
+                          void *ext_ptr);
 peer_t *udtbus_client(const char *listen_addr,
-                                 const char *port,
-                                 void (*on_disconnect)(peer_t *),
-                                 void (*on_input)(peer_t *));
+                      const char *port,
+                      void (*on_disconnect)(peer_t *),
+                      void (*on_input)(peer_t *));
+void udtbus_poke_queue();
+int udtbus_init();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

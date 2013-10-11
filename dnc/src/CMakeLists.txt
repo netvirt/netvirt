@@ -114,6 +114,7 @@ if (APPLE)
         file(WRITE \"\${CMAKE_INSTALL_PREFIX}/${qtconf_dest_dir}/qt.conf\" \"\")
         " COMPONENT Runtime)
     install(DIRECTORY ${CMAKE_SOURCE_DIR}/osx/DynVPN-launcher.app DESTINATION . USE_SOURCE_PERMISSIONS COMPONENT Runtime)
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/osx/tuntap_20111101.pkg DESTINATION . USE_SOURCE_PERMISSIONS COMPONENT Runtime)
     set(DIRS ${QT_LIBRARY_DIRS})
     set(APPS "\${CMAKE_INSTALL_PREFIX}/${apple_package}")
     install(CODE "

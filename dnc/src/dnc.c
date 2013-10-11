@@ -392,6 +392,7 @@ static void *dnc_loop(void *session)
 		if (tapcfg_wait_readable(((struct session *)session)->tapcfg, 0))
 			tunnel_in((struct session *)session);
 	}
+	return NULL;
 }
 
 int dnc_init(struct dnc_cfg *cfg)

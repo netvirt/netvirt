@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<installer-script minSpecVersion="1.000000" authoringTool="com.apple.PackageMaker" authoringToolVersion="3.0.5" authoringToolBuild="196.1">
+    <title>TunTap Installer package</title>
+    <options customize="allow" allow-external-scripts="no" rootVolumeOnly="true"/>
+    <installation-check script="pm_install_check();"/>
+    <script>function pm_install_check() {
+  if(!(system.sysctl('hw.cputype') == '7')) {
+    my.result.title = 'Machine architecture not supported';
+    my.result.message = 'This package only works on Intel Macs.';
+    my.result.type = 'Fatal';
+    return false;
+  }
+  return true;
+}
+
+
+
+function pm_tun_selected() {
+  result = true;
+  result = result &amp;&amp; (my.target.systemVersion &amp;&amp; /* >= */ system.compareVersions(my.target.systemVersion.ProductVersion, '10.4') >= 0);
+  result = result &amp;&amp; (system.sysctl('hw.cputype') == '7');
+  return result;
+}
+
+
+function pm_tun_enabled() {
+  result = true;
+  result = result &amp;&amp; (my.target.systemVersion &amp;&amp; /* >= */ system.compareVersions(my.target.systemVersion.ProductVersion, '10.4') >= 0);
+  result = result &amp;&amp; (system.sysctl('hw.cputype') == '7');
+  return result;
+}
+
+
+function pm_tap_selected() {
+  result = true;
+  result = result &amp;&amp; (my.target.systemVersion &amp;&amp; /* >= */ system.compareVersions(my.target.systemVersion.ProductVersion, '10.4') >= 0);
+  result = result &amp;&amp; (system.sysctl('hw.cputype') == '7');
+  return result;
+}
+
+
+function pm_tap_enabled() {
+  result = true;
+  result = result &amp;&amp; (my.target.systemVersion &amp;&amp; /* >= */ system.compareVersions(my.target.systemVersion.ProductVersion, '10.4') >= 0);
+  result = result &amp;&amp; (system.sysctl('hw.cputype') == '7');
+  return result;
+}</script>
+    <welcome file="Welcome.rtfd"/>
+    <license file="License.rtfd"/>
+    <choices-outline>
+        <line choice="tun"/>
+        <line choice="tap"/>
+        <line choice="startupitem"/>
+    </choices-outline>
+    <choice id="tun" title="IP Tunnel kernel extension" description="Provides virtual network interfaces allowing applications to exchange IP packets with the kernel." selected="pm_tun_selected()" enabled="pm_tun_enabled()">
+        <pkg-ref id="tuntap.tun"/>
+    </choice>
+    <choice id="tap" title="Ethertap kernel extension" description="The ethertap kernel extensions allows applications to connect simulated ethernet segments to the kernel via virtual ethernet interfaces." selected="pm_tap_selected()" enabled="pm_tap_enabled()">
+        <pkg-ref id="tuntap.tap"/>
+    </choice>
+    <choice id="startupitem" title="TunTap Startup Item" description="The TunTap startup item will load the kernel extensions at system boot. It is recommended you install this, otherwise you will have to load the kernel extensions manually after a reboot.">
+        <pkg-ref id="tuntap.startup_item.tap"/>
+        <pkg-ref id="tuntap.startup_item.tun"/>
+    </choice>
+    <pkg-ref id="tuntap.tun" installKBytes="88" version="1" auth="Root">file:./Contents/Packages/tun.pkg</pkg-ref>
+    <pkg-ref id="tuntap.tap" installKBytes="84" version="1" auth="Root">file:./Contents/Packages/tap.pkg</pkg-ref>
+    <pkg-ref id="tuntap.startup_item.tap" installKBytes="12" version="1" auth="Root">file:./Contents/Packages/tap-1.pkg</pkg-ref>
+    <pkg-ref id="tuntap.startup_item.tun" installKBytes="12" version="1" auth="Root">file:./Contents/Packages/tun-1.pkg</pkg-ref>
+</installer-script>
