@@ -75,25 +75,33 @@ elseif (UNIX)
 endif()
 
 if (APPLE)
-target_link_libraries(dnc
-	${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-macos/build/libtapcfg.a
-	${CMAKE_SOURCE_DIR}/libconfig-1.4.9-macos/lib/.libs/libconfig.a
-	dnds
-	ssl
-	crypto
-	pthread
-)
+	target_link_libraries(dnc
+		${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-macos/build/libtapcfg.a
+		${CMAKE_SOURCE_DIR}/libconfig-1.4.9-macos/lib/.libs/libconfig.a
+		dnds
+		ssl
+		crypto
+		pthread
+	)
+elseif(WIN32)
+	target_link_libraries(dnc
+		${OPENSSL_LIBRARIES}
+		tapcfg
+		config
+		dnds
+		pthread
+	)
 else()
-target_link_libraries(dnc
-	-Wl,-Bstatic
-	tapcfg
-	config
-	dnds
-	ssl
-	-Wl,-Bdynamic
-	crypto
-	pthread
-)
+	target_link_libraries(dnc
+		-Wl,-Bstatic
+		tapcfg
+		config
+		dnds
+		ssl
+		-Wl,-Bdynamic
+		crypto
+		pthread
+	)
 endif()
 
 install(TARGETS dnc

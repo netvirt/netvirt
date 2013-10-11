@@ -1,5 +1,6 @@
 set(CMAKE_C_FLAGS "-g -Wall")
 set(CMAKE_CXX_FLAGS "-g -Wall")
+
 add_subdirectory(protocol)
 include_directories(protocol)
 
@@ -15,12 +16,13 @@ set(DNDS_SRCS
 
 add_library(dnds ${DNDS_SRCS})
 
-#find_package(OpenSSL REQUIRED)
-#include_directories(${OPENSSL_INCLUDE_DIR})
-
 include_directories(${CMAKE_SOURCE_DIR}/udt4/src/)
 
 if(WIN32)
+
+	find_package(OpenSSL REQUIRED)
+	include_directories(${OPENSSL_INCLUDE_DIR})
+
 	set(UDT_LIBRARIES ${CMAKE_SOURCE_DIR}/udt4/src/libudt.dll)
 	target_link_libraries(dnds
 		ws2_32
