@@ -83,13 +83,14 @@ if (APPLE)
 		crypto
 		pthread
 	)
-elseif(WIN32)
+elseif (WIN32)
 	target_link_libraries(dnc
-		${OPENSSL_LIBRARIES}
-		tapcfg
 		config
 		dnds
 		pthread
+#		tapcfg
+		${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-win32/build/tapcfg.dll
+		${OPENSSL_LIBRARIES}
 	)
 else()
 	target_link_libraries(dnc

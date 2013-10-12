@@ -175,7 +175,11 @@ static void on_disconnect(netc_t *netc)
 	session->state = SESSION_STATE_DOWN;
 
 	do {
+#if defined(_WIN32)
+		Sleep(5);
+#else
 		sleep(5);
+#endif
 		jlog(L_NOTICE, "dnc]> connection retry...\n");
 
 		retry_netc = net_client(dnc_cfg->server_address,

@@ -64,4 +64,6 @@ ADD_LIBRARY(dnds_protocol STATIC
 	per_opentype.c
 )
 
-set_target_properties(dnds_protocol PROPERTIES COMPILE_FLAGS "-fPIC")
+if (UNIX)
+	set_target_properties(dnds_protocol PROPERTIES COMPILE_FLAGS "-fPIC")
+endif()

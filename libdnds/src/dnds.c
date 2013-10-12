@@ -31,7 +31,7 @@ const char* inet_ntop(int af, const void* src, char* dst, int cnt)
 	srcaddr.sin_family = af;
 
 	if (WSAAddressToString((struct sockaddr*) &srcaddr, sizeof(struct sockaddr_in), 0, dst, (LPDWORD) &cnt) != 0) {
-		DWORD rv = WSAGetLastError();
+		WSAGetLastError();
 		return NULL;
 	}
 	return dst;
