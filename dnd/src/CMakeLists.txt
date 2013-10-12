@@ -18,6 +18,9 @@ include_directories("${CMAKE_SOURCE_DIR}/libdnds/src/protocol/")
 target_link_libraries(dnd
 	dnds
 	config
+	ssl
+	crypto
+	pthread
 )
 
 install(TARGETS dnd

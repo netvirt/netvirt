@@ -16,9 +16,12 @@ add_executable(dsd
 include_directories("${CMAKE_SOURCE_DIR}/libdnds/src/protocol/")
 target_link_libraries(dsd
 	dnds
-	pq
-	ossp-uuid
 	config
+	ssl
+	ossp-uuid
+	pq
+	crypto
+	pthread
 )
 
 install(TARGETS dsd
