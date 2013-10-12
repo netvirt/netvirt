@@ -9,7 +9,10 @@
  * of the License.
  *
  */
+#include <sys/types.h>
+#include <sys/stat.h>
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -18,11 +21,68 @@
 #include "../config.h"
 #include "../dnc.h"
 
+int daemonize()
+{
+        pid_t pid, sid;
+
+        if (getppid() == 1)
+                return 0;
+
+        pid = fork();
+        if (pid < 0)
+                exit(EXIT_FAILURE);
+
+        if (pid > 0)
+                exit(EXIT_SUCCESS);
+
+        umask(0);
+
+        sid = setsid();
+
+        if (sid < 0)
+                exit(EXIT_FAILURE);
+
+        if ((chdir("/")) < 0)
+                exit(EXIT_FAILURE);
+
+        if (freopen("/dev/null", "r", stdin) == NULL)
+                return -1;
+
+        if (freopen("/dev/null", "w", stdout) == NULL)
+                return -1;
+
+        if (freopen("/dev/null", "w", stderr) == NULL)
+                return -1;
+
+        return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	int opt;
-	struct dnc_cfg *dnc_cfg;
+	char fg = 0;
+	struct dnc_cfg *dnc_cfg = NULL;
 	dnc_cfg = calloc(1, sizeof(struct dnc_cfg));
+
+	while ((opt = getopt(argc, argv, "fhp:")) != -1) {
+		switch (opt) {
+		case 'f':
+			fg = 1;
+			break;
+		case 'p':
+			jlog(L_DEBUG, "dnc]> provisioning code: %s", optarg);
+			dnc_cfg->prov_code = strdup(optarg);
+			break;
+		case 'h':
+			jlog(L_NOTICE, "\nDynVPN client:\n\n"
+					"-p KEY\t\tclient provisioning\n"
+					"-f\t\trun foreground\n"
+					"-h\t\tshow this help\n");
+			return 0;
+		default:
+			return 0;
+		}
+	}
 
 #ifndef _WIN32
 	if (getuid() != 0) {
@@ -30,14 +90,8 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 #endif
-
-	while ((opt = getopt(argc, argv, "p:")) != -1) {
-		switch (opt) {
-		case 'p':
-			jlog(L_DEBUG, "dnc]> provisioning code: %s", optarg);
-			dnc_cfg->prov_code = strdup(optarg);
-		}
-	}
+	if (!fg)
+		daemonize();
 
 	if (dnc_config_init(dnc_cfg)) {
 		jlog(L_ERROR, "dnc]> dnc_config_init failed :: %s:%i", __FILE__, __LINE__);
@@ -50,6 +104,8 @@ int main(int argc, char *argv[])
 		jlog(L_ERROR, "dnc]> dnc_init() failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
+
+	while(1) { sleep(1); }
 
 	return 0;
 }
