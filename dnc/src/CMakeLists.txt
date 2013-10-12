@@ -17,14 +17,14 @@ set(dnc_sources
 message(STATUS "CMAKE_SOURCE_DIR" ${CMAKE_SOURCE_DIR})
 
 if (WIN32)
-	link_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9-win32/lib/.libs")
-	link_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-win32/build")
+	link_directories("${CMAKE_SOURCE_DIR}/libconfig-win32/lib/.libs")
+	link_directories("${CMAKE_SOURCE_DIR}/tapcfg-win32/build")
 elseif(APPLE)
-	link_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9-macos/lib/.libs")
-	link_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-macos/build")
+	link_directories("${CMAKE_SOURCE_DIR}/libconfig-macos/lib/.libs")
+	link_directories("${CMAKE_SOURCE_DIR}/tapcfg-macos/build")
 elseif(UNIX)
-	link_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9-linux/lib/.libs")
-	link_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-linux/build")
+	link_directories("${CMAKE_SOURCE_DIR}/libconfig-linux/lib/.libs")
+	link_directories("${CMAKE_SOURCE_DIR}/tapcfg-linux/build")
 endif()
 
 if (WITH_GUI)
@@ -64,20 +64,20 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 include_directories("${CMAKE_SOURCE_DIR}/libdnds/src/protocol/")
 
 if (WIN32)
-	include_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-win32/src/include/")
-	include_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9-win32/lib/")
+	include_directories("${CMAKE_SOURCE_DIR}/tapcfg-win32/src/include/")
+	include_directories("${CMAKE_SOURCE_DIR}/libconfig-win32/lib/")
 elseif (APPLE)
-	include_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-macos/src/include/")
-	include_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9-macos/lib/")
+	include_directories("${CMAKE_SOURCE_DIR}/tapcfg-macos/src/include/")
+	include_directories("${CMAKE_SOURCE_DIR}/libconfig-macos/lib/")
 elseif (UNIX)
-	include_directories("${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-linux/src/include/")
-	include_directories("${CMAKE_SOURCE_DIR}/libconfig-1.4.9-linux/lib/")
+	include_directories("${CMAKE_SOURCE_DIR}/tapcfg-linux/src/include/")
+	include_directories("${CMAKE_SOURCE_DIR}/libconfig-linux/lib/")
 endif()
 
 if (APPLE)
 	target_link_libraries(dnc
-		${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-macos/build/libtapcfg.a
-		${CMAKE_SOURCE_DIR}/libconfig-1.4.9-macos/lib/.libs/libconfig.a
+		${CMAKE_SOURCE_DIR}/tapcfg-macos/build/libtapcfg.a
+		${CMAKE_SOURCE_DIR}/libconfig-macos/lib/.libs/libconfig.a
 		dnds
 		ssl
 		crypto
@@ -89,7 +89,7 @@ elseif (WIN32)
 		dnds
 		pthread
 #		tapcfg
-		${CMAKE_SOURCE_DIR}/tapcfg-1.0.0-win32/build/tapcfg.dll
+		${CMAKE_SOURCE_DIR}/tapcfg-win32/build/tapcfg.dll
 		${OPENSSL_LIBRARIES}
 	)
 else()
