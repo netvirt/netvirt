@@ -18,7 +18,13 @@ endif()
 add_subdirectory(libdnds)
 add_subdirectory(dnc)
 
-#if (NOT APPLE AND NOT WIN32)
-#	add_subdirectory(dsd)
-#	add_subdirectory(dnd)
-#endif()
+option (WITH_DSD "WITH_DND" OFF)
+option (WITH_DSD "WITH_DSD" OFF)
+
+if (WITH_DSD)
+	add_subdirectory(dsd)
+endif()
+
+if (WITH_DND)
+	add_subdirectory(dnd)
+endif()
