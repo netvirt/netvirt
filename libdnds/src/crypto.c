@@ -211,7 +211,7 @@ int krypt_set_rsa(krypt_t *kconn)
 		return 0;
 	}
 
-	SSL_set_cipher_list(kconn->ssl, "RSA");
+	SSL_set_cipher_list(kconn->ssl, "AES256-SHA");
 
 	// Load the trusted certificate store into our SSL_CTX
 	SSL_CTX_set_cert_store(kconn->ctx, kconn->passport->trusted_authority);

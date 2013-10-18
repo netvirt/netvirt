@@ -11,6 +11,7 @@
  * gcc ../dnds.o *.o -o test
  */
 
+#define ETH_ALEN 6
 static int write_out(const void *buffer, size_t size, void *app_key)
 {
 	FILE *out_fp = app_key;

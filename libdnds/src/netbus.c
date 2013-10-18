@@ -22,6 +22,7 @@
 #include "dnds.h"
 #include "logger.h"
 #include "netbus.h"
+#include "tcp.h"
 #include "udt.h"
 
 static void net_connection_free(netc_t *netc)
@@ -450,6 +451,7 @@ void net_disconnect(netc_t *netc)
 
 int netbus_init()
 {
+	tcpbus_init();
 	return udtbus_init();
 }
 
@@ -481,9 +483,13 @@ netc_t *net_client(const char *listen_addr,
 		krypt_add_passport(netc->kconn, passport);
 
 	switch (protocol) {
+		case NET_PROTO_TCP:
+			netc->peer = tcpbus_client(listen_addr, port,
+				net_on_disconnect, net_on_input);
+			break;
 		case NET_PROTO_UDT:
 			netc->peer = udtbus_client(listen_addr, port,
-			    net_on_disconnect, net_on_input);
+				net_on_disconnect, net_on_input);
 			break;
 
 		default:
@@ -555,10 +561,15 @@ int net_server(const char *listen_addr,
 		krypt_add_passport(netc->kconn, passport);
 
 	switch (protocol) {
+		case NET_PROTO_TCP:
+			ret = tcpbus_server(listen_addr, port,
+				net_on_connect, net_on_disconnect,
+				net_on_input, netc);
+			break;
 		case NET_PROTO_UDT:
 			ret = udtbus_server(listen_addr, port,
-			    net_on_connect, net_on_disconnect,
-			    net_on_input, netc);
+				net_on_connect, net_on_disconnect,
+				net_on_input, netc);
 			break;
 
 		default:

@@ -11,6 +11,7 @@ set(DNDS_SRCS
 	crypto.c
 	mbuf.c
 	netbus.c
+	tcp.c
 	udt.cpp
 )
 
