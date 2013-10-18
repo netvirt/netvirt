@@ -181,6 +181,11 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	if (netbus_init()) {
+		jlog(L_ERROR, "dsd]> netbus_init failed:: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
+	}
+
 	if (dsd_init(dsd_cfg)) {
 		jlog(L_NOTICE, "dsd]> dnds_init failed :: %s:%i\n", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
@@ -189,6 +194,8 @@ int main(int argc, char *argv[])
 	if (D_FLAG) {
 		daemonize();
 	}
+
+	while(1) { sleep(1); }
 
 	return 0;
 }

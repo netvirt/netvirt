@@ -136,6 +136,15 @@ static void on_connect(netc_t *netc)
 	netc->ext_ptr = session;
 }
 
+static void *dsd_loop(void *nil)
+{
+	while (1) {
+		tcpbus_ion_poke();
+	}
+
+	return NULL;
+}
+
 int dsd_init(struct dsd_cfg *dsd_cfg)
 {
 	int ret;
@@ -149,6 +158,9 @@ int dsd_init(struct dsd_cfg *dsd_cfg)
 		jlog(L_NOTICE, "dsd]> net_server failed :: %s:%i\n", __FILE__, __LINE__);
 		return -1;
 	}
+
+	pthread_t thread_loop;
+	pthread_create(&thread_loop, NULL, dsd_loop, NULL);
 
 	return 0;
 }
