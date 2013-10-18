@@ -104,6 +104,11 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	if (netbus_init()) {
+		jlog(L_ERROR, "dnd]> netbus_init failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
+	}
+
 	if (dsc_init(dnd_cfg)) {
 		jlog(L_ERROR, "dnd]> dnc_init failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
@@ -113,6 +118,8 @@ int main(int argc, char *argv[])
 		jlog(L_ERROR, "dnd]> dnd_init failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
+
+	while (1) { sleep(1); }
 
 	return 0;
 }

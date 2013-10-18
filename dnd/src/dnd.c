@@ -261,6 +261,15 @@ static void on_disconnect(netc_t *netc)
 	return;
 }
 
+static void *dnd_loop(void *nil)
+{
+	while (1) {
+		udtbus_poke_queue();
+	}
+
+	return NULL;
+}
+
 int dnd_init(struct dnd_cfg *dnd_cfg)
 {
 	int ret;
@@ -274,6 +283,9 @@ int dnd_init(struct dnd_cfg *dnd_cfg)
 	}
 
 	context_init();
+
+	pthread_t thread_loop;
+	pthread_create(&thread_loop, NULL, dnd_loop, NULL);
 
 	return 0;
 }

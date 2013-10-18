@@ -148,7 +148,6 @@ static void handle_SearchResponse_Node(netc_t *netc, DNDSMessage_t *msg)
 		//printf("ipAddress: %s\n", ipAddress);
 	}
 
-
 	DSMessage_get_seqNumber(msg, &tracked_id);
 
 	session = session_tracking_table[tracked_id % MAX_SESSION];
@@ -268,18 +267,30 @@ static void on_disconnect(netc_t *netc)
 	dsc_netc = retry_netc;
 }
 
+static void *dsc_loop(void *nil)
+{
+	while (1) {
+		tcpbus_ion_poke();
+	}
+
+	return NULL;
+}
+
 int dsc_init(struct dnd_cfg *cfg)
 {
 	dnd_cfg = cfg;
 
 	dnd_passport = pki_passport_load_from_file(dnd_cfg->certificate, dnd_cfg->privatekey, dnd_cfg->trusted_cert);
-	dsc_netc = net_client(dnd_cfg->dsd_ipaddr, dnd_cfg->dsd_port, NET_PROTO_UDT, NET_SECURE_RSA, dnd_passport,
+	dsc_netc = net_client(dnd_cfg->dsd_ipaddr, dnd_cfg->dsd_port, NET_PROTO_TCP, NET_SECURE_RSA, dnd_passport,
 				on_disconnect, on_input, on_secure);
 
 	if (dsc_netc == NULL) {
 		jlog(L_NOTICE, "dnd]> failed to connect to the Directory Service :: %s:%i\n", __FILE__, __LINE__);
 		return -1;
 	}
+
+	pthread_t thread_loop;
+	pthread_create(&thread_loop, NULL, dsc_loop, NULL);
 
 	return 0;
 }
