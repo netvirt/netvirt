@@ -559,8 +559,11 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 
 		ret = dao_fetch_node_from_provcode(provcode, &certificate, &private_key, &trustedcert, &ipAddress);
 		if (ret != 0) {
-			jlog(L_WARNING, "dao fetch node from provcode failed: %s\n", provcode);
-			return; /* FIXME send negative response */
+			SearchResponse_set_result(msg, DNDSResult_noSuchObject);
+			SearchResponse_set_searchType(msg, SearchType_object);
+			net_send_msg(session->netc, msg);
+			DNDSMessage_del(msg);
+			return;
 		}
 
 		Node_set_certificate(objNode, certificate, strlen(certificate));
