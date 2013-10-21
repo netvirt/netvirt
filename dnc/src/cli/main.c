@@ -60,14 +60,14 @@ int daemonize()
 int main(int argc, char *argv[])
 {
 	int opt;
-	char fg = 0;
+	char daemon = 0;
 	struct dnc_cfg *dnc_cfg = NULL;
 	dnc_cfg = calloc(1, sizeof(struct dnc_cfg));
 
-	while ((opt = getopt(argc, argv, "fhp:")) != -1) {
+	while ((opt = getopt(argc, argv, "dhp:")) != -1) {
 		switch (opt) {
-		case 'f':
-			fg = 1;
+		case 'd':
+			daemon = 1;
 			break;
 		case 'p':
 			jlog(L_DEBUG, "dnc]> provisioning code: %s", optarg);
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 		case 'h':
 			jlog(L_NOTICE, "\nDynVPN client:\n\n"
 					"-p KEY\t\tclient provisioning\n"
-					"-f\t\trun foreground\n"
+					"-d\t\trun background\n"
 					"-h\t\tshow this help\n");
 			return 0;
 		default:
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 #endif
-	if (!fg)
+	if (daemon)
 		daemonize();
 
 	if (dnc_config_init(dnc_cfg)) {
