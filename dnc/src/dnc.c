@@ -307,6 +307,11 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 	FILE *fp = NULL;
 
 	ProvResponse_get_certificate(msg, &certificate, &length);
+	if (certificate == NULL) {
+		jlog(L_ERROR, "dnc]> Invalid provisioning key\n");
+		exit(EXIT_FAILURE);
+	}
+
 	create_file_with_owner_right(dnc_cfg->certificate);
 	fp = fopen(dnc_cfg->certificate, "w");
 	if (fp == NULL) {
