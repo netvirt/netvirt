@@ -7,19 +7,19 @@
     <x>0</x>
     <y>0</y>
     <width>363</width>
-    <height>199</height>
+    <height>250</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>363</width>
-    <height>199</height>
+    <height>250</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>363</width>
-    <height>199</height>
+    <height>250</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -44,12 +44,15 @@
     </property>
    </widget>
    <widget class="QFrame" name="frame">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
     <property name="geometry">
      <rect>
-      <x>9</x>
+      <x>10</x>
       <y>120</y>
       <width>341</width>
-      <height>71</height>
+      <height>121</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -62,7 +65,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>40</y>
+       <y>80</y>
        <width>321</width>
        <height>23</height>
       </rect>
@@ -75,7 +78,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>10</y>
+       <y>50</y>
        <width>141</width>
        <height>22</height>
       </rect>
@@ -85,6 +88,19 @@
      </property>
      <property name="checked">
       <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="autoconn_checkBox">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>20</y>
+       <width>161</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Connect on startup</string>
      </property>
     </widget>
    </widget>
@@ -153,7 +169,7 @@
      <rect>
       <x>20</x>
       <y>80</y>
-      <width>177</width>
+      <width>201</width>
       <height>27</height>
      </rect>
     </property>

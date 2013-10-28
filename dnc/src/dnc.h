@@ -29,6 +29,7 @@ struct dnc_cfg {
 	const char *trusted_cert;
 	char *prov_code;
 	const char *log_file;
+	int auto_connect;
 
 	struct {
 		void (*on_connect)(void *obj, const char *ip);
@@ -41,6 +42,7 @@ extern "C" {
 #endif
 
 int dnc_init(struct dnc_cfg *dnc_cfg);
+int dnc_config_toggle_auto_connect(int status);
 
 #ifdef __cplusplus
 }

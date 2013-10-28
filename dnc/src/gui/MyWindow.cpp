@@ -17,6 +17,8 @@
 #include "../config.h"
 #include "../dnc.h"
 
+struct dnc_cfg *dnc_cfg;
+
 MyWindow::MyWindow(QMainWindow *parent, Qt::WFlags flags)
     : QMainWindow(parent, flags)
 {
@@ -36,11 +38,30 @@ MyWindow::MyWindow(QMainWindow *parent, Qt::WFlags flags)
 	}
 
 	connect(this->ui.exit_button, SIGNAL(clicked()), qApp, SLOT(quit()));
+
+	dnc_cfg = (struct dnc_cfg*)calloc(1, sizeof(struct dnc_cfg));
+
+	if (dnc_config_init(dnc_cfg)) {
+		jlog(L_ERROR, "dnc]> dnc_config_init failed :: %s:%i", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
+	}
+
+	if (dnc_cfg->auto_connect != 0) {
+		this->ui.autoconn_checkBox->setCheckState(Qt::Checked);
+		if (file.exists()) {
+			MyWindow::on_connect_button_clicked();
+		}
+	}
 }
 
 MyWindow::~MyWindow()
 {
 	delete trayIcon;
+}
+
+void MyWindow::on_autoconn_checkBox_stateChanged(int checked)
+{
+	dnc_config_toggle_auto_connect(checked);
 }
 
 void MyWindow::on_prov_key_checkBox_stateChanged(int checked)
@@ -50,7 +71,6 @@ void MyWindow::on_prov_key_checkBox_stateChanged(int checked)
 
 void MyWindow::on_connect_button_clicked()
 {
-	struct dnc_cfg *dnc_cfg = (struct dnc_cfg*)calloc(1, sizeof(struct dnc_cfg));
 
 	QString provisioning_key = this->ui.provisioning_key_input->text();
 
@@ -61,11 +81,6 @@ void MyWindow::on_connect_button_clicked()
 
 	dnc_cfg->ev.on_connect = this->on_connect;
 	dnc_cfg->ev.obj = (void *)this;
-
-	if (dnc_config_init(dnc_cfg)) {
-		jlog(L_ERROR, "dnc]> dnc_config_init failed :: %s:%i", __FILE__, __LINE__);
-		exit(EXIT_FAILURE);
-	}
 
 	jlog(L_NOTICE, "dnc]> connecting...");
 

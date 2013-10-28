@@ -32,6 +32,7 @@ class MyWindow : public QMainWindow
 	virtual ~MyWindow();
 
 	public slots:
+		void on_autoconn_checkBox_stateChanged(int checked);
 		void on_prov_key_checkBox_stateChanged(int checked);
 		void on_connect_button_clicked();
 		void trayIconClicked(QSystemTrayIcon::ActivationReason);

@@ -25,6 +25,33 @@
 	#define CONFIG_FILE "/etc/dnds/dnc.conf"
 #endif
 
+int dnc_config_toggle_auto_connect(int status)
+{
+	config_setting_t *root, *setting;
+	config_t cfg;
+
+	config_init(&cfg);
+	root = config_root_setting(&cfg);
+
+	/* Read the file. If there is an error, report it and exit. */
+        if (!config_read_file(&cfg, CONFIG_FILE)) {
+                fprintf(stderr, "Can't open %s\n", CONFIG_FILE);
+		return -1;
+        }
+
+	setting = config_setting_get_member(root, "auto_connect");
+	if (setting == NULL) {
+                setting = config_setting_add(root, "auto_connect", CONFIG_TYPE_BOOL);
+	}
+	config_setting_set_bool(setting, status);
+
+	config_write_file(&cfg, CONFIG_FILE);
+	config_setting_set_bool(setting, status);
+	config_destroy(&cfg);
+
+	return 0;
+}
+
 int dnc_config_init(struct dnc_cfg *dnc_cfg)
 {
 	config_t cfg;
@@ -32,8 +59,8 @@ int dnc_config_init(struct dnc_cfg *dnc_cfg)
 
 	/* Read the file. If there is an error, report it and exit. */
         if (!config_read_file(&cfg, CONFIG_FILE)) {
-                fprintf(stderr, "Can't open %s\n", CONFIG_FILE);
-                return(EXIT_FAILURE);
+		fprintf(stderr, "Can't open %s\n", CONFIG_FILE);
+		exit(EXIT_FAILURE);
         }
 
 	if (config_lookup_string(&cfg, "log_file", &dnc_cfg->log_file)) {
@@ -74,6 +101,9 @@ int dnc_config_init(struct dnc_cfg *dnc_cfg)
 		jlog(L_ERROR, "dnc]> trusted_cert is not present !");
 		exit(EXIT_FAILURE);
 	}
+
+	if (config_lookup_bool(&cfg, "auto_connect", &dnc_cfg->auto_connect))
+		jlog(L_DEBUG, "dnc]> auto_connect: %d\n", dnc_cfg->auto_connect);
 
 	return 0;
 }
