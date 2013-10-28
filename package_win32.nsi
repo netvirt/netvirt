@@ -71,10 +71,9 @@ SetCompressor /FINAL /SOLID lzma
 
 		File ${BDIR}/dnc/src/dnc.exe
 		File dnc/dnc.conf
-		File ${BDIR}/libdnds/src/libdnds.dll
 		File udt4/src/libudt.dll
-		File libconfig-1.4.9-win32/lib/.libs/libconfig-9.dll
-		File tapcfg-1.0.0-win32/build/tapcfg.dll
+		File libconfig-win32/lib/.libs/libconfig-9.dll
+		File tapcfg-win32/build/tapcfg.dll
 		File ${MINGW_PATH}/libgcc_s_sjlj-1.dll
 		File ${MINGW_PATH}/libstdc++-6.dll
 		File ${PTHREAD_PATH}/pthreadGC2.dll
