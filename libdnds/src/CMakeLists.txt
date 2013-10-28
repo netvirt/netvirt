@@ -11,9 +11,12 @@ set(DNDS_SRCS
 	crypto.c
 	mbuf.c
 	netbus.c
-	tcp.c
 	udt.cpp
 )
+
+if(UNIX)
+set(DNDS_SRCS ${DNDS_SRCS} tcp.c)
+endif()
 
 add_library(dnds ${DNDS_SRCS})
 
