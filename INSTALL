@@ -9,7 +9,7 @@
  apt-get install libpq-dev
  apt-get install libossp-uuid-dev
  apt-get install libssl-dev
- apt-get install build-essentials
+ apt-get install build-essential
  apt-get install scons # to build tapcfg-1.0.0
 
  Getting UDT

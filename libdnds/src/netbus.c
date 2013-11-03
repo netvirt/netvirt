@@ -637,7 +637,6 @@ netc_t *net_p2p(const char *listen_addr,
 		jlog(L_ERROR, "net]> unable to initialize the p2p connection :: %s:%i", __FILE__, __LINE__);
 		net_connection_free(netc);
 		return NULL;
-
 	}
 
 	netc->peer = peer;

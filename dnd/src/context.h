@@ -14,11 +14,11 @@
 #define CONTEXT_H
 
 #include <crypto.h>
+#include <ftable.h>
 #include <netbus.h>
 #include <mbuf.h>
 
 #include "dnd.h"
-#include "ftable.h"
 #include "linkst.h"
 
 typedef struct context {

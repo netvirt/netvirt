@@ -12,6 +12,7 @@ endif()
 set(dnc_sources
 	config.c
 	dnc.c
+	p2p.c
 	session.c)
 
 message(STATUS "CMAKE_SOURCE_DIR" ${CMAKE_SOURCE_DIR})

@@ -32,6 +32,7 @@
 #include <netbus.h>
 
 #include "dnc.h"
+#include "p2p.h"
 #include "session.h"
 
 struct dnc_cfg *dnc_cfg;
@@ -47,7 +48,8 @@ static void tunnel_in(struct session* session)
 {
 	DNDSMessage_t *msg = NULL;
 	size_t frame_size = 0;
-	char framebuf[2000];
+	uint8_t framebuf[2000];
+	struct session *p2p_session;
 
 	if (session->state != SESSION_STATE_AUTHED)
 		return;
@@ -59,6 +61,10 @@ static void tunnel_in(struct session* session)
 	DNDSMessage_set_pdu(msg, pdu_PR_ethernet);
 	DNDSMessage_set_ethernet(msg, (uint8_t*)framebuf, frame_size);
 
+	p2p_session = p2p_find_session(framebuf);
+	if (p2p_session && p2p_session->state == SESSION_STATE_AUTHED) {
+		session = p2p_session;
+	}
 	net_send_msg(session->netc, msg);
 	DNDSMessage_set_ethernet(msg, NULL, 0);
 	DNDSMessage_del(msg);
@@ -379,7 +385,7 @@ static void dispatch_op(struct session *session, DNDSMessage_t *msg)
 		break;
 
 	case dnop_PR_p2pRequest:
-		// TODO
+		op_p2p_request(session, msg);
 		break;
 
 	/* `terminateRequest` is a special case since it has no
@@ -410,6 +416,8 @@ int dnc_init(struct dnc_cfg *cfg)
 
 	dnc_cfg = cfg;
 	session = calloc(1, sizeof(struct session));
+
+	p2p_init();
 
 	if (netbus_init()) {
 		jlog(L_ERROR, "dnc]> netbus_init failed :: %s:%i", __FILE__, __LINE__);

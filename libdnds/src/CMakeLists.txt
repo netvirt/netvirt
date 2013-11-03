@@ -7,6 +7,9 @@ include_directories(protocol)
 set(DNDS_SRCS
 	bitv.c
 	dnds.c
+	ftable.c
+	hash.c
+	jsw_hlib.c
 	logger.c
 	crypto.c
 	mbuf.c
