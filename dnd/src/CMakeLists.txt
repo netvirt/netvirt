@@ -12,12 +12,14 @@ add_executable(dnd
 	request.c
 	session.c
 )
+link_directories("${CMAKE_SOURCE_DIR}/libconfig-linux/lib/.libs")
+include_directories("${CMAKE_SOURCE_DIR}/libconfig-linux/lib/")
 
 include_directories("${CMAKE_SOURCE_DIR}/libdnds/src/")
 include_directories("${CMAKE_SOURCE_DIR}/libdnds/src/protocol/")
 target_link_libraries(dnd
+	${CMAKE_SOURCE_DIR}/libconfig-linux/lib/.libs/libconfig.a
 	dnds
-	config
 	ssl
 	crypto
 	pthread

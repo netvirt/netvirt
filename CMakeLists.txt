@@ -16,7 +16,12 @@ else()
 endif()
 
 add_subdirectory(libdnds)
-add_subdirectory(dnc)
+
+option (WITH_DNC "WITH_DNC" ON)
+
+if (WITH_DNC)
+	add_subdirectory(dnc)
+endif()
 
 option (WITH_DSD "WITH_DND" OFF)
 option (WITH_DSD "WITH_DSD" OFF)
