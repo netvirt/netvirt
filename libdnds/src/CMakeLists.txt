@@ -14,9 +14,9 @@ set(DNDS_SRCS
 	udt.cpp
 )
 
-if(${CMAKE_SYSTEM_NAME} matches "Linux")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 set(DNDS_SRCS ${DNDS_SRCS} tcp.c)
-endif(${CMAKE_SYSTEM_NAME} matches "Linux")
+endif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
 add_library(dnds ${DNDS_SRCS})
 
