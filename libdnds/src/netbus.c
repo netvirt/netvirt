@@ -466,7 +466,7 @@ netc_t *net_client(const char *listen_addr,
 			void (*on_input)(netc_t *),
 			void (*on_secure)(netc_t *))
 {
-	int ret;
+	int ret = 0;
 	netc_t *netc = NULL;
 
 	netc = net_connection_new(security_level);

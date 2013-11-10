@@ -182,9 +182,9 @@ static void on_disconnect(netc_t *netc)
 #endif
 		jlog(L_NOTICE, "dnc]> connection retry...\n");
 
-		retry_netc = net_client(dnc_cfg->server_address,
-		dnc_cfg->server_port, NET_PROTO_UDT, NET_SECURE_ADH,
-		session->passport, on_disconnect, on_input, on_secure);
+		retry_netc = net_client(dnc_cfg->server_address, dnc_cfg->server_port,
+			NET_PROTO_UDT, NET_SECURE_ADH, session->passport,
+			on_disconnect, on_input, on_secure);
 
 		if (retry_netc) {
 			session->state = SESSION_STATE_NOT_AUTHED;

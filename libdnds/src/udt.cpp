@@ -214,6 +214,7 @@ peer_t *udtbus_client(const char *listen_addr,
 				void (*on_input)(peer_t *))
 {
 	struct addrinfo hints, *local, *serv_info;
+	int ret = 0;
 
 	peer_t *peer;
 	memset(&hints, 0, sizeof(struct addrinfo));
@@ -222,12 +223,16 @@ peer_t *udtbus_client(const char *listen_addr,
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 
-	getaddrinfo(NULL, port, &hints, &local);
+	ret = getaddrinfo(NULL, port, &hints, &local);
 
 	UDTSOCKET client = UDT::socket(local->ai_family, local->ai_socktype, local->ai_protocol);
 
 	freeaddrinfo(local);
-	getaddrinfo(listen_addr, port, &hints, &serv_info);
+	ret = getaddrinfo(listen_addr, port, &hints, &serv_info);
+	if (ret != 0) {
+		UDT::close(client);
+		return NULL;
+	}
 
 	if (UDT::connect(client, serv_info->ai_addr, serv_info->ai_addrlen) == UDT::ERROR) {
 		cout << "connect: " << UDT::getlasterror().getErrorMessage() << endl;
