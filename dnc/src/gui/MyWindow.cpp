@@ -10,6 +10,8 @@
  *
  */
 
+#include <QFile>
+
 #include <stdio.h>
 #include "MyWindow.h"
 
