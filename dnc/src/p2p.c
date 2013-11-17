@@ -46,6 +46,7 @@ struct session *p2p_find_session(uint8_t *eth_frame)
 
 void op_p2p_request(struct session *session, DNDSMessage_t *msg)
 {
+	printf("on_p2p_request\n");
 	char dest_addr[INET_ADDRSTRLEN];
 	uint8_t mac_dst[ETHER_ADDR_LEN];
 	uint32_t port;
