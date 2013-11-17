@@ -13,10 +13,13 @@ add_executable(dsd
 	request.c
 )
 
+link_directories("${CMAKE_SOURCE_DIR}/libconfig-linux/lib/.libs")
+include_directories("${CMAKE_SOURCE_DIR}/libconfig-linux/lib/")
+
 include_directories("${CMAKE_SOURCE_DIR}/libdnds/src/protocol/")
 target_link_libraries(dsd
+	${CMAKE_SOURCE_DIR}/libconfig-linux/lib/.libs/libconfig.a
 	dnds
-	config
 	ssl
 	ossp-uuid
 	pq

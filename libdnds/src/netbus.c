@@ -451,7 +451,7 @@ void net_disconnect(netc_t *netc)
 
 int netbus_init()
 {
-#ifdef __unix__
+#ifdef __linux__
 	tcpbus_init();
 #endif
 	return udtbus_init();
@@ -466,7 +466,7 @@ netc_t *net_client(const char *listen_addr,
 			void (*on_input)(netc_t *),
 			void (*on_secure)(netc_t *))
 {
-	int ret;
+	int ret = 0;
 	netc_t *netc = NULL;
 
 	netc = net_connection_new(security_level);
@@ -485,7 +485,7 @@ netc_t *net_client(const char *listen_addr,
 		krypt_add_passport(netc->kconn, passport);
 
 	switch (protocol) {
-#ifdef __unix__
+#ifdef __linux__
 		case NET_PROTO_TCP:
 			netc->peer = tcpbus_client(listen_addr, port,
 				net_on_disconnect, net_on_input);
@@ -565,7 +565,7 @@ int net_server(const char *listen_addr,
 		krypt_add_passport(netc->kconn, passport);
 
 	switch (protocol) {
-#ifdef __unix__
+#ifdef __linux__
 		case NET_PROTO_TCP:
 			ret = tcpbus_server(listen_addr, port,
 				net_on_connect, net_on_disconnect,

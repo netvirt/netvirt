@@ -13,6 +13,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
+#ifdef __unix__
+	#include <sys/socket.h>
+#endif
 
 #include "DNDSMessage.h"
 #include "dnds.h"
