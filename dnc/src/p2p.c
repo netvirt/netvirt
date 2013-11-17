@@ -41,7 +41,7 @@ void p2p_on_input(netc_t *netc)
 
 struct session *p2p_find_session(uint8_t *eth_frame)
 {
-	return NULL;
+	return ftable_find(ftable, eth_frame+8);
 }
 
 void op_p2p_request(struct session *session, DNDSMessage_t *msg)
