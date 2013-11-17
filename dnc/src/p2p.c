@@ -65,7 +65,7 @@ void op_p2p_request(struct session *session, DNDSMessage_t *msg)
 				p2p_on_connect, p2p_on_secure, p2p_on_disconnect, p2p_on_input);
 
 	p2p_session->tapcfg = session->tapcfg;
-	p2p_session->state = SESSION_STATE_NOT_AUTHED;
+	p2p_session->state = SESSION_STATE_AUTHED;
 	p2p_session->netc->ext_ptr = p2p_session;
 
 	if (p2p_session->netc != NULL) {
