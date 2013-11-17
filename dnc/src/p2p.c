@@ -51,21 +51,28 @@ void op_p2p_request(struct session *session, DNDSMessage_t *msg)
 	uint8_t mac_dst[ETHER_ADDR_LEN];
 	uint32_t port;
 	char port_str[6];
-	netc_t *p2p_netc;
+	struct session *p2p_session;
 	int state = 1;
+
+	p2p_session = calloc(1, sizeof(struct session));
 
 	P2pRequest_get_macAddrDst(msg, mac_dst);
 	P2pRequest_get_ipAddrDst(msg, dest_addr);
 	P2pRequest_get_port(msg, &port);
 
 	snprintf(port_str, 6, "%d", port);
-	p2p_netc = net_p2p("0.0.0.0", dest_addr, port_str, NET_PROTO_UDT, NET_UNSECURE, state,
+	p2p_session->netc = net_p2p("0.0.0.0", dest_addr, port_str, NET_PROTO_UDT, NET_UNSECURE, state,
 				p2p_on_connect, p2p_on_secure, p2p_on_disconnect, p2p_on_input);
 
-	if (p2p_netc != NULL) {
+	p2p_session->tapcfg = session->tapcfg;
+	p2p_session->state = SESSION_STATE_NOT_AUTHED;
+	p2p_session->netc->ext_ptr = p2p_session;
+
+	if (p2p_session->netc != NULL) {
 		jlog(L_NOTICE, "dnc]> p2p connected!");
-		ftable_insert(ftable, mac_dst, p2p_netc->ext_ptr);
+		ftable_insert(ftable, mac_dst, p2p_session);
 	} else {
+		free(session);
 		jlog(L_NOTICE, "dnc]> p2p unable to connect!");
 	}
 }
