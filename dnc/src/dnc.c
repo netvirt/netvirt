@@ -227,6 +227,8 @@ static void on_secure(netc_t *netc)
 
 void on_input(netc_t *netc)
 {
+	printf("on_input\n");
+
 	DNDSMessage_t *msg;
 	struct session *session;
 	mbuf_t **mbuf_itr;
@@ -241,6 +243,7 @@ void on_input(netc_t *netc)
 
 		switch (pdu) {
 		case pdu_PR_dnm:
+			printf("dispatch..\n");
 			dispatch_op(session, msg);
 			break;
 

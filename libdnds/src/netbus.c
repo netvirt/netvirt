@@ -597,7 +597,6 @@ int net_server(const char *listen_addr,
 	return 0;
 }
 
-// FIXME net_p2p need an update to use DNDS Message
 netc_t *net_p2p(const char *listen_addr,
 		const char *dest_addr,
 		const char *port,
@@ -644,6 +643,7 @@ netc_t *net_p2p(const char *listen_addr,
 	}
 
 	netc->peer = peer;
+	netc->peer->ext_ptr = netc;
 
 	if (security_level > NET_UNSECURE) {
 
