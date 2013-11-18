@@ -41,7 +41,9 @@ void p2p_on_input(netc_t *netc)
 
 struct session *p2p_find_session(uint8_t *eth_frame)
 {
-	return ftable_find(ftable, eth_frame+8);
+	uint8_t mac_dst[ETHER_ADDR_LEN];
+	memcpy(mac_dst, eth_frame, ETHER_ADDR_LEN);
+	return ftable_find(ftable, mac_dst);
 }
 
 void op_p2p_request(struct session *session, DNDSMessage_t *msg)
@@ -64,6 +66,7 @@ void op_p2p_request(struct session *session, DNDSMessage_t *msg)
 	p2p_session->netc = net_p2p("0.0.0.0", dest_addr, port_str, NET_PROTO_UDT, NET_UNSECURE, state,
 				p2p_on_connect, p2p_on_secure, p2p_on_disconnect, p2p_on_input);
 
+	printf("p2p_session: %p netc: %p\n", p2p_session, p2p_session->netc);
 	p2p_session->tapcfg = session->tapcfg;
 	p2p_session->state = SESSION_STATE_AUTHED;
 	p2p_session->netc->ext_ptr = p2p_session;

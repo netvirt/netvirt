@@ -40,7 +40,7 @@ struct session *master_session;
 static int g_shutdown = 0;
 char ipAddress[INET_ADDRSTRLEN];
 
-static void on_input(netc_t *netc);
+void on_input(netc_t *netc);
 static void on_secure(netc_t *netc);
 static void dispatch_op(struct session *session, DNDSMessage_t *msg);
 
@@ -63,6 +63,8 @@ static void tunnel_in(struct session* session)
 
 	p2p_session = p2p_find_session(framebuf);
 	if (p2p_session && p2p_session->state == SESSION_STATE_AUTHED) {
+
+		printf("p2p_session: %p netc: %p\n", p2p_session, p2p_session->netc);
 		session = p2p_session;
 	}
 	net_send_msg(session->netc, msg);
@@ -218,7 +220,7 @@ static void on_secure(netc_t *netc)
 	}
 }
 
-static void on_input(netc_t *netc)
+void on_input(netc_t *netc)
 {
 	DNDSMessage_t *msg;
 	struct session *session;

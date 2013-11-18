@@ -21,6 +21,8 @@
 	#define DNC_IP_FILE	"/etc/dnds/dnc.ip"
 #endif
 
+#include <netbus.h>
+
 struct dnc_cfg {
 	const char *server_address;
 	const char *server_port;
@@ -43,6 +45,7 @@ extern "C" {
 
 int dnc_init(struct dnc_cfg *dnc_cfg);
 int dnc_config_toggle_auto_connect(int status);
+void on_input(netc_t *netc);
 
 #ifdef __cplusplus
 }

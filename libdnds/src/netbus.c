@@ -126,7 +126,7 @@ static void net_queue_msg(netc_t *netc, DNDSMessage_t *msg)
 static void net_queue_out(netc_t *netc, uint8_t *buf, size_t data_size)
 {
 	mbuf_t *mbuf;
-
+	printf("mbuf_add\n");
 	mbuf = mbuf_new((const void *)buf, data_size, MBUF_BYVAL, NULL);
 	mbuf_add(&netc->queue_out, mbuf);
 }
@@ -161,7 +161,9 @@ static int net_flush_queue_out(netc_t *netc)
 	peer = (peer_t *)netc->peer;
 	mbuf_itr = netc->queue_out;
 
+	printf("net flush queue out\n");
 	while (mbuf_itr != NULL) {
+		printf(" peer send\n");
 		nbyte = peer->send(peer, mbuf_itr->ext_buf, mbuf_itr->ext_size);
 		if (nbyte == -1) {
 			break;
@@ -428,6 +430,7 @@ int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 
 	}
 	else {
+		printf("net queue out\n");
 		net_queue_out(netc, netc->buf_enc, netc->buf_enc_data_size);
 	}
 
