@@ -194,6 +194,7 @@ void udtbus_poke_queue()
 			on_connect(peer);
 		}
 		else if (peer->type == UDTBUS_CLIENT) {
+			printf("udt on input\n");
 			on_input(peer);
 		}
 	}

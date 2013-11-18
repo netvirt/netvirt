@@ -233,7 +233,6 @@ static void net_on_input(peer_t *peer)
 	int nbyte = 0;
 	netc_t *netc = NULL;
 
-
 	netc = peer->ext_ptr;
 	peer->buffer_data_len = peer->recv(peer);
 
@@ -305,7 +304,7 @@ static void net_on_input(peer_t *peer)
 		} while (ret == 0 && (state_p == 1 || peer->buffer_data_len > 0));
 	}
 	else if (netc->security_level == NET_UNSECURE) {
-
+		printf("serialize buf in\n");
 		serialize_buf_in(netc, peer->buffer, peer->buffer_data_len);
 	}
 
@@ -316,6 +315,8 @@ static void net_on_input(peer_t *peer)
 		net_connection_free(netc);
 	}
 	else {
+		printf("count:%d\n", mbuf_count(netc->queue_msg));
+		printf("on_input:%p\n", netc->on_input);
 		if (mbuf_count(netc->queue_msg) > 0)
 			netc->on_input(netc);
 	}

@@ -245,6 +245,7 @@ void on_input(netc_t *netc)
 			break;
 
 		case pdu_PR_ethernet:
+			printf("tunnel out\n");
 			tunnel_out(session, msg);
 			break;
 
