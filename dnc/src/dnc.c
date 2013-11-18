@@ -46,6 +46,9 @@ static void dispatch_op(struct session *session, DNDSMessage_t *msg);
 
 static void tunnel_in(struct session* session)
 {
+
+	printf("tunnel in\n");
+
 	DNDSMessage_t *msg = NULL;
 	size_t frame_size = 0;
 	uint8_t framebuf[2000];
@@ -76,9 +79,11 @@ static void tunnel_out(struct session *session, DNDSMessage_t *msg)
 {
 	uint8_t *framebuf;
 	size_t framebufsz;
+	int ret = 0;
 
 	DNDSMessage_get_ethernet(msg, &framebuf, &framebufsz);
-	tapcfg_write(session->tapcfg, framebuf, framebufsz);
+	ret = tapcfg_write(session->tapcfg, framebuf, framebufsz);
+	printf("tapcfg_write: %d\n", ret);
 }
 
 void terminate(struct session *session)
