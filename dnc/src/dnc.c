@@ -237,6 +237,7 @@ void on_input(netc_t *netc)
 	mbuf_itr = &netc->queue_msg;
 	session = netc->ext_ptr;
 
+	printf("*mbuf_itr empty?: %p\n", *mbuf_itr);
 	while (*mbuf_itr != NULL) {
 		msg = (DNDSMessage_t *)(*mbuf_itr)->ext_buf;
 		DNDSMessage_get_pdu(msg, &pdu);
