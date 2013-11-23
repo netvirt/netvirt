@@ -16,6 +16,7 @@
 #include <netbus.h>
 
 #include "session.h"
+#include "dnc.h"
 
 ftable_t *ftable = NULL;
 
@@ -36,13 +37,18 @@ static void p2p_on_disconnect(netc_t *netc)
 
 void p2p_on_input(netc_t *netc)
 {
-
+	printf("p2p_on_input\n");
+	on_input(netc);
 }
 
 struct session *p2p_find_session(uint8_t *eth_frame)
 {
 	uint8_t mac_dst[ETHER_ADDR_LEN];
 	memcpy(mac_dst, eth_frame, ETHER_ADDR_LEN);
+
+	printf("mac: %02x:%02x:%02x:%02x:%02x:%02x\n", mac_dst[0], mac_dst[1],
+							mac_dst[2], mac_dst[3],
+							mac_dst[4], mac_dst[5]);
 	return ftable_find(ftable, mac_dst);
 }
 
