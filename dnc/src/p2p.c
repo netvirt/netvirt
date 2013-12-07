@@ -61,16 +61,22 @@ void op_p2p_request(struct session *session, DNDSMessage_t *msg)
 	char port_str[6];
 	struct session *p2p_session;
 	int state = 1;
+	netc_t *netc = NULL;
 
-	p2p_session = calloc(1, sizeof(struct session));
 
 	P2pRequest_get_macAddrDst(msg, mac_dst);
 	P2pRequest_get_ipAddrDst(msg, dest_addr);
 	P2pRequest_get_port(msg, &port);
 
 	snprintf(port_str, 6, "%d", port);
-	p2p_session->netc = net_p2p("0.0.0.0", dest_addr, port_str, NET_PROTO_UDT, NET_UNSECURE, state,
+	netc = net_p2p("0.0.0.0", dest_addr, port_str, NET_PROTO_UDT, NET_UNSECURE, state,
 				p2p_on_connect, p2p_on_secure, p2p_on_disconnect, p2p_on_input);
+
+	if (netc == NULL)
+		return;
+
+	p2p_session = calloc(1, sizeof(struct session));
+	p2p_session->netc = netc;
 
 	printf("p2p_session: %p netc: %p\n", p2p_session, p2p_session->netc);
 	p2p_session->tapcfg = session->tapcfg;
