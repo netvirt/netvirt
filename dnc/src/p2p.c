@@ -26,6 +26,11 @@ static void p2p_on_secure(netc_t *netc)
 	printf("p2p_on_secure\n");
 }
 
+static void p2p_on_connect(netc_t *netc)
+{
+	printf("p2p_on_secure\n");
+}
+
 static void p2p_on_disconnect(netc_t *netc)
 {
 	printf("p2p_on_disconnect\n");
