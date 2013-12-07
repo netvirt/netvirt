@@ -38,7 +38,7 @@ SetCompressor /FINAL /SOLID lzma
 	!include "x64.nsh"
 	!define /date NOW "%y.%m.%d"
 	Name "DynVPN Client"
-	OutFile "dynvpn-client-${NOW}_x86.exe"
+	OutFile "${BDIR}/dynvpn-client-${NOW}_x86.exe"
 	InstallDir $PROGRAMFILES\dynvpn-client
 
 	; Ask admin privileges
