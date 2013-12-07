@@ -77,7 +77,6 @@ static int udtbus_send(peer_t *peer, void *data, int len)
 
 	list_socket.push_back(peer->socket);
 
-	printf("udtbus send\n");
 	int res = UDT::selectEx(list_socket, NULL, NULL, &exceptfds, 0);
 	if (res != 0) {
 		for (i = exceptfds.begin(); i != exceptfds.end(); ++i) {
@@ -194,7 +193,6 @@ void udtbus_poke_queue()
 			on_connect(peer);
 		}
 		else if (peer->type == UDTBUS_CLIENT) {
-			printf("udt on input\n");
 			on_input(peer);
 		}
 	}

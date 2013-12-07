@@ -46,9 +46,6 @@ static void dispatch_op(struct session *session, DNDSMessage_t *msg);
 
 static void tunnel_in(struct session* session)
 {
-
-	printf("tunnel in\n");
-
 	DNDSMessage_t *msg = NULL;
 	size_t frame_size = 0;
 	uint8_t framebuf[2000];
@@ -66,8 +63,7 @@ static void tunnel_in(struct session* session)
 
 	p2p_session = p2p_find_session(framebuf);
 	if (p2p_session && p2p_session->state == SESSION_STATE_AUTHED) {
-
-		printf("p2p_session: %p netc: %p\n", p2p_session, p2p_session->netc);
+		//printf("p2p_session: %p netc: %p\n", p2p_session, p2p_session->netc);
 		session = p2p_session;
 	}
 	net_send_msg(session->netc, msg);
@@ -83,7 +79,6 @@ static void tunnel_out(struct session *session, DNDSMessage_t *msg)
 
 	DNDSMessage_get_ethernet(msg, &framebuf, &framebufsz);
 	ret = tapcfg_write(session->tapcfg, framebuf, framebufsz);
-	printf("tapcfg_write: %d\n", ret);
 }
 
 void terminate(struct session *session)
@@ -95,7 +90,6 @@ void terminate(struct session *session)
 
 void transmit_netinfo_request(struct session *session)
 {
-
 	const char *hwaddr;
 	int hwaddrlen;
 	char ip_local[16];
@@ -227,8 +221,6 @@ static void on_secure(netc_t *netc)
 
 void on_input(netc_t *netc)
 {
-	printf("on_input\n");
-
 	DNDSMessage_t *msg;
 	struct session *session;
 	mbuf_t **mbuf_itr;
@@ -237,19 +229,16 @@ void on_input(netc_t *netc)
 	mbuf_itr = &netc->queue_msg;
 	session = netc->ext_ptr;
 
-	printf("*mbuf_itr empty?: %p\n", *mbuf_itr);
 	while (*mbuf_itr != NULL) {
 		msg = (DNDSMessage_t *)(*mbuf_itr)->ext_buf;
 		DNDSMessage_get_pdu(msg, &pdu);
 
 		switch (pdu) {
 		case pdu_PR_dnm:
-			printf("dispatch..\n");
 			dispatch_op(session, msg);
 			break;
 
 		case pdu_PR_ethernet:
-			printf("tunnel out\n");
 			tunnel_out(session, msg);
 			break;
 

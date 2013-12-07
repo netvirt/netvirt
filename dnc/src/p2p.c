@@ -21,11 +21,6 @@
 
 ftable_t *ftable = NULL;
 
-static void p2p_on_connect(netc_t *netc)
-{
-	printf("p2p_on_connect\n");
-}
-
 static void p2p_on_secure(netc_t *netc)
 {
 	printf("p2p_on_secure\n");
@@ -38,7 +33,6 @@ static void p2p_on_disconnect(netc_t *netc)
 
 void p2p_on_input(netc_t *netc)
 {
-	printf("p2p_on_input\n");
 	on_input(netc);
 }
 

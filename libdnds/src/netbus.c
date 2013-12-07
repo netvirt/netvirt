@@ -126,7 +126,6 @@ static void net_queue_msg(netc_t *netc, DNDSMessage_t *msg)
 static void net_queue_out(netc_t *netc, uint8_t *buf, size_t data_size)
 {
 	mbuf_t *mbuf;
-	printf("mbuf_add\n");
 	mbuf = mbuf_new((const void *)buf, data_size, MBUF_BYVAL, NULL);
 	mbuf_add(&netc->queue_out, mbuf);
 }
@@ -161,9 +160,7 @@ static int net_flush_queue_out(netc_t *netc)
 	peer = (peer_t *)netc->peer;
 	mbuf_itr = netc->queue_out;
 
-	printf("net flush queue out\n");
 	while (mbuf_itr != NULL) {
-		printf(" peer send\n");
 		nbyte = peer->send(peer, mbuf_itr->ext_buf, mbuf_itr->ext_size);
 		if (nbyte == -1) {
 			break;
@@ -304,7 +301,6 @@ static void net_on_input(peer_t *peer)
 		} while (ret == 0 && (state_p == 1 || peer->buffer_data_len > 0));
 	}
 	else if (netc->security_level == NET_UNSECURE) {
-		printf("serialize buf in\n");
 		serialize_buf_in(netc, peer->buffer, peer->buffer_data_len);
 	}
 
@@ -315,8 +311,6 @@ static void net_on_input(peer_t *peer)
 		net_connection_free(netc);
 	}
 	else {
-		printf("count:%d\n", mbuf_count(netc->queue_msg));
-		printf("on_input:%p\n", netc->on_input);
 		if (mbuf_count(netc->queue_msg) > 0)
 			netc->on_input(netc);
 	}
@@ -431,7 +425,6 @@ int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 
 	}
 	else {
-		printf("net queue out\n");
 		net_queue_out(netc, netc->buf_enc, netc->buf_enc_data_size);
 	}
 
