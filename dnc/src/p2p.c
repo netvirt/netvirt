@@ -17,6 +17,7 @@
 
 #include "session.h"
 #include "dnc.h"
+#include "p2p.h"
 
 ftable_t *ftable = NULL;
 
@@ -52,9 +53,8 @@ struct session *p2p_find_session(uint8_t *eth_frame)
 	return ftable_find(ftable, mac_dst);
 }
 
-void op_p2p_request(struct session *session, DNDSMessage_t *msg)
+void *op_p2p_request(void *ptr)
 {
-	printf("on_p2p_request\n");
 	char dest_addr[INET_ADDRSTRLEN];
 	uint8_t mac_dst[ETHER_ADDR_LEN];
 	uint32_t port;
@@ -63,33 +63,35 @@ void op_p2p_request(struct session *session, DNDSMessage_t *msg)
 	int state = 1;
 	netc_t *netc = NULL;
 
+	struct p2p_arg *args = ptr;
 
-	P2pRequest_get_macAddrDst(msg, mac_dst);
-	P2pRequest_get_ipAddrDst(msg, dest_addr);
-	P2pRequest_get_port(msg, &port);
+	P2pRequest_get_macAddrDst(args->msg, mac_dst);
+	P2pRequest_get_ipAddrDst(args->msg, dest_addr);
+	P2pRequest_get_port(args->msg, &port);
 
 	snprintf(port_str, 6, "%d", port);
 	netc = net_p2p("0.0.0.0", dest_addr, port_str, NET_PROTO_UDT, NET_UNSECURE, state,
 				p2p_on_connect, p2p_on_secure, p2p_on_disconnect, p2p_on_input);
 
-	if (netc == NULL)
-		return;
+	if (netc == NULL) {
+		jlog(L_NOTICE, "dnc]> p2p failed");
+		return NULL;
+	}
 
 	p2p_session = calloc(1, sizeof(struct session));
 	p2p_session->netc = netc;
 
+	jlog(L_NOTICE, "dnc]> p2p connected");
+	ftable_insert(ftable, mac_dst, p2p_session);
+
+	p2p_session->tapcfg = args->session->tapcfg;
+
 	printf("p2p_session: %p netc: %p\n", p2p_session, p2p_session->netc);
-	p2p_session->tapcfg = session->tapcfg;
+	p2p_session->tapcfg = args->session->tapcfg;
 	p2p_session->state = SESSION_STATE_AUTHED;
 	p2p_session->netc->ext_ptr = p2p_session;
 
-	if (p2p_session->netc != NULL) {
-		jlog(L_NOTICE, "dnc]> p2p connected!");
-		ftable_insert(ftable, mac_dst, p2p_session);
-	} else {
-		free(session);
-		jlog(L_NOTICE, "dnc]> p2p unable to connect!");
-	}
+	return NULL;
 }
 
 void p2p_init()

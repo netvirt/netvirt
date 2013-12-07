@@ -15,8 +15,13 @@
 
 #include <session.h>
 
+struct p2p_arg {
+	struct session *session;
+	DNDSMessage_t *msg;	
+};
+
 struct session *p2p_find_session(uint8_t *eth_frame);
-void op_p2p_request(struct session *session, DNDSMessage_t *msg);
+void *op_p2p_request(void *ptr);
 void p2p_init();
 
 #endif
