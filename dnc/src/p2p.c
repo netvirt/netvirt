@@ -48,7 +48,8 @@ struct session *p2p_find_session(uint8_t *eth_frame)
 /*
 	printf("mac: %02x:%02x:%02x:%02x:%02x:%02x\n", mac_dst[0], mac_dst[1],
 							mac_dst[2], mac_dst[3],
-*/							mac_dst[4], mac_dst[5]);
+							mac_dst[4], mac_dst[5]);
+*/
 	return ftable_find(ftable, mac_dst);
 }
 
