@@ -369,10 +369,16 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 
 static void dispatch_op(struct session *session, DNDSMessage_t *msg)
 {
-	static struct p2p_arg p2p_args;
+	struct p2p_arg *p2p_args;
 	pthread_t thread_p2p;
-	p2p_args.session = session;
-	p2p_args.msg = msg;
+
+	p2p_args = calloc(1, sizeof(struct p2p_arg));
+
+	p2p_args->session = session;
+
+	P2pRequest_get_macAddrDst(msg, p2p_args->mac_dst);
+	P2pRequest_get_ipAddrDst(msg, p2p_args->ip_dst);
+	P2pRequest_get_port(msg, &p2p_args->port);
 
 	dnop_PR operation;
 	DNMessage_get_operation(msg, &operation);
@@ -391,7 +397,8 @@ static void dispatch_op(struct session *session, DNDSMessage_t *msg)
 		break;
 
 	case dnop_PR_p2pRequest:
-		pthread_create(&thread_p2p, NULL, op_p2p_request, (void*)&p2p_args);
+		printf("p2p pthread\n");
+		pthread_create(&thread_p2p, NULL, op_p2p_request, (void*)p2p_args);
 		break;
 
 	/* `terminateRequest` is a special case since it has no

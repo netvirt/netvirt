@@ -55,34 +55,28 @@ struct session *p2p_find_session(uint8_t *eth_frame)
 
 void *op_p2p_request(void *ptr)
 {
-	char dest_addr[INET_ADDRSTRLEN];
-	uint8_t mac_dst[ETHER_ADDR_LEN];
-	uint32_t port;
 	char port_str[6];
 	struct session *p2p_session;
 	int state = 1;
 	netc_t *netc = NULL;
-
 	struct p2p_arg *args = ptr;
 
-	P2pRequest_get_macAddrDst(args->msg, mac_dst);
-	P2pRequest_get_ipAddrDst(args->msg, dest_addr);
-	P2pRequest_get_port(args->msg, &port);
+	jlog(L_NOTICE, "dnc]> p2p...");
 
-	snprintf(port_str, 6, "%d", port);
-	netc = net_p2p("0.0.0.0", dest_addr, port_str, NET_PROTO_UDT, NET_UNSECURE, state,
+	snprintf(port_str, 6, "%d", args->port);
+	netc = net_p2p("0.0.0.0", args->ip_dst, port_str, NET_PROTO_UDT, NET_UNSECURE, state,
 				p2p_on_connect, p2p_on_secure, p2p_on_disconnect, p2p_on_input);
 
 	if (netc == NULL) {
 		jlog(L_NOTICE, "dnc]> p2p failed");
-		return NULL;
+		goto end;
 	}
 
 	p2p_session = calloc(1, sizeof(struct session));
 	p2p_session->netc = netc;
 
 	jlog(L_NOTICE, "dnc]> p2p connected");
-	ftable_insert(ftable, mac_dst, p2p_session);
+	ftable_insert(ftable, args->mac_dst, p2p_session);
 
 	p2p_session->tapcfg = args->session->tapcfg;
 
@@ -91,6 +85,8 @@ void *op_p2p_request(void *ptr)
 	p2p_session->state = SESSION_STATE_AUTHED;
 	p2p_session->netc->ext_ptr = p2p_session;
 
+end:
+	free(args);
 	return NULL;
 }
 
