@@ -34,6 +34,11 @@ static void p2p_on_connect(netc_t *netc)
 static void p2p_on_disconnect(netc_t *netc)
 {
 	printf("p2p_on_disconnect\n");
+
+	struct session *p2p_session = NULL;
+
+	p2p_session = netc->ext_ptr;
+	ftable_erase(ftable, p2p_session->mac_dst);
 }
 
 void p2p_on_input(netc_t *netc)
@@ -82,6 +87,7 @@ void *op_p2p_request(void *ptr)
 	p2p_session->tapcfg = args->session->tapcfg;
 	p2p_session->state = SESSION_STATE_AUTHED;
 	p2p_session->netc->ext_ptr = p2p_session;
+	memmove(p2p_session->mac_dst, args->mac_dst, ETHER_ADDR_LEN);
 
 	ftable_insert(ftable, args->mac_dst, p2p_session);
 
