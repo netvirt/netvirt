@@ -28,7 +28,7 @@ static void p2p_on_secure(netc_t *netc)
 
 static void p2p_on_connect(netc_t *netc)
 {
-	printf("p2p_on_secure\n");
+	printf("p2p_on_connect\n");
 }
 
 static void p2p_on_disconnect(netc_t *netc)
@@ -76,14 +76,14 @@ void *op_p2p_request(void *ptr)
 	p2p_session->netc = netc;
 
 	jlog(L_NOTICE, "dnc]> p2p connected");
-	ftable_insert(ftable, args->mac_dst, p2p_session);
 
 	p2p_session->tapcfg = args->session->tapcfg;
 
-	printf("p2p_session: %p netc: %p\n", p2p_session, p2p_session->netc);
 	p2p_session->tapcfg = args->session->tapcfg;
 	p2p_session->state = SESSION_STATE_AUTHED;
 	p2p_session->netc->ext_ptr = p2p_session;
+
+	ftable_insert(ftable, args->mac_dst, p2p_session);
 
 end:
 	free(args);
