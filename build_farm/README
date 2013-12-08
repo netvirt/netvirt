@@ -1,0 +1,14 @@
+What these scripts are for
+--------------------------
+
+These scripts are used to compile DynVPN client from a pristine Debian machine.
+
+Copy the script you want on the fresh Debian and run it. It will download
+everything that is needed to compile the DynVPN client, install it, compile the
+client and create the package, ready to be installed.
+
+Prerequisites
+-------------
+
+The scripts must be run with administrative rights, in order to install build
+dependencies.
