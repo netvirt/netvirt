@@ -28,6 +28,7 @@ elseif(UNIX)
 endif()
 
 if (WITH_GUI)
+	add_definitions( -DQT_EDITION=QT_EDITION_OPENSOURCE )
 	find_package(Qt4 REQUIRED)
 	set(gui_sources
 		gui/main.cpp

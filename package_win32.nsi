@@ -1,16 +1,22 @@
-
-# /!\ You need to edit that section
-!define MINGW_PATH /usr/lib/gcc/i686-w64-mingw32/4.6/
-!define PTHREAD_PATH /usr/i686-w64-mingw32/lib/
-!define OPENSSL_PATH /opt/mingw32/mingw32/bin
-!define QT_PATH /media/nib/Windows7_OS/Qt/4.8.4/bin
-#
-
-SetCompressor /FINAL /SOLID lzma
+!ifndef MINGW_PATH
+	!define MINGW_PATH /usr/lib/gcc/i686-w64-mingw32/4.6/
+!endif
+!ifndef PTHREAD_PATH
+	!define PTHREAD_PATH /usr/i686-w64-mingw32/lib/
+!endif
+!ifndef OPENSSL_PATH
+	!define OPENSSL_PATH /opt/mingw32/mingw32/bin
+!endif
+!ifndef QT_PATH
+	!define QT_PATH /media/nib/Windows7_OS/Qt/4.8.4/bin
+!endif
 
 # Define the path of the build directory
-#
-!define BDIR "build.w32"
+!ifndef BDIR
+	!define BDIR "build.w32"
+!endif
+
+SetCompressor /FINAL /SOLID lzma
 
 ;-------------------
 ; Include Modern UI
@@ -32,7 +38,7 @@ SetCompressor /FINAL /SOLID lzma
 	!include "x64.nsh"
 	!define /date NOW "%y.%m.%d"
 	Name "DynVPN Client"
-	OutFile "dynvpn-client-${NOW}_x86.exe"
+	OutFile "${BDIR}/dynvpn-client-${NOW}_x86.exe"
 	InstallDir $PROGRAMFILES\dynvpn-client
 
 	; Ask admin privileges
