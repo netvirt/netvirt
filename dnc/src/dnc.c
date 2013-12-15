@@ -398,8 +398,9 @@ static void dispatch_op(struct session *session, DNDSMessage_t *msg)
 
 	case dnop_PR_p2pRequest:
 		printf("p2p pthread\n");
-		op_p2p_request((void*)p2p_args);
-		//pthread_create(&thread_p2p, NULL, op_p2p_request, (void*)p2p_args);
+		// FIXME should be abstracted by udtbus
+		pthread_create(&thread_p2p, NULL, op_p2p_request, (void*)p2p_args);
+		pthread_detach(thread_p2p);
 		break;
 
 	/* `terminateRequest` is a special case since it has no

@@ -76,7 +76,7 @@ void *op_p2p_request(void *ptr)
 		jlog(L_NOTICE, "dnc]> p2p failed");
 		goto end;
 	}
-/*
+
 	p2p_session = calloc(1, sizeof(struct session));
 	p2p_session->netc = netc;
 
@@ -90,7 +90,7 @@ void *op_p2p_request(void *ptr)
 	memmove(p2p_session->mac_dst, args->mac_dst, ETHER_ADDR_LEN);
 
 	ftable_insert(ftable, args->mac_dst, p2p_session);
-*/
+
 end:
 	free(args);
 	return NULL;
