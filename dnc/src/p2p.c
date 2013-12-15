@@ -71,12 +71,12 @@ void *op_p2p_request(void *ptr)
 	snprintf(port_str, 6, "%d", args->port);
 	netc = net_p2p("0.0.0.0", args->ip_dst, port_str, NET_PROTO_UDT, NET_UNSECURE, state,
 				p2p_on_connect, p2p_on_secure, p2p_on_disconnect, p2p_on_input);
-/*
+
 	if (netc == NULL) {
 		jlog(L_NOTICE, "dnc]> p2p failed");
 		goto end;
 	}
-
+/*
 	p2p_session = calloc(1, sizeof(struct session));
 	p2p_session->netc = netc;
 
@@ -90,11 +90,11 @@ void *op_p2p_request(void *ptr)
 	memmove(p2p_session->mac_dst, args->mac_dst, ETHER_ADDR_LEN);
 
 	ftable_insert(ftable, args->mac_dst, p2p_session);
-
+*/
 end:
 	free(args);
 	return NULL;
-*/
+
 }
 
 void p2p_init()
