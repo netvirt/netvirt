@@ -71,7 +71,7 @@ void *op_p2p_request(void *ptr)
 	snprintf(port_str, 6, "%d", args->port);
 	netc = net_p2p("0.0.0.0", args->ip_dst, port_str, NET_PROTO_UDT, NET_UNSECURE, state,
 				p2p_on_connect, p2p_on_secure, p2p_on_disconnect, p2p_on_input);
-
+/*
 	if (netc == NULL) {
 		jlog(L_NOTICE, "dnc]> p2p failed");
 		goto end;
@@ -94,6 +94,7 @@ void *op_p2p_request(void *ptr)
 end:
 	free(args);
 	return NULL;
+*/
 }
 
 void p2p_init()
