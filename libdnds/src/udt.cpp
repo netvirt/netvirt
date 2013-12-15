@@ -351,6 +351,7 @@ peer_t *udtbus_rendezvous(const char *listen_addr,
 
 	UDTSOCKET socket = UDT::socket(local->ai_family, local->ai_socktype, local->ai_protocol);
 
+	UDT::setsockopt(socket, 0, UDT_RCVSYN, new bool(false), sizeof(bool));
 	UDT::setsockopt(socket, 0, UDT_RENDEZVOUS, new bool(true), sizeof(bool));
 	if (UDT::ERROR == UDT::bind(socket, local->ai_addr, local->ai_addrlen)) {
 		cout << "bind: " << UDT::getlasterror().getErrorMessage() << endl;
