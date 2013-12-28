@@ -29,6 +29,21 @@ static void p2p_on_secure(netc_t *netc)
 static void p2p_on_connect(netc_t *netc)
 {
 	printf("p2p_on_connect\n");
+	struct session *p2p_session;
+
+	if (netc == NULL) {
+		jlog(L_NOTICE, "dnc]> p2p failed");
+	}
+
+	p2p_session = netc->ext_ptr;
+	p2p_session->netc = netc;
+
+	p2p_session->state = SESSION_STATE_AUTHED;
+	p2p_session->netc->ext_ptr = p2p_session;
+
+	ftable_insert(ftable, p2p_session->mac_dst, p2p_session);
+
+	return;
 }
 
 static void p2p_on_disconnect(netc_t *netc)
@@ -58,43 +73,30 @@ struct session *p2p_find_session(uint8_t *eth_frame)
 	return ftable_find(ftable, mac_dst);
 }
 
-void *op_p2p_request(void *ptr)
+void op_p2p_request(struct session *session, DNDSMessage_t *msg)
 {
 	char port_str[6];
-	struct session *p2p_session;
 	int state = 1;
-	netc_t *netc = NULL;
-	struct p2p_arg *args = ptr;
+	uint8_t mac_dst[ETHER_ADDR_LEN];
+	char ip_dst[INET_ADDRSTRLEN];
+	uint32_t port;
+	struct session *p2p_session;
 
 	jlog(L_NOTICE, "dnc]> p2p...");
 
-	snprintf(port_str, 6, "%d", args->port);
-	netc = net_p2p("0.0.0.0", args->ip_dst, port_str, NET_PROTO_UDT, NET_UNSECURE, state,
-				p2p_on_connect, p2p_on_secure, p2p_on_disconnect, p2p_on_input);
-
-	if (netc == NULL) {
-		jlog(L_NOTICE, "dnc]> p2p failed");
-		goto end;
-	}
+	P2pRequest_get_macAddrDst(msg, mac_dst);
+	P2pRequest_get_ipAddrDst(msg, ip_dst);
+	P2pRequest_get_port(msg, &port);
 
 	p2p_session = calloc(1, sizeof(struct session));
-	p2p_session->netc = netc;
+	p2p_session->tapcfg = session->tapcfg;
+	memmove(p2p_session->mac_dst, mac_dst, ETHER_ADDR_LEN);
 
-	jlog(L_NOTICE, "dnc]> p2p connected");
+	snprintf(port_str, 6, "%d", port);
+	net_p2p("0.0.0.0", ip_dst, port_str, NET_PROTO_UDT, NET_UNSECURE, state,
+		p2p_on_connect, p2p_on_secure, p2p_on_disconnect, p2p_on_input, (void *)p2p_session);
 
-	p2p_session->tapcfg = args->session->tapcfg;
-
-	p2p_session->tapcfg = args->session->tapcfg;
-	p2p_session->state = SESSION_STATE_AUTHED;
-	p2p_session->netc->ext_ptr = p2p_session;
-	memmove(p2p_session->mac_dst, args->mac_dst, ETHER_ADDR_LEN);
-
-	ftable_insert(ftable, args->mac_dst, p2p_session);
-
-end:
-	free(args);
-	return NULL;
-
+	return;
 }
 
 void p2p_init()
