@@ -18,6 +18,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "dnds.h"
 #include "logger.h"
@@ -590,57 +591,24 @@ int net_server(const char *listen_addr,
 	return 0;
 }
 
-netc_t *net_p2p(const char *listen_addr,
-		const char *dest_addr,
-		const char *port,
-		uint8_t protocol,
-		uint8_t security_level,
-		uint8_t conn_type,
-		void (*on_connect)(netc_t *),
-		void (*on_secure)(netc_t *),
-		void (*on_disconnect)(netc_t *),
-		void (*on_input)(netc_t *))
+void net_p2p_on_connect(peer_t *peer)
 {
 	int ret;
-	netc_t *netc = NULL;
-	peer_t *peer = NULL;
 	uint8_t kconn_type;
+	netc_t *netc = NULL;
 
-	if (protocol != NET_PROTO_UDT) {
-		jlog(L_ERROR, "net]> the only protocol that support p2p is UDT");
-		return NULL;
-	}
+	netc = peer->ext_ptr;
+	netc->peer = peer;
 
-	netc = net_connection_new(security_level);
-	if (netc == NULL) {
-		jlog(L_ERROR, "net]> unable to initialize connection :: %s:%i", __FILE__, __LINE__);
-		return NULL;
-	}
-
-	netc->on_connect = on_connect;
-	netc->on_disconnect = on_disconnect;
-	netc->on_input = on_input;
-	netc->conn_type = conn_type;
-	netc->protocol = protocol;
-	netc->security_level = security_level;
-
-	jlog(L_NOTICE, "listen_addr: %s\n", listen_addr);
-	jlog(L_NOTICE, "dest_addr: %s\n", dest_addr);
-	jlog(L_NOTICE, "port: %s\n", port);
-
-	peer = udtbus_rendezvous(listen_addr, dest_addr, port, net_on_disconnect, net_on_input, netc);
 	if (peer == NULL) {
 		jlog(L_ERROR, "net]> unable to initialize the p2p connection :: %s:%i", __FILE__, __LINE__);
 		net_connection_free(netc);
-		return NULL;
+		return;
 	}
 
-	netc->peer = peer;
-	netc->peer->ext_ptr = netc;
+	if (netc->security_level > NET_UNSECURE) {
 
-	if (security_level > NET_UNSECURE) {
-
-		if (conn_type == NET_P2P_CLIENT) {
+		if (netc->conn_type == NET_P2P_CLIENT) {
 			kconn_type = KRYPT_CLIENT;
 		} else {
 			kconn_type = KRYPT_SERVER;
@@ -653,7 +621,7 @@ netc_t *net_p2p(const char *listen_addr,
 		if (ret < 0) {
 			jlog(L_NOTICE, "net]> securing client connection failed :: %s:%i", __FILE__, __LINE__);
 			net_connection_free(netc);
-			return NULL;
+			return;
 		}
 
 		// XXX - still not sure about the following part
@@ -661,7 +629,63 @@ netc_t *net_p2p(const char *listen_addr,
 		krypt_do_handshake(netc->kconn, NULL, 0);
 	}
 
-//	netc->on_connect(netc);
+	netc->on_connect(netc);
 
-	return netc;
+	return;
+}
+
+
+void net_p2p(const char *listen_addr,
+		const char *dest_addr,
+		const char *port,
+		uint8_t protocol,
+		uint8_t security_level,
+		uint8_t conn_type,
+		void (*on_connect)(netc_t *),
+		void (*on_secure)(netc_t *),
+		void (*on_disconnect)(netc_t *),
+		void (*on_input)(netc_t *),
+		void *ext_ptr)
+{
+	pthread_t thread_p2p;
+	struct p2p_args *p2p_args;
+
+	netc_t *netc = NULL;
+
+	if (protocol != NET_PROTO_UDT) {
+		jlog(L_ERROR, "net]> the only protocol that support p2p is UDT");
+		return;
+	}
+
+	netc = net_connection_new(security_level);
+	if (netc == NULL) {
+		jlog(L_ERROR, "net]> unable to initialize connection :: %s:%i", __FILE__, __LINE__);
+		return;
+	}
+
+	netc->on_connect = on_connect;
+	netc->on_disconnect = on_disconnect;
+	netc->on_input = on_input;
+	netc->conn_type = conn_type;
+	netc->protocol = protocol;
+	netc->security_level = security_level;
+	netc->ext_ptr = ext_ptr;
+
+	jlog(L_NOTICE, "listen_addr: %s\n", listen_addr);
+	jlog(L_NOTICE, "dest_addr: %s\n", dest_addr);
+	jlog(L_NOTICE, "port: %s\n", port);
+
+	p2p_args = (struct p2p_args *)calloc(1, sizeof(struct p2p_args));
+	p2p_args->listen_addr = strdup(listen_addr);
+	p2p_args->dest_addr = strdup(dest_addr);
+	p2p_args->port = strdup(port);
+	p2p_args->on_connect = net_p2p_on_connect;
+	p2p_args->on_disconnect = net_on_disconnect;
+	p2p_args->on_input = net_on_input;
+	p2p_args->ext_ptr = netc;
+
+	pthread_create(&thread_p2p, NULL, udtbus_rendezvous, (void *)p2p_args);
+	pthread_detach(thread_p2p);
+
+	return;
 }

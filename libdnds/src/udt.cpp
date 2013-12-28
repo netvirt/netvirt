@@ -325,17 +325,12 @@ int udtbus_server(const char *listen_addr,
 	return 0;
 }
 
-// FIXME need to be tested with DNDSMessage
-peer_t *udtbus_rendezvous(const char *listen_addr,
-                          const char *dest_addr,
-                          const char *port,
-                          void (*on_disconnect)(peer_t *),
-                          void (*on_input)(peer_t *),
-                          void *ext_ptr) {
-
+void *udtbus_rendezvous(void *args)
+{
 	int ret = 0;
 	peer_t *peer = NULL;
 	struct addrinfo hints, *local, *server;
+	struct p2p_args *p2p_args = (struct p2p_args *)args;
 
 	memset(&hints, 0, sizeof(struct addrinfo));
 
@@ -343,9 +338,10 @@ peer_t *udtbus_rendezvous(const char *listen_addr,
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 
-	ret = getaddrinfo(listen_addr, port, &hints, &local);
+	ret = getaddrinfo(p2p_args->listen_addr, p2p_args->port, &hints, &local);
 	if (ret != 0) {
 		cout << "illegal port number or port is busy (" << gai_strerror(ret) << ")" << endl;
+		freeaddrinfo(local);
 		return NULL;
 	}
 
@@ -354,6 +350,7 @@ peer_t *udtbus_rendezvous(const char *listen_addr,
 	UDT::setsockopt(socket, 0, UDT_RENDEZVOUS, new bool(true), sizeof(bool));
 	if (UDT::ERROR == UDT::bind(socket, local->ai_addr, local->ai_addrlen)) {
 		cout << "bind: " << UDT::getlasterror().getErrorMessage() << endl;
+		freeaddrinfo(local);
 		return NULL;
 	}
 
@@ -365,14 +362,16 @@ peer_t *udtbus_rendezvous(const char *listen_addr,
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 
-	ret = getaddrinfo(dest_addr, port, &hints, &server);
+	ret = getaddrinfo(p2p_args->dest_addr, p2p_args->port, &hints, &server);
 	if (ret != 0) {
 		cout << "incorrect server address (" << gai_strerror(ret) << ")" << endl;
+		freeaddrinfo(server);
 		return NULL;
 	}
 
 	if (UDT::connect(socket, server->ai_addr, server->ai_addrlen) == UDT::ERROR) {
 		cout << "connect: " << UDT::getlasterror().getErrorMessage() << endl;
+		freeaddrinfo(server);
 		return NULL;
 	}
 
@@ -381,20 +380,21 @@ peer_t *udtbus_rendezvous(const char *listen_addr,
 	peer = (peer_t *)malloc(sizeof(peer_t));
 	peer->type = UDTBUS_CLIENT;
 	peer->socket = socket;
-	peer->on_connect = NULL;
-	peer->on_disconnect = on_disconnect;
-	peer->on_input = on_input;
+	peer->on_connect = p2p_args->on_connect;
+	peer->on_disconnect = p2p_args->on_disconnect;
+	peer->on_input = p2p_args->on_input;
 	peer->recv = udtbus_recv;
 	peer->send = udtbus_send;
 	peer->disconnect = udtbus_disconnect;
 	peer->buffer = NULL;
-	peer->ext_ptr = ext_ptr;
+	peer->ext_ptr = p2p_args->ext_ptr;
 
 	UDT::set_ext_ptr(socket, (void *)peer);
-
 	udtbus_ion_add(socket);
 
-	return peer;
+	peer->on_connect(peer);
+
+	return NULL;
 }
 
 extern "C" void udtbus_fini()

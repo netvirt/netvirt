@@ -88,7 +88,7 @@ int net_server(const char *listen_addr,
 		void (*on_input)(netc_t *),
 		void (*on_secure)(netc_t *));
 
-netc_t *net_p2p(const char *listen_addr,
+void net_p2p(const char *listen_addr,
 		const char *dest_addr,
 		const char *port,
 		uint8_t protocol,
@@ -97,6 +97,7 @@ netc_t *net_p2p(const char *listen_addr,
 		void (*on_connect)(netc_t *),
 		void (*on_secure)(netc_t *),
 		void (*on_disconnect)(netc_t *),
-		void (*on_input)(netc_t *));
+		void (*on_input)(netc_t *),
+		void *ext_ptr);
 
 #endif /* DNDS_NET_H */
