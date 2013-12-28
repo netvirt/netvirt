@@ -255,6 +255,7 @@ static void on_disconnect(netc_t *netc)
 		return;
 	}
 
+	linkst_disjoin(session->id, session->context->linkst, session->context->active_node);
 	while (session->mac_list != NULL) {
 		mac_itr = session->mac_list;
 		session->mac_list = mac_itr->next;

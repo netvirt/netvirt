@@ -46,17 +46,17 @@ int linkst_join(int idx_a, int idx_b, uint8_t **adjacency_matrix, int max_node)
 	return 0;
 }
 
-void linkst_disjoin(int idx, uint8_t **adjacency_matrix, int active_nodes)
+void linkst_disjoin(int idx, uint8_t **adjacency_matrix, int active_node)
 {
 	int i;
 
-	if (idx < 0 || idx > active_nodes)
-		return NULL;
+	if (idx < 0 || idx > active_node)
+		return;
 
 	if (adjacency_matrix == NULL)
-		return NULL;
+		return;
 
-	for (i = 0; i <= active_nodes; i++) {	/* 0 to active_nodes-1 gives `active_nodes` iterations */
+	for (i = 0; i <= active_node; i++) {	/* 0 to active_node-1 gives `active_node` iterations */
 
 		if (adjacency_matrix[idx][i] == 1) {
 			adjacency_matrix[idx][i] = 0;
