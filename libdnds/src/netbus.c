@@ -614,19 +614,15 @@ void net_p2p_on_connect(peer_t *peer)
 			kconn_type = KRYPT_SERVER;
 		}
 
-		// XXX - do we need to ADH then step-up to RSA or we can go with RSA the first time?
-		// bev @ 30-12-2010
 		ret = krypt_secure_connection(netc->kconn, KRYPT_TLS, kconn_type, KRYPT_RSA);
-
 		if (ret < 0) {
 			jlog(L_NOTICE, "net]> securing client connection failed :: %s:%i", __FILE__, __LINE__);
 			net_connection_free(netc);
 			return;
 		}
 
-		// XXX - still not sure about the following part
-		// bev @ 30-12-2010
 		krypt_do_handshake(netc->kconn, NULL, 0);
+		net_do_krypt(netc);
 	}
 
 	netc->on_connect(netc);
