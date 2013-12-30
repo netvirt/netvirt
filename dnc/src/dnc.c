@@ -43,6 +43,7 @@ char ipAddress[INET_ADDRSTRLEN];
 void on_input(netc_t *netc);
 static void on_secure(netc_t *netc);
 static void dispatch_op(struct session *session, DNDSMessage_t *msg);
+static void on_disconnect(netc_t *netc);
 
 static void tunnel_in(struct session* session)
 {
@@ -51,21 +52,21 @@ static void tunnel_in(struct session* session)
 	uint8_t framebuf[2000];
 	struct session *p2p_session;
 
+	frame_size = tapcfg_read(session->tapcfg, framebuf, 2000);
+	p2p_session = p2p_find_session(framebuf);
+	if (p2p_session) {
+		//printf("p2p_session: %p netc: %p\n", p2p_session, p2p_session->netc);
+		session = p2p_session;
+	}
+
 	if (session->state != SESSION_STATE_AUTHED)
 		return;
-
-	frame_size = tapcfg_read(session->tapcfg, framebuf, 2000);
 
 	DNDSMessage_new(&msg);
 	DNDSMessage_set_channel(msg, 0);
 	DNDSMessage_set_pdu(msg, pdu_PR_ethernet);
 	DNDSMessage_set_ethernet(msg, (uint8_t*)framebuf, frame_size);
 
-	p2p_session = p2p_find_session(framebuf);
-	if (p2p_session && p2p_session->state == SESSION_STATE_AUTHED) {
-		//printf("p2p_session: %p netc: %p\n", p2p_session, p2p_session->netc);
-		session = p2p_session;
-	}
 	net_send_msg(session->netc, msg);
 	DNDSMessage_set_ethernet(msg, NULL, 0);
 	DNDSMessage_del(msg);
@@ -170,15 +171,12 @@ void transmit_register(netc_t *netc)
         return;
 }
 
-static void on_disconnect(netc_t *netc)
+void *try_to_reconnect(void *ptr)
 {
-	jlog(L_NOTICE, "dnc]> disconnected...\n");
-
-	struct session *session;
+	struct session *session = NULL;
 	netc_t *retry_netc = NULL;
 
-	session = netc->ext_ptr;
-	session->state = SESSION_STATE_DOWN;
+	session = (struct session *)ptr;
 
 	do {
 #if defined(_WIN32)
@@ -196,9 +194,28 @@ static void on_disconnect(netc_t *netc)
 			session->state = SESSION_STATE_NOT_AUTHED;
 			session->netc = retry_netc;
 			retry_netc->ext_ptr = session;
-			return;
+			return NULL;
 		}
 	} while (!g_shutdown);
+
+	return NULL;
+}
+
+static void on_disconnect(netc_t *netc)
+{
+	jlog(L_NOTICE, "dnc]> disconnected...\n");
+
+	pthread_t thread_reconnect;
+	struct session *session;
+
+	session = netc->ext_ptr;
+	if (session->state == SESSION_STATE_DOWN)
+		return;
+
+	session->state = SESSION_STATE_DOWN;
+
+	pthread_create(&thread_reconnect, NULL, try_to_reconnect, (void *)session);
+	pthread_detach(thread_reconnect);
 }
 
 static void on_secure(netc_t *netc)
