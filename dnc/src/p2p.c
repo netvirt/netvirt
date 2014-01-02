@@ -76,13 +76,11 @@ struct session *p2p_find_session(uint8_t *eth_frame)
 void op_p2p_request(struct session *session, DNDSMessage_t *msg)
 {
 	char port_str[6];
-	uint8_t side;
+	uint32_t side = 0;
 	uint8_t mac_dst[ETHER_ADDR_LEN];
 	char ip_dst[INET_ADDRSTRLEN];
 	uint32_t port;
 	struct session *p2p_session;
-
-	jlog(L_NOTICE, "dnc]> p2p...");
 
 	P2pRequest_get_macAddrDst(msg, mac_dst);
 	P2pRequest_get_ipAddrDst(msg, ip_dst);
