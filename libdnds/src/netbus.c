@@ -637,6 +637,7 @@ void net_p2p(const char *listen_addr,
 		uint8_t protocol,
 		uint8_t security_level,
 		uint8_t conn_type,
+		passport_t *passport,
 		void (*on_connect)(netc_t *),
 		void (*on_secure)(netc_t *),
 		void (*on_disconnect)(netc_t *),
@@ -666,6 +667,9 @@ void net_p2p(const char *listen_addr,
 	netc->protocol = protocol;
 	netc->security_level = security_level;
 	netc->ext_ptr = ext_ptr;
+
+	if (security_level > NET_UNSECURE)
+		krypt_add_passport(netc->kconn, passport);
 
 	jlog(L_NOTICE, "listen_addr: %s\n", listen_addr);
 	jlog(L_NOTICE, "dest_addr: %s\n", dest_addr);
