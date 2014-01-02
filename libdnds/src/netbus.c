@@ -661,6 +661,7 @@ void net_p2p(const char *listen_addr,
 	}
 
 	netc->on_connect = on_connect;
+	netc->on_secure = on_secure;
 	netc->on_disconnect = on_disconnect;
 	netc->on_input = on_input;
 	netc->conn_type = conn_type;

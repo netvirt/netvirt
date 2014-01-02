@@ -21,8 +21,9 @@
 
 #define NET_CLIENT	0x1
 #define NET_SERVER	0x2
-#define NET_P2P_CLIENT	0x4
-#define NET_P2P_SERVER	0x8
+
+#define NET_P2P_CLIENT	1
+#define NET_P2P_SERVER	2
 
 #define NET_UNSECURE		0X01
 #define NET_SECURE_ADH		0x02

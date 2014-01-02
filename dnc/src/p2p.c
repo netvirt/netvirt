@@ -76,7 +76,7 @@ struct session *p2p_find_session(uint8_t *eth_frame)
 void op_p2p_request(struct session *session, DNDSMessage_t *msg)
 {
 	char port_str[6];
-	int state = 1;
+	uint8_t side;
 	uint8_t mac_dst[ETHER_ADDR_LEN];
 	char ip_dst[INET_ADDRSTRLEN];
 	uint32_t port;
@@ -87,6 +87,7 @@ void op_p2p_request(struct session *session, DNDSMessage_t *msg)
 	P2pRequest_get_macAddrDst(msg, mac_dst);
 	P2pRequest_get_ipAddrDst(msg, ip_dst);
 	P2pRequest_get_port(msg, &port);
+	P2pRequest_get_side(msg, &side);
 
 	p2p_session = calloc(1, sizeof(struct session));
 	p2p_session->tapcfg = session->tapcfg;
@@ -94,7 +95,7 @@ void op_p2p_request(struct session *session, DNDSMessage_t *msg)
 	memmove(p2p_session->mac_dst, mac_dst, ETHER_ADDR_LEN);
 
 	snprintf(port_str, 6, "%d", port);
-	net_p2p("0.0.0.0", ip_dst, port_str, NET_PROTO_UDT, NET_SECURE_RSA, state, p2p_session->passport,
+	net_p2p("0.0.0.0", ip_dst, port_str, NET_PROTO_UDT, NET_SECURE_RSA, side, p2p_session->passport,
 		p2p_on_connect, p2p_on_secure, p2p_on_disconnect, p2p_on_input, (void *)p2p_session);
 
 	return;
