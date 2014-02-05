@@ -27,6 +27,7 @@
 #include <udt.h>
 
 #include "udt.h"
+#include "logger.h"
 
 // g++ udt.cpp -L/usr/local/lib -I../src/ -ludt -lstdc++ -lpthread -lm
 
@@ -54,10 +55,10 @@ static void udtbus_disconnect(peer_t *peer)
 		if (peer->socket == *i) {
 			UDT::close(*i);
 			g_list_socket.erase(i);
-			free(peer);
 			break;
 		}
 	}
+	free(peer);
 }
 
 static void on_disconnect(peer_t *peer)
@@ -283,7 +284,7 @@ int udtbus_server(const char *listen_addr,
 	ret = getaddrinfo(listen_addr, port, &hints, &res);
 
 	if (ret) {
-		cout << "illegal port number or port is busy (" << gai_strerror(ret) << ")" << endl;
+		jlog(L_ERROR, "udt]> illegal port number or port is busy: %s", gai_strerror(ret));
 		return -1;
 	}
 
@@ -329,16 +330,22 @@ void *udtbus_rendezvous(void *args)
 {
 	int ret = 0;
 	peer_t *peer = NULL;
+	uint8_t nb_port = 0;
+	uint8_t port_itr = 0;
 	struct addrinfo hints, *local, *server;
 	struct p2p_args *p2p_args = (struct p2p_args *)args;
 
+	nb_port = sizeof(p2p_args->port)/sizeof(p2p_args->port[0]);
+
+retry:
+	jlog(L_NOTICE, "udt]> trying port %s...", p2p_args->port[port_itr]);
 	memset(&hints, 0, sizeof(struct addrinfo));
 
 	hints.ai_flags = AI_PASSIVE;
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 
-	ret = getaddrinfo(p2p_args->listen_addr, p2p_args->port, &hints, &local);
+	ret = getaddrinfo(p2p_args->listen_addr, p2p_args->port[port_itr], &hints, &local);
 	if (ret != 0) {
 		cout << "illegal port number or port is busy (" << gai_strerror(ret) << ")" << endl;
 		freeaddrinfo(local);
@@ -347,6 +354,7 @@ void *udtbus_rendezvous(void *args)
 
 	UDTSOCKET socket = UDT::socket(local->ai_family, local->ai_socktype, local->ai_protocol);
 
+	UDT::setsockopt(socket, 0, UDT_MSS, new int(1450), sizeof(int));
 	UDT::setsockopt(socket, 0, UDT_RENDEZVOUS, new bool(true), sizeof(bool));
 	if (UDT::ERROR == UDT::bind(socket, local->ai_addr, local->ai_addrlen)) {
 		cout << "bind: " << UDT::getlasterror().getErrorMessage() << endl;
@@ -362,7 +370,7 @@ void *udtbus_rendezvous(void *args)
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 
-	ret = getaddrinfo(p2p_args->dest_addr, p2p_args->port, &hints, &server);
+	ret = getaddrinfo(p2p_args->dest_addr, p2p_args->port[port_itr], &hints, &server);
 	if (ret != 0) {
 		cout << "incorrect server address (" << gai_strerror(ret) << ")" << endl;
 		freeaddrinfo(server);
@@ -370,8 +378,14 @@ void *udtbus_rendezvous(void *args)
 	}
 
 	if (UDT::connect(socket, server->ai_addr, server->ai_addrlen) == UDT::ERROR) {
-		cout << "connect: " << UDT::getlasterror().getErrorMessage() << endl;
+		jlog(L_ERROR, "udt]> %s", UDT::getlasterror().getErrorMessage());
 		freeaddrinfo(server);
+		UDT::close(socket);
+
+		if (port_itr < nb_port-1) {
+			port_itr++;
+			goto retry;
+		}
 		return NULL;
 	}
 

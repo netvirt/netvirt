@@ -23,25 +23,35 @@ ftable_t *ftable = NULL;
 
 static void p2p_on_secure(netc_t *netc)
 {
-	printf("p2p_on_secure\n");
-}
-
-static void p2p_on_connect(netc_t *netc)
-{
-	printf("p2p_on_connect\n");
 	struct session *p2p_session;
 
 	if (netc == NULL) {
-		jlog(L_NOTICE, "dnc]> p2p failed");
+		jlog(L_ERROR, "dnc]> p2p failed to encrypt to connection...");
+		return;
 	}
 
-	p2p_session = netc->ext_ptr;
-	p2p_session->netc = netc;
+	jlog(L_NOTICE, "dnc]> p2p connection encrypted");
 
+	p2p_session = netc->ext_ptr;
 	p2p_session->state = SESSION_STATE_AUTHED;
 	p2p_session->netc->ext_ptr = p2p_session;
 
 	ftable_insert(ftable, p2p_session->mac_dst, p2p_session);
+}
+
+static void p2p_on_connect(netc_t *netc)
+{
+	struct session *p2p_session;
+
+	if (netc == NULL) {
+		jlog(L_NOTICE, "dnc]> p2p connection failed");
+		return;
+	}
+
+	jlog(L_NOTICE, "dnc]> p2p connection established");
+
+	p2p_session = netc->ext_ptr;
+	p2p_session->netc = netc;
 
 	return;
 }
@@ -86,6 +96,8 @@ void op_p2p_request(struct session *session, DNDSMessage_t *msg)
 	P2pRequest_get_ipAddrDst(msg, ip_dst);
 	P2pRequest_get_port(msg, &port);
 	P2pRequest_get_side(msg, &side);
+
+	jlog(L_NOTICE, "dnc]> establishing p2p with %s", ip_dst);
 
 	p2p_session = calloc(1, sizeof(struct session));
 	p2p_session->tapcfg = session->tapcfg;

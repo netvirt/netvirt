@@ -630,7 +630,6 @@ void net_p2p_on_connect(peer_t *peer)
 	return;
 }
 
-
 void net_p2p(const char *listen_addr,
 		const char *dest_addr,
 		const char *port,
@@ -672,14 +671,15 @@ void net_p2p(const char *listen_addr,
 	if (security_level > NET_UNSECURE)
 		krypt_add_passport(netc->kconn, passport);
 
-	jlog(L_NOTICE, "listen_addr: %s\n", listen_addr);
-	jlog(L_NOTICE, "dest_addr: %s\n", dest_addr);
-	jlog(L_NOTICE, "port: %s\n", port);
-
 	p2p_args = (struct p2p_args *)calloc(1, sizeof(struct p2p_args));
 	p2p_args->listen_addr = strdup(listen_addr);
 	p2p_args->dest_addr = strdup(dest_addr);
-	p2p_args->port = strdup(port);
+
+	/* XXX hardcoded p2p sequence */
+	p2p_args->port[0] = strdup(port);
+	p2p_args->port[1] = strdup("443");
+	p2p_args->port[2] = strdup("80");
+
 	p2p_args->on_connect = net_p2p_on_connect;
 	p2p_args->on_disconnect = net_on_disconnect;
 	p2p_args->on_input = net_on_input;
