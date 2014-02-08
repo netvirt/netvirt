@@ -58,9 +58,9 @@ static void p2p_on_connect(netc_t *netc)
 
 static void p2p_on_disconnect(netc_t *netc)
 {
-	printf("p2p_on_disconnect\n");
-
 	struct session *p2p_session = NULL;
+
+	jlog(L_NOTICE, "dnc]> p2p disconnected\n");
 
 	p2p_session = netc->ext_ptr;
 	ftable_erase(ftable, p2p_session->mac_dst);

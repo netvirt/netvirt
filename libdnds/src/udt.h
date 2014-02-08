@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct peer {
 
 	int type;
@@ -30,18 +34,14 @@ typedef struct peer {
 
 struct p2p_args {
 
-	const char *listen_addr;
-	const char *dest_addr;
+	char *listen_addr;
+	char *dest_addr;
 	char *port[3];
 	void (*on_connect)(struct peer *);
 	void (*on_disconnect)(struct peer *);
 	void (*on_input)(struct peer *);
 	void *ext_ptr;
 };
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 int udtbus_server(const char *listen_addr,
                   const char *port,

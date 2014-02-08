@@ -330,6 +330,7 @@ void *udtbus_rendezvous(void *args)
 {
 	int ret = 0;
 	peer_t *peer = NULL;
+	uint8_t p2p_failed = 0;
 	uint8_t nb_port = 0;
 	uint8_t port_itr = 0;
 	struct addrinfo hints, *local, *server;
@@ -386,7 +387,8 @@ retry:
 			port_itr++;
 			goto retry;
 		}
-		return NULL;
+
+		p2p_failed = 1;
 	}
 
 	freeaddrinfo(server);
@@ -402,6 +404,21 @@ retry:
 	peer->disconnect = udtbus_disconnect;
 	peer->buffer = NULL;
 	peer->ext_ptr = p2p_args->ext_ptr;
+
+	free(p2p_args->listen_addr);
+	free(p2p_args->dest_addr);
+	free(p2p_args->port[0]);
+	free(p2p_args->port[1]);
+	free(p2p_args->port[2]);
+	free(p2p_args);
+
+	if (p2p_failed) {
+		/* this seem a bit redundant, but it keeps the logic flow clear
+		   without using any obscure shortcut to free everything in case
+		   of a p2p failure */
+		on_disconnect(peer);
+		return NULL;
+	}
 
 	UDT::set_ext_ptr(socket, (void *)peer);
 	udtbus_ion_add(socket);
