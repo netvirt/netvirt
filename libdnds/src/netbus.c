@@ -301,6 +301,10 @@ static void net_on_input(peer_t *peer)
 				netc->kconn->buf_decrypt_data_size = 0; // mark the buffer as empty
 				net_do_krypt(netc);
 				state_p = SSL_peek(netc->kconn->ssl, &peek, 1);
+			} else {
+				netc->on_disconnect(netc);	// inform upper-layer
+				peer->disconnect(peer);		// inform lower-layer
+				net_connection_free(netc);
 			}
 
 			// decryption doesn't fail and (SSL data pending or data to feed to BIO)
