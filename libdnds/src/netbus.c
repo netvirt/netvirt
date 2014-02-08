@@ -232,6 +232,12 @@ static void net_on_input(peer_t *peer)
 
 	netc = peer->ext_ptr;
 	peer->buffer_data_len = peer->recv(peer);
+	if (peer->buffer_data_len == -1) {
+		netc->on_disconnect(netc);	// inform upper-layer
+		peer->disconnect(peer);		// inform lower-layer
+		net_connection_free(netc);
+		return;
+	}
 
 	if (netc->security_level > NET_UNSECURE
 		&& netc->kconn->status == KRYPT_HANDSHAKE) {
