@@ -380,7 +380,6 @@ retry:
 
 	if (UDT::connect(socket, server->ai_addr, server->ai_addrlen) == UDT::ERROR) {
 		jlog(L_ERROR, "udt]> %s", UDT::getlasterror().getErrorMessage());
-		freeaddrinfo(server);
 		UDT::close(socket);
 
 		if (port_itr < nb_port-1) {

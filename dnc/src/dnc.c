@@ -209,7 +209,7 @@ static void on_disconnect(netc_t *netc)
 	struct session *session;
 
 	session = netc->ext_ptr;
-	if (session->state == SESSION_STATE_DOWN)
+	if (session == NULL || session->state == SESSION_STATE_DOWN)
 		return;
 
 	session->state = SESSION_STATE_DOWN;
