@@ -306,6 +306,7 @@ static void net_on_input(peer_t *peer)
 				netc->on_disconnect(netc);	// inform upper-layer
 				peer->disconnect(peer);		// inform lower-layer
 				net_connection_free(netc);
+				return;
 			}
 
 			// decryption doesn't fail and (SSL data pending or data to feed to BIO)
