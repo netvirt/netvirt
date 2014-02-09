@@ -284,6 +284,7 @@ static void net_on_input(peer_t *peer)
 		int peek = 0; // buffer to hold the byte we are peeking at
 		int state_p = 0;
 		do {
+			printf("%s||%s\n", peer->buffer_data_len, peer->buffer_offset);
 			nbyte = krypt_push_encrypted_data(netc->kconn, peer->buffer + peer->buffer_offset,										peer->buffer_data_len);
 
 			if (nbyte > 0 && nbyte < peer->buffer_data_len) {

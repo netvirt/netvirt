@@ -26,7 +26,7 @@ typedef struct peer {
 	void (*disconnect)(struct peer *);
 
 	void *buffer;
-	uint32_t buffer_data_len;
+	int32_t buffer_data_len;
 	size_t buffer_offset;
 	void *ext_ptr;
 
