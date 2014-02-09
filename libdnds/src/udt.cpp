@@ -58,6 +58,9 @@ static void udtbus_disconnect(peer_t *peer)
 			break;
 		}
 	}
+	peer->buffer_data_len = 0;
+	peer->ext_ptr = NULL;
+	free(peer->buffer);
 	free(peer);
 }
 

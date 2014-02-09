@@ -232,12 +232,6 @@ static void net_on_input(peer_t *peer)
 
 	netc = peer->ext_ptr;
 	peer->buffer_data_len = peer->recv(peer);
-	if (peer->buffer_data_len == -1) {
-		netc->on_disconnect(netc);	// inform upper-layer
-		peer->disconnect(peer);		// inform lower-layer
-		net_connection_free(netc);
-		return;
-	}
 
 	if (netc->security_level > NET_UNSECURE
 		&& netc->kconn->status == KRYPT_HANDSHAKE) {
@@ -284,7 +278,6 @@ static void net_on_input(peer_t *peer)
 		int peek = 0; // buffer to hold the byte we are peeking at
 		int state_p = 0;
 		do {
-			printf("%d||%d\n", peer->buffer_data_len, peer->buffer_offset);
 			nbyte = krypt_push_encrypted_data(netc->kconn, peer->buffer + peer->buffer_offset,										peer->buffer_data_len);
 
 			if (nbyte > 0 && nbyte < peer->buffer_data_len) {
@@ -302,11 +295,6 @@ static void net_on_input(peer_t *peer)
 				netc->kconn->buf_decrypt_data_size = 0; // mark the buffer as empty
 				net_do_krypt(netc);
 				state_p = SSL_peek(netc->kconn->ssl, &peek, 1);
-			} else {
-				netc->on_disconnect(netc);	// inform upper-layer
-				peer->disconnect(peer);		// inform lower-layer
-				net_connection_free(netc);
-				return;
 			}
 
 			// decryption doesn't fail and (SSL data pending or data to feed to BIO)
