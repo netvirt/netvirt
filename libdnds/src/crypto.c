@@ -243,15 +243,13 @@ void krypt_add_passport(krypt_t *kconn, passport_t *passport)
 
 void krypt_set_renegotiate(krypt_t *kconn)
 {
-	// bring back the connection to handshake mode
-	kconn->status = KRYPT_HANDSHAKE;
+	if (kconn->conn_type == KRYPT_SERVER) {
 
-	// forces the server to wait for the client rehandshake
-	if (kconn->conn_type == KRYPT_SERVER)
+		kconn->status = KRYPT_HANDSHAKE;
+		// bring back the connection to handshake mode
 		kconn->ssl->state = SSL_ST_ACCEPT;
+	}
 }
-
-
 
 int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 {
@@ -263,20 +261,18 @@ int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 		nbyte = BIO_write(kconn->network_bio, buf, buf_data_size);
 	}
 
-	// This fix a weird bug, I dont understand why
-	char peek;
-	SSL_peek(kconn->ssl, &peek, 1);
-
 	ret = SSL_do_handshake(kconn->ssl);
+	printf("sum renego: %d\n", SSL_num_renegotiations(kconn->ssl));
 
 	jlog(L_NOTICE, "krypt]> SSL state: %s", SSL_state_string_long(kconn->ssl));
+	printf("init finish: %d\n", SSL_is_init_finished(kconn->ssl));
 
-	if (ret > 0 && SSL_renegotiate_pending(kconn->ssl)) {
+	if (ret > 0 && !SSL_is_init_finished(kconn->ssl)) {
 		// Need more data to continue ?
 		jlog(L_ERROR, "krypt]> handshake need more data to continue ??");
 		status = 1;
 	}
-	else if (ret > 0 && !SSL_renegotiate_pending(kconn->ssl)) {
+	else if (ret > 0 && SSL_is_init_finished(kconn->ssl)) {
 		// Handshake successfully completed
 		post_handshake_check(kconn);
 		kconn->status = KRYPT_SECURE;
@@ -311,6 +307,7 @@ int krypt_push_encrypted_data(krypt_t *kconn, uint8_t *buf, size_t buf_data_size
 {
 	int nbyte;
 	nbyte = BIO_write(kconn->network_bio, buf, buf_data_size);
+	printf("bio write: %d\n", nbyte);
 
 	return nbyte;
 }
@@ -322,6 +319,7 @@ int krypt_decrypt_buf(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 	int status = -1;
 
 	nbyte = SSL_read(kconn->ssl, kconn->buf_decrypt, kconn->buf_decrypt_size);
+	printf("ssl_read: %d\n", nbyte);
 
 	if (nbyte <= 0) {
 		// SSL_read() failed
@@ -331,12 +329,15 @@ int krypt_decrypt_buf(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 
 		switch (error) {
 			case SSL_ERROR_WANT_READ:
+				printf("want read\n");
+
 				nbyte = BIO_read(kconn->network_bio, kconn->buf_encrypt, kconn->buf_encrypt_size);
 				kconn->buf_encrypt_data_size = nbyte; // FIXME dynamic buffer
 
 				break;
 
 			case SSL_ERROR_WANT_WRITE:
+				printf("want write\n");
 				break;
 
 			default:
@@ -350,7 +351,6 @@ int krypt_decrypt_buf(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 		status = 0;
 		kconn->buf_decrypt_data_size = nbyte;
 	}
-
 	return status;
 }
 
@@ -478,3 +478,5 @@ int krypt_init()
 
 	return 0;
 }
+
+

@@ -98,8 +98,10 @@ static void net_do_krypt(netc_t *netc)
 	ssize_t nbyte;
 
 	if (netc->kconn->buf_encrypt_data_size > 0) {
+		printf("netc->kconn->buf_encrypt_data_size: %d\n", netc->kconn->buf_encrypt_data_size);
 
 		nbyte = netc->peer->send(netc->peer, netc->kconn->buf_encrypt, netc->kconn->buf_encrypt_data_size);
+		printf("data_size(%d): nbyte(%d)\n", netc->kconn->buf_encrypt_data_size, nbyte);
 		if (nbyte == -1) {
 			return;
 		}
@@ -232,16 +234,17 @@ static void net_on_input(peer_t *peer)
 
 	netc = peer->ext_ptr;
 	peer->buffer_data_len = peer->recv(peer);
+	printf("netbus input: %d\n", peer->buffer_data_len);
 
 	if (netc->security_level > NET_UNSECURE
-		&& netc->kconn->status == KRYPT_HANDSHAKE) {
+			&& netc->kconn->status == KRYPT_HANDSHAKE) {
 
 
 		ret = krypt_do_handshake(netc->kconn, peer->buffer, peer->buffer_data_len);
 		peer->buffer_data_len = 0;
+		net_do_krypt(netc);
 		if (ret == 0) {				// handshake successfull
 
-			net_do_krypt(netc);
 			netc->on_secure(netc);		// inform upper-layer
 
 			// Handle the fact that we can receive handshake data
@@ -257,12 +260,7 @@ static void net_on_input(peer_t *peer)
 				return;
 			}
 		}
-		else if (ret == 1) {			// need more data to continue
-			net_do_krypt(netc);
-			return;
-		}
 		else if (ret == -1) {			// handshake failed
-			net_do_krypt(netc);
 			netc->on_disconnect(netc);	// inform upper-layer
 			peer->disconnect(peer);		// inform lower-layer
 			net_connection_free(netc);
@@ -273,7 +271,7 @@ static void net_on_input(peer_t *peer)
 	}
 
 	if (netc->security_level > NET_UNSECURE
-		&& netc->kconn->status == KRYPT_SECURE) {
+			&& netc->kconn->status == KRYPT_SECURE) {
 
 		int peek = 0; // buffer to hold the byte we are peeking at
 		int state_p = 0;
@@ -293,9 +291,9 @@ static void net_on_input(peer_t *peer)
 			if (ret == 0) {
 				serialize_buf_in(netc, netc->kconn->buf_decrypt, netc->kconn->buf_decrypt_data_size);
 				netc->kconn->buf_decrypt_data_size = 0; // mark the buffer as empty
-				net_do_krypt(netc);
 				state_p = SSL_peek(netc->kconn->ssl, &peek, 1);
 			}
+			net_do_krypt(netc);
 
 			// decryption doesn't fail and (SSL data pending or data to feed to BIO)
 		} while (ret == 0 && (state_p == 1 || peer->buffer_data_len > 0));
@@ -382,16 +380,16 @@ static void net_on_connect(peer_t *peer)
 
 void net_step_up(netc_t *netc)
 {
-	krypt_set_rsa(netc->kconn);		// set security level to RSA
-	SSL_renegotiate(netc->kconn->ssl);	// move the SSL connection into renegotiation state
+	if (netc->conn_type == NET_SERVER) {	// Server send HelloRequest
 
-	if (netc->conn_type == NET_CLIENT) {	// Client send ClientHello
+		krypt_set_rsa(netc->kconn);         // set security level to RSA
+		SSL_renegotiate(netc->kconn->ssl);	// move the SSL connection into renegotiation state
 
-		krypt_do_handshake(netc->kconn, NULL, 0);
+		krypt_do_handshake(netc->kconn, NULL, 0); // call SSL_do_handshake (1st time)
 		net_do_krypt(netc);
-	}
 
-	krypt_set_renegotiate(netc->kconn);	// set handshake mode
+		krypt_set_renegotiate(netc->kconn);	// set handshake mode
+	}
 }
 
 int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
@@ -427,7 +425,6 @@ int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 	else {
 		net_queue_out(netc, netc->buf_enc, netc->buf_enc_data_size);
 	}
-
 
 	netc->buf_enc_data_size = 0; // mark buffer as empty
 	nbyte = net_flush_queue_out(netc);
