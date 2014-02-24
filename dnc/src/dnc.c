@@ -232,8 +232,9 @@ static void on_secure(netc_t *netc)
 		}
 		else {
 			transmit_register(netc);
-			krypt_set_rsa(session->netc->kconn);     // set security level to RSA
 		}
+
+		krypt_set_rsa(session->netc->kconn);     // set security level to RSA
 	}
 }
 
