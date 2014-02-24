@@ -245,7 +245,7 @@ void AddRequest_node(struct session *session, DNDSMessage_t *msg)
 	char *emb_cert_ptr = NULL;
 	char *emb_pvkey_ptr = NULL;
 	char *serial = NULL;
-	char *ippool_bin = NULL;
+	unsigned char *ippool_bin = NULL;
 	long size;
 
 	char *uuid = NULL;
@@ -282,6 +282,7 @@ void AddRequest_node(struct session *session, DNDSMessage_t *msg)
 	passport_t *node_passport = NULL;
 	node_passport = pki_embassy_deliver_passport(emb, node_ident, exp_delay);
 
+	/* FIXME verify is the value is freed or not via BIO_free() */
 	pki_write_certificate_in_mem(node_passport->certificate, &node_cert_ptr, &size);
 	pki_write_privatekey_in_mem(node_passport->keyring, &node_pvkey_ptr, &size);
 
@@ -290,10 +291,9 @@ void AddRequest_node(struct session *session, DNDSMessage_t *msg)
 	ret = dao_update_embassy_serial(context_id_str, emb_serial);
 	if (ret == -1) {
 		jlog(L_ERROR, "failed to update embassy serial\n");
-		return;
+		goto free1;
 	}
 	jlog(L_DEBUG, "dao_update_embassy_serial: %d\n", ret);
-
 
 	/* handle ip pool */
 	ippool_t *ippool;
@@ -301,7 +301,7 @@ void AddRequest_node(struct session *session, DNDSMessage_t *msg)
 	int pool_size;
 
 	ippool = ippool_new("44.128.0.0", "255.255.0.0");
-	free(ippool->pool);
+	free(ippool->pool); /* FIXME why do we free the pool here ? */
 	ippool->pool = (uint8_t*)ippool_bin;
 	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
 	ip = ippool_get_ip(ippool);
@@ -309,32 +309,36 @@ void AddRequest_node(struct session *session, DNDSMessage_t *msg)
 	ret = dao_add_node(context_id_str, uuid, node_cert_ptr, node_pvkey_ptr, provcode, description, ip);
 	if (ret == -1) {
 		jlog(L_ERROR, "failed to add node\n");
-		return;
+		goto free2;
 	}
 
-	ret = dao_update_context_ippool(context_id_str, (char*)ippool->pool, pool_size);
+	ret = dao_update_context_ippool(context_id_str, ippool->pool, pool_size);
 	if (ret == -1) {
-		jlog(L_ERROR, "failled to update embassy ippool\n");
-		return;
+		jlog(L_ERROR, "failed to update embassy ippool\n");
+		goto free2;
 	}
 
+free2:
 	free(ippool->pool);
 	free(ippool);
+
+free1:
+	free(node_passport);
+	free(node_ident);
 
 	free(uuid);
 	free(provcode);
 
+	free(node_cert_ptr);
+	free(node_pvkey_ptr);
+
 	free(serial);
 	free(emb_cert_ptr);
 	free(emb_pvkey_ptr);
-
-	free(node_cert_ptr);
-	free(node_pvkey_ptr);
 }
 
 void addRequest(struct session *session, DNDSMessage_t *msg)
 {
-
 	DNDSObject_PR objType;
 	AddRequest_get_objectType(msg, &objType);
 
@@ -397,7 +401,7 @@ void searchRequest_client(struct session *session, DNDSMessage_t *req_msg)
 	DNDSObject_new(&objClient);
 	DNDSObject_set_objectType(objClient, DNDSObject_PR_client);
 
-	Client_set_id(objClient, id ? atoi(id): 0); /* FIXME id might be NULL */
+	Client_set_id(objClient, id ? atoi(id): 0); /* FIXME set the result to failed if id == NULL */
 
 	SearchResponse_add_object(msg, objClient);
 	net_send_msg(session->netc, msg);
@@ -506,7 +510,7 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 	char *provcode = NULL;
 	uint32_t contextid = 0;
 	char str_contextid[20];
-	uint32_t length;
+	size_t length;
 	int ret = 0;
 
 	DNDSObject_t *obj = NULL;

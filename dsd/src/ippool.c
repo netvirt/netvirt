@@ -21,10 +21,6 @@
 #include <arpa/inet.h>
 
 #include "ippool.h"
-#include "logger.h"
-
-/* TODO write complete u-test to test the limit
- * and to handle properly any errors */
 
 static int get_bit(const uint8_t bitmap[], size_t bit)
 {
@@ -81,8 +77,11 @@ char *ippool_get_ip(ippool_t *ippool)
 {
 	struct in_addr new_addr;
 	uint32_t bit = 0;
+	int ret = 0;
 
-	allocate_bit(ippool->pool, ippool->hosts, &bit);
+	ret = allocate_bit(ippool->pool, ippool->hosts, &bit);
+	if (ret == 0) /* IP pool is depleeted */
+		return NULL;
 
 	new_addr = ippool->hostmin;
 	new_addr.s_addr = htonl((ntohl(new_addr.s_addr) + bit));
@@ -125,3 +124,20 @@ ippool_t *ippool_new(char *address, char *netmask)
 
 	return ippool;
 }
+/*
+int main()
+{
+	char *ip = NULL;
+	ippool_t *my_pool = NULL;
+
+	my_pool = ippool_new("44.128.1.0", "255.255.255.0");
+
+	do {
+		ip = ippool_get_ip(my_pool);
+		if (ip)
+			printf("ip: %s\n", ip);
+	} while (ip);
+
+	printf("the end!\n");
+}
+*/

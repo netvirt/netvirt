@@ -75,14 +75,14 @@ int dao_fetch_context_embassy(char *context_id,
 			char **certificate,
 			char **privatekey,
 			char **serial,
-			char **ippool);
+			unsigned char **ippool);
 
 
 int dao_update_embassy_serial(char *context_id, char *serial);
 
 int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatekey, char *provcode, char *description, char *ipaddress);
 
-int dao_update_context_ippool(char *context_id, char *ippool, int pool_size);
+int dao_update_context_ippool(char *context_id, unsigned char *ippool, int pool_size);
 
 int dao_fetch_client_id(char **client_id, char *email, char *password);
 

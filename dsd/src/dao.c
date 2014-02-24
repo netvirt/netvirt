@@ -441,7 +441,7 @@ int dao_add_context(char *client_id,
 	const char *paramValues[10];
 	int paramLengths[10];
 	PGresult *result;
-	char *ippool_str;
+	unsigned char *ippool_str;
 	size_t ippool_str_len;
 
 	if (!client_id || !description || !topology_id || !network ||
@@ -463,7 +463,7 @@ int dao_add_context(char *client_id,
 	paramValues[6] = embassy_serial;
 	paramValues[7] = passport_certificate;
 	paramValues[8] = passport_privatekey;
-	paramValues[9] = ippool_str;
+	paramValues[9] = (char *)ippool_str;
 
 	paramLengths[0] = strlen(client_id);
 	paramLengths[1] = strlen(description);
@@ -561,13 +561,13 @@ int dao_fetch_context_embassy(char *context_id,
 			char **certificate,
 			char **privatekey,
 			char **serial,
-			char **ippool)
+			unsigned char **ippool)
 {
 	const char *paramValues[1];
 	int paramLengths[1];
 	PGresult *result;
 	int tuples, fields;
-	char *ippool_ptr;
+	unsigned char *ippool_ptr;
 	size_t ippool_size;
 
 	if (!context_id || !certificate || !privatekey || !serial) {
@@ -611,7 +611,7 @@ int dao_fetch_context_embassy(char *context_id,
 		*privatekey = strdup(PQgetvalue(result, 0, 1));
 		*serial = strdup(PQgetvalue(result, 0, 2));
 
-		ippool_ptr = PQgetvalue(result, 0, 3);
+		ippool_ptr = (unsigned char *)PQgetvalue(result, 0, 3);
 		ippool_size = PQgetlength(result, 0, 3);
 		*ippool = PQunescapeBytea(ippool_ptr, &ippool_size);
 	} else {
@@ -621,12 +621,12 @@ int dao_fetch_context_embassy(char *context_id,
 	return 0;
 }
 
-int dao_update_context_ippool(char *context_id, char *ippool, int pool_size)
+int dao_update_context_ippool(char *context_id, unsigned char *ippool, int pool_size)
 {
 	const char *paramValues[2];
 	int paramLengths[2];
 	PGresult *result = NULL;
-	char *ippool_str;
+	unsigned char *ippool_str;
 	size_t ippool_str_len;
 
 	if (!context_id || !ippool) {
@@ -637,7 +637,7 @@ int dao_update_context_ippool(char *context_id, char *ippool, int pool_size)
 	ippool_str = PQescapeByteaConn(dbconn, ippool, pool_size, &ippool_str_len);
 
 	paramValues[0] = context_id;
-	paramValues[1] = ippool_str;
+	paramValues[1] = (char *)ippool_str;
 
 	paramLengths[0] = strlen(context_id);
 	paramLengths[1] = ippool_str_len;

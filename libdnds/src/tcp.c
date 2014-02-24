@@ -56,6 +56,32 @@ static int setreuse(int socket)
 	return ret;
 }
 
+int tcpbus_ion_add(int fd, void *data)
+{
+	struct epoll_event nevent;
+	int ret;
+
+	nevent.events = EPOLLIN | EPOLLRDHUP | EPOLLERR;
+	nevent.data.ptr = data;
+
+	ret = epoll_ctl(tcpbus_queue, EPOLL_CTL_ADD, fd, &nevent);
+	if (ret < 0)
+		jlog(L_NOTICE, "ion]> epoll_ctl() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+
+	return ret;
+}
+
+int tcpbus_ion_new()
+{
+	int epoll_fd;
+
+	epoll_fd = epoll_create(BACKING_STORE);
+	if (epoll_fd <	0)
+		jlog(L_NOTICE, "ion]> epoll_create() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+
+	return epoll_fd;
+}
+
 static void tcpbus_disconnect(peer_t *peer)
 {
 	int ret;
@@ -106,7 +132,6 @@ static int tcpbus_recv(peer_t *peer)
 	fd_set rfds;
 	struct timeval tv;
 	int ret = 0;
-	char tmpbuf[5000];
 
 	FD_ZERO(&rfds);
 	FD_SET(peer->socket, &rfds);
@@ -210,7 +235,7 @@ static void tcpbus_on_connect(peer_t *peer)
 }
 
 int tcpbus_server(const char *in_addr,
-		   char *port,
+		   const char *port,
 		   void (*on_connect)(peer_t*),
 		   void (*on_disconnect)(peer_t*),
 		   void (*on_input)(peer_t*),
@@ -390,14 +415,14 @@ peer_t *tcpbus_client(const char *addr,
 	return peer;
 }
 
-int tcpbus_init()
+void tcpbus_init()
 {
 	jlog(L_NOTICE, "tcpbus]> init");
 	tcpbus_queue = tcpbus_ion_new();
 }
 
 
-int tcpbus_ion_poke(int queue, void (*notify)(void *ud))
+int tcpbus_ion_poke()
 {
 	int nfd, i;
 	peer_t *peer = NULL;
@@ -431,30 +456,3 @@ int tcpbus_ion_poke(int queue, void (*notify)(void *ud))
 
 	return nfd;
 }
-
-int tcpbus_ion_add(int fd, void *data)
-{
-	struct epoll_event nevent;
-	int ret;
-
-	nevent.events = EPOLLIN | EPOLLRDHUP | EPOLLERR;
-	nevent.data.ptr = data;
-
-	ret = epoll_ctl(tcpbus_queue, EPOLL_CTL_ADD, fd, &nevent);
-	if (ret < 0)
-		jlog(L_NOTICE, "ion]> epoll_ctl() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
-
-	return ret;
-}
-
-int tcpbus_ion_new()
-{
-	int epoll_fd;
-
-	epoll_fd = epoll_create(BACKING_STORE);
-	if (epoll_fd <	0)
-		jlog(L_NOTICE, "ion]> epoll_create() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
-
-	return epoll_fd;
-}
-

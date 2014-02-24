@@ -14,7 +14,7 @@
 #define DNDS_TCPBUS_H
 
 int tcpbus_server(const char *in_addr,
-		   char *port,
+		   const char *port,
 		   void (*on_connect)(peer_t*),
 		   void (*on_disconnect)(peer_t*),
 		   void (*on_input)(peer_t*),
@@ -25,5 +25,8 @@ peer_t *tcpbus_client(const char *addr,
 			  void (*on_disconnect)(peer_t*),
 			  void (*on_input)(peer_t*));
 
+
+void tcpbus_init();
+int tcpbus_ion_poke();
 
 #endif

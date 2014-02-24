@@ -10,6 +10,7 @@
  *
  */
 
+#include <pthread.h>
 #include <unistd.h>
 
 #include <dnds.h>
@@ -20,6 +21,7 @@
 #include "dnd.h"
 #include "dsc.h"
 #include "session.h"
+#include "tcp.h"
 
 netc_t *dsc_netc = NULL;
 static passport_t *dnd_passport = NULL;
@@ -112,7 +114,7 @@ static void handle_SearchResponse_Node(netc_t *netc, DNDSMessage_t *msg)
 	uint32_t tracked_id;
 	DNDSObject_t *object;
 	uint32_t count; int ret;
-	uint32_t length;
+	size_t length;
 
 	char *certificate = NULL;
 	uint8_t *certificateKey = NULL;

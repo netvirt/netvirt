@@ -25,7 +25,7 @@ typedef struct ippool {
 	struct in_addr address;
 	struct in_addr netmask;
 
-	uint8_t *pool;
+	unsigned char *pool;
 
 } ippool_t;
 

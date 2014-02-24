@@ -446,7 +446,7 @@ void net_disconnect(netc_t *netc)
 	net_connection_free(netc);
 }
 
-int netbus_tcp_init()
+void netbus_tcp_init()
 {
 #ifdef __linux__
 	tcpbus_init();

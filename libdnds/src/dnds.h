@@ -149,10 +149,10 @@ int ProvRequest_set_provCode(DNDSMessage_t *msg, char *provCode, size_t length);
 int ProvRequest_get_provCode(DNDSMessage_t *msg, char **provCode, size_t *length);
 int ProvResponse_set_certificate(DNDSMessage_t *msg, char *certificate, size_t length);
 int ProvResponse_get_certificate(DNDSMessage_t *msg, char **certificate, size_t *length);
-int ProvResponse_set_certificateKey(DNDSMessage_t *msg, char *certificateKey, size_t length);
-int ProvResponse_get_certificateKey(DNDSMessage_t *msg, char **certificateKey, size_t *length);
-int ProvResponse_set_trustedCert(DNDSMessage_t *msg, char *trustedCert, size_t length);
-int ProvResponse_get_trustedCert(DNDSMessage_t *msg, char **trustedCert, size_t *length);
+int ProvResponse_set_certificateKey(DNDSMessage_t *msg, uint8_t *certificateKey, size_t length);
+int ProvResponse_get_certificateKey(DNDSMessage_t *msg, uint8_t **certificateKey, size_t *length);
+int ProvResponse_set_trustedCert(DNDSMessage_t *msg, uint8_t *trustedCert, size_t length);
+int ProvResponse_get_trustedCert(DNDSMessage_t *msg, uint8_t **trustedCert, size_t *length);
 int ProvResponse_get_ipAddress(DNDSMessage_t *msg, char *ipAddress);
 int ProvResponse_set_ipAddress(DNDSMessage_t *msg, char *ipAddress);
 

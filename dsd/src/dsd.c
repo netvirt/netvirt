@@ -10,6 +10,8 @@
  *
  */
 
+#include <pthread.h>
+
 #include <dnds.h>
 #include <logger.h>
 #include <netbus.h>
@@ -18,6 +20,7 @@
 #include "dsd.h"
 #include "pki.h"
 #include "request.h"
+#include "tcp.h"
 
 passport_t *g_dsd_passport;
 

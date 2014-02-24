@@ -1179,7 +1179,7 @@ int ProvResponse_get_certificate(DNDSMessage_t *msg, char **certificate, size_t 
 	return DNDS_success;
 }
 
-int ProvResponse_set_certificateKey(DNDSMessage_t *msg, char *certificateKey, size_t length)
+int ProvResponse_set_certificateKey(DNDSMessage_t *msg, uint8_t *certificateKey, size_t length)
 {
 	if (msg == NULL || certificateKey == NULL) {
 		return DNDS_invalid_param;
@@ -1194,13 +1194,13 @@ int ProvResponse_set_certificateKey(DNDSMessage_t *msg, char *certificateKey, si
 		return DNDS_alloc_failed;
 	}
 
-	msg->pdu.choice.dnm.dnop.choice.provResponse.certificateKey->buf = (uint8_t *)strdup(certificateKey);
+	msg->pdu.choice.dnm.dnop.choice.provResponse.certificateKey->buf = (uint8_t *)strdup((char*)certificateKey);
 	msg->pdu.choice.dnm.dnop.choice.provResponse.certificateKey->size = length;
 
 	return DNDS_success;
 }
 
-int ProvResponse_get_certificateKey(DNDSMessage_t *msg, char **certificateKey, size_t *length)
+int ProvResponse_get_certificateKey(DNDSMessage_t *msg, uint8_t **certificateKey, size_t *length)
 {
 	if (msg == NULL || certificateKey == NULL || length == NULL) {
 		return DNDS_invalid_param;
@@ -1214,13 +1214,13 @@ int ProvResponse_get_certificateKey(DNDSMessage_t *msg, char **certificateKey, s
 		return DNDS_value_not_present;
 	}
 
-	*certificateKey = (char *)msg->pdu.choice.dnm.dnop.choice.provResponse.certificateKey->buf;
+	*certificateKey = msg->pdu.choice.dnm.dnop.choice.provResponse.certificateKey->buf;
 	*length = msg->pdu.choice.dnm.dnop.choice.provResponse.certificateKey->size;
 
 	return DNDS_success;
 }
 
-int ProvResponse_set_trustedCert(DNDSMessage_t *msg, char *trustedCert, size_t length)
+int ProvResponse_set_trustedCert(DNDSMessage_t *msg, uint8_t *trustedCert, size_t length)
 {
 	if (msg == NULL || trustedCert == NULL) {
 		return DNDS_invalid_param;
@@ -1235,14 +1235,13 @@ int ProvResponse_set_trustedCert(DNDSMessage_t *msg, char *trustedCert, size_t l
 		return DNDS_alloc_failed;
 	}
 
-	msg->pdu.choice.dnm.dnop.choice.provResponse.trustedCert->buf = (uint8_t *)strdup(trustedCert);
+	msg->pdu.choice.dnm.dnop.choice.provResponse.trustedCert->buf = (uint8_t *)strdup((char *)trustedCert);
 	msg->pdu.choice.dnm.dnop.choice.provResponse.trustedCert->size = length;
 
 	return DNDS_success;
-
 }
 
-int ProvResponse_get_trustedCert(DNDSMessage_t *msg, char **trustedCert, size_t *length)
+int ProvResponse_get_trustedCert(DNDSMessage_t *msg, uint8_t **trustedCert, size_t *length)
 {
 	if (msg == NULL || trustedCert == NULL || length == NULL) {
 		return DNDS_invalid_param;
@@ -1256,7 +1255,7 @@ int ProvResponse_get_trustedCert(DNDSMessage_t *msg, char **trustedCert, size_t 
 		return DNDS_value_not_present;
 	}
 
-	*trustedCert = (char *)msg->pdu.choice.dnm.dnop.choice.provResponse.trustedCert->buf;
+	*trustedCert = msg->pdu.choice.dnm.dnop.choice.provResponse.trustedCert->buf;
 	*length = msg->pdu.choice.dnm.dnop.choice.provResponse.trustedCert->size;
 
 	return DNDS_success;
