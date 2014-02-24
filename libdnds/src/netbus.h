@@ -68,6 +68,7 @@ void net_step_up(netc_t *netc);
 int net_send_msg(netc_t *, DNDSMessage_t *);
 void net_disconnect(netc_t *);
 
+int netbus_tcp_init();
 int netbus_init();
 
 netc_t *net_client(const char *listen_addr,

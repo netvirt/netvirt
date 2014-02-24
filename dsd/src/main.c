@@ -181,6 +181,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	netbus_tcp_init();
 	if (netbus_init()) {
 		jlog(L_ERROR, "dsd]> netbus_init failed:: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);

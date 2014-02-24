@@ -68,21 +68,21 @@ static netc_t *net_connection_new(uint8_t security_level)
 		netc->kconn->network_bio = NULL;
 		netc->kconn->status = KRYPT_NOINIT;
 
-		netc->kconn->buf_decrypt = calloc(1, 5000);	// XXX dynamic buffer
-		netc->kconn->buf_decrypt_size = 5000;
+		netc->kconn->buf_decrypt = calloc(1, 1000000);	// XXX dynamic buffer
+		netc->kconn->buf_decrypt_size = 1000000;
 		netc->kconn->buf_decrypt_data_size = 0;
 
-		netc->kconn->buf_encrypt = calloc(1, 5000);	// XXX dynamic buffer
-		netc->kconn->buf_encrypt_size = 5000;
+		netc->kconn->buf_encrypt = calloc(1, 1000000);	// XXX dynamic buffer
+		netc->kconn->buf_encrypt_size = 1000000;
 		netc->kconn->buf_encrypt_data_size = 0;
 	}
 
-	netc->buf_enc = malloc(5000);	// XXX dynamic buffer
-	netc->buf_enc_size = 5000;	// XXX initialization size
+	netc->buf_enc = malloc(1000000);	// XXX dynamic buffer
+	netc->buf_enc_size = 1000000;	// XXX initialization size
 	netc->buf_enc_data_size = 0;
 
-	netc->buf_in = malloc(5000);	// XXX dynamic buffer
-	netc->buf_in_size = 5000;	// XXX initialization size
+	netc->buf_in = malloc(1000000);	// XXX dynamic buffer
+	netc->buf_in_size = 1000000;	// XXX initialization size
 	netc->buf_in_offset = 0;
 	netc->buf_in_data_size = 0;
 
