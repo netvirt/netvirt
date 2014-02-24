@@ -133,7 +133,7 @@ void transmit_prov_request(netc_t *netc)
 	nbyte = net_send_msg(netc, msg);
 	DNDSMessage_del(msg);
 	if (nbyte == -1) {
-		jlog(L_NOTICE, "dnc]> malformed message\n", nbyte);
+		jlog(L_NOTICE, "dnc]> malformed message", nbyte);
 		return;
 	}
 }
@@ -164,7 +164,7 @@ void transmit_register(netc_t *netc)
         nbyte = net_send_msg(netc, msg);
 	DNDSMessage_del(msg);
         if (nbyte == -1) {
-                jlog(L_NOTICE, "dnc]> malformed message: %d\n", nbyte);
+                jlog(L_NOTICE, "dnc]> malformed message: %d", nbyte);
                 return;
         }
 	session->state = SESSION_STATE_WAIT_ANSWER;
@@ -188,7 +188,7 @@ void *try_to_reconnect(void *ptr)
 #else
 		sleep(5);
 #endif
-		jlog(L_NOTICE, "dnc]> connection retry...\n");
+		jlog(L_NOTICE, "dnc]> connection retry...");
 
 		retry_netc = net_client(dnc_cfg->server_address, dnc_cfg->server_port,
 			NET_PROTO_UDT, NET_SECURE_ADH, session->passport,
@@ -207,7 +207,7 @@ void *try_to_reconnect(void *ptr)
 
 static void on_disconnect(netc_t *netc)
 {
-	jlog(L_NOTICE, "dnc]> disconnected...\n");
+	jlog(L_NOTICE, "dnc]> disconnected...");
 
 	pthread_t thread_reconnect;
 	struct session *session;
@@ -337,14 +337,14 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 
 	ProvResponse_get_certificate(msg, &certificate, &length);
 	if (certificate == NULL) {
-		jlog(L_ERROR, "dnc]> Invalid provisioning key\n");
+		jlog(L_ERROR, "dnc]> Invalid provisioning key");
 		exit(EXIT_FAILURE);
 	}
 
 	create_file_with_owner_right(dnc_cfg->certificate);
 	fp = fopen(dnc_cfg->certificate, "w");
 	if (fp == NULL) {
-		jlog(L_ERROR, "dnc]> can't write certifcate in file '%s'\n", dnc_cfg->certificate);
+		jlog(L_ERROR, "dnc]> can't write certifcate in file '%s'", dnc_cfg->certificate);
 		exit(EXIT_FAILURE);
 	}
 	fwrite(certificate, 1, strlen(certificate), fp);
@@ -354,7 +354,7 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 	create_file_with_owner_right(dnc_cfg->privatekey);
 	fp = fopen(dnc_cfg->privatekey, "w");
 	if (fp == NULL) {
-		jlog(L_ERROR, "dnc]> can't write private key in file '%s'\n", dnc_cfg->privatekey);
+		jlog(L_ERROR, "dnc]> can't write private key in file '%s'", dnc_cfg->privatekey);
 		exit(EXIT_FAILURE);
 	}
 	fwrite(certificatekey, 1, strlen((char*)certificatekey), fp);
@@ -364,7 +364,7 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 	create_file_with_owner_right(dnc_cfg->trusted_cert);
 	fp = fopen(dnc_cfg->trusted_cert, "w");
 	if (fp == NULL) {
-		jlog(L_ERROR, "dnc]> can't write trusted certificate in file '%s'\n", dnc_cfg->trusted_cert);
+		jlog(L_ERROR, "dnc]> can't write trusted certificate in file '%s'", dnc_cfg->trusted_cert);
 		exit(EXIT_FAILURE);
 	}
 	fwrite(trusted_authority, 1, strlen((char *)trusted_authority), fp);
@@ -375,7 +375,7 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 
 	fp = fopen(DNC_IP_FILE, "w");
 	if (fp == NULL) {
-		jlog(L_ERROR, "dnc]> can't write IP address in file '%s'\n", DNC_IP_FILE);
+		jlog(L_ERROR, "dnc]> can't write IP address in file '%s'", DNC_IP_FILE);
 		exit(EXIT_FAILURE);
 	}
 	fprintf(fp, "%s", ipAddress);
@@ -466,7 +466,6 @@ int dnc_init(struct dnc_cfg *cfg)
 			on_disconnect, on_input, on_secure);
 
 	if (session->netc == NULL) {
-		printf("netc is null\n");
 		free(session);
 		return -1;
 	}
