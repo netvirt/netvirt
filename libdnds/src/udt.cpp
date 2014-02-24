@@ -394,7 +394,7 @@ retry:
 
 	freeaddrinfo(server);
 
-	peer = (peer_t *)malloc(sizeof(peer_t));
+	peer = (peer_t *)calloc(sizeof(peer_t), 1);
 	peer->type = UDTBUS_CLIENT;
 	peer->socket = socket;
 	peer->on_connect = p2p_args->on_connect;
