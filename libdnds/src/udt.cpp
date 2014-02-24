@@ -93,7 +93,6 @@ static int udtbus_send(peer_t *peer, void *data, int len)
 	}
 
 	int ret = UDT::send(peer->socket, (char*)data, len, 0);
-
 	if (ret == UDT::ERROR) {
 		cout << "send:" << UDT::getlasterror().getErrorMessage() << endl;
 		on_disconnect(peer);
@@ -105,7 +104,7 @@ static int udtbus_send(peer_t *peer, void *data, int len)
 
 static int udtbus_recv(peer_t *peer)
 {
-	int size = 1000000; // FIXME use dynamic buffer
+	int size = 5000; // FIXME use dynamic buffer
 
 	if (peer->buffer == NULL) {
 		peer->buffer = malloc(size);
@@ -405,6 +404,7 @@ retry:
 	peer->send = udtbus_send;
 	peer->disconnect = udtbus_disconnect;
 	peer->buffer = NULL;
+	peer->buffer_offset = 0;
 	peer->ext_ptr = p2p_args->ext_ptr;
 
 	free(p2p_args->listen_addr);

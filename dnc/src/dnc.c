@@ -232,7 +232,7 @@ static void on_secure(netc_t *netc)
 		}
 		else {
 			transmit_register(netc);
-			krypt_set_rsa(netc->kconn);     // set security level to RSA
+			krypt_set_rsa(session->netc->kconn);     // set security level to RSA
 		}
 	}
 }
@@ -308,7 +308,6 @@ static void op_auth_response(struct session *session, DNDSMessage_t *msg)
 
 	case DNDSResult_secureStepUp:
 		jlog(L_NOTICE, "dnc]> server authentication require step up");
-		//net_step_up(session->netc);
 
 		break;
 
