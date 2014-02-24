@@ -322,7 +322,7 @@ void pki_write_certificate_in_mem(X509 *certificate, char **certificate_ptr, lon
 	*size = BIO_get_mem_data(bio_mem, certificate_ptr);
 	*(*certificate_ptr + *size) = '\0';
 
-	BIO_set_close(bio_mem, BIO_NOCLOSE);
+	(void)BIO_set_close(bio_mem, BIO_NOCLOSE);
 	BIO_free(bio_mem);
 }
 
@@ -336,7 +336,7 @@ void pki_write_privatekey_in_mem(EVP_PKEY *privatekey, char **privatekey_ptr, lo
 	*size = BIO_get_mem_data(bio_mem, privatekey_ptr);
 	*(*privatekey_ptr + *size) = '\0';
 
-	BIO_set_close(bio_mem, BIO_NOCLOSE);
+	(void)BIO_set_close(bio_mem, BIO_NOCLOSE);
 	BIO_free(bio_mem);
 }
 
