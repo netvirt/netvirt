@@ -98,10 +98,7 @@ static void net_do_krypt(netc_t *netc)
 	ssize_t nbyte;
 
 	if (netc->kconn->buf_encrypt_data_size > 0) {
-		printf("netc->kconn->buf_encrypt_data_size: %d\n", netc->kconn->buf_encrypt_data_size);
-
 		nbyte = netc->peer->send(netc->peer, netc->kconn->buf_encrypt, netc->kconn->buf_encrypt_data_size);
-		printf("data_size(%d): nbyte(%d)\n", netc->kconn->buf_encrypt_data_size, nbyte);
 		if (nbyte == -1) {
 			return;
 		}
@@ -234,7 +231,6 @@ static void net_on_input(peer_t *peer)
 
 	netc = peer->ext_ptr;
 	peer->buffer_data_len = peer->recv(peer);
-	printf("netbus input: %d\n", peer->buffer_data_len);
 
 	if (netc->security_level > NET_UNSECURE
 			&& netc->kconn->status == KRYPT_HANDSHAKE) {
@@ -275,8 +271,10 @@ static void net_on_input(peer_t *peer)
 
 		int peek = 0; // buffer to hold the byte we are peeking at
 		int state_p = 0;
+
 		do {
-			nbyte = krypt_push_encrypted_data(netc->kconn, peer->buffer + peer->buffer_offset,										peer->buffer_data_len);
+			nbyte = krypt_push_encrypted_data(netc->kconn, peer->buffer + peer->buffer_offset,
+								peer->buffer_data_len);
 
 			if (nbyte > 0 && nbyte < peer->buffer_data_len) {
 				peer->buffer_data_len -= nbyte;
@@ -287,7 +285,7 @@ static void net_on_input(peer_t *peer)
 				peer->buffer_offset = 0;
 			}
 
-			ret = krypt_decrypt_buf(netc->kconn, peer->buffer, peer->buffer_data_len);
+			ret = krypt_decrypt_buf(netc->kconn);
 			if (ret == 0) {
 				serialize_buf_in(netc, netc->kconn->buf_decrypt, netc->kconn->buf_decrypt_data_size);
 				netc->kconn->buf_decrypt_data_size = 0; // mark the buffer as empty
@@ -311,7 +309,12 @@ static void net_on_input(peer_t *peer)
 	else {
 		if (mbuf_count(netc->queue_msg) > 0)
 			netc->on_input(netc);
+
+		/* Catch server renegotiation */
+		krypt_decrypt_buf(netc->kconn);
+		net_do_krypt(netc);
 	}
+
 }
 
 static void net_on_disconnect(peer_t *peer)

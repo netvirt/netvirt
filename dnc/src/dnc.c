@@ -293,7 +293,7 @@ static void op_auth_response(struct session *session, DNDSMessage_t *msg)
 
 	switch (result) {
 	case DNDSResult_success:
-		jlog(L_NOTICE, "dnc]> session authenticated");
+		jlog(L_NOTICE, "dnc]> session secured and authenticated");
 
 		fp = fopen(DNC_IP_FILE, "r");
 		if (fp) {
