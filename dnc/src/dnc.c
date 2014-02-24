@@ -168,6 +168,10 @@ void transmit_register(netc_t *netc)
                 return;
         }
 	session->state = SESSION_STATE_WAIT_ANSWER;
+
+	/* Prepare to the re-handshake, set up certificates */
+	krypt_set_rsa(session->netc->kconn);
+
         return;
 }
 
@@ -234,7 +238,6 @@ static void on_secure(netc_t *netc)
 			transmit_register(netc);
 		}
 
-		krypt_set_rsa(session->netc->kconn);     // set security level to RSA
 	}
 }
 
