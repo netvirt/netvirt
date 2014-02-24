@@ -371,7 +371,7 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 	fclose(fp);
 
 	ProvResponse_get_ipAddress(msg, ipAddress);
-	jlog(L_NOTICE, "dnc]> ip address: %s\n", ipAddress);
+	jlog(L_NOTICE, "dnc]> ip address: %s", ipAddress);
 
 	fp = fopen(DNC_IP_FILE, "w");
 	if (fp == NULL) {
