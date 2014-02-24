@@ -2,51 +2,14 @@
  INSTALLATION ON THE LINUX PLATEFORM
  -----------------------------------
 
- Quick Start
- -----------
+ Please use the build_farm scripts to build the client.
 
- apt-get install cmake # 2.6 or higher
+
+ Notes on installing the server.
+ ---------------------------------------
  apt-get install libpq-dev
  apt-get install libossp-uuid-dev
  apt-get install libssl-dev
- apt-get install build-essentials
- apt-get install scons # to build tapcfg-1.0.0
-
- Getting UDT
- -----------
-
-	git clone https://github.com/nicboul/udt4.git
-
- Installing UDT
- --------------
-
- Place the udt4 directory into the DNDS directory.
-
-	DNDS/udt4/
-
- You can now build udt by invoking `make`. You DON'T NEED to `make install` it.
-
-
- Getting tapcfg-1.0.0
- --------------------
-
-	https://code.google.com/p/tapcfg/
-
- Installing tapcfg
- -----------------
-
- Place the tapcfg-1.0.0 into the DNDS directory.
-
-	DNDS/tapcfg-1.0.0
-
-	run ./buildall.sh as root
-
- Compiling DNDS
- -----------------
-
-	$ cd DNDS/
-	$ cmake .
-	$ make
 
  Database - postgresql
  ---------------------------------------
