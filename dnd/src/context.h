@@ -14,11 +14,11 @@
 #define CONTEXT_H
 
 #include <crypto.h>
+#include <ftable.h>
 #include <netbus.h>
 #include <mbuf.h>
 
 #include "dnd.h"
-#include "ftable.h"
 #include "linkst.h"
 
 typedef struct context {
@@ -26,6 +26,7 @@ typedef struct context {
 	int id;					// context unique identifier
 	ftable_t *ftable;			// forwarding table
 
+	uint32_t active_node;			// number of connected node
 	uint8_t **linkst;			// linkstate adjacency matrix
 	uint8_t *bitpool;			// bitpool used to generated unique ID per session
 

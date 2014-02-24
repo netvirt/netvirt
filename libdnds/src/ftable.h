@@ -16,6 +16,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifndef ETHER_ADDR_LEN
+#define ETHER_ADDR_LEN 6
+#endif
+
 typedef struct jsw_hash ftable_t;
 
 ftable_t *ftable_new(size_t size, void *(*itemdup_f)(const void *item), void (*itemrel_f)(void *item));

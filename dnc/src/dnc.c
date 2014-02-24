@@ -32,6 +32,7 @@
 #include <netbus.h>
 
 #include "dnc.h"
+#include "p2p.h"
 #include "session.h"
 
 struct dnc_cfg *dnc_cfg;
@@ -39,20 +40,27 @@ struct session *master_session;
 static int g_shutdown = 0;
 char ipAddress[INET_ADDRSTRLEN];
 
-static void on_input(netc_t *netc);
+void on_input(netc_t *netc);
 static void on_secure(netc_t *netc);
 static void dispatch_op(struct session *session, DNDSMessage_t *msg);
+static void on_disconnect(netc_t *netc);
 
 static void tunnel_in(struct session* session)
 {
 	DNDSMessage_t *msg = NULL;
 	size_t frame_size = 0;
-	char framebuf[2000];
+	uint8_t framebuf[2000];
+	struct session *p2p_session;
+
+	frame_size = tapcfg_read(session->tapcfg, framebuf, 2000);
+	p2p_session = p2p_find_session(framebuf);
+	if (p2p_session) {
+		//printf("p2p_session: %p netc: %p\n", p2p_session, p2p_session->netc);
+		session = p2p_session;
+	}
 
 	if (session->state != SESSION_STATE_AUTHED)
 		return;
-
-	frame_size = tapcfg_read(session->tapcfg, framebuf, 2000);
 
 	DNDSMessage_new(&msg);
 	DNDSMessage_set_channel(msg, 0);
@@ -82,7 +90,6 @@ void terminate(struct session *session)
 
 void transmit_netinfo_request(struct session *session)
 {
-
 	const char *hwaddr;
 	int hwaddrlen;
 	char ip_local[16];
@@ -164,15 +171,12 @@ void transmit_register(netc_t *netc)
         return;
 }
 
-static void on_disconnect(netc_t *netc)
+void *try_to_reconnect(void *ptr)
 {
-	jlog(L_NOTICE, "dnc]> disconnected...\n");
-
-	struct session *session;
+	struct session *session = NULL;
 	netc_t *retry_netc = NULL;
 
-	session = netc->ext_ptr;
-	session->state = SESSION_STATE_DOWN;
+	session = (struct session *)ptr;
 
 	do {
 #if defined(_WIN32)
@@ -190,9 +194,28 @@ static void on_disconnect(netc_t *netc)
 			session->state = SESSION_STATE_NOT_AUTHED;
 			session->netc = retry_netc;
 			retry_netc->ext_ptr = session;
-			return;
+			return NULL;
 		}
 	} while (!g_shutdown);
+
+	return NULL;
+}
+
+static void on_disconnect(netc_t *netc)
+{
+	jlog(L_NOTICE, "dnc]> disconnected...\n");
+
+	pthread_t thread_reconnect;
+	struct session *session;
+
+	session = netc->ext_ptr;
+	if (session == NULL || session->state == SESSION_STATE_DOWN)
+		return;
+
+	session->state = SESSION_STATE_DOWN;
+
+	pthread_create(&thread_reconnect, NULL, try_to_reconnect, (void *)session);
+	pthread_detach(thread_reconnect);
 }
 
 static void on_secure(netc_t *netc)
@@ -207,12 +230,14 @@ static void on_secure(netc_t *netc)
 			jlog(L_NOTICE, "dnc]> Provisioning mode...");
 			transmit_prov_request(netc);
 		}
-		else
+		else {
 			transmit_register(netc);
+			krypt_set_rsa(session->netc->kconn);     // set security level to RSA
+		}
 	}
 }
 
-static void on_input(netc_t *netc)
+void on_input(netc_t *netc)
 {
 	DNDSMessage_t *msg;
 	struct session *session;
@@ -268,7 +293,7 @@ static void op_auth_response(struct session *session, DNDSMessage_t *msg)
 
 	switch (result) {
 	case DNDSResult_success:
-		jlog(L_NOTICE, "dnc]> session authenticated");
+		jlog(L_NOTICE, "dnc]> session secured and authenticated");
 
 		fp = fopen(DNC_IP_FILE, "r");
 		if (fp) {
@@ -283,7 +308,7 @@ static void op_auth_response(struct session *session, DNDSMessage_t *msg)
 
 	case DNDSResult_secureStepUp:
 		jlog(L_NOTICE, "dnc]> server authentication require step up");
-		net_step_up(session->netc);
+
 		break;
 
 	default:
@@ -379,7 +404,7 @@ static void dispatch_op(struct session *session, DNDSMessage_t *msg)
 		break;
 
 	case dnop_PR_p2pRequest:
-		// TODO
+		op_p2p_request(session, msg);
 		break;
 
 	/* `terminateRequest` is a special case since it has no
@@ -410,6 +435,8 @@ int dnc_init(struct dnc_cfg *cfg)
 
 	dnc_cfg = cfg;
 	session = calloc(1, sizeof(struct session));
+
+	p2p_init();
 
 	if (netbus_init()) {
 		jlog(L_ERROR, "dnc]> netbus_init failed :: %s:%i", __FILE__, __LINE__);

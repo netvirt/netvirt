@@ -48,6 +48,7 @@ void context_del_session(context_t *context, struct session *session)
 	}
 
 	bitpool_release_bit(context->bitpool, 1024, session->id);
+	context->active_node--;
 }
 
 void context_add_session(context_t *context, struct session *session)
@@ -64,6 +65,7 @@ void context_add_session(context_t *context, struct session *session)
 	}
 
 	bitpool_allocate_bit(context->bitpool, 1024, &session->id);
+	context->active_node++;
 }
 
 void context_show_session_list(context_t *context)
@@ -106,6 +108,7 @@ int context_create(uint32_t id, char *address, char *netmask,
 
 	bitpool_new(&context->bitpool, 1024);
 	context->linkst = linkst_new(1024);
+	context->active_node = 0;
 
 	context->session_list = NULL;
 

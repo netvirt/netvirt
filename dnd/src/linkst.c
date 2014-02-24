@@ -46,42 +46,25 @@ int linkst_join(int idx_a, int idx_b, uint8_t **adjacency_matrix, int max_node)
 	return 0;
 }
 
-void linkst_free_nodes(struct nodelist *nodes_head)
+void linkst_disjoin(int idx, uint8_t **adjacency_matrix, int active_node)
 {
-	struct nodes *node;
-
-	while (nodes_head->lh_first != NULL) {
-		node = nodes_head->lh_first;
-		LIST_REMOVE(nodes_head->lh_first, nodes);
-		free(node);
-	}
-}
-
-struct nodelist *linkst_disjoin(int idx, uint8_t **adjacency_matrix, int active_nodes)
-{
-	if (idx < 0 || idx > active_nodes)
-		return NULL;
-
-	if (adjacency_matrix == NULL)
-		return NULL;
-
-	struct nodelist *nodes_head = malloc(sizeof(struct nodelist));
-	struct nodes *node;
 	int i;
 
-	for (i = 0; i <= active_nodes; i++) {	/* 0 to active_nodes-1 gives `active_nodes` iterations */
+	if (idx < 0 || idx > active_node)
+		return;
+
+	if (adjacency_matrix == NULL)
+		return;
+
+	for (i = 0; i <= active_node; i++) {	/* 0 to active_node-1 gives `active_node` iterations */
 
 		if (adjacency_matrix[idx][i] == 1) {
 			adjacency_matrix[idx][i] = 0;
 			adjacency_matrix[i][idx] = 0;
-
-			node = malloc(sizeof(struct nodes));
-			node->index = i;
-			LIST_INSERT_HEAD(nodes_head, node, nodes);
 		}
 	}
 
-	return nodes_head;
+	return;
 }
 
 void linkst_free(uint8_t **adjacency_matrix, size_t max_node)

@@ -14,10 +14,10 @@
 #include "config.h"
 #endif
 
-
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "dnds.h"
 #include "logger.h"
@@ -68,21 +68,21 @@ static netc_t *net_connection_new(uint8_t security_level)
 		netc->kconn->network_bio = NULL;
 		netc->kconn->status = KRYPT_NOINIT;
 
-		netc->kconn->buf_decrypt = calloc(1, 1000000);	// XXX dynamic buffer
-		netc->kconn->buf_decrypt_size = 1000000;
+		netc->kconn->buf_decrypt = calloc(1, 5000);	// XXX dynamic buffer
+		netc->kconn->buf_decrypt_size = 5000;
 		netc->kconn->buf_decrypt_data_size = 0;
 
-		netc->kconn->buf_encrypt = calloc(1, 1000000);	// XXX dynamic buffer
-		netc->kconn->buf_encrypt_size = 1000000;
+		netc->kconn->buf_encrypt = calloc(1, 5000);	// XXX dynamic buffer
+		netc->kconn->buf_encrypt_size = 5000;
 		netc->kconn->buf_encrypt_data_size = 0;
 	}
 
-	netc->buf_enc = malloc(1000000);	// XXX dynamic buffer
-	netc->buf_enc_size = 1000000;	// XXX initialization size
+	netc->buf_enc = malloc(5000);	// XXX dynamic buffer
+	netc->buf_enc_size = 5000;	// XXX initialization size
 	netc->buf_enc_data_size = 0;
 
-	netc->buf_in = malloc(1000000);	// XXX dynamic buffer
-	netc->buf_in_size = 1000000;	// XXX initialization size
+	netc->buf_in = malloc(5000);	// XXX dynamic buffer
+	netc->buf_in_size = 5000;	// XXX initialization size
 	netc->buf_in_offset = 0;
 	netc->buf_in_data_size = 0;
 
@@ -98,7 +98,6 @@ static void net_do_krypt(netc_t *netc)
 	ssize_t nbyte;
 
 	if (netc->kconn->buf_encrypt_data_size > 0) {
-
 		nbyte = netc->peer->send(netc->peer, netc->kconn->buf_encrypt, netc->kconn->buf_encrypt_data_size);
 		if (nbyte == -1) {
 			return;
@@ -126,7 +125,6 @@ static void net_queue_msg(netc_t *netc, DNDSMessage_t *msg)
 static void net_queue_out(netc_t *netc, uint8_t *buf, size_t data_size)
 {
 	mbuf_t *mbuf;
-
 	mbuf = mbuf_new((const void *)buf, data_size, MBUF_BYVAL, NULL);
 	mbuf_add(&netc->queue_out, mbuf);
 }
@@ -231,19 +229,18 @@ static void net_on_input(peer_t *peer)
 	int nbyte = 0;
 	netc_t *netc = NULL;
 
-
 	netc = peer->ext_ptr;
 	peer->buffer_data_len = peer->recv(peer);
 
 	if (netc->security_level > NET_UNSECURE
-		&& netc->kconn->status == KRYPT_HANDSHAKE) {
+			&& netc->kconn->status == KRYPT_HANDSHAKE) {
 
 
 		ret = krypt_do_handshake(netc->kconn, peer->buffer, peer->buffer_data_len);
 		peer->buffer_data_len = 0;
+		net_do_krypt(netc);
 		if (ret == 0) {				// handshake successfull
 
-			net_do_krypt(netc);
 			netc->on_secure(netc);		// inform upper-layer
 
 			// Handle the fact that we can receive handshake data
@@ -259,12 +256,7 @@ static void net_on_input(peer_t *peer)
 				return;
 			}
 		}
-		else if (ret == 1) {			// need more data to continue
-			net_do_krypt(netc);
-			return;
-		}
 		else if (ret == -1) {			// handshake failed
-			net_do_krypt(netc);
 			netc->on_disconnect(netc);	// inform upper-layer
 			peer->disconnect(peer);		// inform lower-layer
 			net_connection_free(netc);
@@ -275,12 +267,14 @@ static void net_on_input(peer_t *peer)
 	}
 
 	if (netc->security_level > NET_UNSECURE
-		&& netc->kconn->status == KRYPT_SECURE) {
+			&& netc->kconn->status == KRYPT_SECURE) {
 
 		int peek = 0; // buffer to hold the byte we are peeking at
 		int state_p = 0;
+
 		do {
-			nbyte = krypt_push_encrypted_data(netc->kconn, peer->buffer + peer->buffer_offset,										peer->buffer_data_len);
+			nbyte = krypt_push_encrypted_data(netc->kconn, peer->buffer + peer->buffer_offset,
+								peer->buffer_data_len);
 
 			if (nbyte > 0 && nbyte < peer->buffer_data_len) {
 				peer->buffer_data_len -= nbyte;
@@ -291,19 +285,18 @@ static void net_on_input(peer_t *peer)
 				peer->buffer_offset = 0;
 			}
 
-			ret = krypt_decrypt_buf(netc->kconn, peer->buffer, peer->buffer_data_len);
+			ret = krypt_decrypt_buf(netc->kconn);
 			if (ret == 0) {
 				serialize_buf_in(netc, netc->kconn->buf_decrypt, netc->kconn->buf_decrypt_data_size);
 				netc->kconn->buf_decrypt_data_size = 0; // mark the buffer as empty
-				net_do_krypt(netc);
 				state_p = SSL_peek(netc->kconn->ssl, &peek, 1);
 			}
+			net_do_krypt(netc);
 
 			// decryption doesn't fail and (SSL data pending or data to feed to BIO)
 		} while (ret == 0 && (state_p == 1 || peer->buffer_data_len > 0));
 	}
 	else if (netc->security_level == NET_UNSECURE) {
-
 		serialize_buf_in(netc, peer->buffer, peer->buffer_data_len);
 	}
 
@@ -316,7 +309,12 @@ static void net_on_input(peer_t *peer)
 	else {
 		if (mbuf_count(netc->queue_msg) > 0)
 			netc->on_input(netc);
+
+		/* Catch server renegotiation */
+		krypt_decrypt_buf(netc->kconn);
+		net_do_krypt(netc);
 	}
+
 }
 
 static void net_on_disconnect(peer_t *peer)
@@ -385,16 +383,16 @@ static void net_on_connect(peer_t *peer)
 
 void net_step_up(netc_t *netc)
 {
-	krypt_set_rsa(netc->kconn);		// set security level to RSA
-	SSL_renegotiate(netc->kconn->ssl);	// move the SSL connection into renegotiation state
+	if (netc->conn_type == NET_SERVER) {	// Server send HelloRequest
 
-	if (netc->conn_type == NET_CLIENT) {	// Client send ClientHello
+		krypt_set_rsa(netc->kconn);         // set security level to RSA
+		SSL_renegotiate(netc->kconn->ssl);	// move the SSL connection into renegotiation state
 
-		krypt_do_handshake(netc->kconn, NULL, 0);
+		krypt_do_handshake(netc->kconn, NULL, 0); // call SSL_do_handshake (1st time)
 		net_do_krypt(netc);
-	}
 
-	krypt_set_renegotiate(netc->kconn);	// set handshake mode
+		krypt_set_renegotiate(netc->kconn);	// set handshake mode
+	}
 }
 
 int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
@@ -431,7 +429,6 @@ int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 		net_queue_out(netc, netc->buf_enc, netc->buf_enc_data_size);
 	}
 
-
 	netc->buf_enc_data_size = 0; // mark buffer as empty
 	nbyte = net_flush_queue_out(netc);
 
@@ -449,11 +446,15 @@ void net_disconnect(netc_t *netc)
 	net_connection_free(netc);
 }
 
-int netbus_init()
+int netbus_tcp_init()
 {
 #ifdef __linux__
 	tcpbus_init();
 #endif
+}
+
+int netbus_init()
+{
 	return udtbus_init();
 }
 
@@ -593,79 +594,102 @@ int net_server(const char *listen_addr,
 	return 0;
 }
 
-// FIXME net_p2p need an update to use DNDS Message
-netc_t *net_p2p(const char *listen_addr,
-		const char *dest_addr,
-		const char *port,
-		uint8_t protocol,
-		uint8_t security_level,
-		uint8_t conn_type,
-		void (*on_connect)(netc_t *),
-		void (*on_secure)(netc_t *),
-		void (*on_disconnect)(netc_t *),
-		void (*on_input)(netc_t *))
+void net_p2p_on_connect(peer_t *peer)
 {
 	int ret;
-	netc_t *netc = NULL;
-	peer_t *peer = NULL;
 	uint8_t kconn_type;
+	netc_t *netc = NULL;
 
-	if (protocol != NET_PROTO_UDT) {
-		jlog(L_ERROR, "net]> the only protocol that support p2p is UDT");
-		return NULL;
-	}
+	netc = peer->ext_ptr;
+	netc->peer = peer;
 
-	netc = net_connection_new(security_level);
-	if (netc == NULL) {
-		jlog(L_ERROR, "net]> unable to initialize connection :: %s:%i", __FILE__, __LINE__);
-		return NULL;
-	}
-
-	netc->on_connect = on_connect;
-	netc->on_disconnect = on_disconnect;
-	netc->on_input = on_input;
-	netc->conn_type = conn_type;
-	netc->protocol = protocol;
-	netc->security_level = security_level;
-
-	jlog(L_NOTICE, "listen_addr: %s\n", listen_addr);
-	jlog(L_NOTICE, "dest_addr: %s\n", dest_addr);
-	jlog(L_NOTICE, "port: %s\n", port);
-
-	peer = udtbus_rendezvous(listen_addr, dest_addr, port, net_on_disconnect, net_on_input, netc);
 	if (peer == NULL) {
 		jlog(L_ERROR, "net]> unable to initialize the p2p connection :: %s:%i", __FILE__, __LINE__);
 		net_connection_free(netc);
-		return NULL;
-
+		return;
 	}
 
-	netc->peer = peer;
+	if (netc->security_level > NET_UNSECURE) {
 
-	if (security_level > NET_UNSECURE) {
-
-		if (conn_type == NET_P2P_CLIENT) {
+		if (netc->conn_type == NET_P2P_CLIENT) {
 			kconn_type = KRYPT_CLIENT;
 		} else {
 			kconn_type = KRYPT_SERVER;
 		}
 
-		// XXX - do we need to ADH then step-up to RSA or we can go with RSA the first time?
-		// bev @ 30-12-2010
 		ret = krypt_secure_connection(netc->kconn, KRYPT_TLS, kconn_type, KRYPT_RSA);
-
 		if (ret < 0) {
 			jlog(L_NOTICE, "net]> securing client connection failed :: %s:%i", __FILE__, __LINE__);
 			net_connection_free(netc);
-			return NULL;
+			return;
 		}
 
-		// XXX - still not sure about the following part
-		// bev @ 30-12-2010
 		krypt_do_handshake(netc->kconn, NULL, 0);
+		net_do_krypt(netc);
 	}
 
 	netc->on_connect(netc);
 
-	return netc;
+	return;
+}
+
+void net_p2p(const char *listen_addr,
+		const char *dest_addr,
+		const char *port,
+		uint8_t protocol,
+		uint8_t security_level,
+		uint8_t conn_type,
+		passport_t *passport,
+		void (*on_connect)(netc_t *),
+		void (*on_secure)(netc_t *),
+		void (*on_disconnect)(netc_t *),
+		void (*on_input)(netc_t *),
+		void *ext_ptr)
+{
+	pthread_t thread_p2p;
+	struct p2p_args *p2p_args;
+
+	netc_t *netc = NULL;
+
+	if (protocol != NET_PROTO_UDT) {
+		jlog(L_ERROR, "net]> the only protocol that support p2p is UDT");
+		return;
+	}
+
+	netc = net_connection_new(security_level);
+	if (netc == NULL) {
+		jlog(L_ERROR, "net]> unable to initialize connection :: %s:%i", __FILE__, __LINE__);
+		return;
+	}
+
+	netc->on_connect = on_connect;
+	netc->on_secure = on_secure;
+	netc->on_disconnect = on_disconnect;
+	netc->on_input = on_input;
+	netc->conn_type = conn_type;
+	netc->protocol = protocol;
+	netc->security_level = security_level;
+	netc->ext_ptr = ext_ptr;
+
+	if (security_level > NET_UNSECURE)
+		krypt_add_passport(netc->kconn, passport);
+
+	p2p_args = (struct p2p_args *)calloc(1, sizeof(struct p2p_args));
+	p2p_args->listen_addr = strdup(listen_addr);
+	p2p_args->dest_addr = strdup(dest_addr);
+
+	/* XXX hardcoded p2p sequence */
+	p2p_args->port[0] = strdup(port);
+	p2p_args->port[1] = strdup("443");
+	p2p_args->port[2] = strdup("80");
+
+	p2p_args->on_connect = net_p2p_on_connect;
+	p2p_args->on_disconnect = net_on_disconnect;
+	p2p_args->on_input = net_on_input;
+	p2p_args->ext_ptr = netc;
+
+	pthread_create(&thread_p2p, NULL, udtbus_rendezvous, (void *)p2p_args);
+	pthread_detach(thread_p2p);
+
+	return;
 }

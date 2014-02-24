@@ -13,8 +13,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <time.h>
+#include <pthread.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include <logger.h>
 #include <netbus.h>
@@ -73,6 +74,14 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 
 			/*jlog(L_DEBUG, "dnd]> forwarding the packet to [%s]", session_dst->ip);*/
 			net_send_msg(session_dst->netc, msg);
+
+			int lnk_state = 0;
+			lnk_state = linkst_joined(session_src->id, session_dst->id, session_src->context->linkst, 1024);
+			if (!lnk_state) {
+				p2pRequest(session_src, session_dst);
+				linkst_join(session_src->id, session_dst->id, session_src->context->linkst, 1024);
+			}
+
 
 	/* Switch flooding */
 	} else if (macaddr_dst_type == ADDR_BROADCAST ||	/* This packet has to be broadcasted */
@@ -246,6 +255,7 @@ static void on_disconnect(netc_t *netc)
 		return;
 	}
 
+	linkst_disjoin(session->id, session->context->linkst, session->context->active_node);
 	while (session->mac_list != NULL) {
 		mac_itr = session->mac_list;
 		session->mac_list = mac_itr->next;

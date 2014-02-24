@@ -21,8 +21,9 @@
 
 #define NET_CLIENT	0x1
 #define NET_SERVER	0x2
-#define NET_P2P_CLIENT	0x4
-#define NET_P2P_SERVER	0x8
+
+#define NET_P2P_CLIENT	1
+#define NET_P2P_SERVER	2
 
 #define NET_UNSECURE		0X01
 #define NET_SECURE_ADH		0x02
@@ -88,15 +89,17 @@ int net_server(const char *listen_addr,
 		void (*on_input)(netc_t *),
 		void (*on_secure)(netc_t *));
 
-netc_t *net_p2p(const char *listen_addr,
+void net_p2p(const char *listen_addr,
 		const char *dest_addr,
 		const char *port,
 		uint8_t protocol,
 		uint8_t security_level,
 		uint8_t state,
+		passport_t *passport,
 		void (*on_connect)(netc_t *),
 		void (*on_secure)(netc_t *),
 		void (*on_disconnect)(netc_t *),
-		void (*on_input)(netc_t *));
+		void (*on_input)(netc_t *),
+		void *ext_ptr);
 
 #endif /* DNDS_NET_H */

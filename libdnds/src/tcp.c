@@ -392,7 +392,7 @@ peer_t *tcpbus_client(const char *addr,
 
 int tcpbus_init()
 {
-	jlog(L_NOTICE, "tcpbus]> init\n");
+	jlog(L_NOTICE, "tcpbus]> init");
 	tcpbus_queue = tcpbus_ion_new();
 }
 

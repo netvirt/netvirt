@@ -31,7 +31,7 @@ struct session {
 	netc_t *netc;
 	tapcfg_t *tapcfg;
 	const char *devname;
-
+	uint8_t mac_dst[ETHER_ADDR_LEN];
 	char state;
 	char type;
 };

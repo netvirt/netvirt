@@ -27,6 +27,7 @@
 #include <udt.h>
 
 #include "udt.h"
+#include "logger.h"
 
 // g++ udt.cpp -L/usr/local/lib -I../src/ -ludt -lstdc++ -lpthread -lm
 
@@ -54,10 +55,13 @@ static void udtbus_disconnect(peer_t *peer)
 		if (peer->socket == *i) {
 			UDT::close(*i);
 			g_list_socket.erase(i);
-			free(peer);
 			break;
 		}
 	}
+	peer->buffer_data_len = 0;
+	peer->ext_ptr = NULL;
+	free(peer->buffer);
+	free(peer);
 }
 
 static void on_disconnect(peer_t *peer)
@@ -89,7 +93,6 @@ static int udtbus_send(peer_t *peer, void *data, int len)
 	}
 
 	int ret = UDT::send(peer->socket, (char*)data, len, 0);
-
 	if (ret == UDT::ERROR) {
 		cout << "send:" << UDT::getlasterror().getErrorMessage() << endl;
 		on_disconnect(peer);
@@ -101,7 +104,7 @@ static int udtbus_send(peer_t *peer, void *data, int len)
 
 static int udtbus_recv(peer_t *peer)
 {
-	int size = 1000000; // FIXME use dynamic buffer
+	int size = 5000; // FIXME use dynamic buffer
 
 	if (peer->buffer == NULL) {
 		peer->buffer = malloc(size);
@@ -283,7 +286,7 @@ int udtbus_server(const char *listen_addr,
 	ret = getaddrinfo(listen_addr, port, &hints, &res);
 
 	if (ret) {
-		cout << "illegal port number or port is busy (" << gai_strerror(ret) << ")" << endl;
+		jlog(L_ERROR, "udt]> illegal port number or port is busy: %s", gai_strerror(ret));
 		return -1;
 	}
 
@@ -325,35 +328,40 @@ int udtbus_server(const char *listen_addr,
 	return 0;
 }
 
-// FIXME need to be tested with DNDSMessage
-peer_t *udtbus_rendezvous(const char *listen_addr,
-                          const char *dest_addr,
-                          const char *port,
-                          void (*on_disconnect)(peer_t *),
-                          void (*on_input)(peer_t *),
-                          void *ext_ptr) {
-
+void *udtbus_rendezvous(void *args)
+{
 	int ret = 0;
 	peer_t *peer = NULL;
+	uint8_t p2p_failed = 0;
+	uint8_t nb_port = 0;
+	uint8_t port_itr = 0;
 	struct addrinfo hints, *local, *server;
+	struct p2p_args *p2p_args = (struct p2p_args *)args;
 
+	nb_port = sizeof(p2p_args->port)/sizeof(p2p_args->port[0]);
+
+retry:
+	jlog(L_NOTICE, "udt]> trying port %s...", p2p_args->port[port_itr]);
 	memset(&hints, 0, sizeof(struct addrinfo));
 
 	hints.ai_flags = AI_PASSIVE;
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 
-	ret = getaddrinfo(listen_addr, port, &hints, &local);
+	ret = getaddrinfo(p2p_args->listen_addr, p2p_args->port[port_itr], &hints, &local);
 	if (ret != 0) {
 		cout << "illegal port number or port is busy (" << gai_strerror(ret) << ")" << endl;
+		freeaddrinfo(local);
 		return NULL;
 	}
 
 	UDTSOCKET socket = UDT::socket(local->ai_family, local->ai_socktype, local->ai_protocol);
 
+	UDT::setsockopt(socket, 0, UDT_MSS, new int(1450), sizeof(int));
 	UDT::setsockopt(socket, 0, UDT_RENDEZVOUS, new bool(true), sizeof(bool));
 	if (UDT::ERROR == UDT::bind(socket, local->ai_addr, local->ai_addrlen)) {
 		cout << "bind: " << UDT::getlasterror().getErrorMessage() << endl;
+		freeaddrinfo(local);
 		return NULL;
 	}
 
@@ -365,36 +373,61 @@ peer_t *udtbus_rendezvous(const char *listen_addr,
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 
-	ret = getaddrinfo(dest_addr, port, &hints, &server);
+	ret = getaddrinfo(p2p_args->dest_addr, p2p_args->port[port_itr], &hints, &server);
 	if (ret != 0) {
 		cout << "incorrect server address (" << gai_strerror(ret) << ")" << endl;
+		freeaddrinfo(server);
 		return NULL;
 	}
 
 	if (UDT::connect(socket, server->ai_addr, server->ai_addrlen) == UDT::ERROR) {
-		cout << "connect: " << UDT::getlasterror().getErrorMessage() << endl;
-		return NULL;
+		jlog(L_ERROR, "udt]> %s", UDT::getlasterror().getErrorMessage());
+		UDT::close(socket);
+
+		if (port_itr < nb_port-1) {
+			port_itr++;
+			goto retry;
+		}
+
+		p2p_failed = 1;
 	}
 
 	freeaddrinfo(server);
 
-	peer = (peer_t *)malloc(sizeof(peer_t));
+	peer = (peer_t *)calloc(sizeof(peer_t), 1);
 	peer->type = UDTBUS_CLIENT;
 	peer->socket = socket;
-	peer->on_connect = NULL;
-	peer->on_disconnect = on_disconnect;
-	peer->on_input = on_input;
+	peer->on_connect = p2p_args->on_connect;
+	peer->on_disconnect = p2p_args->on_disconnect;
+	peer->on_input = p2p_args->on_input;
 	peer->recv = udtbus_recv;
 	peer->send = udtbus_send;
 	peer->disconnect = udtbus_disconnect;
 	peer->buffer = NULL;
-	peer->ext_ptr = ext_ptr;
+	peer->buffer_offset = 0;
+	peer->ext_ptr = p2p_args->ext_ptr;
+
+	free(p2p_args->listen_addr);
+	free(p2p_args->dest_addr);
+	free(p2p_args->port[0]);
+	free(p2p_args->port[1]);
+	free(p2p_args->port[2]);
+	free(p2p_args);
+
+	if (p2p_failed) {
+		/* this seem a bit redundant, but it keeps the logic flow clear
+		   without using any obscure shortcut to free everything in case
+		   of a p2p failure */
+		on_disconnect(peer);
+		return NULL;
+	}
 
 	UDT::set_ext_ptr(socket, (void *)peer);
-
 	udtbus_ion_add(socket);
 
-	return peer;
+	peer->on_connect(peer);
+
+	return NULL;
 }
 
 extern "C" void udtbus_fini()
