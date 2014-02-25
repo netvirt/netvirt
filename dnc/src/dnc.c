@@ -458,6 +458,7 @@ int dnc_init(struct dnc_cfg *cfg)
 
 	if (session->passport == NULL && dnc_cfg->prov_code == NULL) {
 		jlog(L_ERROR, "dnc]> Must provide a provisioning code: ./dnc -p ...");
+		free(session);
 		return -1;
 	}
 

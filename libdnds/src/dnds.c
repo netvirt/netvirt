@@ -3201,40 +3201,36 @@ char *P2pSide_str(e_P2pSide side)
 // DNDS API functions
 char *DNDSResult_str(e_DNDSResult result)
 {
-	char *str = NULL;
-
 	switch (result) {
 		case DNDSResult_success:
-			str = strdup("Success");
+			return "Success";
 			break;
 
 		case DNDSResult_operationError:
-			str = strdup("Operation error");
+			return "Operation error";
 			break;
 
 		case DNDSResult_protocolError:
-			str = strdup("Protocol error");
+			return "Protocol error";
 			break;
 
 		case DNDSResult_noSuchObject:
-			str = strdup("No such object");
+			return "No such object";
 			break;
 
 		case DNDSResult_busy:
-			str = strdup("Busy");
+			return "Busy";
 			break;
 
 		case DNDSResult_secureStepUp:
-			str = strdup("Secure step up");
+			return "Secure step up";
 			break;
 
 		case DNDSResult_insufficientAccessRights:
-			str = strdup("Insufficient access rights");
+			return "Insufficient access rights";
 			break;
 	}
-
-	return str;
-
+	return "unknown";
 }
 char *DNDS_strerror(DNDS_retcode_t retcode)
 {

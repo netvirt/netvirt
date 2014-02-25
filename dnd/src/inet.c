@@ -163,6 +163,7 @@ int inet_get_local_ip(char *ip, size_t ip_len)
 
 	if (fgets(local_ip, 17, process) == NULL) {
 		// Unable to read / no data was available
+		pclose(process);
 		return -2;
 	}
 
