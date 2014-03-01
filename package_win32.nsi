@@ -22,8 +22,8 @@ SetCompressor /FINAL /SOLID lzma
 ; Include Modern UI
 	!include "MUI2.nsh"
 
-	!define MUI_ICON "./dnc/src/gui/dnc.ico"
-	!define MUI_UNICON "./dnc/src/gui/dnc.ico"
+	!define MUI_ICON "./dnc/src/gui/rc/dnc.ico"
+	!define MUI_UNICON "./dnc/src/gui/rc/dnc.ico"
 
 	!define MUI_HEADERIMAGE
 	!define MUI_HEADERIMAGE_RIGH
