@@ -45,17 +45,17 @@ void jlog(int level, const char *format, ...)
 	strftime(cur_time, 20, "%F %H:%M:%S", tm_info);
 
 	snprintf(logline, 256, "[%s] %s\n", cur_time, format);
+	vsnprintf(logtxt, 512, logline, ap);
 
 	if (on_log_cb) {
-		vsnprintf(logtxt, 512, logline, ap);
 		on_log_cb(logtxt);
 	}
 	if (log_file) {
-		vfprintf(log_file, logline, ap);
+		fprintf(log_file, "%s", logtxt);
 		fflush(log_file);
 	}
 	else {
-		vfprintf(stdout, logline, ap);
+		fprintf(stdout, "%s", logtxt);
 	}
 	va_end(ap);
 }
