@@ -103,7 +103,7 @@ p, li { white-space: pre-wrap; }
     <string/>
    </property>
    <property name="pixmap">
-    <pixmap resource="dnc.qrc">:/key_stroke.svg</pixmap>
+    <pixmap>:/key_stroke.svg</pixmap>
    </property>
   </widget>
   <widget class="QLabel" name="label_4">
@@ -119,7 +119,7 @@ p, li { white-space: pre-wrap; }
     <string/>
    </property>
    <property name="pixmap">
-    <pixmap resource="dnc.qrc">:/dynvpn_header.png</pixmap>
+    <pixmap resource="dnc.qrc">:/rc/dynvpn_header.png</pixmap>
    </property>
   </widget>
   <widget class="QPushButton" name="nextButton">

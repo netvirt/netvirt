@@ -134,6 +134,19 @@ void MainDialog::slotFireConnection(void)
 	dnc_init_async(dnc_cfg);
 }
 
+void MainDialog::slotResetAccount()
+{
+	QMessageBox::StandardButton reply;
+	reply = QMessageBox::warning(this, "DynVPN Client", "Exit now, and manually restart DynVPN.",
+					QMessageBox::Yes|QMessageBox::No);
+
+	if (reply == QMessageBox::Yes) {
+		QFile file(DNC_IP_FILE);
+		file.remove();
+		qApp->quit();
+	}
+}
+
 void MainDialog::onLog(const char *logline)
 {
 	MainDialog *_this = static_cast<MainDialog*>(obj_this);	

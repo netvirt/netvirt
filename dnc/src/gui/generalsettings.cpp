@@ -17,6 +17,9 @@ GeneralSettings::GeneralSettings(MainDialog *dialog)
 	ui.setupUi(this);
 	connect(ui.autoconnCheckBox, SIGNAL(stateChanged(int)),
 		dialog, SLOT(slotToggleAutoConnect(int)));
+
+	connect(ui.resetButton, SIGNAL(clicked()),
+		dialog, SLOT(slotResetAccount()));
 }
 
 GeneralSettings::~GeneralSettings()
