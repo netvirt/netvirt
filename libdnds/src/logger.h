@@ -10,6 +10,7 @@
 extern "C" {
 #endif
 
+void jlog_init_cb(void (*on_log)(const char *str));
 void jlog_init_file(const char *log_file_path);
 void jlog(int level, const char *format, ...);
 

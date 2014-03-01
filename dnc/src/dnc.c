@@ -188,7 +188,6 @@ void *try_to_reconnect(void *ptr)
 #else
 		sleep(5);
 #endif
-		jlog(L_NOTICE, "dnc]> connection retry...");
 
 		retry_netc = net_client(dnc_cfg->server_address, dnc_cfg->server_port,
 			NET_PROTO_UDT, NET_SECURE_ADH, session->passport,
@@ -218,6 +217,10 @@ static void on_disconnect(netc_t *netc)
 
 	session->state = SESSION_STATE_DOWN;
 
+	if (dnc_cfg->ev.on_disconnect)
+		dnc_cfg->ev.on_disconnect();
+
+	jlog(L_NOTICE, "dnc]> connection retry...");
 	pthread_create(&thread_reconnect, NULL, try_to_reconnect, (void *)session);
 	pthread_detach(thread_reconnect);
 }
@@ -305,7 +308,7 @@ static void op_auth_response(struct session *session, DNDSMessage_t *msg)
 			fclose(fp);
 		}
 		if (dnc_cfg->ev.on_connect)
-			dnc_cfg->ev.on_connect(dnc_cfg->ev.obj, ipAddress);
+			dnc_cfg->ev.on_connect(ipAddress);
 
 		transmit_netinfo_request(session);
 		break;
@@ -338,14 +341,14 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 	ProvResponse_get_certificate(msg, &certificate, &length);
 	if (certificate == NULL) {
 		jlog(L_ERROR, "dnc]> Invalid provisioning key");
-		exit(EXIT_FAILURE);
+		return;
 	}
 
 	create_file_with_owner_right(dnc_cfg->certificate);
 	fp = fopen(dnc_cfg->certificate, "w");
 	if (fp == NULL) {
 		jlog(L_ERROR, "dnc]> can't write certifcate in file '%s'", dnc_cfg->certificate);
-		exit(EXIT_FAILURE);
+		return;
 	}
 	fwrite(certificate, 1, strlen(certificate), fp);
 	fclose(fp);
@@ -355,7 +358,7 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 	fp = fopen(dnc_cfg->privatekey, "w");
 	if (fp == NULL) {
 		jlog(L_ERROR, "dnc]> can't write private key in file '%s'", dnc_cfg->privatekey);
-		exit(EXIT_FAILURE);
+		return;
 	}
 	fwrite(certificatekey, 1, strlen((char*)certificatekey), fp);
 	fclose(fp);
@@ -365,7 +368,7 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 	fp = fopen(dnc_cfg->trusted_cert, "w");
 	if (fp == NULL) {
 		jlog(L_ERROR, "dnc]> can't write trusted certificate in file '%s'", dnc_cfg->trusted_cert);
-		exit(EXIT_FAILURE);
+		return;
 	}
 	fwrite(trusted_authority, 1, strlen((char *)trusted_authority), fp);
 	fclose(fp);
@@ -376,7 +379,7 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 	fp = fopen(DNC_IP_FILE, "w");
 	if (fp == NULL) {
 		jlog(L_ERROR, "dnc]> can't write IP address in file '%s'", DNC_IP_FILE);
-		exit(EXIT_FAILURE);
+		return;
 	}
 	fprintf(fp, "%s", ipAddress);
 	fclose(fp);
@@ -433,23 +436,29 @@ static void *dnc_loop(void *session)
 	return NULL;
 }
 
-int dnc_init(struct dnc_cfg *cfg)
+void dnc_init_async(struct dnc_cfg *cfg)
+{
+	pthread_t dnc_init_async;
+	pthread_create(&dnc_init_async, NULL, dnc_init, (void*)cfg);
+}
+
+void *dnc_init(void *cfg)
 {
 	struct session *session;
 
-	dnc_cfg = cfg;
+	dnc_cfg = (struct dnc_cfg *)cfg;
 	session = calloc(1, sizeof(struct session));
 
 	p2p_init();
 
 	if (netbus_init()) {
 		jlog(L_ERROR, "dnc]> netbus_init failed :: %s:%i", __FILE__, __LINE__);
-		exit(EXIT_FAILURE);
+		return NULL;
 	}
 
 	if (krypt_init()) {
 		jlog(L_ERROR, "dnc]> krypt_init failed :: %s:%i", __FILE__, __LINE__);
-		exit(EXIT_FAILURE);
+		return NULL;
 	}
 
 	if (dnc_cfg->prov_code == NULL)
@@ -459,38 +468,32 @@ int dnc_init(struct dnc_cfg *cfg)
 	if (session->passport == NULL && dnc_cfg->prov_code == NULL) {
 		jlog(L_ERROR, "dnc]> Must provide a provisioning code: ./dnc -p ...");
 		free(session);
-		return -1;
-	}
-
-	session->netc = net_client(dnc_cfg->server_address, dnc_cfg->server_port,
-			NET_PROTO_UDT, NET_SECURE_ADH, session->passport,
-			on_disconnect, on_input, on_secure);
-
-	if (session->netc == NULL) {
-		free(session);
-		return -1;
+		return NULL;
 	}
 
 	session->tapcfg = NULL;
 	session->state = SESSION_STATE_NOT_AUTHED;
-	session->netc->ext_ptr = session;
 
 	session->tapcfg = tapcfg_init();
 	if (session->tapcfg == NULL) {
 		jlog(L_ERROR, "dnc]> tapcfg_init failed");
-		return -1;
+		return NULL;
 	}
 
 	if (tapcfg_start(session->tapcfg, NULL, 1) < 0) {
 		jlog(L_ERROR, "dnc]> tapcfg_start failed");
-		return -1;
+		return NULL;
 	}
 
 	session->devname = tapcfg_get_ifname(session->tapcfg);
 	jlog(L_DEBUG, "dnc]> devname: %s", session->devname);
 
+	pthread_t thread_reconnect;
+	pthread_create(&thread_reconnect, NULL, try_to_reconnect, (void *)session);
+	pthread_detach(thread_reconnect);
+
 	pthread_t thread_loop;
 	pthread_create(&thread_loop, NULL, dnc_loop, session);
 
-	return 0;
+	return NULL;
 }

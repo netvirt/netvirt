@@ -32,15 +32,28 @@ if (WITH_GUI)
 	add_definitions( -DQT_EDITION=QT_EDITION_OPENSOURCE )
 	find_package(Qt4 REQUIRED)
 	set(gui_sources
-		gui/main.cpp
-		gui/MyWindow.cpp)
+                gui/main.cpp
+		gui/maindialog.cpp
+		gui/accountsettings.cpp
+		gui/logsettings.cpp
+		gui/generalsettings.cpp
+		gui/wizarddialog.cpp)
 
 	set(gui_headers
-		gui/MyWindow.h)
+		gui/maindialog.h
+		gui/accountsettings.h
+		gui/logsettings.h
+		gui/generalsettings.h
+		gui/wizarddialog.h)
 
-	QT4_ADD_RESOURCES(gui_rccs_srcs "./gui/systray.qrc")
+	QT4_ADD_RESOURCES(gui_rccs_srcs "./gui/dnc.qrc")
 	QT4_WRAP_CPP(gui_headers_moc ${gui_headers})
-	QT4_WRAP_UI(gui_form_headers gui/dnc.ui)
+	QT4_WRAP_UI(gui_form_headers
+			gui/maindialog.ui
+			gui/accountsettings.ui
+			gui/logsettings.ui
+			gui/generalsettings.ui
+			gui/wizarddialog.ui)
 
 	include(${QT_USE_FILE})
 	add_definitions(${QT_DEFINITIONS})

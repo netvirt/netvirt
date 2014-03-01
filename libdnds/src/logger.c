@@ -17,6 +17,12 @@
 #include "logger.h"
 
 FILE *log_file = NULL;
+void (*on_log_cb)(const char *str) = NULL;
+
+void jlog_init_cb(void (*on_log)(const char *str))
+{
+	on_log_cb = on_log;
+}
 
 void jlog_init_file(const char *log_file_path)
 {
@@ -26,6 +32,7 @@ void jlog_init_file(const char *log_file_path)
 void jlog(int level, const char *format, ...)
 {
 	char logline[256];
+	static char logtxt[512];
 	time_t timer;
 	char cur_time[20];
 	struct tm* tm_info;
@@ -38,6 +45,11 @@ void jlog(int level, const char *format, ...)
 	strftime(cur_time, 20, "%F %H:%M:%S", tm_info);
 
 	snprintf(logline, 256, "[%s] %s\n", cur_time, format);
+
+	if (on_log_cb) {
+		vsnprintf(logtxt, 512, logline, ap);
+		on_log_cb(logtxt);
+	}
 	if (log_file) {
 		vfprintf(log_file, logline, ap);
 		fflush(log_file);

@@ -22,3 +22,9 @@ cmake_install.cmake*
 install_manifest.txt*
 CPack*.cmake
 _CPack_Packages/
+
+#others
+libconfig-linux
+tapcfg-linux
+udt4
+

@@ -63,6 +63,7 @@ int dnc_config_init(struct dnc_cfg *dnc_cfg)
 		exit(EXIT_FAILURE);
         }
 
+	jlog_init_cb(dnc_cfg->ev.on_log);
 	if (config_lookup_string(&cfg, "log_file", &dnc_cfg->log_file)) {
 		jlog_init_file(dnc_cfg->log_file);
 	}
@@ -103,7 +104,7 @@ int dnc_config_init(struct dnc_cfg *dnc_cfg)
 	}
 
 	if (config_lookup_bool(&cfg, "auto_connect", &dnc_cfg->auto_connect))
-		jlog(L_DEBUG, "dnc]> auto_connect: %d\n", dnc_cfg->auto_connect);
+		jlog(L_DEBUG, "dnc]> auto_connect: %d", dnc_cfg->auto_connect);
 
 	return 0;
 }

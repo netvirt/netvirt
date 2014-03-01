@@ -1,0 +1,14 @@
+<RCC>
+  <qresource>
+    <file>rc/loader.gif</file>
+    <file>rc/loop_alt4.svg</file>
+    <file>rc/cog.svg</file>
+    <file>rc/user.svg</file>
+    <file>rc/tick_32.png</file>
+    <file>rc/delete_16.png</file>
+    <file>rc/dynvpn_header.png</file>
+    <file>rc/key_stroke.svg</file>
+    <file>rc/share.svg</file>
+    <file>rc/dnc.ico</file>
+  </qresource>
+</RCC>

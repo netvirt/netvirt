@@ -1,0 +1,9 @@
+[submodule "udt4"]
+	path = udt4
+	url = https://github.com/nicboul/udt4.git
+[submodule "libconfig-linux"]
+	path = libconfig-linux
+	url = https://github.com/nicboul/libconfig.git
+[submodule "tapcfg-linux"]
+	path = tapcfg-linux
+	url = https://github.com/nicboul/tapcfg.git

@@ -85,7 +85,7 @@ static int udtbus_send(peer_t *peer, void *data, int len)
 	if (res != 0) {
 		for (i = exceptfds.begin(); i != exceptfds.end(); ++i) {
 			if (peer->socket == *i) {
-				cout << "send:" << UDT::getlasterror().getErrorMessage() << endl;
+				jlog(L_NOTICE, "send: %s", UDT::getlasterror().getErrorMessage());
 				on_disconnect(peer);
 				return -1;
 			}
@@ -94,7 +94,7 @@ static int udtbus_send(peer_t *peer, void *data, int len)
 
 	int ret = UDT::send(peer->socket, (char*)data, len, 0);
 	if (ret == UDT::ERROR) {
-		cout << "send:" << UDT::getlasterror().getErrorMessage() << endl;
+		jlog(L_WARNING, "send: %s", UDT::getlasterror().getErrorMessage());
 		on_disconnect(peer);
 		return -1;
 	}
@@ -112,7 +112,7 @@ static int udtbus_recv(peer_t *peer)
 
 	int rs = UDT::recv(peer->socket, (char *)peer->buffer, size, 0);
 	if (rs == UDT::ERROR) {
-		cout << "recv:" << UDT::getlasterror().getErrorMessage();
+		jlog(L_WARNING, "recv: %s", UDT::getlasterror().getErrorMessage());
 		return -1;
 	}
 
@@ -134,7 +134,7 @@ static void on_connect(peer_t *peer)
 
 	client = UDT::accept(peer->socket, (sockaddr*)&clientaddr, &addrlen);
 	if (client == UDT::INVALID_SOCK) {
-		cout << "accept: " << UDT::getlasterror().getErrorMessage() << endl;
+		jlog(L_WARNING, "accept: %s", UDT::getlasterror().getErrorMessage());
 		return;
 	}
 
@@ -149,7 +149,7 @@ static void on_connect(peer_t *peer)
 				sizeof(clientservice),
 				NI_NUMERICHOST|NI_NUMERICSERV);
 
-	cout << "new connection: " << clienthost << ":" << clientservice << endl;
+	jlog(L_NOTICE, "new connection: %s:%s", clienthost, clientservice);
 
 	npeer = (peer_t *)calloc(sizeof(peer_t), 1);
 	npeer->type = UDTBUS_CLIENT;
@@ -238,7 +238,7 @@ peer_t *udtbus_client(const char *listen_addr,
 	}
 
 	if (UDT::connect(client, serv_info->ai_addr, serv_info->ai_addrlen) == UDT::ERROR) {
-		cout << "connect: " << UDT::getlasterror().getErrorMessage() << endl;
+		jlog(L_WARNING, "udt]> %s", UDT::getlasterror().getErrorMessage());
 		freeaddrinfo(serv_info);
 		UDT::close(client);
 		return NULL;
@@ -296,17 +296,16 @@ int udtbus_server(const char *listen_addr,
 	UDT::setsockopt(serv, 0, UDT_RCVSYN, &block, sizeof(bool));
 
 	if (UDT::bind(serv, res->ai_addr, res->ai_addrlen) == UDT::ERROR) {
-
-		cout << "bind: " << UDT::getlasterror().getErrorMessage() << endl;
+		jlog(L_WARNING, "bind: %s", UDT::getlasterror().getErrorMessage());
 		return -1;
 	}
 
 	freeaddrinfo(res);
-	cout << "server is ready at port: " << port << endl;
+	jlog(L_NOTICE, "server is ready at port: %s", port);
 
 	if (UDT::listen(serv, 10) == UDT::ERROR) {
 
-		cout << "listen: " << UDT::getlasterror().getErrorMessage() << endl;
+		jlog(L_NOTICE, "listen: %s", UDT::getlasterror().getErrorMessage());
 		return -1;
 	}
 
@@ -350,7 +349,7 @@ retry:
 
 	ret = getaddrinfo(p2p_args->listen_addr, p2p_args->port[port_itr], &hints, &local);
 	if (ret != 0) {
-		cout << "illegal port number or port is busy (" << gai_strerror(ret) << ")" << endl;
+		jlog(L_WARNING, "illegal port number or port is busy: %s", gai_strerror(ret));
 		freeaddrinfo(local);
 		return NULL;
 	}
@@ -360,7 +359,7 @@ retry:
 	UDT::setsockopt(socket, 0, UDT_MSS, new int(1450), sizeof(int));
 	UDT::setsockopt(socket, 0, UDT_RENDEZVOUS, new bool(true), sizeof(bool));
 	if (UDT::ERROR == UDT::bind(socket, local->ai_addr, local->ai_addrlen)) {
-		cout << "bind: " << UDT::getlasterror().getErrorMessage() << endl;
+		jlog(L_WARNING, "bind: %s", UDT::getlasterror().getErrorMessage());
 		freeaddrinfo(local);
 		return NULL;
 	}
@@ -375,7 +374,7 @@ retry:
 
 	ret = getaddrinfo(p2p_args->dest_addr, p2p_args->port[port_itr], &hints, &server);
 	if (ret != 0) {
-		cout << "incorrect server address (" << gai_strerror(ret) << ")" << endl;
+		jlog(L_WARNING, "incorrect server address: %s", gai_strerror(ret));
 		freeaddrinfo(server);
 		return NULL;
 	}

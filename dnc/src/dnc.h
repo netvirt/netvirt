@@ -34,8 +34,9 @@ struct dnc_cfg {
 	int auto_connect;
 
 	struct {
-		void (*on_connect)(void *obj, const char *ip);
-		void *obj;
+		void (*on_log)(const char *str);
+		void (*on_connect)(const char *ip);
+		void (*on_disconnect)();
 	} ev;
 };
 
@@ -43,7 +44,8 @@ struct dnc_cfg {
 extern "C" {
 #endif
 
-int dnc_init(struct dnc_cfg *dnc_cfg);
+void dnc_init_async(struct dnc_cfg *cfg);
+void *dnc_init(void *dnc_cfg);
 int dnc_config_toggle_auto_connect(int status);
 void on_input(netc_t *netc);
 

@@ -504,7 +504,7 @@ netc_t *net_client(const char *listen_addr,
 	}
 
 	if (netc->peer == NULL) {
-		jlog(L_NOTICE, "net]> client initialization failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_NOTICE, "net]> Unable to connect to %s:%s :: %s:%i", listen_addr, port, __FILE__, __LINE__);
 		net_connection_free(netc);
 		return NULL;
 	}

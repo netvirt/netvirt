@@ -1,6 +1,6 @@
 /*
  * Dynamic Network Directory Service
- * Copyright (C) 2009-2013
+ * Copyright (C) 2009-2014
  * Nicolas J. Bouliane <nib@dynvpn.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -11,13 +11,9 @@
  */
 
 #include <QApplication>
-#include <QLineEdit>
-#include <QPushButton>
-#include <QFont>
-#include <unistd.h>
-#include <libgen.h>
+#include <QCleanlooksStyle>
 
-#include "MyWindow.h"
+#include "maindialog.h"
 
 int main(int argc, char *argv[])
 {
@@ -28,9 +24,11 @@ int main(int argc, char *argv[])
 		char *executable_path = dirname(argv[0]);
 		chdir(executable_path);
 	#endif
-	QApplication app(argc, argv);
-	MyWindow w;
 
-	w.show();
+	QApplication app(argc, argv);
+	app.setStyle(new QCleanlooksStyle());
+
+	MainDialog s;
+
 	return app.exec();
 }
