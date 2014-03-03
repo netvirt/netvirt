@@ -1,5 +1,6 @@
 <RCC>
   <qresource>
+    <file>rc/download.svg</file>
     <file>rc/loader.gif</file>
     <file>rc/loop_alt4.svg</file>
     <file>rc/cog.svg</file>

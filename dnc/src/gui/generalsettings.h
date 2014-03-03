@@ -13,6 +13,8 @@
 #ifndef GENERALSETTINGS_H
 #define GENERALSETTINGS_H
 
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
 #include <QDialog>
 
 #include "maindialog.h"
@@ -28,9 +30,16 @@ class GeneralSettings: public QDialog
 
 	public slots:
 		void slotCheckAutoConnect();
+		void slotDownloadFinished(QNetworkReply *reply);
 
 	private:
 		Ui::GeneralSettings ui;
+
+		QNetworkAccessManager manager;
+		QList<QNetworkReply *> currentDownloads;
+
+		QString StableVersion;
+		QString CurrentVersion;
 };
 
 #endif // GENERALSETTINGS_H

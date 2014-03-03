@@ -1,4 +1,5 @@
-set(CMAKE_C_FLAGS "-g -Wall")
+set(CMAKE_C_FLAGS "-g -Wall -DDNCVERSION='\"${CPACK_PACKAGE_VERSION}\"'")
+set(CMAKE_CXX_FLAGS "-g -Wall -DDNCVERSION='\"${CPACK_PACKAGE_VERSION}\"'")
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 option (WITH_GUI "WITH_GUI" ON)
@@ -30,7 +31,7 @@ endif()
 
 if (WITH_GUI)
 	add_definitions( -DQT_EDITION=QT_EDITION_OPENSOURCE )
-	find_package(Qt4 REQUIRED)
+	find_package(Qt4 COMPONENTS QtCore QtGui QtNetwork REQUIRED)
 	set(gui_sources
                 gui/main.cpp
 		gui/maindialog.cpp

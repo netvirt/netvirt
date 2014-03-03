@@ -69,7 +69,7 @@ void MainDialog::NowRun()
 
 	QIcon generalIcon(QLatin1String(":rc/cog.svg"));
 	QListWidgetItem *general = new QListWidgetItem(generalIcon, "General", ui.labelWidget);
-	syslog->setSizeHint(QSize(0, 32));
+	general->setSizeHint(QSize(0, 32));
 	this->generalSettings = new GeneralSettings(this);
 	ui.stack->addWidget(this->generalSettings);
 

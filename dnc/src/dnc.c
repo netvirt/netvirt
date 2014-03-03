@@ -480,7 +480,7 @@ void *dnc_init(void *cfg)
 		return NULL;
 	}
 
-	if (tapcfg_start(session->tapcfg, NULL, 1) < 0) {
+	if (tapcfg_start(session->tapcfg, "dynvpn0", 1) < 0) {
 		jlog(L_ERROR, "dnc]> tapcfg_start failed");
 		return NULL;
 	}
