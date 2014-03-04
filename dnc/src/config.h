@@ -19,6 +19,7 @@
 extern "C" {
 #endif
 
+char *dnc_config_get_fullname(const char *file);
 int dnc_config_init(struct dnc_cfg *dnc_cfg);
 
 #ifdef __cplusplus

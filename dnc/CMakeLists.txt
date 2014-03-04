@@ -6,11 +6,8 @@ include_directories("../libdnds/protocol/")
 add_subdirectory(src)
 
 if (APPLE)
-	install(FILES dnc.conf DESTINATION ${library_dest_dir})
 	set(CPACK_GENERATOR "DragNDrop")
 else()
-	install(FILES dnc.conf DESTINATION /etc/dnds/)
-
 	set(CPACK_GENERATOR "DEB")
 	if (WITH_GUI)
 	  set(CPACK_PACKAGE_NAME "dynvpn-client-gui")

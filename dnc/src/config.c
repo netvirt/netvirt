@@ -17,13 +17,20 @@
 #include <logger.h>
 #include "dnc.h"
 
+static struct dnc_cfg *dnc_cfg;
+
+char *dnc_config_get_fullname(const char *file)
+{
 #ifdef _WIN32
-	#define CONFIG_FILE "dnc.conf"
+	return strdup("dnc.conf");
 #elif __APPLE__
-	#define CONFIG_FILE "dnc.conf"
+	return strdup("dnc.conf");
 #else
-	#define CONFIG_FILE "/etc/dnds/dnc.conf"
+	char fullname[256];
+	sprintf(fullname, "%s%s%s", getenv("HOME"), "/.local/share/dynvpn/", file);
+	return strdup(fullname);
 #endif
+}
 
 int dnc_config_toggle_auto_connect(int status)
 {
@@ -34,8 +41,8 @@ int dnc_config_toggle_auto_connect(int status)
 	root = config_root_setting(&cfg);
 
 	/* Read the file. If there is an error, report it and exit. */
-        if (!config_read_file(&cfg, CONFIG_FILE)) {
-                fprintf(stderr, "Can't open %s\n", CONFIG_FILE);
+        if (!config_read_file(&cfg, dnc_cfg->dnc_conf)) {
+                fprintf(stderr, "Can't open %s\n", dnc_cfg->dnc_conf);
 		return -1;
         }
 
@@ -45,68 +52,70 @@ int dnc_config_toggle_auto_connect(int status)
 	}
 	config_setting_set_bool(setting, status);
 
-	config_write_file(&cfg, CONFIG_FILE);
+	config_write_file(&cfg, dnc_cfg->dnc_conf);
 	config_setting_set_bool(setting, status);
 	config_destroy(&cfg);
 
 	return 0;
 }
 
-int dnc_config_init(struct dnc_cfg *dnc_cfg)
+int dnc_config_init(struct dnc_cfg *_dnc_cfg)
 {
+	uint8_t default_conf = 0;
 	config_t cfg;
 	config_init(&cfg);
 
-	/* Read the file. If there is an error, report it and exit. */
-        if (!config_read_file(&cfg, CONFIG_FILE)) {
-		fprintf(stderr, "Can't open %s\n", CONFIG_FILE);
-		exit(EXIT_FAILURE);
+	dnc_cfg = _dnc_cfg;
+
+	dnc_cfg->dnc_conf = dnc_config_get_fullname("dynvpn.conf");
+	dnc_cfg->ip_conf = dnc_config_get_fullname("dynvpn.ip");
+
+	/* Read the file. If there is an error, use default configuration */
+        if (!config_read_file(&cfg, dnc_cfg->dnc_conf)) {
+		default_conf = 1;
         }
 
+#if defined(__unix__) && !defined(__APPLE__)
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+	struct stat st;
+	char *path = dnc_config_get_fullname("");
+	if (default_conf && stat(path, &st) != 0) {
+		mkdir(path, S_IRUSR|S_IWUSR|S_IXUSR);
+		config_write_file(&cfg, dnc_cfg->dnc_conf);
+	}
+	free(path);
+#endif
+
 	jlog_init_cb(dnc_cfg->ev.on_log);
+
+	jlog(L_NOTICE, "dnc]> version: %s", DNCVERSION);
+
+	dnc_cfg->certificate = dnc_config_get_fullname("certificate.pem");
+	dnc_cfg->privatekey = dnc_config_get_fullname("privatekey.pem");
+	dnc_cfg->trusted_cert = dnc_config_get_fullname("trusted_cert.pem");
+
 	if (config_lookup_string(&cfg, "log_file", &dnc_cfg->log_file)) {
 		jlog_init_file(dnc_cfg->log_file);
 	}
 
-	jlog(L_NOTICE, "dnc]> version: %s", DNCVERSION);
-
-        if (config_lookup_string(&cfg, "server_address", &dnc_cfg->server_address))
-                jlog(L_DEBUG, "dnc]> server_address: %s", dnc_cfg->server_address);
-	else {
-		jlog(L_ERROR, "dnc]> server_address is not present !");
-		exit(EXIT_FAILURE);
+        if (default_conf || !config_lookup_string(&cfg, "server_address", &dnc_cfg->server_address)) {
+		dnc_cfg->server_address = strdup("bs1.dynvpn.com");
 	}
+	jlog(L_DEBUG, "dnc]> server_address = \"%s\";", dnc_cfg->server_address);
 
-        if (config_lookup_string(&cfg, "server_port", &dnc_cfg->server_port))
-                jlog(L_DEBUG, "dnc]> server_port: %s", dnc_cfg->server_port);
-	else {
-		jlog(L_ERROR, "dnc]> server_port is not present !");
-		exit(EXIT_FAILURE);
+        if (default_conf || !config_lookup_string(&cfg, "server_port", &dnc_cfg->server_port)) {
+		dnc_cfg->server_port = strdup("9090");
 	}
+	jlog(L_DEBUG, "dnc]> server_port = \"%s\";", dnc_cfg->server_port);
 
-        if (config_lookup_string(&cfg, "certificate", &dnc_cfg->certificate))
-                jlog(L_DEBUG, "dnc]> certificate: %s", dnc_cfg->certificate);
-	else {
-		jlog(L_ERROR, "dnc]> certificate is not present !");
-		exit(EXIT_FAILURE);
+	if (!default_conf) {
+		config_lookup_bool(&cfg, "auto_connect", &dnc_cfg->auto_connect);
+	} else {
+		dnc_cfg->auto_connect = 1;
 	}
-
-        if (config_lookup_string(&cfg, "privatekey", &dnc_cfg->privatekey))
-                jlog(L_DEBUG, "dnc]> privatekey: %s", dnc_cfg->privatekey);
-	else {
-		jlog(L_ERROR, "dnc]> privatekey is not present !");
-		exit(EXIT_FAILURE);
-	}
-
-        if (config_lookup_string(&cfg, "trusted_cert", &dnc_cfg->trusted_cert))
-                jlog(L_DEBUG, "dnc]> trusted_cert: %s", dnc_cfg->trusted_cert);
-	else {
-		jlog(L_ERROR, "dnc]> trusted_cert is not present !");
-		exit(EXIT_FAILURE);
-	}
-
-	if (config_lookup_bool(&cfg, "auto_connect", &dnc_cfg->auto_connect))
-		jlog(L_DEBUG, "dnc]> auto_connect: %d", dnc_cfg->auto_connect);
 
 	return 0;
 }

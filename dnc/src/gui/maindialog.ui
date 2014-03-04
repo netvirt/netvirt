@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="dnc.qrc">
-    <normaloff>:/rc/share.svg</normaloff>:/rc/share.svg</iconset>
+    <normaloff>:/rc/dnc.ico</normaloff>:/rc/dnc.ico</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="margin">

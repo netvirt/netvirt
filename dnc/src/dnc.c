@@ -279,9 +279,9 @@ static void op_netinfo_response(struct session *session, DNDSMessage_t *msg)
 {
 	FILE *fp = NULL;
 
-	fp = fopen(DNC_IP_FILE, "r");
+	fp = fopen(dnc_cfg->ip_conf, "r");
 	if (fp == NULL) {
-		jlog(L_ERROR, "%s doesn't exist, reprovision your client", DNC_IP_FILE);
+		jlog(L_ERROR, "%s doesn't exist, reprovision your client", dnc_cfg->ip_conf);
 		return;
 	}
 	fscanf(fp, "%s", ipAddress);
@@ -302,7 +302,7 @@ static void op_auth_response(struct session *session, DNDSMessage_t *msg)
 	case DNDSResult_success:
 		jlog(L_NOTICE, "dnc]> session secured and authenticated");
 
-		fp = fopen(DNC_IP_FILE, "r");
+		fp = fopen(dnc_cfg->ip_conf, "r");
 		if (fp) {
 			fscanf(fp, "%s", ipAddress);
 			fclose(fp);
@@ -376,9 +376,9 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 	ProvResponse_get_ipAddress(msg, ipAddress);
 	jlog(L_NOTICE, "dnc]> ip address: %s", ipAddress);
 
-	fp = fopen(DNC_IP_FILE, "w");
+	fp = fopen(dnc_cfg->ip_conf, "w");
 	if (fp == NULL) {
-		jlog(L_ERROR, "dnc]> can't write IP address in file '%s'", DNC_IP_FILE);
+		jlog(L_ERROR, "dnc]> can't write IP address in file '%s'", dnc_cfg->ip_conf);
 		return;
 	}
 	fprintf(fp, "%s", ipAddress);

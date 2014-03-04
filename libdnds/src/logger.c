@@ -46,6 +46,7 @@ void jlog(int level, const char *format, ...)
 
 	snprintf(logline, 256, "[%s] %s\n", cur_time, format);
 	vsnprintf(logtxt, 512, logline, ap);
+	va_end(ap);
 
 	if (on_log_cb) {
 		on_log_cb(logtxt);
@@ -54,8 +55,4 @@ void jlog(int level, const char *format, ...)
 		fprintf(log_file, "%s", logtxt);
 		fflush(log_file);
 	}
-	else {
-		fprintf(stdout, "%s", logtxt);
-	}
-	va_end(ap);
 }

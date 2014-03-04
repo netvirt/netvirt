@@ -13,14 +13,6 @@
 #ifndef DNC_H
 #define DNC_H
 
-#ifdef _WIN32
-	#define DNC_IP_FILE	"dnc.ip"
-#elif __APPLE__
-	#define DNC_IP_FILE	"dnc.ip"
-#else
-	#define DNC_IP_FILE	"/etc/dnds/dnc.ip"
-#endif
-
 #include <netbus.h>
 
 struct dnc_cfg {
@@ -32,6 +24,9 @@ struct dnc_cfg {
 	char *prov_code;
 	const char *log_file;
 	int auto_connect;
+
+	const char *dnc_conf;
+	const char *ip_conf;
 
 	struct {
 		void (*on_log)(const char *str);

@@ -33,7 +33,8 @@ MainDialog::MainDialog()
 {
 	/* Check if the client is provisioned */
 	/* FIXME check harder */
-	QFile file(DNC_IP_FILE);
+	char *ip_conf = dnc_config_get_fullname("dynvpn.ip");
+	QFile file(ip_conf);
 	if (!file.exists()) {
 		this->wizardDialog = new WizardDialog(this);
 		this->wizardDialog->show();
@@ -49,6 +50,7 @@ MainDialog::~MainDialog()
 
 void MainDialog::NowRun()
 {
+
 	centerWidget(this);
 	this->show();
 
@@ -109,12 +111,8 @@ void MainDialog::slotWizardNext()
 	this->ProvKey = this->wizardDialog->ProvKey;
 	delete this->wizardDialog;
 	this->NowRun();
-
-	dnc_config_toggle_auto_connect(0);
-
-	emit accountSettings->slotConnWaiting();
-	emit this->slotFireConnection();
 }
+
 void MainDialog::slotToggleAutoConnect(int checked)
 {
 	dnc_config_toggle_auto_connect(checked);
@@ -141,7 +139,7 @@ void MainDialog::slotResetAccount()
 					QMessageBox::Yes|QMessageBox::No);
 
 	if (reply == QMessageBox::Yes) {
-		QFile file(DNC_IP_FILE);
+		QFile file(dnc_cfg->ip_conf);
 		file.remove();
 		qApp->quit();
 	}

@@ -207,6 +207,7 @@ void udtbus_poke_queue()
 		if (peer == NULL)
 			continue;
 
+		jlog(L_NOTICE, "udt]> peer closed or broken connection");
 		on_disconnect(peer);
 	}
 }
@@ -417,6 +418,7 @@ retry:
 		/* this seem a bit redundant, but it keeps the logic flow clear
 		   without using any obscure shortcut to free everything in case
 		   of a p2p failure */
+		jlog(L_NOTICE, "udt]> p2p failed");
 		on_disconnect(peer);
 		return NULL;
 	}

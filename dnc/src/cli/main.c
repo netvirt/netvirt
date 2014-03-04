@@ -21,6 +21,11 @@
 #include "../config.h"
 #include "../dnc.h"
 
+void on_log(const char *logline)
+{
+	fprintf(stdout, "%s", logline);
+}
+
 int main(int argc, char *argv[])
 {
 	int opt;
@@ -46,6 +51,8 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 	}
+
+        dnc_cfg->ev.on_log = on_log;
 
 	if (dnc_config_init(dnc_cfg)) {
 		jlog(L_ERROR, "dnc]> dnc_config_init failed :: %s:%i", __FILE__, __LINE__);
