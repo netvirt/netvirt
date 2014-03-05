@@ -22,9 +22,9 @@ static struct dnc_cfg *dnc_cfg;
 char *dnc_config_get_fullname(const char *file)
 {
 #ifdef _WIN32
-	return strdup("dnc.conf");
+	return strdup(file);
 #elif __APPLE__
-	return strdup("dnc.conf");
+	return strdup(file);
 #else
 	char fullname[256];
 	sprintf(fullname, "%s%s%s", getenv("HOME"), "/.local/share/dynvpn/", file);
