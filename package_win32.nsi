@@ -81,7 +81,7 @@ SetCompressor /FINAL /SOLID lzma
 		File tapcfg-win32/build/tapcfg.dll
 		File ${MINGW_PATH}/libgcc_s_sjlj-1.dll
 		File ${MINGW_PATH}/libstdc++-6.dll
-		File ${MINGW_PATH}/libwinpthread-1.dll	
+		File /usr/i686-w64-mingw32/lib/libwinpthread-1.dll
 		File ${PTHREAD_PATH}/pthreadGC2.dll
 		File ${OPENSSL_PATH}/libeay32.dll
 		File ${OPENSSL_PATH}/ssleay32.dll
