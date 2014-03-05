@@ -81,6 +81,7 @@ SetCompressor /FINAL /SOLID lzma
 		File tapcfg-win32/build/tapcfg.dll
 		File ${MINGW_PATH}/libgcc_s_sjlj-1.dll
 		File ${MINGW_PATH}/libstdc++-6.dll
+		File ${MINGW_PATH}/libwinpthread-1.dll	
 		File ${PTHREAD_PATH}/pthreadGC2.dll
 		File ${OPENSSL_PATH}/libeay32.dll
 		File ${OPENSSL_PATH}/ssleay32.dll
@@ -88,6 +89,7 @@ SetCompressor /FINAL /SOLID lzma
 		File ${QT_PATH}/mingwm10.dll
 		File ${QT_PATH}/QtCore4.dll
 		File ${QT_PATH}/QtGui4.dll
+		File ${QT_PATH}/QtNetwork4.dll
 
 		; Create uninstaller
 		WriteUninstaller "$INSTDIR\dnc-uninstall.exe"
