@@ -76,7 +76,6 @@ SetCompressor /FINAL /SOLID lzma
 		setOutPath $INSTDIR
 
 		File ${BDIR}/dnc/src/dnc.exe
-		File dnc/dnc.conf
 		File udt4/src/libudt.dll
 		File libconfig-win32/lib/.libs/libconfig-9.dll
 		File tapcfg-win32/build/tapcfg.dll
