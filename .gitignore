@@ -24,7 +24,7 @@ CPack*.cmake
 _CPack_Packages/
 
 #others
-libconfig-linux
-tapcfg-linux
-udt4
+#libconfig-linux
+#tapcfg-linux
+#udt4
 
