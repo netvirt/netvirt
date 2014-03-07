@@ -1,7 +1,7 @@
 <RCC>
   <qresource>
     <file>rc/download.svg</file>
-    <file>rc/loader.gif</file>
+    <file>rc/loader.mng</file>
     <file>rc/loop_alt4.svg</file>
     <file>rc/cog.svg</file>
     <file>rc/user.svg</file>
