@@ -30,10 +30,9 @@ function submodule () {
 function clone_dependencies () {
     clone_or_pull https://github.com/nicboul/DNDS.git DNDS
     cd DNDS
-    submodule https://github.com/nicboul/udt4.git udt4
-    submodule https://github.com/nicboul/libconfig.git libconfig-linux
-    submodule https://github.com/nicboul/tapcfg.git tapcfg-linux
-    git submodule update --init
+    clone_or_pull https://github.com/nicboul/udt4.git udt4
+    clone_or_pull https://github.com/nicboul/libconfig.git libconfig-linux
+    clone_or_pull https://github.com/nicboul/tapcfg.git tapcfg-linux
 }
 
 function fix_libconfig_git () {
