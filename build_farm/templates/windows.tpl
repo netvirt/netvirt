@@ -1,15 +1,17 @@
-#!/usr/bin/env bash
+{% extends "base.tpl" %}
 
-set -x
+{% set libconfig_dir_name = "libconfig-win32" %}
+{% set tapcfg_dir_name = "tapcfg-win32" %}
 
-release_dir="$1"
-
+{% block global_variables %}
 openssl_dir="/data/dnds/openssl"
 openssl_root="$openssl_dir/mingw32"
 wine_dir="/data/dnds/wine"
 qt_root="$wine_dir/drive_c/Qt/4.8.5"
 pthreads_dir="/data/dnds/pthreads"
+{% endblock %}
 
+{% block install_build_dependencies %}
 function install_openssl () {
     openssl_archive="/tmp/openssl-mingw32.tar.gz"
     openssl_url="http://www.blogcompiler.com/wp-content/uploads/2011/12/openssl-1.0.0e-mingw32.tar.gz"
@@ -46,57 +48,22 @@ function install_build_dependencies() {
     [ -d "$wine_dir" ] || install_qt
     [ -d "$pthreads_dir" ] || install_pthreads_win32
 }
+{% endblock %}
 
-function mcd () {
-    mkdir -p "$1" && pushd "$1"
-}
-
-function clone_or_pull () {
-     if [ -d "$2" ] ; then
-         pushd "$2"
-         git pull
-         popd
-     else
-         git clone "$1" "$2"
-     fi
-}
-
-function submodule () {
-    [ ! -d "$2" ] && git submodule add "$1" "$2"
-}
-
-function clone_dependencies () {
-    clone_or_pull https://github.com/nicboul/DNDS.git DNDS
-    cd DNDS
-    submodule https://github.com/nicboul/udt4.git udt4
-    submodule https://github.com/nicboul/libconfig.git libconfig-win32
-    submodule https://github.com/nicboul/tapcfg.git tapcfg-win32
-    git submodule update --init
-}
-
-function fix_libconfig_git () {
-    # git creates files in alphabetic order, messing with dependency detection
-    # of make. Specifically, *.y files are created after *.c files, which are
-    # generated from *.y files
-    touch lib/*.c
-}
-
-function build_dependencies () {
-    pushd udt4
+{% block build_udt4 %}
     [ -f src/libudt.dll ] || make CXX='i686-w64-mingw32-g++' os=WIN32 -s
-    popd
+{% endblock %}
 
-    pushd libconfig-win32
-    fix_libconfig_git
+{% block build_libconfig %}
     [ -f Makefile ] || ./configure --host=i686-w64-mingw32
     [ -d lib/.libs ] || make -s
-    popd
+{% endblock %}
 
-    pushd tapcfg-win32
+{% block build_tapcfg %}
     [ -d build ] || scons --force-mingw32
-    popd
-}
+{% endblock %}
 
+{% block build_dnc %}
 function build_dnc () {
     build_dir=build.windows.gui
     mcd "$build_dir"
@@ -114,8 +81,4 @@ function build_dnc () {
     rsync *.exe "$release_dir"
     popd
 }
-
-install_build_dependencies
-clone_dependencies
-build_dependencies
-build_dnc
+{% endblock %}

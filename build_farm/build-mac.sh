@@ -4,6 +4,24 @@ set -x
 
 release_dir="$1"
 
+
+port_dependencies="scons cmake qt4-mac"
+
+function dependencies_are_installed() {
+    for dependency in $port_dependencies ; do
+        if [ $(port list installed and name:$dependency | wc -l) -eq 0 ] ; then
+            return 1
+        fi
+    done
+    return 0
+}
+
+function install_build_dependencies() {
+    if ! dependencies_are_installed ; then
+        sudo port install $port_dependencies
+    fi
+}
+
 function mcd () {
     mkdir -p "$1" && pushd "$1"
 }
@@ -22,24 +40,6 @@ function submodule () {
     [ ! -d "$2" ] && git submodule add "$1" "$2"
 }
 
-port_dependencies="scons cmake qt4-mac"
-
-function dependencies_are_installed() {
-    for dependency in $port_dependencies ; do
-        if [ $(port list installed and name:$dependency | wc -l) -eq 0 ] ; then
-            return 1
-        fi
-    done
-    return 0
-}
-
-function install_build_dependencies() {
-    if ! dependencies_are_installed ; then
-        sudo port install $port_dependencies
-    fi
-}
-install_build_dependencies
-
 function clone_dependencies () {
     clone_or_pull https://github.com/nicboul/DNDS.git DNDS
     cd DNDS
@@ -48,7 +48,6 @@ function clone_dependencies () {
     submodule https://github.com/nicboul/tapcfg.git tapcfg-macos
     git submodule update --init
 }
-clone_dependencies
 
 function fix_libconfig_git () {
     # git creates files in alphabetic order, messing with dependency detection
@@ -72,9 +71,8 @@ function build_dependencies () {
     [ -d build ] || scons
     popd
 }
-build_dependencies
 
-function build_dnc_gui () {
+function build_dnc () {
     build_dir=build.mac.gui
     mcd "$build_dir"
     rm -rf *
@@ -84,4 +82,8 @@ function build_dnc_gui () {
     rsync *.dmg "$release_dir"
     popd
 }
-build_dnc_gui
+
+install_build_dependencies
+clone_dependencies
+build_dependencies
+build_dnc
