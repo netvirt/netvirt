@@ -22,8 +22,21 @@ function submodule () {
     [ ! -d "$2" ] && git submodule add "$1" "$2"
 }
 
+port_dependencies="scons cmake qt4-mac"
+
+function dependencies_are_installed() {
+    for dependency in $port_dependencies ; do
+        if [ $(port list installed and name:$dependency | wc -l) -eq 0 ] ; then
+            return 1
+        fi
+    done
+    return 0
+}
+
 function install_build_dependencies() {
-    sudo port install scons cmake qt4-mac
+    if ! dependencies_are_installed ; then
+        sudo port install $port_dependencies
+    fi
 }
 install_build_dependencies
 
