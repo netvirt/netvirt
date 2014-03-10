@@ -50,7 +50,6 @@ MainDialog::~MainDialog()
 
 void MainDialog::NowRun()
 {
-	this->setWindowFlags(Qt::Window);
 	centerWidget(this);
 	this->show();
 
