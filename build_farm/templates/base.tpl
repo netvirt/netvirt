@@ -4,10 +4,9 @@ set -x
 
 release_dir="$1"
 
+{% block global_variables %}{% endblock %}
 
-function install_build_dependencies() {
-    apt-get install -y git scons cmake build-essential libqt4-dev libssl-dev
-}
+{% block install_build_dependencies %}{% endblock %}
 
 function mcd () {
     mkdir -p "$1" && pushd "$1"
@@ -31,8 +30,8 @@ function clone_dependencies () {
     clone_or_pull https://github.com/nicboul/DNDS.git DNDS
     cd DNDS
     clone_or_pull https://github.com/nicboul/udt4.git udt4
-    clone_or_pull https://github.com/nicboul/libconfig.git libconfig-linux
-    clone_or_pull https://github.com/nicboul/tapcfg.git tapcfg-linux
+    clone_or_pull https://github.com/nicboul/libconfig.git {{ libconfig_dir_name }}
+    clone_or_pull https://github.com/nicboul/tapcfg.git {{ tapcfg_dir_name }}
 }
 
 function fix_libconfig_git () {
@@ -44,46 +43,23 @@ function fix_libconfig_git () {
 
 function build_dependencies () {
     pushd udt4
-    make
+    {% block build_udt4 %}{% endblock %}
     popd
 
-    pushd libconfig-linux
+    pushd {{ libconfig_dir_name }}
     fix_libconfig_git
-    [ ! -f Makefile ] && ./configure
-    make
+    {% block build_libconfig %}{% endblock %}
     popd
 
-    pushd tapcfg-linux
-    ./buildall.sh
-    popd
-}
-
-function build_dnc_cli () {
-    mcd build.linux.cli
-    rm -rf *
-    cmake .. -DWITH_GUI=OFF
-    make dnc
-    make package
-    rsync *.deb "$release_dir"
+    pushd {{ tapcfg_dir_name }}
+    {% block build_tapcfg %}{% endblock %}
     popd
 }
 
-function build_dnc_gui () {
-    mcd build.linux.gui
-    rm -rf *
-    cmake ..
-    make dnc
-    make package
-    rsync *.deb "$release_dir"
-    popd
-}
-
-function build_dnc () {
-    build_dnc_cli
-    build_dnc_gui
-}
+{% block build_dnc %}{% endblock %}
 
 install_build_dependencies
 clone_dependencies
 build_dependencies
 build_dnc
+
