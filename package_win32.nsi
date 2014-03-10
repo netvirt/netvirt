@@ -93,8 +93,8 @@ SetCompressor /FINAL /SOLID lzma
 		File ${QT_PATH}/bin/QtGui4.dll
 		File ${QT_PATH}/bin/QtNetwork4.dll
 
-		CreateDirectory $INSTDIR/imageformats
-		setOutPath $INSTDIR/imageformats
+		CreateDirectory $INSTDIR\imageformats
+		setOutPath $INSTDIR\imageformats
 		File ${QT_PATH}/plugins/imageformats/qgif4.dll
 		File ${QT_PATH}/plugins/imageformats/qsvg4.dll
 
