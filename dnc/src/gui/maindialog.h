@@ -41,6 +41,7 @@ class MainDialog: public QDialog
 		static void onDisconnect();
 
 	public slots:
+		void slotExit();
 		void slotWizardCancel();
 		void slotWizardNext();
 		void slotToggleAutoConnect(int);

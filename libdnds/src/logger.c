@@ -42,7 +42,7 @@ void jlog(int level, const char *format, ...)
 
 	time(&timer);
 	tm_info = localtime(&timer);
-	strftime(cur_time, 20, "%F %H:%M:%S", tm_info);
+	strftime(cur_time, 20, "%Y-%m-%d %H:%M:%S", tm_info);
 
 	snprintf(logline, 256, "[%s] %s\n", cur_time, format);
 	vsnprintf(logtxt, 512, logline, ap);

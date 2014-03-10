@@ -25,6 +25,10 @@
   <property name="windowTitle">
    <string>DynVPN connection Wizard</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="dnc.qrc">
+    <normaloff>:/rc/dnc.ico</normaloff>:/rc/dnc.ico</iconset>
+  </property>
   <widget class="QLineEdit" name="ProvKeyText">
    <property name="geometry">
     <rect>

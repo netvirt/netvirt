@@ -50,7 +50,7 @@ MainDialog::~MainDialog()
 
 void MainDialog::NowRun()
 {
-
+	this->setWindowFlags(Qt::Window);
 	centerWidget(this);
 	this->show();
 
@@ -80,7 +80,7 @@ void MainDialog::NowRun()
 	connect(ui.labelWidget, SIGNAL(currentRowChanged(int)),
 		ui.stack, SLOT(setCurrentIndex(int)));
 
-	connect(this->ui.exitButton, SIGNAL(rejected()), qApp, SLOT(quit()));
+	connect(this->ui.exitButton, SIGNAL(clicked()), this, SLOT(slotExit()));
 
 	createTrayIcon();
 	setTrayIcon();
@@ -145,6 +145,18 @@ void MainDialog::slotResetAccount()
 	}
 }
 
+void MainDialog::slotExit()
+{
+	QMessageBox::StandardButton reply;
+	reply = QMessageBox::warning(this, "DynVPN Client", "Are you sure you want to exit ?",
+					QMessageBox::Yes|QMessageBox::No);
+
+	if (reply == QMessageBox::Yes) {
+		trayIcon->setVisible(false);
+		qApp->quit();
+	}
+}
+
 void MainDialog::onLog(const char *logline)
 {
 	MainDialog *_this = static_cast<MainDialog*>(obj_this);	
@@ -194,15 +206,9 @@ void MainDialog::trayIconClicked(QSystemTrayIcon::ActivationReason reason)
 
 void MainDialog::closeEvent(QCloseEvent *event)
 {
-	QMessageBox::StandardButton reply;
-	reply = QMessageBox::warning(this, "DynVPN Client", "Are you sure you want to quit ?",
-					QMessageBox::Yes|QMessageBox::No);
-
-	if (reply == QMessageBox::No) {
-		event->ignore();
-	} else if (trayIcon->isVisible()) {
-		trayIcon->setVisible(false);
-	}
+	event->ignore();
+	this->isVisible();
+	this->hide();
 }
 
 void MainDialog::centerWidget(QWidget *w)
