@@ -97,6 +97,7 @@ SetCompressor /FINAL /SOLID lzma
 		setOutPath $INSTDIR\imageformats
 		File ${QT_PATH}/plugins/imageformats/qgif4.dll
 		File ${QT_PATH}/plugins/imageformats/qsvg4.dll
+		File ${QT_PATH}/plugins/imageformats/qico4.dll
 
 		; Create uninstaller
 		WriteUninstaller "$INSTDIR\dnc-uninstall.exe"
