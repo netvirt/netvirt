@@ -75,7 +75,7 @@ function build_dnc () {
           ..
     make dnc
     makensis -DOPENSSL_PATH="$openssl_dir/mingw32/lib" \
-             -DQT_PATH="$qt_root/bin" \
+             -DQT_PATH="$qt_root" \
              -DBDIR="$build_dir" \
              ../package_win32.nsi
     rsync *.exe "$release_dir"

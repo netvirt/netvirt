@@ -8,7 +8,7 @@
 	!define OPENSSL_PATH /opt/mingw32/mingw32/bin
 !endif
 !ifndef QT_PATH
-	!define QT_PATH /media/nib/Windows7_OS/Qt/4.8.4/bin
+	!define QT_PATH /media/nib/Windows7_OS/Qt/4.8.4
 !endif
 
 # Define the path of the build directory
@@ -85,11 +85,18 @@ SetCompressor /FINAL /SOLID lzma
 		File ${PTHREAD_PATH}/pthreadGC2.dll
 		File ${OPENSSL_PATH}/libeay32.dll
 		File ${OPENSSL_PATH}/ssleay32.dll
-		File ${QT_PATH}/libgcc_s_dw2-1.dll
-		File ${QT_PATH}/mingwm10.dll
-		File ${QT_PATH}/QtCore4.dll
-		File ${QT_PATH}/QtGui4.dll
-		File ${QT_PATH}/QtNetwork4.dll
+		FILE ${QT_PATH}/bin/QtSvg4.dll
+		FILE ${QT_PATH}/bin/QtXml4.dll
+		File ${QT_PATH}/bin/libgcc_s_dw2-1.dll
+		File ${QT_PATH}/bin/mingwm10.dll
+		File ${QT_PATH}/bin/QtCore4.dll
+		File ${QT_PATH}/bin/QtGui4.dll
+		File ${QT_PATH}/bin/QtNetwork4.dll
+
+		CreateDirectory $INSTDIR/imageformats
+		setOutPath $INSTDIR/imageformats
+		File ${QT_PATH}/plugins/imageformats/qgif4.dll
+		File ${QT_PATH}/plugins/imageformats/qsvg4.dll
 
 		; Create uninstaller
 		WriteUninstaller "$INSTDIR\dnc-uninstall.exe"
