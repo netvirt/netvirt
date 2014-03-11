@@ -48,12 +48,14 @@ this->ui.connectionInfoLabel->setText("<html><head/><body><p><span style=\" font
 	this->ui.IPLabel->setVisible(true);
 	this->ui.YourIPLabel->setVisible(true);
 
+	this->ui.StatusPix->setVisible(true);
 	this->ui.StatusPix->setPixmap(QPixmap(":rc/tick_32.png"));
 }
 
 void AccountSettings::slotConnWaiting()
 {
-	this->ui.connectionInfoLabel->setText("Not connected");
+
+	this->ui.connectionInfoLabel->setText("<html><head/><body><p><span style=\" font-size:14pt; font-weight:600;\">Connecting...</span></p></body></html>");
 
 	this->ui.LoadLabel->setVisible(true);
 	this->ui.connectButton->setEnabled(false);
@@ -61,6 +63,6 @@ void AccountSettings::slotConnWaiting()
 	this->ui.IPLabel->setVisible(false);
 	this->ui.YourIPLabel->setVisible(false);
 
-	this->ui.StatusPix->setPixmap(QPixmap(":rc/delete_16.png"));
+	this->ui.StatusPix->setVisible(false);
 }
 
