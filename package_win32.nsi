@@ -99,6 +99,8 @@ SetCompressor /FINAL /SOLID lzma
 		File ${QT_PATH}/plugins/imageformats/qsvg4.dll
 		File ${QT_PATH}/plugins/imageformats/qico4.dll
 
+		CreateDirectory $APPDATA\dynvpn
+
 		; Create uninstaller
 		WriteUninstaller "$INSTDIR\dnc-uninstall.exe"
 
@@ -108,6 +110,10 @@ SetCompressor /FINAL /SOLID lzma
 			CreateShortCut  "$SMPROGRAMS\$StartMenuFolder\dynvpn-client.lnk" "$INSTDIR\dnc.exe"
 			CreateShortCut  "$SMPROGRAMS\$StartMenuFolder\dynvpn-client-uninstall.lnk" "$INSTDIR\dnc-uninstall.exe"
 		!insertmacro MUI_STARTMENU_WRITE_END
+
+		; Update icons cache
+		System::Call 'Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)'
+
 	sectionEnd
 
 	Section "TAP Virtual Ethernet Adapter" SecTAP
@@ -132,8 +138,14 @@ SetCompressor /FINAL /SOLID lzma
 ;---------------------
 ; Uninstaller section
 	Section "Uninstall"
+		Delete "$INSTDIR\imageformats\*"
+		RMDir "$INSTDIR\imageformats"
+
 		Delete "$INSTDIR\*"
 		RMDir "$INSTDIR"
+
+		Delete "$APPDATA\dynvpn\*"
+		RMDir "$APPDATA\dynvpn"
 
 		!insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
 		Delete "$DESKTOP\dynvpn-client.lnk"

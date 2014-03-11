@@ -2,6 +2,8 @@
 
 set -e
 
+chmod 666 /dev/net/tun
+
 if [ -x /sbin/setcap ]
 then
 	setcap cap_net_bind_service,cap_net_admin=ep /usr/bin/dnc

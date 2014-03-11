@@ -9,10 +9,11 @@
  * of the License.
  *
  */
-
-#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <libconfig.h>
+#include <stdlib.h>
 
 #include <logger.h>
 #include "dnc.h"
@@ -22,12 +23,14 @@ static struct dnc_cfg *dnc_cfg;
 char *dnc_config_get_fullname(const char *file)
 {
 #ifdef _WIN32
-	return strdup(file);
+	char fullname[256];
+	sprintf(fullname, "%s%s%s", getenv("AppData"), "\\dynvpn\\", file);
+	return strdup(fullname);
 #elif __APPLE__
 	return strdup(file);
 #else
 	char fullname[256];
-	sprintf(fullname, "%s%s%s", getenv("HOME"), "/.local/share/dynvpn/", file);
+	sprintf(fullname, "%s%s%s", getenv("HOME"), "/.dynvpn/", file);
 	return strdup(fullname);
 #endif
 }
@@ -67,6 +70,9 @@ int dnc_config_init(struct dnc_cfg *_dnc_cfg)
 
 	dnc_cfg = _dnc_cfg;
 
+	jlog_init_cb(dnc_cfg->ev.on_log);
+	jlog(L_NOTICE, "dnc]> version: %s", DNCVERSION);
+
 	dnc_cfg->dnc_conf = dnc_config_get_fullname("dynvpn.conf");
 	dnc_cfg->ip_conf = dnc_config_get_fullname("dynvpn.ip");
 
@@ -75,23 +81,19 @@ int dnc_config_init(struct dnc_cfg *_dnc_cfg)
 		default_conf = 1;
         }
 
-#if defined(__unix__) && !defined(__APPLE__)
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
-	struct stat st;
 	char *path = dnc_config_get_fullname("");
+#if defined(__unix__) && !defined(__APPLE__)
+#include <unistd.h>
+	/* create ~/.dynvpn if it doesn't exist */
+	struct stat st;
 	if (default_conf && stat(path, &st) != 0) {
 		mkdir(path, S_IRUSR|S_IWUSR|S_IXUSR);
 		config_write_file(&cfg, dnc_cfg->dnc_conf);
 	}
-	free(path);
 #endif
-
-	jlog_init_cb(dnc_cfg->ev.on_log);
-
-	jlog(L_NOTICE, "dnc]> version: %s", DNCVERSION);
+	jlog(L_NOTICE, "dnc]> confpath: %s", path);
+	free(path);
 
 	dnc_cfg->certificate = dnc_config_get_fullname("certificate.pem");
 	dnc_cfg->privatekey = dnc_config_get_fullname("privatekey.pem");
