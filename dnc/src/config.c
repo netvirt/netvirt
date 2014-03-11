@@ -116,7 +116,7 @@ int dnc_config_init(struct dnc_cfg *_dnc_cfg)
 	if (!default_conf) {
 		config_lookup_bool(&cfg, "auto_connect", &dnc_cfg->auto_connect);
 	} else {
-		dnc_cfg->auto_connect = 1;
+		dnc_cfg->auto_connect = 0;
 	}
 
 	return 0;
