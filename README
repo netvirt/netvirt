@@ -15,5 +15,6 @@ See the file LICENSE for information of licensing and distribution.
 OS :
  - Gnu/Linux: Supported.
  - Windows: Supported. 
+ - OSX: Supported.
  - OpenBSD : Ongoing.
  - FreeBSD/NetBSD : Planned.
