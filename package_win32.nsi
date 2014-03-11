@@ -85,8 +85,6 @@ SetCompressor /FINAL /SOLID lzma
 		File ${PTHREAD_PATH}/pthreadGC2.dll
 		File ${OPENSSL_PATH}/libeay32.dll
 		File ${OPENSSL_PATH}/ssleay32.dll
-		FILE ${QT_PATH}/bin/QtSvg4.dll
-		FILE ${QT_PATH}/bin/QtXml4.dll
 		File ${QT_PATH}/bin/libgcc_s_dw2-1.dll
 		File ${QT_PATH}/bin/mingwm10.dll
 		File ${QT_PATH}/bin/QtCore4.dll
@@ -96,7 +94,6 @@ SetCompressor /FINAL /SOLID lzma
 		CreateDirectory $INSTDIR\imageformats
 		setOutPath $INSTDIR\imageformats
 		File ${QT_PATH}/plugins/imageformats/qgif4.dll
-		File ${QT_PATH}/plugins/imageformats/qsvg4.dll
 		File ${QT_PATH}/plugins/imageformats/qico4.dll
 
 		CreateDirectory $APPDATA\dynvpn

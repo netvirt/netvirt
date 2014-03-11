@@ -56,19 +56,19 @@ void MainDialog::NowRun()
 	obj_this = this;
 
 	ui.setupUi(this);
-	QIcon accountIcon(QLatin1String(":rc/user.svg"));
+	QIcon accountIcon(QLatin1String(":rc/user.png"));
 	QListWidgetItem *account = new QListWidgetItem(accountIcon, "Account", ui.labelWidget);
 	account->setSizeHint(QSize(0, 32));
 	this->accountSettings = new AccountSettings(this);
 	ui.stack->addWidget(this->accountSettings);
 
-	QIcon syslogIcon(QLatin1String(":rc/loop_alt4.svg"));
+	QIcon syslogIcon(QLatin1String(":rc/loop_alt4.png"));
 	QListWidgetItem *syslog = new QListWidgetItem(syslogIcon, "Log Activity", ui.labelWidget);
 	syslog->setSizeHint(QSize(0, 32));
 	this->logSettings = new LogSettings;
 	ui.stack->addWidget(this->logSettings);
 
-	QIcon generalIcon(QLatin1String(":rc/cog.svg"));
+	QIcon generalIcon(QLatin1String(":rc/cog.png"));
 	QListWidgetItem *general = new QListWidgetItem(generalIcon, "General", ui.labelWidget);
 	general->setSizeHint(QSize(0, 32));
 	this->generalSettings = new GeneralSettings(this);
@@ -190,7 +190,7 @@ void MainDialog::createTrayIcon()
 
 void MainDialog::setTrayIcon()
 {
-	trayIcon->setIcon(QIcon(":rc/share.svg"));
+	trayIcon->setIcon(QIcon(":rc/share.png"));
 }
 
 void MainDialog::trayIconClicked(QSystemTrayIcon::ActivationReason reason)

@@ -122,7 +122,7 @@
            <enum>Qt::PlainText</enum>
           </property>
           <property name="pixmap">
-           <pixmap resource="dnc.qrc">:/rc/download.svg</pixmap>
+           <pixmap resource="dnc.qrc">:/rc/download.png</pixmap>
           </property>
          </widget>
         </item>

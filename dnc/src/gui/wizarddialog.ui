@@ -116,7 +116,7 @@ p, li { white-space: pre-wrap; }
     <string/>
    </property>
    <property name="pixmap">
-    <pixmap>:/key_stroke.svg</pixmap>
+    <pixmap>:/key_stroke.png</pixmap>
    </property>
   </widget>
   <widget class="QLabel" name="label_4">
