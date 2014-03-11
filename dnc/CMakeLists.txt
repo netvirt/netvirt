@@ -8,6 +8,10 @@ add_subdirectory(src)
 if (APPLE)
 	set(CPACK_GENERATOR "DragNDrop")
 else()
+
+	install(FILES ./src/gui/rc/dnc.svg DESTINATION /usr/share/icons/hicolor/scalable/apps/)
+	install(FILES ./xdesktop/dnc.desktop DESTINATION /usr/share/applications/)
+
 	set(CPACK_GENERATOR "DEB")
 	if (WITH_GUI)
 	  set(CPACK_PACKAGE_NAME "dynvpn-client-gui")

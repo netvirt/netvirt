@@ -3,6 +3,7 @@ Type=Application
 Version=1.0
 Name=DynVPN Client
 Name[fr]=Client DynVPN
+Comment=Connect to your DynVPN network
 Icon=dnc.png
 Exec=dnc %U
 Keywords=dnc;vpn;dynvpn;dnds;network;
