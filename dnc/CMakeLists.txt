@@ -21,7 +21,7 @@ else()
 	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "DynVPN Client - DNDS is a Dynamic VPN solution that allow you to securely access and manage computers/devices via Internet")
 	set(CPACK_DEBIAN_PACKAGE_SECTION "net")
 	set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Nicolas J. Bouliane <nib@dynvpn.com>")
-	set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA ${CMAKE_CURRENT_SOURCE_DIR}/postinst)
+	set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA ${CMAKE_CURRENT_SOURCE_DIR}/postinst; ${CMAKE_CURRENT_SOURCE_DIR}/postrm)
 endif()
 
 include(CPack)
