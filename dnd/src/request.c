@@ -105,6 +105,10 @@ void p2pRequest(struct session *session_a, struct session *session_b)
 	char *ip_a;
 	char *ip_b;
 
+	if (!session_a->netc || session_b->netc) {
+		return;
+	}
+
 	if (!strcmp(session_a->netc->peer->host, session_b->netc->peer->host)) {
 		ip_a = strdup(session_a->ip_local);
 		ip_b = strdup(session_b->ip_local);
@@ -113,8 +117,7 @@ void p2pRequest(struct session *session_a, struct session *session_b)
 		ip_b = strdup(session_b->netc->peer->host);
 	}
 
-	/* TODO make sure no collision
-	 * basic random port : 49152–65535 */
+	 /* basic random port : 49152–65535 */
 	port = rand() % (65535-49152+1)+49152;
 
 	jlog(L_DEBUG, "A ip public %s\n", ip_a);
