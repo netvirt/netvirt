@@ -133,6 +133,7 @@ static void on_connect(peer_t *peer)
 	int addrlen = sizeof(clientaddr);
 
 	client = UDT::accept(peer->socket, (sockaddr*)&clientaddr, &addrlen);
+	UDT::setsockopt(client, 0, UDT_MSS, new int(1450), sizeof(int));
 	if (client == UDT::INVALID_SOCK) {
 		jlog(L_WARNING, "accept: %s", UDT::getlasterror().getErrorMessage());
 		return;
@@ -230,6 +231,7 @@ peer_t *udtbus_client(const char *listen_addr,
 	ret = getaddrinfo(NULL, port, &hints, &local);
 
 	UDTSOCKET client = UDT::socket(local->ai_family, local->ai_socktype, local->ai_protocol);
+	UDT::setsockopt(client, 0, UDT_MSS, new int(1450), sizeof(int));
 
 	freeaddrinfo(local);
 	ret = getaddrinfo(listen_addr, port, &hints, &serv_info);
@@ -296,6 +298,7 @@ int udtbus_server(const char *listen_addr,
 	bool block = false;
 	UDT::setsockopt(serv, 0, UDT_RCVSYN, &block, sizeof(bool));
 
+	UDT::setsockopt(serv, 0, UDT_MSS, new int(1450), sizeof(int));
 	if (UDT::bind(serv, res->ai_addr, res->ai_addrlen) == UDT::ERROR) {
 		jlog(L_WARNING, "bind: %s", UDT::getlasterror().getErrorMessage());
 		return -1;
