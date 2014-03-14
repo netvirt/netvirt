@@ -33,6 +33,7 @@ class AccountSettings: public QDialog
 
 	private:
 		Ui::AccountSettings ui;
+		QMovie *movie;
 };
 
 #endif // ACCOUNTSETTINGS_H

@@ -29,6 +29,7 @@ class GeneralSettings: public QDialog
 		virtual ~GeneralSettings();
 
 	public slots:
+		void slotCheckUpdate();
 		void slotCheckAutoConnect();
 		void slotDownloadFinished(QNetworkReply *reply);
 
@@ -40,6 +41,7 @@ class GeneralSettings: public QDialog
 
 		QString StableVersion;
 		QString CurrentVersion;
+		QMovie *movie;
 };
 
 #endif // GENERALSETTINGS_H

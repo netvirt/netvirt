@@ -25,25 +25,24 @@ AccountSettings::AccountSettings(MainDialog *dialog)
 	connect(ui.connectButton, SIGNAL(clicked()), this, SLOT(slotConnWaiting()));
 	connect(ui.connectButton, SIGNAL(clicked()), dialog, SLOT(slotFireConnection()));
 
-	QMovie *movie = new QMovie(":/rc/loader.gif");
+	movie = new QMovie(":/rc/loader.gif");
 	this->ui.LoadLabel->setMovie(movie);
-	movie->start();
 }
 
 AccountSettings::~AccountSettings()
 {
+	delete movie;
 }
 
 void AccountSettings::slotOnConnect(QString ip)
 {
 	this->ui.connectionInfoLabel->setText("<html><head/><body><p><span style=\" font-size:14pt; font-weight:600;\">Now connected</span></p></body></html>");
-
-
-this->ui.connectionInfoLabel->setText("<html><head/><body><p><span style=\" font-size:14pt; font-weight:600;\">Now connected</span></p></body></html>");
+	this->ui.connectionInfoLabel->setText("<html><head/><body><p><span style=\" font-size:14pt; font-weight:600;\">Now connected</span></p></body></html>");
 
 	QString ipFormated = QString("<html><head/><body><p><span style=\" font-size:14pt; font-weight:600;\">%1</span></p></body></html>").arg(ip);
 	this->ui.IPLabel->setText(ipFormated);
 	this->ui.LoadLabel->setVisible(false);
+	movie->stop();
 
 	this->ui.IPLabel->setVisible(true);
 	this->ui.YourIPLabel->setVisible(true);
@@ -57,6 +56,7 @@ void AccountSettings::slotConnWaiting()
 
 	this->ui.connectionInfoLabel->setText("<html><head/><body><p><span style=\" font-size:14pt; font-weight:600;\">Connecting...</span></p></body></html>");
 
+	movie->start();
 	this->ui.LoadLabel->setVisible(true);
 	this->ui.connectButton->setEnabled(false);
 
@@ -64,5 +64,6 @@ void AccountSettings::slotConnWaiting()
 	this->ui.YourIPLabel->setVisible(false);
 
 	this->ui.StatusPix->setVisible(false);
+
 }
 
