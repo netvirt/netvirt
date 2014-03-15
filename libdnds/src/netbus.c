@@ -151,7 +151,7 @@ static int serialize_buf_enc(const void *buf, size_t data_size, void *ext_ptr)
 
 static int net_flush_queue_out(netc_t *netc)
 {
-	size_t nbyte = 0;
+	ssize_t nbyte = 0;
 
 	peer_t *peer = NULL;
 	mbuf_t *mbuf_itr = NULL;

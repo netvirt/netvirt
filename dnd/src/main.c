@@ -81,7 +81,7 @@ int parse_config(config_t *cfg, struct dnd_cfg *dnd_cfg)
 	return 0;
 }
 
-int main(int argc, char *argv[])
+int main()
 {
 	struct dnd_cfg *dnd_cfg;
 	config_t cfg;

@@ -1,5 +1,5 @@
-set(CMAKE_C_FLAGS "-g -Wall")
-set(CMAKE_CXX_FLAGS "-g -Wall")
+set(CMAKE_C_FLAGS "-g -W -Wall")
+set(CMAKE_CXX_FLAGS "-g -W -Wall")
 
 add_subdirectory(protocol)
 include_directories(protocol)

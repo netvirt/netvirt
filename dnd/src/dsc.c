@@ -108,7 +108,7 @@ static void on_secure(netc_t *netc)
 	DNDSMessage_del(msg);
 }
 
-static void handle_SearchResponse_Node(netc_t *netc, DNDSMessage_t *msg)
+static void handle_SearchResponse_Node(DNDSMessage_t *msg)
 {
 	struct session *session;
 	uint32_t tracked_id;
@@ -159,7 +159,7 @@ static void handle_SearchResponse_Node(netc_t *netc, DNDSMessage_t *msg)
 	DNDSMessage_del(new_msg);
 }
 
-static void handle_SearchResponse_Context(netc_t *netc, DNDSMessage_t *msg)
+static void handle_SearchResponse_Context(DNDSMessage_t *msg)
 {
 	DNDSObject_t *object;
 	uint32_t count; int ret;
@@ -194,7 +194,7 @@ static void handle_SearchResponse_Context(netc_t *netc, DNDSMessage_t *msg)
 	}
 }
 
-static void handle_SearchResponse(netc_t *netc, DNDSMessage_t *msg)
+static void handle_SearchResponse(DNDSMessage_t *msg)
 {
 	e_SearchType SearchType;
 
@@ -203,22 +203,22 @@ static void handle_SearchResponse(netc_t *netc, DNDSMessage_t *msg)
 	jlog(L_DEBUG, "SearchType: %s\n", SearchType_str(SearchType));
 
 	if (SearchType == SearchType_all) {
-		handle_SearchResponse_Context(netc, msg);
+		handle_SearchResponse_Context(msg);
 	}
 
 	if (SearchType == SearchType_object) {
-		handle_SearchResponse_Node(netc, msg);
+		handle_SearchResponse_Node(msg);
 	}
 }
 
-static void dispatch_operation(netc_t *netc, DNDSMessage_t *msg)
+static void dispatch_operation(DNDSMessage_t *msg)
 {
 	dsop_PR operation;
 
 	jlog(L_DEBUG, "dispatch operation\n");
 	DSMessage_get_operation(msg, &operation);
 
-	handle_SearchResponse(netc, msg);
+	handle_SearchResponse(msg);
 }
 
 static void on_input(netc_t *netc)
@@ -236,7 +236,7 @@ static void on_input(netc_t *netc)
 
 		switch (pdu) {
 		case pdu_PR_dsm:	/* DNDS protocol */
-			dispatch_operation(netc, msg);
+			dispatch_operation(msg);
 			break;
 		default:
 			/* TODO disconnect session */
@@ -250,9 +250,14 @@ static void on_input(netc_t *netc)
 
 static void on_disconnect(netc_t *netc)
 {
+	(void)(netc); /* unused */
+
 	netc_t *retry_netc = NULL;
 
 	jlog(L_DEBUG, "dsc on disconnect");
+
+	/* FIXME if we loop here, we can't serve anything else,
+	   we should do the same thing as DNC */
 
 	/* maybe net_client() should keep pointers to address,
 	   port and passport?  A net_connection_retry() would be given
@@ -272,6 +277,8 @@ static void on_disconnect(netc_t *netc)
 
 static void *dsc_loop(void *nil)
 {
+	(void)(nil); /*unused */
+
 	while (1) {
 		tcpbus_ion_poke();
 	}

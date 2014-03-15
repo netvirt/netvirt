@@ -3290,7 +3290,7 @@ void DNDSMessage_ethernet_printf(DNDSMessage_t *msg)
 	size_t length;
 
 	DNDSMessage_get_ethernet(msg, &frame, &length);
-	int i; for (i = 0; i < length; i++) { printf("%x", frame[i]); }; printf("\n");
+	uint32_t i; for (i = 0; i < length; i++) { printf("%x", frame[i]); }; printf("\n");
 }
 
 void DSMessage_printf(DNDSMessage_t *msg)
@@ -3532,7 +3532,8 @@ void Node_printf(DNDSObject_t *object)
 	Node_get_contextId(object, &contextId);
 	printf("Node> contextId: %i\n", contextId);
 
-	char *certificate = NULL; size_t length = 0;
+	char *certificate = NULL;
+	size_t length = 0;
 	Node_get_certificate(object, &certificate, &length);
 	printf("Node> certficiate: %s\n", certificate);
 
@@ -3540,7 +3541,8 @@ void Node_printf(DNDSObject_t *object)
 	length = 0;
 	Node_get_certificateKey(object, &certificateKey, &length);
 	printf("Node> certificateKey: ");
-	int i; for (i = 0; i < length; i++) { printf("%x", certificateKey[i]); }; printf("\n");
+	uint32_t i;
+	for (i = 0; i < length; i++) { printf("%x", certificateKey[i]); }; printf("\n");
 
 	char ipAddress[INET_ADDRSTRLEN];
 	ret = Node_get_ipAddress(object, ipAddress);

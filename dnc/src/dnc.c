@@ -117,7 +117,7 @@ void transmit_netinfo_request(struct session *session)
 
 void transmit_prov_request(netc_t *netc)
 {
-	size_t nbyte;
+	ssize_t nbyte;
 	DNDSMessage_t *msg;
 
 	DNDSMessage_new(&msg);
@@ -142,7 +142,7 @@ void transmit_register(netc_t *netc)
 {
 	X509_NAME *subj_ptr;
 	char subj[256];
-        size_t nbyte;
+        ssize_t nbyte;
 	struct session *session = (struct session *)netc->ext_ptr;
 
         DNDSMessage_t *msg;
@@ -275,7 +275,7 @@ void on_input(netc_t *netc)
 	}
 }
 
-static void op_netinfo_response(struct session *session, DNDSMessage_t *msg)
+static void op_netinfo_response(struct session *session)
 {
 	FILE *fp = NULL;
 
@@ -407,7 +407,7 @@ static void dispatch_op(struct session *session, DNDSMessage_t *msg)
 		break;
 
 	case dnop_PR_netinfoResponse:
-		op_netinfo_response(session, msg);
+		op_netinfo_response(session);
 		break;
 
 	case dnop_PR_p2pRequest:

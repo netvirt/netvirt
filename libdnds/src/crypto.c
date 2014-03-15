@@ -147,6 +147,9 @@ static DH *get_dh_1024() {
 // FIXME - could we remove this function?
 static DH *tmp_dh_callback(SSL *s, int is_export, int keylength)
 {
+	(void)(s); /* unused */
+	(void)(is_export); /* unused */
+
 	jlog(L_NOTICE, "keyl %i\n", keylength);
 	return NULL;
 }
@@ -182,7 +185,9 @@ static long post_handshake_check(krypt_t *krypt)
 
 static int verify_callback(int ok, X509_STORE_CTX *store)
 {
-	/* XXX Verify Not Before / Not After.. etc */
+	(void)(store); /* unused */
+
+	/* FIXME Verify Not Before / Not After.. etc */
 	return ok;
 }
 

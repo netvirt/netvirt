@@ -1,4 +1,4 @@
-set(CMAKE_C_FLAGS "-g -Wall")
+set(CMAKE_C_FLAGS "-g -W -Wall")
 add_executable(dnd
 	context.c
 	dnd.c

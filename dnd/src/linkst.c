@@ -67,9 +67,9 @@ void linkst_disjoin(int idx, uint8_t **adjacency_matrix, int active_node)
 	return;
 }
 
-void linkst_free(uint8_t **adjacency_matrix, size_t max_node)
+void linkst_free(uint8_t **adjacency_matrix, uint32_t max_node)
 {
-	int i;
+	uint32_t i;
 	for (i = 0; i < max_node; i++)
 		free(adjacency_matrix[i]);
 
@@ -79,9 +79,9 @@ void linkst_free(uint8_t **adjacency_matrix, size_t max_node)
 /* TODO use a binary based matrix
  * use half of a matrix
  */
-uint8_t **linkst_new(size_t max_node)
+uint8_t **linkst_new(uint32_t max_node)
 {
-	int i;
+	uint32_t i;
 	uint8_t **adjacency_matrix;
 	adjacency_matrix = calloc(max_node, sizeof(uint8_t *));
 	for (i = 0; i < max_node; i++)

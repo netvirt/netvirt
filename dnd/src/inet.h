@@ -19,8 +19,6 @@ void inet_print_iphdr(void *);
 int inet_is_ipv4(void *);
 size_t inet_get_ipv4(void *, char *);
 int inet_is_ipv6(void *);
-int inet_get_local_ip(char *ip, size_t ip_len);
-int inet_get_iface_mac_address(char *iface_name, uint8_t *mac_address);
 
 void inet_print_ether_type(void *);
 void inet_print_ethernet(void *);

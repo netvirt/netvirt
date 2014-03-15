@@ -37,6 +37,8 @@ void jlog(int level, const char *format, ...)
 	char cur_time[20];
 	struct tm* tm_info;
 
+	(void)(level); /* unused */
+
 	va_list ap;
 	va_start(ap, format);
 

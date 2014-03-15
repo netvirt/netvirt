@@ -273,6 +273,8 @@ static void on_disconnect(netc_t *netc)
 
 static void *dnd_loop(void *nil)
 {
+	(void)(nil); /* unused */
+
 	while (1) {
 		udtbus_poke_queue();
 	}
