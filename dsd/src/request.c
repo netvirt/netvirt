@@ -31,6 +31,9 @@ int CB_searchRequest_context_by_client_id(void *msg,
 						char *serverPrivkey,
 						char *trustedCert)
 {
+	/* FIXME the callback should not pass it to us */
+	(void)(topology_id);
+
 	DNDSMessage_printf(msg);
 	DNDSObject_t *objContext;
 	DNDSObject_new(&objContext);
@@ -54,10 +57,11 @@ int CB_searchRequest_context_by_client_id(void *msg,
 
 void nodeConnectInfo(struct session *session, DNDSMessage_t *req_msg)
 {
+	(void)(session); /* unused */
 	NodeConnectInfo_printf(req_msg);
 }
 
-void AddRequest_client(struct session *session, DNDSMessage_t *msg)
+void AddRequest_client(DNDSMessage_t *msg)
 {
 	jlog(L_DEBUG, "Add Request !\n");
 
@@ -114,7 +118,7 @@ void AddRequest_client(struct session *session, DNDSMessage_t *msg)
 	}
 }
 
-void AddRequest_context(struct session *session, DNDSMessage_t *msg)
+void AddRequest_context(DNDSMessage_t *msg)
 {
 	DNDSObject_t *obj;
 	AddRequest_get_object(msg, &obj);
@@ -222,7 +226,7 @@ void AddRequest_context(struct session *session, DNDSMessage_t *msg)
 		net_send_msg(g_dnd_netc, msg_up);
 }
 
-void AddRequest_node(struct session *session, DNDSMessage_t *msg)
+void AddRequest_node(DNDSMessage_t *msg)
 {
 	jlog(L_NOTICE, "AddRequest_node!");
 	DNDSMessage_printf(msg);
@@ -337,32 +341,34 @@ free1:
 	free(emb_pvkey_ptr);
 }
 
-void addRequest(struct session *session, DNDSMessage_t *msg)
+void addRequest(DNDSMessage_t *msg)
 {
 	DNDSObject_PR objType;
 	AddRequest_get_objectType(msg, &objType);
 
 	if (objType == DNDSObject_PR_client) {
-		AddRequest_client(session, msg);
+		AddRequest_client(msg);
 	}
 
 	if (objType == DNDSObject_PR_context) {
-		AddRequest_context(session, msg);
+		AddRequest_context(msg);
 	}
 
 	if (objType == DNDSObject_PR_node) {
-		AddRequest_node(session, msg);
+		AddRequest_node(msg);
 	}
 }
 
 void delRequest(struct session *session, DNDSMessage_t *msg)
 {
-
+	(void)(session); /* unused */
+	(void)(msg); /* unused */
 }
 
 void modifyRequest(struct session *session, DNDSMessage_t *msg)
 {
-
+	(void)(session); /* unused */
+	(void)(msg); /*unused */
 }
 
 void searchRequest_client(struct session *session, DNDSMessage_t *req_msg)
@@ -450,6 +456,10 @@ void CB_searchRequest_context(void *msg,
 				char *trustedCert)
 {
 
+	/* FIXME the callback should not pass them to us */
+	(void)(topology_id);
+	(void)(client_id);
+
 	DNDSObject_t *objContext;
 	DNDSObject_new(&objContext);
 	DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
@@ -469,7 +479,7 @@ void CB_searchRequest_context(void *msg,
 		SearchResponse_add_object(msg, objContext);
 }
 
-void searchRequest_context(struct session *session, DNDSMessage_t *req_msg)
+void searchRequest_context(struct session *session)
 {
         DNDSMessage_t *msg;
         DNDSMessage_new(&msg);
@@ -594,7 +604,7 @@ void searchRequest(struct session *session, DNDSMessage_t *req_msg)
 	jlog(L_DEBUG, "SearchType: %s\n", SearchType_str(SearchType));
 
 	if (SearchType == SearchType_all) {
-		searchRequest_context(session, req_msg);
+		searchRequest_context(session);
 	}
 
 	if (SearchType == SearchType_object) {

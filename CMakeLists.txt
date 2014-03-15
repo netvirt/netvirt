@@ -3,6 +3,10 @@ project(dnds)
 
 SET(CPACK_PACKAGE_VERSION "0.4")
 
+# Using Hardening Options
+# https://wiki.debian.org/Hardening
+set(compiler_options "-W -Wall -fstack-protector-all --param ssp-buffer-size=4 -Wl,-z,relro -Wl,-z,now -Wformat -Wformat-security -Werror=format-security -rdynamic -fPIE -pie -D_FORTIFY_SOURCE=2 -O1")
+
 if(COMMAND cmake_policy)
 	cmake_policy(SET CMP0003 NEW)
 endif(COMMAND cmake_policy)

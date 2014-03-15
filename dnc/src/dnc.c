@@ -278,13 +278,17 @@ void on_input(netc_t *netc)
 static void op_netinfo_response(struct session *session)
 {
 	FILE *fp = NULL;
+	int fret = 0;
 
 	fp = fopen(dnc_cfg->ip_conf, "r");
 	if (fp == NULL) {
 		jlog(L_ERROR, "%s doesn't exist, reprovision your client", dnc_cfg->ip_conf);
 		return;
 	}
-	fscanf(fp, "%s", ipAddress);
+	fret = fscanf(fp, "%s", ipAddress);
+	if (fret == EOF) {
+		jlog(L_ERROR, "dnc]> can't fetch IP address from file: %s\n", dnc_cfg->ip_conf);
+	}
 	fclose(fp);
 
 	tapcfg_iface_set_ipv4(session->tapcfg, ipAddress, 24);
@@ -297,6 +301,7 @@ static void op_auth_response(struct session *session, DNDSMessage_t *msg)
 	e_DNDSResult result;
 	AuthResponse_get_result(msg, &result);
 	FILE *fp = NULL;
+	int fret = 0;
 
 	switch (result) {
 	case DNDSResult_success:
@@ -304,7 +309,10 @@ static void op_auth_response(struct session *session, DNDSMessage_t *msg)
 
 		fp = fopen(dnc_cfg->ip_conf, "r");
 		if (fp) {
-			fscanf(fp, "%s", ipAddress);
+			fret = fscanf(fp, "%s", ipAddress);
+			if (fret == EOF) {
+				jlog(L_ERROR, "dnc]> can't fetch IP address from file: %s\n", dnc_cfg->ip_conf);
+			}
 			fclose(fp);
 		}
 		if (dnc_cfg->ev.on_connect)

@@ -3275,7 +3275,7 @@ char *DNDS_strerror(DNDS_retcode_t retcode)
 // _printf functions usefull for debugging
 void DNDSMessage_printf(DNDSMessage_t *msg)
 {
-	uint8_t channel;
+	uint8_t channel = 0;
 	DNDSMessage_get_channel(msg, &channel);
 	printf("DNDSMessage> channel: %i\n", channel);
 

@@ -17,7 +17,7 @@
 #include "dsd.h"
 
 void authRequest(struct session *session, DNDSMessage_t *msg);
-void addRequest(struct session *session, DNDSMessage_t *msg);
+void addRequest(DNDSMessage_t *msg);
 void delRequest(struct session *session, DNDSMessage_t *msg);
 void modifyRequest(struct session *session, DNDSMessage_t *msg);
 void searchRequest(struct session *session, DNDSMessage_t *msg);

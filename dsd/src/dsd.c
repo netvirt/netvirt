@@ -54,7 +54,7 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 		break;
 
 	case dsop_PR_addRequest:
-		addRequest(session, msg);
+		addRequest(msg);
 		break;
 
 	case dsop_PR_delRequest:
@@ -141,6 +141,8 @@ static void on_connect(netc_t *netc)
 
 static void *dsd_loop(void *nil)
 {
+	(void)(nil); /* unused */
+
 	while (1) {
 		tcpbus_ion_poke();
 	}

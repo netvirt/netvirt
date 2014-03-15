@@ -1,4 +1,6 @@
-set(CMAKE_C_FLAGS "-g -W -Wall")
+set(CMAKE_C_FLAGS "-g -W -Wall -DDNCVERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
+set(CMAKE_CXX_FLAGS "-g -W -Wall -DDNCVERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
+
 add_executable(dnd
 	context.c
 	dnd.c

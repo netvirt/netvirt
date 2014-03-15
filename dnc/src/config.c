@@ -9,6 +9,11 @@
  * of the License.
  *
  */
+
+#if defined(__unix__)
+#include <unistd.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -84,7 +89,6 @@ int dnc_config_init(struct dnc_cfg *_dnc_cfg)
 
 	char *path = dnc_config_get_fullname("");
 #if defined(__unix__) && !defined(__APPLE__)
-#include <unistd.h>
 	/* create ~/.dynvpn if it doesn't exist */
 	struct stat st;
 	if (default_conf && stat(path, &st) != 0) {
