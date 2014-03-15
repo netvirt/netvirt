@@ -195,6 +195,8 @@ void MainDialog::setTrayIcon()
 
 void MainDialog::trayIconClicked(QSystemTrayIcon::ActivationReason reason)
 {
+	(void)(reason); /* unused */
+
 	if (this->isVisible())
 		this->hide();
 	else {
