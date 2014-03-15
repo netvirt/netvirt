@@ -105,7 +105,7 @@ void p2pRequest(struct session *session_a, struct session *session_b)
 	char *ip_a;
 	char *ip_b;
 
-	if (!session_a->netc || session_b->netc) {
+	if (session_a->netc == NULL || session_b->netc == NULL) {
 		return;
 	}
 
