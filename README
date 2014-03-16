@@ -9,8 +9,13 @@ Each computers/devices connect to a central point called DND (Dynamic Network Da
 DNDS is Copyright (C) Nicolas J. Bouliane
 Mind4Networks - www.m4nt.com - M4N Technologies inc.
 
-LICENSE : GPLv2
-See the file LICENSE for information of licensing and distribution.
+LICENSE :
+ - dnc: GPLv3
+ - libdnds: AGPLv3
+ - dnd: AGPLv3
+ - dsd: AGPLv3
+
+see GPLv3.txt and AGPLv3.txt
 
 OS :
  - Gnu/Linux: Supported.
