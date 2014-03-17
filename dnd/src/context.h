@@ -27,7 +27,7 @@ typedef struct context {
 	ftable_t *ftable;			// forwarding table
 
 	uint32_t active_node;			// number of connected node
-	uint8_t **linkst;			// linkstate adjacency matrix
+	linkst_t **linkst;			// linkstate adjacency matrix
 	uint8_t *bitpool;			// bitpool used to generated unique ID per session
 
 	struct session *session_list;		// all session open in this context
