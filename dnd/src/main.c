@@ -22,6 +22,11 @@
 
 #define CONFIG_FILE "/etc/dnds/dnd.conf"
 
+void on_log(const char *logline)
+{
+	fprintf(stdout, "%s", logline);
+}
+
 int parse_config(config_t *cfg, struct dnd_cfg *dnd_cfg)
 {
 	if (!config_read_file(cfg, CONFIG_FILE)) {
@@ -93,6 +98,8 @@ int main()
 
 	dnd_cfg = calloc(1, sizeof(struct dnd_cfg));
 	config_init(&cfg);
+
+	jlog_init_cb(on_log);
 
 	if (parse_config(&cfg, dnd_cfg)) {
 		jlog(L_ERROR, "dnd]> parse_config failed :: %s:%i", __FILE__, __LINE__);
