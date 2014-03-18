@@ -36,8 +36,8 @@ int parse_config(config_t *cfg, struct dnd_cfg *dnd_cfg)
 		return -1;
 	}
 
-        if (config_lookup_string(&cfg, "log_file", &dnc_cfg->log_file)) {
-                jlog_init_file(dnc_cfg->log_file);
+        if (config_lookup_string(cfg, "log_file", &dnd_cfg->log_file)) {
+                jlog_init_file(dnd_cfg->log_file);
         }
 
 	if (config_lookup_string(cfg, "ipaddr", &dnd_cfg->ipaddr))

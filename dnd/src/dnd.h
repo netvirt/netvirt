@@ -20,6 +20,8 @@
 
 struct dnd_cfg {
 
+	const char *log_file;
+
 	const char *ipaddr;
 	const char *port;
 
