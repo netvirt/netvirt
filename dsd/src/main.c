@@ -30,6 +30,11 @@
 
 #define CONFIG_FILE "/etc/dnds/dsd.conf"
 
+void on_log(const char *logline)
+{
+        fprintf(stdout, "%s", logline);
+}
+
 int daemonize()
 {
 	pid_t pid, sid;
@@ -72,6 +77,10 @@ int parse_config(config_t *cfg, struct dsd_cfg *dsd_cfg)
 		jlog(L_ERROR, "dsd]> Can't open %s", CONFIG_FILE);
 		return -1;
 	}
+
+        if (config_lookup_string(cfg, "log_file", &dsd_cfg->log_file)) {
+                jlog_init_file(dsd_cfg->log_file);
+        }
 
 	if (config_lookup_string(cfg, "ipaddr", &dsd_cfg->ipaddr))
 		jlog(L_DEBUG, "dsd]> ipaddr: %s", dsd_cfg->ipaddr);
@@ -141,30 +150,37 @@ int parse_config(config_t *cfg, struct dsd_cfg *dsd_cfg)
 
 int main(int argc, char *argv[])
 {
-	int opt, D_FLAG = 0;
+	int opt;
+	uint8_t quiet = 0;
+	uint8_t daemon = 0;
 	struct dsd_cfg *dsd_cfg;
 	config_t cfg;
-
-	if (getuid() != 0) {
-		jlog(L_NOTICE, "%s must be run as root", argv[0]);
-		exit(EXIT_FAILURE);
-	}
-
 	dsd_cfg = calloc(1, sizeof(struct dsd_cfg));
 
-	while ((opt = getopt(argc, argv, "dv")) != -1) {
+	while ((opt = getopt(argc, argv, "dqvh")) != -1) {
 		switch (opt) {
 		case 'd':
-			D_FLAG = 1;
+			daemon = 1;
+			break;
+		case 'q':
+			quiet = 1;
 			break;
 		case 'v':
-			printf("beta version\n");
-			exit(EXIT_SUCCESS);
+			fprintf(stdout, "dsd]> version: %s\n", DSDVERSION);
+			return 0;
 		default:
-			printf("-d , -v\n");
-			jlog(L_NOTICE, "dsd]> getopt failed :: %s:%i", __FILE__, __LINE__);
-			exit(EXIT_FAILURE);
+		case 'h':
+                        fprintf(stdout, "\nDynVPN dsd server:\n\n"
+					"-d\t\tdaemonize\n"
+                                        "-q\t\tquiet mode\n"
+                                        "-v\t\tshow version\n"
+                                        "-h\t\tshow this help\n");
+			return 0;
 		}
+	}
+
+	if (!quiet && !daemon) {
+		jlog_init_cb(on_log);
 	}
 
 	config_init(&cfg);
@@ -195,7 +211,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	if (D_FLAG) {
+	if (daemon) {
 		daemonize();
 	}
 

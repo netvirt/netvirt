@@ -23,6 +23,8 @@
 
 struct dsd_cfg {
 
+	const char *log_file;
+
 	const char *ipaddr;
 	const char *port;
 
