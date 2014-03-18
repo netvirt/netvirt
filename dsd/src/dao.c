@@ -53,7 +53,9 @@ where netmask(set_masklen($1::cidr, i)) = $2; $f$;
 
 int dao_prepare_statements()
 {
-	PQprepare(dbconn,
+	PGresult *result = NULL;
+
+	result = PQprepare(dbconn,
 			"dao_add_client",
 			"INSERT INTO client "
 			"(firstname, lastname, email, company, phone, country, state_province, city, postal_code, password) "
@@ -61,9 +63,10 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+	if (result == NULL)
+		jlog(L_DEBUG, "PQprepare error: %s", PQerrorMessage(dbconn));
 
-	PQprepare(dbconn,
+	result = PQprepare(dbconn,
 			"dao_fetch_client_id",
 			"SELECT id "
 			"FROM CLIENT "
@@ -72,9 +75,10 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+	if (result == NULL)
+		jlog(L_DEBUG, "PQprepare error: %s", PQerrorMessage(dbconn));
 
-	PQprepare(dbconn,
+	result = PQprepare(dbconn,
 			"dao_add_context",
 			"INSERT INTO CONTEXT "
 			"(client_id, description, topology_id, network, "
@@ -84,9 +88,10 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+	if (result == NULL)
+		jlog(L_DEBUG, "PQprepare error: %s", PQerrorMessage(dbconn));
 
-	PQprepare(dbconn,
+	result = PQprepare(dbconn,
 			"dao_fetch_context_id",
 			"SELECT id "
 			"FROM CONTEXT "
@@ -94,10 +99,10 @@ int dao_prepare_statements()
 			"AND description = $2;",
 			0,
 			NULL);
+	if (result == NULL)
+		jlog(L_DEBUG, "PQprepare error: %s", PQerrorMessage(dbconn));
 
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
-
-	PQprepare(dbconn,
+	result = PQprepare(dbconn,
 			"dao_fetch_context_embassy",
 			"SELECT embassy_certificate, embassy_privatekey, embassy_serial, ippool "
 			"FROM CONTEXT "
@@ -105,9 +110,10 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+	if (result == NULL)
+		jlog(L_DEBUG, "PQprepare error: %s", PQerrorMessage(dbconn));
 
-	PQprepare(dbconn,
+	result = PQprepare(dbconn,
 			"dao_add_node",
 			"INSERT INTO NODE "
 			"(context_id, uuid, certificate, privatekey, provcode, description, ipaddress) "
@@ -115,9 +121,10 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+	if (result == NULL)
+		jlog(L_DEBUG, "PQprepare error: %s", PQerrorMessage(dbconn));
 
-	PQprepare(dbconn,
+	result = PQprepare(dbconn,
 			"dao_update_context_ippool",
 			"UPDATE context "
 			"SET ippool = $2::bytea "
@@ -125,9 +132,10 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+	if (result == NULL)
+		jlog(L_DEBUG, "PQprepare error: %s", PQerrorMessage(dbconn));
 
-	PQprepare(dbconn,
+	result = PQprepare(dbconn,
 			"dao_update_embassy_serial",
 			"UPDATE context "
 			"SET embassy_serial = $2 "
@@ -135,9 +143,10 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+	if (result == NULL)
+		jlog(L_DEBUG, "PQprepare error: %s", PQerrorMessage(dbconn));
 
-	PQprepare(dbconn,
+	result = PQprepare(dbconn,
 			"dao_fetch_context_by_client_id",
 			"SELECT id, topology_id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
 			"FROM context "
@@ -145,9 +154,10 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+	if (result == NULL)
+		jlog(L_DEBUG, "PQprepare error: %s", PQerrorMessage(dbconn));
 
-	PQprepare(dbconn,
+	result = PQprepare(dbconn,
 			"dao_fetch_context_by_client_id_desc",
 			"SELECT id, topology_id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
 			"FROM context "
@@ -155,19 +165,21 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+	if (result == NULL)
+		jlog(L_DEBUG, "PQprepare error: %s", PQerrorMessage(dbconn));
 
 
-	PQprepare(dbconn,
+	result = PQprepare(dbconn,
 			"dao_fetch_context",
 			"SELECT id, topology_id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
 			"FROM context;",
 			0,
 			NULL);
 
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+	if (result == NULL)
+		jlog(L_DEBUG, "PQprepare error: %s", PQerrorMessage(dbconn));
 
-	PQprepare(dbconn,
+	result = PQprepare(dbconn,
 			"dao_fetch_node_from_context_id",
 			"SELECT uuid, description, provcode, ipaddress "
 			"FROM node "
@@ -175,7 +187,8 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
-	jlog(L_DEBUG, "PQprepare msg, %s\n", PQerrorMessage(dbconn));
+	if (result == NULL)
+		jlog(L_DEBUG, "PQprepare error: %s", PQerrorMessage(dbconn));
 
 	return 0;
 }
@@ -193,7 +206,7 @@ int dao_connect(struct dsd_cfg *dsd_cfg)
 		PQfinish(dbconn);
 		return -1;
 	} else {
-		jlog(L_DEBUG, "dsd]> DAO connected\n");
+		jlog(L_DEBUG, "dsd]> DAO connected");
 	}
 
 	dao_prepare_statements();

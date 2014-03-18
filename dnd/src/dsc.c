@@ -253,7 +253,7 @@ static void on_disconnect(netc_t *netc)
 
 	netc_t *retry_netc = NULL;
 
-	jlog(L_DEBUG, "dsc on disconnect");
+	jlog(L_NOTICE, "dnd]> disconnected from dsd");
 
 	/* FIXME if we loop here, we can't serve anything else,
 	   we should do the same thing as DNC */
@@ -263,9 +263,9 @@ static void on_disconnect(netc_t *netc)
 	   the current netc and return when max_retry is reached or
 	   connection is up again. */
 
+	jlog(L_NOTICE, "dnd]> connection retry to dsd...\n");
 	do {
 		sleep(5);
-		printf("connection retry...\n");
 		retry_netc = net_client(dnd_cfg->dsd_ipaddr, dnd_cfg->dsd_port,
 		    NET_PROTO_TCP, NET_SECURE_RSA, dnd_passport,
 		    on_disconnect, on_input, on_secure);
