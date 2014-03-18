@@ -92,15 +92,37 @@ int parse_config(config_t *cfg, struct dnd_cfg *dnd_cfg)
 	return 0;
 }
 
-int main()
+int main(int argc, char *argv[])
 {
+	int opt;
+	uint8_t quiet = 0;
 	struct dnd_cfg *dnd_cfg;
 	config_t cfg;
-
 	dnd_cfg = calloc(1, sizeof(struct dnd_cfg));
-	config_init(&cfg);
 
-	jlog_init_cb(on_log);
+	while ((opt = getopt(argc, argv, "qvh")) != -1) {
+		switch (opt) {
+		case 'q':
+			quiet = 1;
+			break;
+		case 'v':
+			fprintf(stdout, "dnd]> version: %s\n", DNDVERSION);
+			return 0;
+		default:
+		case 'h':
+			fprintf(stdout, "\nDynVPN dnd server:\n\n"
+					"-q\t\tquiet mode\n"
+					"-v\t\tshow version\n"
+					"-h\t\tshow this help\n");
+			return 0;
+		}
+	}
+
+	if (!quiet) {
+		jlog_init_cb(on_log);
+	}
+
+	config_init(&cfg);
 
 	if (parse_config(&cfg, dnd_cfg)) {
 		jlog(L_ERROR, "dnd]> parse_config failed :: %s:%i", __FILE__, __LINE__);
@@ -119,7 +141,7 @@ int main()
 	}
 
 	if (dsc_init(dnd_cfg)) {
-		jlog(L_ERROR, "dnd]> dnc_init failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "dnd]> dsc_init failed :: %s:%i", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
 
