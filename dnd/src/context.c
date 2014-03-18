@@ -101,9 +101,9 @@ int context_create(uint32_t id, char *address, char *netmask,
 	context = (context_t*)malloc(sizeof(context_t));
 	context_table[id] = context;
 
-	jlog(L_DEBUG, "context]> id	:: %i", id);
-	jlog(L_DEBUG, "context]> subnet :: %s", address);
-	jlog(L_DEBUG, "context]> netmask:: %s", netmask);
+	jlog(L_DEBUG, "context]> id: %i", id);
+	jlog(L_DEBUG, "context]> subnet: %s", address);
+	jlog(L_DEBUG, "context]> netmask: %s", netmask);
 
 	context->id = id;
 

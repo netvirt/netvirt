@@ -167,7 +167,6 @@ static int tcpbus_recv(peer_t *peer)
 	 * the bytes.
 	 */
 	ret = recv(peer->socket, peer->buffer, PEER_BUF_SZ, 0);
-	printf("ret: %d\n", ret);
 
 	if (ret < 0)
 		return -1;
@@ -177,8 +176,6 @@ static int tcpbus_recv(peer_t *peer)
 
 static void tcpbus_on_input(peer_t *peer)
 {
-	jlog(L_DEBUG, "tcpbus]> received data for peer {%i}", peer->socket);
-
 	if (peer->on_input)
 		peer->on_input(peer);
 }

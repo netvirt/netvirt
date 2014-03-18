@@ -92,7 +92,7 @@ int transmit_node_connectinfo(e_ConnectState state, char *ipAddress, char *certN
 
 static void on_secure(netc_t *netc)
 {
-	jlog(L_DEBUG, "dsc on secure");
+	jlog(L_DEBUG, "dnd]> connection secured with DSD");
 
 	DNDSMessage_t *msg;
 
@@ -203,8 +203,6 @@ static void handle_SearchResponse(DNDSMessage_t *msg)
 
 	SearchResponse_get_searchType(msg, &SearchType);
 
-	jlog(L_DEBUG, "SearchType: %s\n", SearchType_str(SearchType));
-
 	if (SearchType == SearchType_all) {
 		handle_SearchResponse_Context(msg);
 	}
@@ -218,9 +216,7 @@ static void dispatch_operation(DNDSMessage_t *msg)
 {
 	dsop_PR operation;
 
-	jlog(L_DEBUG, "dispatch operation\n");
 	DSMessage_get_operation(msg, &operation);
-
 	handle_SearchResponse(msg);
 }
 

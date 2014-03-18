@@ -604,7 +604,6 @@ void searchRequest(struct session *session, DNDSMessage_t *req_msg)
 	DNDSObject_PR objType;
 
 	SearchRequest_get_searchType(req_msg, &SearchType);
-	jlog(L_DEBUG, "SearchType: %s\n", SearchType_str(SearchType));
 
 	if (SearchType == SearchType_all) {
 		searchRequest_context(session);
