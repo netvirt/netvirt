@@ -214,6 +214,28 @@ int dao_connect(struct dsd_cfg *dsd_cfg)
 	return 0;
 }
 
+int check_result_status(PGresult *result)
+{
+	switch (PQresultStatus(result)) {
+	case PGRES_COMMAND_OK:
+		jlog(L_DEBUG, "dsd]> command executed ok, %s rows affected", PQcmdTuples(result));
+		break;
+
+	case PGRES_TUPLES_OK:
+		jlog(L_DEBUG, "dsd]> query may have returned data");
+		break;
+
+	default:
+		jlog(L_DEBUG, "dsd]> command failed with code %s, error message %s",
+			PQresStatus(PQresultStatus(result)),
+			PQresultErrorMessage(result));
+
+		return -1;
+	}
+
+	return 0;
+}
+
 void dao_dump_statements()
 {
 	PGresult *result;
@@ -225,25 +247,11 @@ void dao_dump_statements()
 
 	result = PQexec(dbconn, req);
 	if (!result) {
-		jlog(L_DEBUG, "PQexec command failed, %s\n", PQerrorMessage(dbconn));
+		jlog(L_DEBUG, "dsd]> PQexec command failed, %s", PQerrorMessage(dbconn));
 	}
 
-	switch (PQresultStatus(result)) {
-	case PGRES_COMMAND_OK:
-		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
-		break;
-
-	case PGRES_TUPLES_OK:
-		jlog(L_DEBUG, "query may have returned data\n");
-		break;
-
-	default:
-		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
-			PQresStatus(PQresultStatus(result)),
-			PQresultErrorMessage(result));
-
+	if (check_result_status(result) == -1)
 		return;
-	}
 
         /* print out the attribute names */
         nFields = PQnfields(result);
@@ -312,22 +320,8 @@ int dao_add_client(char *firstname,
 		return -1;
 	}
 
-	switch (PQresultStatus(result)) {
-	case PGRES_COMMAND_OK:
-		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
-		break;
-
-	case PGRES_TUPLES_OK:
-		jlog(L_DEBUG, "query may have returned data\n");
-		break;
-
-	default:
-		jlog(L_DEBUG, "command failed with code %s, %s\n",
-			PQresStatus(PQresultStatus(result)),
-			PQresultErrorMessage(result));
-
+	if (check_result_status(result) == -1)
 		return -1;
-	}
 
 	return 0;
 }
@@ -358,22 +352,8 @@ int dao_fetch_client_id(char **client_id, char *email, char *password)
 		return -1;
 	}
 
-	switch (PQresultStatus(result)) {
-	case PGRES_COMMAND_OK:
-		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
-		break;
-
-	case PGRES_TUPLES_OK:
-		jlog(L_DEBUG, "query may have returned data\n");
-		break;
-
-	default:
-		jlog(L_DEBUG, "command failed with code %s, %s\n",
-			PQresStatus(PQresultStatus(result)),
-			PQresultErrorMessage(result));
-
+	if (check_result_status(result) == -1)
 		return -1;
-	}
 
 	tuples = PQntuples(result);
 	fields = PQnfields(result);
@@ -422,22 +402,8 @@ int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatek
 		return -1;
 	}
 
-	switch (PQresultStatus(result)) {
-	case PGRES_COMMAND_OK:
-		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
-		break;
-
-	case PGRES_TUPLES_OK:
-		jlog(L_DEBUG, "query may have returned data\n");
-		break;
-
-	default:
-		jlog(L_DEBUG, "command failed with code %s, %s\n",
-			PQresStatus(PQresultStatus(result)),
-			PQresultErrorMessage(result));
-
+	if (check_result_status(result) == -1)
 		return -1;
-	}
 
 	return 0;
 }
@@ -500,22 +466,8 @@ int dao_add_context(char *client_id,
 
 	PQfreemem(ippool_str);
 
-	switch (PQresultStatus(result)) {
-	case PGRES_COMMAND_OK:
-		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
-		break;
-
-	case PGRES_TUPLES_OK:
-		jlog(L_DEBUG, "query may have returned data\n");
-		break;
-
-	default:
-		jlog(L_DEBUG, "command failed with code %s, %s\n",
-			PQresStatus(PQresultStatus(result)),
-			PQresultErrorMessage(result));
-
+	if (check_result_status(result) == -1)
 		return -1;
-	}
 
 	return 0;
 }
@@ -544,23 +496,8 @@ int dao_fetch_context_id(char **context_id, char *client_id, char *description)
 		return -1;
 	}
 
-	switch (PQresultStatus(result)) {
-	case PGRES_COMMAND_OK:
-		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
-		break;
-
-	case PGRES_TUPLES_OK:
-		jlog(L_DEBUG, "query may have returned data\n");
-		break;
-
-	default:
-		jlog(L_DEBUG, "command failed with code %s, %s\n",
-			PQresStatus(PQresultStatus(result)),
-			PQresultErrorMessage(result));
-
+	if (check_result_status(result) == -1)
 		return -1;
-	}
-
 
 	int tuples, fields;
 	tuples = PQntuples(result);
@@ -601,22 +538,8 @@ int dao_fetch_context_embassy(char *context_id,
 		return -1;
 	}
 
-	switch (PQresultStatus(result)) {
-	case PGRES_COMMAND_OK:
-		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
-		break;
-
-	case PGRES_TUPLES_OK:
-		jlog(L_DEBUG, "query may have returned data\n");
-		break;
-
-	default:
-		jlog(L_DEBUG, "command failed with code %s, %s\n",
-			PQresStatus(PQresultStatus(result)),
-			PQresultErrorMessage(result));
-
+	if (check_result_status(result) == -1)
 		return -1;
-	}
 
 	tuples = PQntuples(result);
 	fields = PQnfields(result);
@@ -667,22 +590,8 @@ int dao_update_context_ippool(char *context_id, unsigned char *ippool, int pool_
 		return -1;
 	}
 
-	switch (PQresultStatus(result)) {
-	case PGRES_COMMAND_OK:
-		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
-		break;
-
-	case PGRES_TUPLES_OK:
-		jlog(L_DEBUG, "query may have returned data\n");
-		break;
-
-	default:
-		jlog(L_DEBUG, "command failed with code %s, %s\n",
-			PQresStatus(PQresultStatus(result)),
-			PQresultErrorMessage(result));
-
+	if (check_result_status(result) == -1)
 		return -1;
-	}
 
 	return 0;
 }
@@ -711,22 +620,8 @@ int dao_update_embassy_serial(char *context_id, char *serial)
 		return -1;
 	}
 
-	switch (PQresultStatus(result)) {
-	case PGRES_COMMAND_OK:
-		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
-		break;
-
-	case PGRES_TUPLES_OK:
-		jlog(L_DEBUG, "query may have returned data\n");
-		break;
-
-	default:
-		jlog(L_DEBUG, "command failed with code %s, %s\n",
-			PQresStatus(PQresultStatus(result)),
-			PQresultErrorMessage(result));
-
+	if (check_result_status(result) == -1)
 		return -1;
-	}
 
 	return 0;
 }
@@ -755,19 +650,8 @@ int dao_fetch_embassy(char *context_id,
 		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
-	switch (PQresultStatus(result)) {
-	case PGRES_COMMAND_OK:
-		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
-		break;
-	case PGRES_TUPLES_OK:
-		jlog(L_DEBUG, "query may have returned data\n");
-		break;
-	default:
-		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
-			PQresStatus(PQresultStatus(result)),
-			PQresultErrorMessage(result));
-		break;
-	}
+	if (check_result_status(result) == -1)
+		return -1;
 
 	return 0;
 }
@@ -798,22 +682,8 @@ int dao_fetch_node_from_context_id(char *context_id, void *data, int (*cb_data_h
 		return -1;
 	}
 
-	switch (PQresultStatus(result)) {
-	case PGRES_COMMAND_OK:
-		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
-		break;
-
-	case PGRES_TUPLES_OK:
-		jlog(L_DEBUG, "query may have returned data\n");
-		break;
-
-	default:
-		jlog(L_DEBUG, "command failed with code %s, %s\n",
-			PQresStatus(PQresultStatus(result)),
-			PQresultErrorMessage(result));
-
+	if (check_result_status(result) == -1)
 		return -1;
-	}
 
 	tuples = PQntuples(result);
 
@@ -870,19 +740,8 @@ int dao_fetch_node_from_provcode(char *provcode,
 		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
-	switch (PQresultStatus(result)) {
-	case PGRES_COMMAND_OK:
-		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
-		break;
-	case PGRES_TUPLES_OK:
-		jlog(L_DEBUG, "query may have returned data\n");
-		break;
-	default:
-		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
-			PQresStatus(PQresultStatus(result)),
-			PQresultErrorMessage(result));
-		break;
-	}
+	if (check_result_status(result) == -1)
+		return -1;
 
 	return 0;
 }
@@ -921,19 +780,8 @@ int dao_fetch_context_by_client_id(
 		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
-	switch (PQresultStatus(result)) {
-	case PGRES_COMMAND_OK:
-		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
-		break;
-	case PGRES_TUPLES_OK:
-		jlog(L_DEBUG, "query may have returned data\n");
-		break;
-	default:
-		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
-			PQresStatus(PQresultStatus(result)),
-			PQresultErrorMessage(result));
-		break;
-	}
+	if (check_result_status(result) == -1)
+		return -1;
 
 	tuples = PQntuples(result);
 
@@ -989,19 +837,8 @@ int dao_fetch_context_by_client_id_desc(char *client_id, char *description,
 		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
-	switch (PQresultStatus(result)) {
-	case PGRES_COMMAND_OK:
-		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
-		break;
-	case PGRES_TUPLES_OK:
-		jlog(L_DEBUG, "query may have returned data\n");
-		break;
-	default:
-		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
-			PQresStatus(PQresultStatus(result)),
-			PQresultErrorMessage(result));
-		break;
-	}
+	if (check_result_status(result) == -1)
+		return -1;
 
 	tuples = PQntuples(result);
 
@@ -1042,19 +879,8 @@ int dao_fetch_context(void *data, void (*cb_data_handler)(void *data,
 		jlog(L_DEBUG, "PQexec command failed, no error code\n");
 	}
 
-	switch (PQresultStatus(result)) {
-	case PGRES_COMMAND_OK:
-		jlog(L_DEBUG, "command executed ok, %s rows affected\n", PQcmdTuples(result));
-		break;
-	case PGRES_TUPLES_OK:
-		jlog(L_DEBUG, "query may have returned data\n");
-		break;
-	default:
-		jlog(L_DEBUG, "command failed with code %s, error message %s\n",
-			PQresStatus(PQresultStatus(result)),
-			PQresultErrorMessage(result));
-		break;
-	}
+	if (check_result_status(result) == -1)
+		return -1;
 
 	tuples = PQntuples(result);
 

@@ -87,9 +87,9 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 
 static void on_secure(netc_t *netc)
 {
-	jlog(L_DEBUG, "dsd]> connection secured\n");
+	jlog(L_DEBUG, "dsd]> connection secured");
 	if (!strncmp("dnd", netc->kconn->client_cn, 3)) {
-		jlog(L_NOTICE, "dsd]> %s authenticated\n", netc->kconn->client_cn);
+		jlog(L_NOTICE, "dsd]> %s authenticated", netc->kconn->client_cn);
 		g_dnd_netc = netc;
 	}
 }

@@ -245,7 +245,7 @@ int tcpbus_server(const char *in_addr,
 	struct sockaddr_in addr;
 	peer_t *peer;
 
-	jlog(L_NOTICE, "tcpbus]> server [%s:%s]\n", in_addr, port);
+	jlog(L_NOTICE, "tcpbus]> server ready: %s:%s", in_addr, port);
 
 	peer = calloc(sizeof(peer_t), 1);
 	peer->type = TCPBUS_SERVER;
