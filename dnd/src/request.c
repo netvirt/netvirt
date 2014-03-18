@@ -39,7 +39,6 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 	size_t length;
 	uint32_t context_id;
 
-	AuthRequest_printf(req_msg);
 	AuthRequest_get_certName(req_msg, &certName, &length);
 
 	if (session->state != SESSION_STATE_NOT_AUTHED) {
@@ -60,9 +59,9 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 	AuthRequest_get_certName(req_msg, &certName, &length);
 
 	/* something@id */
-	jlog(L_NOTICE, "dnd]> certName: %s\n", certName);
+	jlog(L_NOTICE, "dnd]> certName: %s", certName);
 	context_id = atoi(strchr(certName,'@')+1); //XXX atoi(NULL) doesn't like it
-	jlog(L_NOTICE, "dnd]> contextid %i\n", context_id);
+	jlog(L_NOTICE, "dnd]> contextid: %d", context_id);
 	session->context = context_lookup(context_id);
 
 	if (session->context != NULL) {

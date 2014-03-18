@@ -232,7 +232,7 @@ int krypt_set_rsa(krypt_t *kconn)
 	SSL_use_PrivateKey(kconn->ssl, kconn->passport->keyring);
 
 	if (kconn->conn_type == KRYPT_SERVER) {
-		jlog(L_NOTICE, "KRYPT]> set verify\n");
+		jlog(L_NOTICE, "krypt]> set verify");
 
 			// Change the session id to avoid resuming ADH session
 		SSL_set_session_id_context(kconn->ssl, (void*)&s_server_auth_session_id_context,
