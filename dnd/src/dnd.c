@@ -122,11 +122,11 @@ void transmit_netinfo_response(netc_t *netc)
 
 void handle_netinfo_request(struct session *session, DNDSMessage_t *msg)
 {
-	NetinfoRequest_get_ipLocal(msg, session->ip_local);
+	//NetinfoRequest_get_ipLocal(msg, session->ip_local);
 	NetinfoRequest_get_macAddr(msg, session->tun_mac_addr);
 
-	jlog(L_NOTICE, "client local ip %s\n", session->ip_local);
-	jlog(L_NOTICE, "%02x:%02x:%02x:%02x:%02x:%02x\n",
+	//jlog(L_NOTICE, "dnd]> client local ip: %s", session->ip_local);
+	jlog(L_NOTICE, "dnd]> client mac addr: %02x:%02x:%02x:%02x:%02x:%02x",
 		session->tun_mac_addr[0],
 		session->tun_mac_addr[1],
 		session->tun_mac_addr[2],
@@ -167,7 +167,6 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 	}
 }
 
-
 static void on_secure(netc_t *netc)
 {
 	struct session *session;
@@ -193,7 +192,7 @@ static void on_secure(netc_t *netc)
 		DNDSMessage_del(msg);
 
 		context_add_session(session->context, session);
-		jlog(L_DEBUG, "dnd]> session ID [%d]\n", session->id);
+		jlog(L_DEBUG, "dnd]> session id: %d", session->id);
 	}
 }
 
@@ -304,4 +303,3 @@ int dnd_init(struct dnd_cfg *dnd_cfg)
 
 	return 0;
 }
-

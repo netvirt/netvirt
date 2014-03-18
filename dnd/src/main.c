@@ -16,7 +16,6 @@
 #include <unistd.h>
 
 #include <libconfig.h>
-
 #include <logger.h>
 #include <netbus.h>
 
@@ -93,11 +92,6 @@ int main()
 {
 	struct dnd_cfg *dnd_cfg;
 	config_t cfg;
-
-	if (getuid() != 0) {
-		fprintf(stderr, "dnd]> you must be root");
-		exit(EXIT_FAILURE);
-	}
 
 	dnd_cfg = calloc(1, sizeof(struct dnd_cfg));
 	config_init(&cfg);

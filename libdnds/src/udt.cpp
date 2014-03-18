@@ -154,7 +154,7 @@ static void on_connect(peer_t *peer)
 				sizeof(clientservice),
 				NI_NUMERICHOST|NI_NUMERICSERV);
 
-	jlog(L_NOTICE, "new connection: %s:%s", clienthost, clientservice);
+	jlog(L_NOTICE, "udt]> new connection from: %s:%s", clienthost, clientservice);
 
 	npeer = (peer_t *)calloc(sizeof(peer_t), 1);
 	npeer->type = UDTBUS_CLIENT;
