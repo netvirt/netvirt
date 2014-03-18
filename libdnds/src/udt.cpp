@@ -311,7 +311,7 @@ int udtbus_server(const char *listen_addr,
 	}
 
 	freeaddrinfo(res);
-	jlog(L_NOTICE, "udt]> server is listening port: %s", port);
+	jlog(L_NOTICE, "udt]> server is listening on port: %s", port);
 
 	if (UDT::listen(serv, 10) == UDT::ERROR) {
 
