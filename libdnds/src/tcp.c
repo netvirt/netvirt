@@ -114,7 +114,7 @@ static int tcpbus_send(peer_t *peer, void *data, int len)
 		ret = send(peer->socket, (uint8_t*)data + total, byteleft, 0);
 
 		if (errno != 0)
-			jlog(L_ERROR, "tcpbus_send failed: %s", sterror(errno));
+			jlog(L_ERROR, "tcpbus_send failed: %s", strerror(errno));
 
 		if (ret == -1 && errno != 11)
 			return -1;
