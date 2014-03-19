@@ -53,7 +53,7 @@ void _jlog(const char *file, int line, int level, const char *format, ...)
 
 	filename = strrchr(file, '/') ? strrchr(file, '/') + 1: file;
 
-	snprintf(logline, 256, "[%s] %s:%d]> %s\n", cur_time, filename, line, format);
+	snprintf(logline, 256, "[%s] %s [%s:%d]\n", cur_time, format, filename, line);
 	vsnprintf(logtxt, 512, logline, ap);
 	va_end(ap);
 

@@ -198,7 +198,7 @@ static int net_decode_msg(netc_t *netc)
 			return 0;
 		}
 		else if (dec.code == RC_FAIL) {
-			jlog(L_NOTICE, "net]> ber_decode returned RC_FAIL after consuming %i bytes", dec.consumed);
+			jlog(L_NOTICE, "ber_decode returned RC_FAIL after consuming %i bytes", dec.consumed);
 
 			netc->buf_in_data_size = 0;
 			netc->buf_in_offset = 0;
@@ -331,13 +331,13 @@ static void net_on_disconnect(peer_t *peer)
 			netc->on_disconnect(netc);
 		}
 
-		jlog(L_NOTICE, "net]> on disconnect");
+		jlog(L_NOTICE, "on disconnect");
 
 		peer->ext_ptr = NULL;
 		net_connection_free(netc);
 	}
 	else {
-		jlog(L_ERROR, "net]> on disconnect: netc is NULL");
+		jlog(L_ERROR, "on disconnect: netc is NULL");
 	}
 }
 
@@ -407,14 +407,14 @@ int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 	ec = der_encode(&asn_DEF_DNDSMessage, msg, serialize_buf_enc, netc);
 	if (ec.encoded == -1) {
 		netc->buf_enc_data_size = 0;	// mark the buffer as empty
-		jlog(L_ERROR, "net]> DER encoder failed at field '%s'", ec.failed_type->name);
+		jlog(L_ERROR, "DER encoder failed at field '%s'", ec.failed_type->name);
 		return -1;
 	}
 
 	if (netc->security_level > NET_UNSECURE
 		&& netc->kconn->status != KRYPT_SECURE) {
 
-		jlog(L_ERROR, "netc]> the network connection is not yet secure");
+		jlog(L_ERROR, "the network connection is not yet secure");
 		return -1;
 	}
 
@@ -501,13 +501,13 @@ netc_t *net_client(const char *listen_addr,
 			break;
 
 		default:
-			jlog(L_NOTICE, "net> unknown protocol specified :: %s:%i", __FILE__, __LINE__);
+			jlog(L_NOTICE, "net> unknown protocol specified");
 			net_connection_free(netc);
 			return NULL;
 	}
 
 	if (netc->peer == NULL) {
-		jlog(L_NOTICE, "net]> Unable to connect to %s:%s :: %s:%i", listen_addr, port, __FILE__, __LINE__);
+		jlog(L_NOTICE, "Unable to connect to %s:%s", listen_addr, port);
 		net_connection_free(netc);
 		return NULL;
 	}
@@ -525,7 +525,7 @@ netc_t *net_client(const char *listen_addr,
 
 		ret = krypt_secure_connection(netc->kconn, KRYPT_TLS, KRYPT_CLIENT, krypt_security_level);
 		if (ret < 0) {
-			jlog(L_NOTICE, "net]> securing client connection failed :: %s:%i", __FILE__, __LINE__);
+			jlog(L_NOTICE, "securing client connection failed");
 			net_connection_free(netc);
 			return NULL;
 		}
@@ -552,7 +552,7 @@ int net_server(const char *listen_addr,
 
 	netc = net_connection_new(security_level);
 	if (netc == NULL) {
-		jlog(L_NOTICE, "net]> server initialization failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_NOTICE, "server initialization failed");
 		return -1;
 	}
 
@@ -583,13 +583,13 @@ int net_server(const char *listen_addr,
 			break;
 
 		default:
-			jlog(L_NOTICE, "net]> unknown protocol specified :: %s:%i", __FILE__, __LINE__);
+			jlog(L_NOTICE, "unknown protocol specified");
 			net_connection_free(netc);
 			return -1;
 	}
 
 	if (ret < 0) {
-		jlog(L_NOTICE, "net]> server initialization failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_NOTICE, "server initialization failed");
 		net_connection_free(netc);
 		return -1;
 	}
@@ -607,7 +607,7 @@ void net_p2p_on_connect(peer_t *peer)
 	netc->peer = peer;
 
 	if (peer == NULL) {
-		jlog(L_ERROR, "net]> unable to initialize the p2p connection :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "unable to initialize the p2p connection");
 		net_connection_free(netc);
 		return;
 	}
@@ -622,7 +622,7 @@ void net_p2p_on_connect(peer_t *peer)
 
 		ret = krypt_secure_connection(netc->kconn, KRYPT_TLS, kconn_type, KRYPT_RSA);
 		if (ret < 0) {
-			jlog(L_NOTICE, "net]> securing client connection failed :: %s:%i", __FILE__, __LINE__);
+			jlog(L_NOTICE, "securing client connection failed");
 			net_connection_free(netc);
 			return;
 		}
@@ -655,13 +655,13 @@ void net_p2p(const char *listen_addr,
 	netc_t *netc = NULL;
 
 	if (protocol != NET_PROTO_UDT) {
-		jlog(L_ERROR, "net]> the only protocol that support p2p is UDT");
+		jlog(L_ERROR, "the only protocol that support p2p is UDT");
 		return;
 	}
 
 	netc = net_connection_new(security_level);
 	if (netc == NULL) {
-		jlog(L_ERROR, "net]> unable to initialize connection :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "unable to initialize connection");
 		return;
 	}
 

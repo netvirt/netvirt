@@ -154,7 +154,7 @@ static void on_connect(peer_t *peer)
 				sizeof(clientservice),
 				NI_NUMERICHOST|NI_NUMERICSERV);
 
-	jlog(L_NOTICE, "udt]> new connection from: %s:%s", clienthost, clientservice);
+	jlog(L_NOTICE, "new connection from: %s:%s", clienthost, clientservice);
 
 	npeer = (peer_t *)calloc(sizeof(peer_t), 1);
 	npeer->type = UDTBUS_CLIENT;
@@ -212,7 +212,7 @@ void udtbus_poke_queue()
 		if (peer == NULL)
 			continue;
 
-		jlog(L_NOTICE, "udt]> peer closed or broken connection");
+		jlog(L_NOTICE, "peer closed or broken connection");
 		on_disconnect(peer);
 	}
 }
@@ -246,7 +246,7 @@ peer_t *udtbus_client(const char *listen_addr,
 	}
 
 	if (UDT::connect(client, serv_info->ai_addr, serv_info->ai_addrlen) == UDT::ERROR) {
-		jlog(L_WARNING, "udt]> %s", UDT::getlasterror().getErrorMessage());
+		jlog(L_WARNING, "%s", UDT::getlasterror().getErrorMessage());
 		freeaddrinfo(serv_info);
 		UDT::close(client);
 		return NULL;
@@ -295,7 +295,7 @@ int udtbus_server(const char *listen_addr,
 	ret = getaddrinfo(listen_addr, port, &hints, &res);
 
 	if (ret) {
-		jlog(L_ERROR, "udt]> illegal port number or port is busy: %s", gai_strerror(ret));
+		jlog(L_ERROR, "illegal port number or port is busy: %s", gai_strerror(ret));
 		return -1;
 	}
 
@@ -311,7 +311,7 @@ int udtbus_server(const char *listen_addr,
 	}
 
 	freeaddrinfo(res);
-	jlog(L_NOTICE, "udt]> server is listening on port: %s", port);
+	jlog(L_NOTICE, "server is listening on port: %s", port);
 
 	if (UDT::listen(serv, 10) == UDT::ERROR) {
 
@@ -352,7 +352,7 @@ void *udtbus_rendezvous(void *args)
 	nb_port = sizeof(p2p_args->port)/sizeof(p2p_args->port[0]);
 
 retry:
-	jlog(L_NOTICE, "udt]> trying port %s...", p2p_args->port[port_itr]);
+	jlog(L_NOTICE, "trying port %s...", p2p_args->port[port_itr]);
 	memset(&hints, 0, sizeof(struct addrinfo));
 
 	hints.ai_flags = AI_PASSIVE;
@@ -392,7 +392,7 @@ retry:
 	}
 
 	if (UDT::connect(socket, server->ai_addr, server->ai_addrlen) == UDT::ERROR) {
-		jlog(L_ERROR, "udt]> %s", UDT::getlasterror().getErrorMessage());
+		jlog(L_ERROR, "%s", UDT::getlasterror().getErrorMessage());
 		UDT::close(socket);
 
 		if (port_itr < nb_port-1) {
@@ -429,7 +429,7 @@ retry:
 		/* this seem a bit redundant, but it keeps the logic flow clear
 		   without using any obscure shortcut to free everything in case
 		   of a p2p failure */
-		jlog(L_NOTICE, "udt]> p2p failed");
+		jlog(L_NOTICE, "p2p failed");
 		on_disconnect(peer);
 		return NULL;
 	}

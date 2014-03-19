@@ -93,7 +93,7 @@ void MainDialog::NowRun()
 	dnc_cfg->ev.on_log = this->onLog;
 
 	if (dnc_config_init(dnc_cfg)) {
-		jlog(L_ERROR, "dnc]> dnc_config_init failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "dnc_config_init failed");
 		return;
 	}
 
@@ -131,7 +131,7 @@ void MainDialog::slotFireConnection(void)
 	dnc_cfg->ev.on_connect = this->onConnect;
 	dnc_cfg->ev.on_disconnect = this->onDisconnect;
 
-	jlog(L_NOTICE, "dnc]> connecting...");
+	jlog(L_NOTICE, "connecting...");
 	dnc_init_async(dnc_cfg);
 }
 

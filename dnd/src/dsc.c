@@ -92,7 +92,7 @@ int transmit_node_connectinfo(e_ConnectState state, char *ipAddress, char *certN
 
 static void on_secure(netc_t *netc)
 {
-	jlog(L_DEBUG, "dnd]> connection secured with DSD");
+	jlog(L_DEBUG, "connection secured with DSD");
 
 	DNDSMessage_t *msg;
 
@@ -239,7 +239,7 @@ static void on_input(netc_t *netc)
 			break;
 		default:
 			/* TODO disconnect session */
-			jlog(L_ERROR, "dnd]> invalid PDU");
+			jlog(L_ERROR, "invalid PDU");
 			break;
 		}
 
@@ -253,7 +253,7 @@ static void on_disconnect(netc_t *netc)
 
 	netc_t *retry_netc = NULL;
 
-	jlog(L_NOTICE, "dnd]> disconnected from dsd");
+	jlog(L_NOTICE, "disconnected from dsd");
 
 	/* FIXME if we loop here, we can't serve anything else,
 	   we should do the same thing as DNC */
@@ -263,7 +263,7 @@ static void on_disconnect(netc_t *netc)
 	   the current netc and return when max_retry is reached or
 	   connection is up again. */
 
-	jlog(L_NOTICE, "dnd]> connection retry to dsd...\n");
+	jlog(L_NOTICE, "connection retry to dsd...\n");
 	do {
 		sleep(5);
 		retry_netc = net_client(dnd_cfg->dsd_ipaddr, dnd_cfg->dsd_port,
@@ -294,7 +294,7 @@ int dsc_init(struct dnd_cfg *cfg)
 				on_disconnect, on_input, on_secure);
 
 	if (dsc_netc == NULL) {
-		jlog(L_NOTICE, "dnd]> failed to connect to the Directory Service :: %s:%i\n", __FILE__, __LINE__);
+		jlog(L_NOTICE, "failed to connect to the Directory Service");
 		return -1;
 	}
 

@@ -23,12 +23,12 @@
 
 void provRequest(struct session *session, DNDSMessage_t *req_msg)
 {
-	jlog(L_DEBUG, "dnd]> provisioning request");
+	jlog(L_DEBUG, "provisioning request");
 	size_t length;
 	char *provcode = NULL;
 
 	ProvRequest_get_provCode(req_msg, &provcode, &length);
-	jlog(L_DEBUG, "dnd]> provisioning code: %s", provcode);
+	jlog(L_DEBUG, "provisioning code: %s", provcode);
 
 	transmit_provisioning(session, provcode, length);
 }
@@ -42,7 +42,7 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 	AuthRequest_get_certName(req_msg, &certName, &length);
 
 	if (session->state != SESSION_STATE_NOT_AUTHED) {
-		jlog(L_WARNING, "dnd]> authRequest duplicate");
+		jlog(L_WARNING, "authRequest duplicate");
 		return -1;
 	}
 
@@ -59,9 +59,9 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 	AuthRequest_get_certName(req_msg, &certName, &length);
 
 	/* something@id */
-	jlog(L_NOTICE, "dnd]> certName: %s", certName);
+	jlog(L_NOTICE, "certName: %s", certName);
 	context_id = atoi(strchr(certName,'@')+1); //XXX atoi(NULL) doesn't like it
-	jlog(L_NOTICE, "dnd]> contextid: %d", context_id);
+	jlog(L_NOTICE, "contextid: %d", context_id);
 	session->context = context_lookup(context_id);
 
 	if (session->context != NULL) {
@@ -121,8 +121,8 @@ void p2pRequest(struct session *session_a, struct session *session_b)
 	 /* basic random port : 49152–65535 */
 	port = rand() % (65535-49152+1)+49152;
 
-	jlog(L_DEBUG, "dnd]> node A ip public %s", ip_a);
-	jlog(L_DEBUG, "dnd]> node B ip public %s", ip_b);
+	jlog(L_DEBUG, "node A ip public %s", ip_a);
+	jlog(L_DEBUG, "node B ip public %s", ip_b);
 
 	/* msg session A */
 	DNDSMessage_new(&msg);

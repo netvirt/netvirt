@@ -69,7 +69,7 @@ int tcpbus_ion_add(int fd, void *data)
 
 	ret = epoll_ctl(tcpbus_queue, EPOLL_CTL_ADD, fd, &nevent);
 	if (ret < 0)
-		jlog(L_NOTICE, "ion]> epoll_ctl() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "epoll_ctl failed: %s", strerror(errno));
 
 	return ret;
 }
@@ -80,7 +80,7 @@ int tcpbus_ion_new()
 
 	epoll_fd = epoll_create(BACKING_STORE);
 	if (epoll_fd <	0)
-		jlog(L_NOTICE, "ion]> epoll_create() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "epoll_create failed: %s", strerror(errno));
 
 	return epoll_fd;
 }
@@ -92,12 +92,12 @@ static void tcpbus_disconnect(peer_t *peer)
 	//close() will cause the socket to be automatically removed from the queue
 	ret = close(peer->socket);
 	if (ret < 0) {
-		jlog(L_NOTICE, "tcpbus]> close() failed: %u %u %s :: %s:%i",
-			peer->socket, ret, strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "close failed: %u %u %s",
+			peer->socket, ret, strerror(errno));
 		return;
 	}
 
-	jlog(L_DEBUG, "tcpbus]> client close: %u", peer->socket);
+	jlog(L_DEBUG, "client close: %u", peer->socket);
 
 	free(peer->buffer);
 	free(peer);
@@ -114,7 +114,7 @@ static int tcpbus_send(peer_t *peer, void *data, int len)
 		ret = send(peer->socket, (uint8_t*)data + total, byteleft, 0);
 
 		if (errno != 0)
-			jlog(L_ERROR, "tcpbus]> tcpbus_send errno [%i] :: %s:%i", __FILE__, __LINE__);
+			jlog(L_ERROR, "tcpbus_send failed: %s", sterror(errno));
 
 		if (ret == -1 && errno != 11)
 			return -1;
@@ -145,15 +145,15 @@ static int tcpbus_recv(peer_t *peer)
 
 	ret = select(peer->socket + 1, &rfds, NULL, NULL, &tv);
 	if (ret == 0) { /* TIMEOUT !*/
-		jlog(L_NOTICE, "tcpbus]> tcpbus_recv() TIMEOUT peer->socket(%i) :: %s:%i",
-			peer->socket, __FILE__, __LINE__);
+		jlog(L_NOTICE, "tcpbus_recv TIMEOUT peer->socket(%i)",
+			peer->socket);
 		return -1;
 	}
 
 	if (peer->buffer == NULL) {
 		peer->buffer = calloc(1, PEER_BUF_SZ);
 		if (peer->buffer == NULL) {
-			jlog(L_ERROR, "tcpbus]> tcpbus_recv() calloc FAILED :: %s:%i", __FILE__, __LINE__);
+			jlog(L_ERROR, "tcpbus_recv calloc failed");
 			return -1;
 		}
 	}
@@ -200,14 +200,14 @@ static void tcpbus_on_connect(peer_t *peer)
 	addrlen = sizeof(struct sockaddr_in);
 	npeer->socket = accept(peer->socket, (struct sockaddr *)&addr, (socklen_t *)&addrlen);
 	if (npeer->socket < 0) {
-		jlog(L_ERROR, "tcpbus]> accept() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_ERROR, "accept failed: %s", strerror(errno));
 		free(npeer);
 		return;
 	}
 
 	ret = setnonblocking(npeer->socket);
         if (ret < 0) {
-                jlog(L_ERROR, "tcpbus]> setnonblocking() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+                jlog(L_ERROR, "setnonblocking failed: %s", strerror(errno));
 		free(npeer);
                 return;
         }
@@ -224,14 +224,14 @@ static void tcpbus_on_connect(peer_t *peer)
 
 	ret = tcpbus_ion_add(npeer->socket, npeer);
 	if (ret < 0) {
-		jlog(L_ERROR, "tcpbus]> tcpbus_ion_add() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_ERROR, "tcpbus_ion_add failed: %s", strerror(errno));
 		free(npeer);
 	}
 
 	if (peer->on_connect)
 		peer->on_connect(npeer);
 
-	jlog(L_DEBUG, "tcpbus]> successfully added TCP client {%i} on server {%i}", npeer->socket, peer->socket);
+	jlog(L_DEBUG, "successfully added TCP client {%i} on server {%i}", npeer->socket, peer->socket);
 }
 
 int tcpbus_server(const char *in_addr,
@@ -245,7 +245,7 @@ int tcpbus_server(const char *in_addr,
 	struct sockaddr_in addr;
 	peer_t *peer;
 
-	jlog(L_NOTICE, "tcpbus]> server ready: %s:%s", in_addr, port);
+	jlog(L_NOTICE, "server ready: %s:%s", in_addr, port);
 
 	peer = calloc(sizeof(peer_t), 1);
 	peer->type = TCPBUS_SERVER;
@@ -260,7 +260,7 @@ int tcpbus_server(const char *in_addr,
 
 	peer->socket = socket(PF_INET, SOCK_STREAM, 0);
 	if (peer->socket < 0) {
-		jlog(L_NOTICE, "tcpbus]> socket() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "socket failed: %s", strerror(errno));
 		close(peer->socket);
 		free(peer);
 		return -1;
@@ -273,7 +273,7 @@ int tcpbus_server(const char *in_addr,
 
 	ret = setreuse(peer->socket);
 	if (ret < 0) {
-		jlog(L_NOTICE, "tcpbus]> setreuse() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "setreuse: %s", strerror(errno));
 		close(peer->socket);
 		free(peer);
 		return -1;
@@ -281,7 +281,7 @@ int tcpbus_server(const char *in_addr,
 
 	ret = bind(peer->socket, (const struct sockaddr *)&addr, sizeof(const struct sockaddr));
 	if (ret < 0) {
-		jlog(L_NOTICE, "tcpbus]> bind() %s %s :: %s:%i", strerror(errno), in_addr, __FILE__, __LINE__);
+		jlog(L_NOTICE, "bind failed: %s %s", strerror(errno), in_addr);
 		close(peer->socket);
 		free(peer);
 		return -1;
@@ -292,7 +292,7 @@ int tcpbus_server(const char *in_addr,
 	 */
 	ret = listen(peer->socket, CONN_BACKLOG);
 	if (ret < 0) {
-		jlog(L_NOTICE, "tcpbus]> set_nonblocking() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "set_nonblocking failed: %s", strerror(errno));
 		close(peer->socket);
 		free(peer);
 		return -1;
@@ -300,7 +300,7 @@ int tcpbus_server(const char *in_addr,
 
 	ret = tcpbus_ion_add(peer->socket, peer);
 	if (ret < 0) {
-		jlog(L_NOTICE, "tcpbus]> tcpbus_ion_add() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "tcpbus_ion_add failed: %s", strerror(errno));
 		close(peer->socket);
 		free(peer);
 		return -1;
@@ -330,7 +330,7 @@ peer_t *tcpbus_client(const char *addr,
 
 	peer->socket = socket(PF_INET, SOCK_STREAM, 0);
 	if (peer->socket == -1) {
-		jlog(L_ERROR, "tcpbus]> socket() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_ERROR, "socket failed: %s", strerror(errno));
 		close(peer->socket);
 		free(peer);
 		return NULL;
@@ -338,7 +338,7 @@ peer_t *tcpbus_client(const char *addr,
 
         ret = setnonblocking(peer->socket);
         if (ret < 0) {
-                jlog(L_ERROR, "tcpbus]> setnonblocking() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+                jlog(L_ERROR, "setnonblocking failed: %s", strerror(errno));
 		close(peer->socket);
                 free(peer);
                 return NULL;
@@ -360,7 +360,7 @@ peer_t *tcpbus_client(const char *addr,
 			 */
 			ret = select(peer->socket + 1, NULL, &wfds, NULL, &tv);
 			if (ret == 0) { /* TIMEOUT */
-				jlog(L_DEBUG, "tcpbus]> connect() timed out :: %s:%i", __FILE__, __LINE__);
+				jlog(L_DEBUG, "connect timed out");
 				close(peer->socket);
 				free(peer);
 				return NULL;
@@ -370,14 +370,14 @@ peer_t *tcpbus_client(const char *addr,
 				/* use getsockopt(2) with SO_ERROR to check for error conditions */
 				ret = getsockopt(peer->socket, SOL_SOCKET, SO_ERROR, &optval, &optlen);
 				if (ret == -1) {
-					jlog(L_DEBUG, "tcpbus]> getsockopt() %s :: %s:%i", __FILE__, __LINE__);
+					jlog(L_DEBUG, "getsockopt failed: %s");
 					close(peer->socket);
 					free(peer);
 					return NULL;
 				}
 
 				if (optval != 0) { /* NOT CONNECTED ! TIMEOUT... */
-					jlog(L_DEBUG, "tcpbus]> connect() timed out :: %s:%i", __FILE__, __LINE__);
+					jlog(L_DEBUG, "connect timed out");
 					close(peer->socket);
 					free(peer);
 	                                return NULL;
@@ -389,7 +389,7 @@ peer_t *tcpbus_client(const char *addr,
 
 		}
 		else {
-			jlog(L_DEBUG, "tcpbus]> connect() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+			jlog(L_DEBUG, "connect faield: %s", strerror(errno));
 			close(peer->socket);
 			free(peer);
 			return NULL;
@@ -406,7 +406,7 @@ peer_t *tcpbus_client(const char *addr,
 
 	ret = tcpbus_ion_add(peer->socket, peer);
 	if (ret < 0) {
-		jlog(L_NOTICE, "tcpbus]> ion_add() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "ion_add failed: %s", strerror(errno));
 		close(peer->socket);
 		free(peer);
 		return NULL;
@@ -417,7 +417,7 @@ peer_t *tcpbus_client(const char *addr,
 
 void tcpbus_init()
 {
-	jlog(L_NOTICE, "tcpbus]> init");
+	jlog(L_NOTICE, "init");
 	tcpbus_queue = tcpbus_ion_new();
 }
 
@@ -429,7 +429,7 @@ int tcpbus_ion_poke()
 
 	nfd = epoll_wait(tcpbus_queue, ep_ev, NUM_EVENTS, 1);
 	if (nfd < 0) {
-		jlog(L_NOTICE, "ion]> epoll_wait() %s :: %s:%i", strerror(errno), __FILE__, __LINE__);
+		jlog(L_NOTICE, "epoll_wait failed: %s", strerror(errno));
 		return -1;
 	}
 

@@ -165,7 +165,7 @@ static void ssl_error_stack()
 
 	do {
 		e = ERR_get_error_line(&file, &line);
-		jlog(L_ERROR, "openssl]> %s", ERR_error_string(e, NULL));
+		jlog(L_ERROR, "%s", ERR_error_string(e, NULL));
 	} while (e);
 }
 
@@ -181,7 +181,7 @@ static long post_handshake_check(krypt_t *krypt)
 	subj_ptr = X509_get_subject_name(cert);
 	X509_NAME_get_text_by_NID(subj_ptr, NID_commonName, krypt->client_cn, 256);
 
-	jlog(L_NOTICE, "krypt]> CN=%s", krypt->client_cn);
+	jlog(L_NOTICE, "CN=%s", krypt->client_cn);
 
 	return 0;
 }
@@ -196,7 +196,7 @@ static int verify_callback(int ok, X509_STORE_CTX *store)
 
 static int krypt_set_adh(krypt_t *kconn)
 {
-	jlog(L_NOTICE, "krypt]> set adh");
+	jlog(L_NOTICE, "set adh");
 
 	SSL_CTX_set_cipher_list(kconn->ctx, "ADH");
 	DH *dh = get_dh_1024();
@@ -212,10 +212,10 @@ static int krypt_set_adh(krypt_t *kconn)
 // XXX Clean up this function, we MUST handle all errors possible
 int krypt_set_rsa(krypt_t *kconn)
 {
-	jlog(L_NOTICE, "krypt]> set rsa");
+	jlog(L_NOTICE, "set rsa");
 
 	if (kconn->security_level == KRYPT_RSA) {
-		jlog(L_NOTICE, "krypt]> the security level is already set to RSA");
+		jlog(L_NOTICE, "the security level is already set to RSA");
 		return 0;
 	}
 
@@ -232,7 +232,7 @@ int krypt_set_rsa(krypt_t *kconn)
 	SSL_use_PrivateKey(kconn->ssl, kconn->passport->keyring);
 
 	if (kconn->conn_type == KRYPT_SERVER) {
-		jlog(L_NOTICE, "krypt]> set verify");
+		jlog(L_NOTICE, "set verify");
 
 			// Change the session id to avoid resuming ADH session
 		SSL_set_session_id_context(kconn->ssl, (void*)&s_server_auth_session_id_context,
@@ -271,11 +271,11 @@ int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 
 	ret = SSL_do_handshake(kconn->ssl);
 
-	jlog(L_NOTICE, "krypt]> SSL state: %s", SSL_state_string_long(kconn->ssl));
+	jlog(L_NOTICE, "SSL state: %s", SSL_state_string_long(kconn->ssl));
 
 	if (ret > 0 && !SSL_is_init_finished(kconn->ssl)) {
 		// Need more data to continue ?
-		jlog(L_ERROR, "krypt]> handshake need more data to continue ??");
+		jlog(L_ERROR, "handshake need more data to continue ??");
 		status = 1;
 	}
 	else if (ret > 0 && SSL_is_init_finished(kconn->ssl)) {
@@ -284,14 +284,14 @@ int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 		kconn->status = KRYPT_SECURE;
 		status = 0;
 
-		jlog(L_NOTICE, "krypt]> cipher: %s", SSL_get_cipher_name(kconn->ssl));
+		jlog(L_NOTICE, "cipher: %s", SSL_get_cipher_name(kconn->ssl));
 	}
 	else if (ret == 0) {
 		// Error
 		kconn->status = KRYPT_FAIL;
 		jlog(L_ERROR, "ssl_get_error: %d\n", SSL_get_error(kconn->ssl, ret));
 		ssl_error_stack();
-		jlog(L_ERROR, "krypt]> handshake error");
+		jlog(L_ERROR, "handshake error");
 		status = -1;
 	}
 	else if (ret < 0) {
@@ -341,7 +341,7 @@ int krypt_decrypt_buf(krypt_t *kconn)
 				break;
 
 			default:
-				jlog(L_ERROR, "krypt]> <%s> SSL error", __func__);
+				jlog(L_ERROR, "<%s> SSL error", __func__);
 				ssl_error_stack();
 				return -1;
 		}
@@ -412,12 +412,12 @@ int krypt_secure_connection(krypt_t *kconn, uint8_t protocol, uint8_t conn_type,
 			break;
 
 		default:
-			jlog(L_ERROR, "krypt]> unknown protocol :: %s:%i", __FILE__, __LINE__);
+			jlog(L_ERROR, "unknown protocol");
 			return -1;
 	}
 
 	if (kconn->ctx == NULL) {
-		jlog(L_ERROR, "krypt]> unable to create SSL context");
+		jlog(L_ERROR, "unable to create SSL context");
 		ssl_error_stack();
 		return -1;
 	}
@@ -444,19 +444,19 @@ int krypt_secure_connection(krypt_t *kconn, uint8_t protocol, uint8_t conn_type,
 	switch (conn_type) {
 
 		case KRYPT_SERVER:
-			jlog(L_NOTICE, "krypt]> connection type server");
+			jlog(L_NOTICE, "connection type server");
 			SSL_set_accept_state(kconn->ssl);
 
 			break;
 
 		case KRYPT_CLIENT:
-			jlog(L_NOTICE, "krypt]> connection type client");
+			jlog(L_NOTICE, "connection type client");
 			SSL_set_connect_state(kconn->ssl);
 
 			break;
 
 		default:
-			jlog(L_ERROR, "krypt]> unknown connection type");
+			jlog(L_ERROR, "unknown connection type");
 			return -1;
 	}
 

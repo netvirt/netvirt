@@ -80,7 +80,7 @@ int dnc_config_init(struct dnc_cfg *_dnc_cfg)
 	dnc_cfg = _dnc_cfg;
 
 	jlog_init_cb(dnc_cfg->ev.on_log);
-	jlog(L_NOTICE, "dnc]> version: %s", DNCVERSION);
+	jlog(L_NOTICE, "version: %s", DNCVERSION);
 
 	dnc_cfg->dnc_conf = dnc_config_get_fullname("dynvpn.conf");
 	dnc_cfg->ip_conf = dnc_config_get_fullname("dynvpn.ip");
@@ -100,7 +100,7 @@ int dnc_config_init(struct dnc_cfg *_dnc_cfg)
 		config_write_file(&cfg, dnc_cfg->dnc_conf);
 	}
 #endif
-	jlog(L_NOTICE, "dnc]> confpath: %s", path);
+	jlog(L_NOTICE, "confpath: %s", path);
 	free(path);
 
 	dnc_cfg->certificate = dnc_config_get_fullname("certificate.pem");
@@ -114,12 +114,12 @@ int dnc_config_init(struct dnc_cfg *_dnc_cfg)
         if (default_conf || !config_lookup_string(&cfg, "server_address", &dnc_cfg->server_address)) {
 		dnc_cfg->server_address = strdup("bs1.dynvpn.com");
 	}
-	jlog(L_DEBUG, "dnc]> server_address = \"%s\";", dnc_cfg->server_address);
+	jlog(L_DEBUG, "server_address = \"%s\";", dnc_cfg->server_address);
 
         if (default_conf || !config_lookup_string(&cfg, "server_port", &dnc_cfg->server_port)) {
 		dnc_cfg->server_port = strdup("9090");
 	}
-	jlog(L_DEBUG, "dnc]> server_port = \"%s\";", dnc_cfg->server_port);
+	jlog(L_DEBUG, "server_port = \"%s\";", dnc_cfg->server_port);
 
 	if (!default_conf) {
 		config_lookup_bool(&cfg, "auto_connect", &dnc_cfg->auto_connect);

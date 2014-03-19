@@ -22,7 +22,7 @@ struct session *session_new()
 
 	session = calloc(1, sizeof(struct session));
 	if (session == NULL) {
-		jlog(L_ERROR, "dnd]> memory allocation failed");
+		jlog(L_ERROR, "memory allocation failed");
 		return NULL;
 	}
 
@@ -66,7 +66,7 @@ void session_add_mac(struct session *session, uint8_t *mac_addr)
 
 void session_terminate(struct session *session)
 {
-	jlog(L_NOTICE, "dnd]> terminating session");
+	jlog(L_NOTICE, "terminating session");
 	net_disconnect(session->netc);
 	session_free(session);
 }

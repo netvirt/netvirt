@@ -75,7 +75,7 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 		&& session_dst != NULL
 		&& session_dst->netc != NULL) {		/* AND the session is up */
 
-			/*jlog(L_DEBUG, "dnd]> forwarding the packet to [%s]", session_dst->ip);*/
+			/*jlog(L_DEBUG, "forwarding the packet to [%s]", session_dst->ip);*/
 			net_send_msg(session_dst->netc, msg);
 
 			int lnk_state = 0;
@@ -93,11 +93,11 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 			session_list = session->context->session_list;
 			while (session_list != NULL) {
 				net_send_msg(session_list->netc, msg);
-				/*jlog(L_DEBUG, "dnd]> flooding the packet to [%s]", session_list->ip);*/
+				/*jlog(L_DEBUG, "flooding the packet to [%s]", session_list->ip);*/
 				session_list = session_list->next;
 			}
 	} else {
-		jlog(L_WARNING, "dnd]> unknown packet");
+		jlog(L_WARNING, "unknown packet");
 	}
 }
 
@@ -125,8 +125,8 @@ void handle_netinfo_request(struct session *session, DNDSMessage_t *msg)
 	//NetinfoRequest_get_ipLocal(msg, session->ip_local);
 	NetinfoRequest_get_macAddr(msg, session->tun_mac_addr);
 
-	//jlog(L_NOTICE, "dnd]> client local ip: %s", session->ip_local);
-	jlog(L_NOTICE, "dnd]> client mac addr: %02x:%02x:%02x:%02x:%02x:%02x",
+	//jlog(L_NOTICE, "client local ip: %s", session->ip_local);
+	jlog(L_NOTICE, "client mac addr: %02x:%02x:%02x:%02x:%02x:%02x",
 		session->tun_mac_addr[0],
 		session->tun_mac_addr[1],
 		session->tun_mac_addr[2],
@@ -192,7 +192,7 @@ static void on_secure(netc_t *netc)
 		DNDSMessage_del(msg);
 
 		context_add_session(session->context, session);
-		jlog(L_DEBUG, "dnd]> session id: %d", session->id);
+		jlog(L_DEBUG, "session id: %d", session->id);
 	}
 }
 
@@ -219,7 +219,7 @@ static void on_input(netc_t *netc)
 			break;
 		default:
 			/* TODO disconnect session */
-			jlog(L_ERROR, "dnd]> invalid PDU");
+			jlog(L_ERROR, "invalid PDU");
 			break;
 		}
 		mbuf_del(mbuf_itr, *mbuf_itr);
@@ -232,7 +232,7 @@ static void on_connect(netc_t *netc)
 	session = session_new();
 
 	if (session == NULL) {
-		jlog(L_ERROR, "dnd]> unable to create a new session");
+		jlog(L_ERROR, "unable to create a new session");
 		net_disconnect(netc);
 		return;
 	}
@@ -245,7 +245,7 @@ static void on_connect(netc_t *netc)
 
 static void on_disconnect(netc_t *netc)
 {
-	jlog(L_DEBUG, "dnd]> disconnect");
+	jlog(L_DEBUG, "disconnect");
 
 	struct session *session = NULL;
 	struct mac_list *mac_itr = NULL;
@@ -292,7 +292,7 @@ int dnd_init(struct dnd_cfg *dnd_cfg)
 		on_connect, on_disconnect, on_input, on_secure);
 
 	if (ret < 0) {
-		jlog(L_ERROR, "dnd]> net_server failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "net_server failed");
 		return -1;
 	}
 

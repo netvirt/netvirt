@@ -78,7 +78,7 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 	 */
 	case dsop_PR_NOTHING:
 	default:
-		jlog(L_WARNING, "dsd]> not a valid DSM operation");
+		jlog(L_WARNING, "not a valid DSM operation");
 	case dsop_PR_terminateRequest:
 		terminate(session);
 		break;
@@ -87,9 +87,9 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 
 static void on_secure(netc_t *netc)
 {
-	jlog(L_DEBUG, "dsd]> connection secured");
+	jlog(L_DEBUG, "connection secured");
 	if (!strncmp("dnd", netc->kconn->client_cn, 3)) {
-		jlog(L_NOTICE, "dsd]> %s authenticated", netc->kconn->client_cn);
+		jlog(L_NOTICE, "%s authenticated", netc->kconn->client_cn);
 		g_dnd_netc = netc;
 	}
 }
@@ -163,7 +163,7 @@ int dsd_init(struct dsd_cfg *dsd_cfg)
 			on_connect, on_disconnect, on_input, on_secure);
 
 	if (ret < 0) {
-		jlog(L_NOTICE, "dsd]> net_server failed");
+		jlog(L_NOTICE, "net_server failed");
 		return -1;
 	}
 

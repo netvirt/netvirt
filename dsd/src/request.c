@@ -66,7 +66,7 @@ void nodeConnectInfo(struct session *session, DNDSMessage_t *req_msg)
 
 void AddRequest_client(DNDSMessage_t *msg)
 {
-	jlog(L_DEBUG, "dsd]> Add Request client");
+	jlog(L_DEBUG, "Add Request client");
 
 	DNDSMessage_printf(msg);
 	DSMessage_printf(msg);
@@ -116,7 +116,7 @@ void AddRequest_client(DNDSMessage_t *msg)
 			password);
 
 	if (ret == -1) {
-		jlog(L_ERROR, "dsd]> failed to add client");
+		jlog(L_ERROR, "failed to add client");
 		return;
 	}
 }
@@ -231,7 +231,7 @@ void AddRequest_context(DNDSMessage_t *msg)
 
 void AddRequest_node(DNDSMessage_t *msg)
 {
-	jlog(L_DEBUG, "dsd]> AddRequest_node");
+	jlog(L_DEBUG, "AddRequest_node");
 
 	DNDSMessage_printf(msg);
 	DSMessage_printf(msg);
@@ -271,10 +271,10 @@ void AddRequest_node(DNDSMessage_t *msg)
 	exp_delay = pki_expiration_delay(10);
 	ret = dao_fetch_context_embassy(context_id_str, &emb_cert_ptr, &emb_pvkey_ptr, &serial, &ippool_bin);
 	if (ret == -1) {
-		jlog(L_ERROR, "dsd]> failed to fetch context embassy");
+		jlog(L_ERROR, "failed to fetch context embassy");
 		return;
 	}
-	jlog(L_DEBUG, "dsd]> serial: %s", serial);
+	jlog(L_DEBUG, "serial: %s", serial);
 
 	emb = pki_embassy_load_from_memory(emb_cert_ptr, emb_pvkey_ptr, atoi(serial));
 
@@ -282,7 +282,7 @@ void AddRequest_node(DNDSMessage_t *msg)
 	provcode = uuid_v4();
 
 	snprintf(common_name, sizeof(common_name), "dnc-%s@%s", uuid, context_id_str);
-	jlog(L_DEBUG, "dsd]> common_name: %s", common_name);
+	jlog(L_DEBUG, "common_name: %s", common_name);
 
 	digital_id_t *node_ident = NULL;
 	node_ident = pki_digital_id(common_name, "", "", "", "info@dynvpn.com", "DNDS");
@@ -298,10 +298,10 @@ void AddRequest_node(DNDSMessage_t *msg)
 
 	ret = dao_update_embassy_serial(context_id_str, emb_serial);
 	if (ret == -1) {
-		jlog(L_ERROR, "dsd]> failed to update embassy serial");
+		jlog(L_ERROR, "failed to update embassy serial");
 		goto free1;
 	}
-	jlog(L_DEBUG, "dsd]> dao_update_embassy_serial: %d", ret);
+	jlog(L_DEBUG, "dao_update_embassy_serial: %d", ret);
 
 	/* handle ip pool */
 	ippool_t *ippool;
@@ -316,13 +316,13 @@ void AddRequest_node(DNDSMessage_t *msg)
 
 	ret = dao_add_node(context_id_str, uuid, node_cert_ptr, node_pvkey_ptr, provcode, description, ip);
 	if (ret == -1) {
-		jlog(L_ERROR, "dsd]> failed to add node");
+		jlog(L_ERROR, "failed to add node");
 		goto free2;
 	}
 
 	ret = dao_update_context_ippool(context_id_str, ippool->pool, pool_size);
 	if (ret == -1) {
-		jlog(L_ERROR, "dsd]> failed to update embassy ippool");
+		jlog(L_ERROR, "failed to update embassy ippool");
 		goto free2;
 	}
 
@@ -392,7 +392,7 @@ void searchRequest_client(struct session *session, DNDSMessage_t *req_msg)
 	Client_get_password(object, &password, &length);
 
 	dao_fetch_client_id(&id, email, password);
-	jlog(L_DEBUG, "dsd]> client id: %s", id);
+	jlog(L_DEBUG, "client id: %s", id);
 
 	DNDSMessage_t *msg;
 
@@ -546,13 +546,13 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 
 	if (contextid > 0) { /* searching by context ID */
 
-		jlog(L_DEBUG, "dsd]> context ID to search: %d", contextid);
+		jlog(L_DEBUG, "context ID to search: %d", contextid);
 		snprintf(str_contextid, sizeof(str_contextid), "%d", contextid);
 
 		ret = dao_fetch_node_from_context_id(str_contextid, msg,
 					CB_searchRequest_node_by_context_id);
 		if (ret != 0) {
-			jlog(L_WARNING, "dsd]> dao fetch node from context id failed: %d", contextid);
+			jlog(L_WARNING, "dao fetch node from context id failed: %d", contextid);
 			return; /* FIXME send negative response */
 		}
 
@@ -560,13 +560,13 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 
 	} else if (provcode != NULL) { /* searching by provcode */
 
-		jlog(L_DEBUG, "dsd]> searchRequest node for provisioning");
+		jlog(L_DEBUG, "searchRequest node for provisioning");
 
 		DNDSObject_t *objNode;
 		DNDSObject_new(&objNode);
 		DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
 
-		jlog(L_DEBUG, "dsd]> provcode to search: %s", provcode);
+		jlog(L_DEBUG, "provcode to search: %s", provcode);
 
 		char *certificate = NULL;
 		char *private_key = NULL;

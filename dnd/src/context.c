@@ -86,7 +86,7 @@ void context_show_session_list(context_t *context)
 
 context_t *context_lookup(uint32_t context_id)
 {
-	jlog(L_NOTICE, "dnd]> context lookup id: %d", context_id);
+	jlog(L_NOTICE, "context lookup id: %d", context_id);
 	if (context_id < CONTEXT_LIST_SIZE)
 		return context_table[context_id];
 
@@ -101,9 +101,9 @@ int context_create(uint32_t id, char *address, char *netmask,
 	context = (context_t*)malloc(sizeof(context_t));
 	context_table[id] = context;
 
-	jlog(L_DEBUG, "context]> id: %i", id);
-	jlog(L_DEBUG, "context]> subnet: %s", address);
-	jlog(L_DEBUG, "context]> netmask: %s", netmask);
+	jlog(L_DEBUG, "id: %i", id);
+	jlog(L_DEBUG, "subnet: %s", address);
+	jlog(L_DEBUG, "netmask: %s", netmask);
 
 	context->id = id;
 

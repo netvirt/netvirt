@@ -32,7 +32,7 @@ void on_log(const char *logline)
 int parse_config(config_t *cfg, struct dnd_cfg *dnd_cfg)
 {
 	if (!config_read_file(cfg, CONFIG_FILE)) {
-		jlog(L_ERROR, "dnd]> Can't open %s", CONFIG_FILE);
+		jlog(L_ERROR, "Can't open %s", CONFIG_FILE);
 		return -1;
 	}
 
@@ -41,51 +41,51 @@ int parse_config(config_t *cfg, struct dnd_cfg *dnd_cfg)
         }
 
 	if (config_lookup_string(cfg, "ipaddr", &dnd_cfg->ipaddr))
-		jlog(L_DEBUG, "dnd]> ipaddr: %s", dnd_cfg->ipaddr);
+		jlog(L_DEBUG, "ipaddr: %s", dnd_cfg->ipaddr);
 	else {
-		jlog(L_ERROR, "dnd]> ipaddr is not present !");
+		jlog(L_ERROR, "ipaddr is not present !");
 		return -1;
 	}
 
 	if (config_lookup_string(cfg, "port", &dnd_cfg->port))
-		jlog(L_DEBUG, "dnd]> port: %s", dnd_cfg->port);
+		jlog(L_DEBUG, "port: %s", dnd_cfg->port);
 	else {
-		jlog(L_ERROR, "dnd]> port is not present !");
+		jlog(L_ERROR, "port is not present !");
 		return -1;
 	}
 
 	if (config_lookup_string(cfg, "dsd_ipaddr", &dnd_cfg->dsd_ipaddr))
-		jlog(L_DEBUG, "dnd]> dsd_ipaddr: %s", dnd_cfg->dsd_ipaddr);
+		jlog(L_DEBUG, "dsd_ipaddr: %s", dnd_cfg->dsd_ipaddr);
 	else {
-		jlog(L_ERROR, "dnd]> dsd_ipaddr is not present !");
+		jlog(L_ERROR, "dsd_ipaddr is not present !");
 		return -1;
 	}
 
 	if (config_lookup_string(cfg, "dsd_port", &dnd_cfg->dsd_port))
-		jlog(L_DEBUG, "dnd]> dsd_port: %s", dnd_cfg->dsd_port);
+		jlog(L_DEBUG, "dsd_port: %s", dnd_cfg->dsd_port);
 	else {
-		jlog(L_ERROR, "dnd]> dsd_port is not present !");
+		jlog(L_ERROR, "dsd_port is not present !");
 		return -1;
 	}
 
 	if (config_lookup_string(cfg, "certificate", &dnd_cfg->certificate))
-		jlog(L_DEBUG, "dnd]> certificate: %s", dnd_cfg->certificate);
+		jlog(L_DEBUG, "certificate: %s", dnd_cfg->certificate);
 	else {
-		jlog(L_ERROR, "dnd]> certificate is not present !");
+		jlog(L_ERROR, "certificate is not present !");
 		return -1;
 	}
 
 	if (config_lookup_string(cfg, "privatekey", &dnd_cfg->privatekey))
-		jlog(L_DEBUG, "dnd]> privatekey: %s", dnd_cfg->privatekey);
+		jlog(L_DEBUG, "privatekey: %s", dnd_cfg->privatekey);
 	else {
-		jlog(L_ERROR, "dnd]> privatekey is not present !");
+		jlog(L_ERROR, "privatekey is not present !");
 		return -1;
 	}
 
 	if (config_lookup_string(cfg, "trusted_cert", &dnd_cfg->trusted_cert))
-		jlog(L_DEBUG, "dnd]> trusted_cert: %s", dnd_cfg->trusted_cert);
+		jlog(L_DEBUG, "trusted_cert: %s", dnd_cfg->trusted_cert);
 	else {
-		jlog(L_ERROR, "dnd]> trusted_cert is not present !");
+		jlog(L_ERROR, "trusted_cert is not present !");
 		return -1;
 	}
 
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 			quiet = 1;
 			break;
 		case 'v':
-			fprintf(stdout, "dnd]> version: %s\n", DNDVERSION);
+			fprintf(stdout, "version: %s\n", DNDVERSION);
 			return 0;
 		default:
 		case 'h':
@@ -125,28 +125,28 @@ int main(int argc, char *argv[])
 	config_init(&cfg);
 
 	if (parse_config(&cfg, dnd_cfg)) {
-		jlog(L_ERROR, "dnd]> parse_config failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "parse_config failed");
 		exit(EXIT_FAILURE);
 	}
 
 	if (krypt_init()) {
-		jlog(L_ERROR, "dnd]> krypt_init failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "krypt_init failed");
 		exit(EXIT_FAILURE);
 	}
 
 	netbus_tcp_init();
 	if (netbus_init()) {
-		jlog(L_ERROR, "dnd]> netbus_init failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "netbus_init failed");
 		exit(EXIT_FAILURE);
 	}
 
 	if (dsc_init(dnd_cfg)) {
-		jlog(L_ERROR, "dnd]> dsc_init failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "dsc_init failed");
 		exit(EXIT_FAILURE);
 	}
 
 	if (dnd_init(dnd_cfg)) {
-		jlog(L_ERROR, "dnd]> dnd_init failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "dnd_init failed");
 		exit(EXIT_FAILURE);
 	}
 

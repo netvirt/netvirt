@@ -29,7 +29,7 @@
 
 static EVP_PKEY *pki_generate_keyring()
 {
-	jlog(L_DEBUG, "dsd]> pki_generate_keyring");
+	jlog(L_DEBUG, "pki_generate_keyring");
 
 	EVP_PKEY *keyring;
 	RSA *rsa_keys;
@@ -62,7 +62,7 @@ static EVP_PKEY *pki_generate_keyring()
 
 static X509_REQ *pki_certificate_request(EVP_PKEY *keyring, digital_id_t *digital_id)
 {
-	jlog(L_DEBUG, "dsd]> pki_certificate_request");
+	jlog(L_DEBUG, "pki_certificate_request");
 
 	X509_REQ *cert_req;
 	X509_NAME *subject;
@@ -99,7 +99,7 @@ static X509_REQ *pki_certificate_request(EVP_PKEY *keyring, digital_id_t *digita
 static X509 *pki_certificate(X509_NAME *issuer, EVP_PKEY *keyring, X509_REQ *cert_req,
 				uint8_t is_cert_authority, uint32_t serial, uint32_t expiration_delay)
 {
-	jlog(L_DEBUG, "dsd]> pki_certificate");
+	jlog(L_DEBUG, "pki_certificate");
 
 	X509 *certificate;
 	X509_NAME *subject;
@@ -147,7 +147,7 @@ static X509 *pki_certificate(X509_NAME *issuer, EVP_PKEY *keyring, X509_REQ *cer
 
 static void pki_sign_certificate(EVP_PKEY *keyring, X509 *certificate)
 {
-	jlog(L_NOTICE, "dsd]> pki_sign_certificate");
+	jlog(L_NOTICE, "pki_sign_certificate");
 
 	X509_sign(certificate, keyring, EVP_sha1());
 }
@@ -171,7 +171,7 @@ digital_id_t *pki_digital_id(char *commonName,
 				char *emailAddress,
 				char *organizationName)
 {
-	jlog(L_DEBUG, "dsd]> pki_digital_id");
+	jlog(L_DEBUG, "pki_digital_id");
 
 	digital_id_t *digital_id;
 	digital_id = calloc(1, sizeof(digital_id_t));
@@ -195,7 +195,7 @@ void pki_embassy_free(embassy_t *embassy)
 
 embassy_t *pki_embassy_new(digital_id_t *digital_id, uint32_t expiration_delay)
 {
-	jlog(L_NOTICE, "dsd]> pki_embassy_new");
+	jlog(L_NOTICE, "pki_embassy_new");
 
 	embassy_t *embassy;
 	embassy = calloc(1, sizeof(embassy_t));
@@ -242,7 +242,7 @@ void pki_passport_free(passport_t *passport)
 
 passport_t *pki_embassy_deliver_passport(embassy_t *embassy, digital_id_t *digital_id, uint32_t expiration_delay)
 {
-	jlog(L_NOTICE, "dsd]> pki_embassy_deliver_passport");
+	jlog(L_NOTICE, "pki_embassy_deliver_passport");
 
 	passport_t *passport;
 	passport = calloc(1, sizeof(passport_t));
@@ -401,8 +401,8 @@ int main()
 	pki_write_certificate_in_mem(dsd_embassy->certificate, &cert_ptr, &size);
 	pki_write_privatekey_in_mem(dsd_embassy->keyring, &pvkey_ptr, &size);
 
-	jlog(L_NOTICE, "dsd]> cert %s", cert_ptr);
-	jlog(L_NOTICE, "dsd]> pvkey %s", pvkey_ptr);
+	jlog(L_NOTICE, "cert %s", cert_ptr);
+	jlog(L_NOTICE, "pvkey %s", pvkey_ptr);
 
 	return 0;
 
