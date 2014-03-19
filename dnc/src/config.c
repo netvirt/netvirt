@@ -90,18 +90,17 @@ int dnc_config_init(struct dnc_cfg *_dnc_cfg)
 		default_conf = 1;
         }
 
-
-	char *path = dnc_config_get_fullname("");
 #if defined(__unix__) && !defined(__APPLE__)
+	char *path = dnc_config_get_fullname("");
 	/* create ~/.dynvpn if it doesn't exist */
 	struct stat st;
 	if (default_conf && stat(path, &st) != 0) {
 		mkdir(path, S_IRUSR|S_IWUSR|S_IXUSR);
 		config_write_file(&cfg, dnc_cfg->dnc_conf);
 	}
-#endif
-	jlog(L_NOTICE, "confpath: %s", path);
 	free(path);
+#endif
+	jlog(L_NOTICE, "conf: %s", dnc_cfg->dnc_conf);
 
 	dnc_cfg->certificate = dnc_config_get_fullname("certificate.pem");
 	dnc_cfg->privatekey = dnc_config_get_fullname("privatekey.pem");
