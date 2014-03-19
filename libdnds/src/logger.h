@@ -25,9 +25,11 @@
 extern "C" {
 #endif
 
+#define jlog(fmt, args...) _jlog(__FILE__, __LINE__, fmt, args)
+
 void jlog_init_cb(void (*on_log)(const char *str));
 void jlog_init_file(const char *log_file_path);
-void jlog(int level, const char *format, ...);
+void _jlog(const char *file, int line, int level, const char *format, ...);
 
 #ifdef __cplusplus
 }

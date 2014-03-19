@@ -15,6 +15,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 #include "logger.h"
@@ -32,13 +33,14 @@ void jlog_init_file(const char *log_file_path)
 	log_file = fopen(log_file_path, "a");
 }
 
-void jlog(int level, const char *format, ...)
+void _jlog(const char *file, int line, int level, const char *format, ...)
 {
 	char logline[256];
 	static char logtxt[512];
 	time_t timer;
 	char cur_time[20];
 	struct tm* tm_info;
+	const char *filename = NULL;
 
 	(void)(level); /* unused */
 
@@ -49,7 +51,9 @@ void jlog(int level, const char *format, ...)
 	tm_info = localtime(&timer);
 	strftime(cur_time, 20, "%Y-%m-%d %H:%M:%S", tm_info);
 
-	snprintf(logline, 256, "[%s] %s\n", cur_time, format);
+	filename = strrchr(file, '/') ? strrchr(file, '/') + 1: file;
+
+	snprintf(logline, 256, "[%s] %s:%d]> %s\n", cur_time, filename, line, format);
 	vsnprintf(logtxt, 512, logline, ap);
 	va_end(ap);
 
