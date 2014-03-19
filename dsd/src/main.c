@@ -186,28 +186,28 @@ int main(int argc, char *argv[])
 	config_init(&cfg);
 
 	if (parse_config(&cfg, dsd_cfg)) {
-		jlog(L_ERROR, "dsd]> parse_config failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "dsd]> parse_config failed");
 		exit(EXIT_FAILURE);
 	}
 
 	if (krypt_init()) {
-		jlog(L_ERROR, "dsd]> krypt_init failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "dsd]> krypt_init failed");
 		exit(EXIT_FAILURE);
 	}
 
 	if (dao_connect(dsd_cfg)) {
-		jlog(L_ERROR, "dsd]> dao_connect failed :: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "dsd]> dao_connect failed");
 		exit(EXIT_FAILURE);
 	}
 
 	netbus_tcp_init();
 	if (netbus_init()) {
-		jlog(L_ERROR, "dsd]> netbus_init failed:: %s:%i", __FILE__, __LINE__);
+		jlog(L_ERROR, "dsd]> netbus_init failed");
 		exit(EXIT_FAILURE);
 	}
 
 	if (dsd_init(dsd_cfg)) {
-		jlog(L_NOTICE, "dsd]> dnds_init failed :: %s:%i\n", __FILE__, __LINE__);
+		jlog(L_NOTICE, "dsd]> dnds_init failed");
 		exit(EXIT_FAILURE);
 	}
 

@@ -78,7 +78,7 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 	 */
 	case dsop_PR_NOTHING:
 	default:
-		jlog(L_NOTICE, "dsd]> not a valid DSM operation");
+		jlog(L_WARNING, "dsd]> not a valid DSM operation");
 	case dsop_PR_terminateRequest:
 		terminate(session);
 		break;
@@ -163,7 +163,7 @@ int dsd_init(struct dsd_cfg *dsd_cfg)
 			on_connect, on_disconnect, on_input, on_secure);
 
 	if (ret < 0) {
-		jlog(L_NOTICE, "dsd]> net_server failed :: %s:%i\n", __FILE__, __LINE__);
+		jlog(L_NOTICE, "dsd]> net_server failed");
 		return -1;
 	}
 
