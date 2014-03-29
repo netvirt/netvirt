@@ -16,10 +16,10 @@ function mcd () {
 function clone_or_pull () {
      if [ -d "$2" ] ; then
          pushd "$2"
-         git pull
+         git pull || exit 1
          popd
      else
-         git clone "$1" "$2"
+         git clone "$1" "$2" || exit 1
      fi
 }
 
