@@ -17,6 +17,11 @@
 #include <QApplication>
 #include <QCleanlooksStyle>
 
+#if __APPLE__
+#include <libgen.h>
+#include <unistd.h>
+#endif
+
 #include "maindialog.h"
 
 int main(int argc, char *argv[])
