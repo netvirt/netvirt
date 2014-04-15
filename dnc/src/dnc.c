@@ -216,6 +216,7 @@ static void on_disconnect(netc_t *netc)
 	struct session *session;
 
 	session = netc->ext_ptr;
+	netc->ext_ptr = NULL;
 	if (session == NULL) {
 		jlog(L_DEBUG, "session is NULL");
 		return;

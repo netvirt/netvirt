@@ -54,11 +54,13 @@ static void udtbus_disconnect(peer_t *peer)
 {
 	vector<UDTSOCKET>::iterator i;
 
-	for (i = g_list_socket.begin(); i != g_list_socket.end(); ++i) {
-		if (peer->socket == *i) {
-			UDT::close(*i);
-			g_list_socket.erase(i);
-			break;
+	if (peer->socket > 0) {
+		for (i = g_list_socket.begin(); i != g_list_socket.end(); ++i) {
+			if (peer->socket == *i) {
+				UDT::close(*i);
+				g_list_socket.erase(i);
+				break;
+			}
 		}
 	}
 	peer->buffer_data_len = 0;
@@ -69,6 +71,17 @@ static void udtbus_disconnect(peer_t *peer)
 
 static void on_disconnect(peer_t *peer)
 {
+	vector<UDTSOCKET>::iterator i;
+
+	for (i = g_list_socket.begin(); i != g_list_socket.end(); ++i) {
+		if (peer->socket == *i) {
+			UDT::close(*i);
+			g_list_socket.erase(i);
+			break;
+		}
+	}
+	peer->socket = 0;
+
 	// inform upper layer
 	if (peer->on_disconnect)
 		peer->on_disconnect(peer);

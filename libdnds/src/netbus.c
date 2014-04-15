@@ -325,6 +325,8 @@ static void net_on_disconnect(peer_t *peer)
 	netc_t *netc = NULL;
 	netc = (netc_t *)peer->ext_ptr;
 
+	peer->ext_ptr = NULL;
+
 	if (netc != NULL) {
 		// inform upper-layer
 		if (netc->on_disconnect) {
@@ -333,7 +335,6 @@ static void net_on_disconnect(peer_t *peer)
 
 		jlog(L_NOTICE, "on disconnect");
 
-		peer->ext_ptr = NULL;
 		net_connection_free(netc);
 	}
 	else {
