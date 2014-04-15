@@ -720,16 +720,11 @@ int dao_fetch_node_from_provcode(char *provcode,
 					"AND	node.context_id = context.id;",
 					provcode);
 
-	jlog(L_DEBUG, "fetch_req: %s", fetch_req);
-
 	result = PQexec(dbconn, fetch_req);
 
 	int tuples, fields;
 	tuples = PQntuples(result);
 	fields = PQnfields(result);
-
-	jlog(L_DEBUG, "Tuples %d", tuples);
-	jlog(L_DEBUG, "Fields %d", fields);
 
 	if (tuples > 0 && fields == 4) {
 		*certificate = strdup(PQgetvalue(result, 0, 0));
