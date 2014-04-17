@@ -332,7 +332,6 @@ peer_t *tcpbus_client(const char *addr,
 	peer->socket = socket(PF_INET, SOCK_STREAM, 0);
 	if (peer->socket == -1) {
 		jlog(L_ERROR, "socket failed: %s", strerror(errno));
-		close(peer->socket);
 		free(peer);
 		return NULL;
 	}
