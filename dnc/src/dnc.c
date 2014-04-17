@@ -497,11 +497,13 @@ void *dnc_init(void *cfg)
 	session->tapcfg = tapcfg_init();
 	if (session->tapcfg == NULL) {
 		jlog(L_ERROR, "tapcfg_init failed");
+		free(session);
 		return NULL;
 	}
 
 	if (tapcfg_start(session->tapcfg, "dynvpn0", 1) < 0) {
 		jlog(L_ERROR, "tapcfg_start failed");
+		free(session);
 		return NULL;
 	}
 
