@@ -3258,6 +3258,7 @@ char *DNDS_strerror(DNDS_retcode_t retcode)
 
 		case DNDS_invalid_op:
 			strerror = strdup("The operation type is not set");
+			break;
 
 		case DNDS_invalid_object_type:
 			strerror = strdup("The object type is not set");
