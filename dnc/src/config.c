@@ -91,11 +91,14 @@ int dnc_config_init(struct dnc_cfg *_dnc_cfg)
         }
 
 #if defined(__unix__) && !defined(__APPLE__)
+	int ret = 0;
 	char *path = dnc_config_get_fullname("");
 	/* create ~/.dynvpn if it doesn't exist */
 	struct stat st;
 	if (default_conf && stat(path, &st) != 0) {
-		mkdir(path, S_IRUSR|S_IWUSR|S_IXUSR);
+		ret = mkdir(path, S_IRUSR|S_IWUSR|S_IXUSR);
+		if (ret == -1)
+			return -1;
 		config_write_file(&cfg, dnc_cfg->dnc_conf);
 	}
 	free(path);
