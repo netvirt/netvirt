@@ -604,14 +604,14 @@ void net_p2p_on_connect(peer_t *peer)
 	uint8_t kconn_type;
 	netc_t *netc = NULL;
 
-	netc = peer->ext_ptr;
-	netc->peer = peer;
-
 	if (peer == NULL) {
 		jlog(L_ERROR, "unable to initialize the p2p connection");
 		net_connection_free(netc);
 		return;
 	}
+
+	netc = peer->ext_ptr;
+	netc->peer = peer;
 
 	if (netc->security_level > NET_UNSECURE) {
 
