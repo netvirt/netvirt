@@ -226,6 +226,7 @@ static void tcpbus_on_connect(peer_t *peer)
 	if (ret < 0) {
 		jlog(L_ERROR, "tcpbus_ion_add failed: %s", strerror(errno));
 		free(npeer);
+		return;
 	}
 
 	if (peer->on_connect)
