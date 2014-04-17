@@ -347,7 +347,8 @@ static void create_file_with_owner_right(const char *filename)
 {
 	int fd = 0;
 	fd = open(filename, O_CREAT, S_IRUSR|S_IWUSR);
-	close(fd);
+	if (fd != -1)
+		close(fd);
 }
 
 static void op_prov_response(struct session *session, DNDSMessage_t *msg)
