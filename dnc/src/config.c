@@ -33,13 +33,13 @@ char *dnc_config_get_fullname(const char *file)
 {
 #ifdef _WIN32
 	char fullname[256];
-	sprintf(fullname, "%s%s%s", getenv("AppData"), "\\dynvpn\\", file);
+	snprintf(fullname, sizeof(fullname), "%s%s%s", getenv("AppData"), "\\dynvpn\\", file);
 	return strdup(fullname);
 #elif __APPLE__
 	return strdup(file);
 #else
 	char fullname[256];
-	sprintf(fullname, "%s%s%s", getenv("HOME"), "/.dynvpn/", file);
+	snprintf(fullname, sizeof(fullname), "%s%s%s", getenv("HOME"), "/.dynvpn/", file);
 	return strdup(fullname);
 #endif
 }
