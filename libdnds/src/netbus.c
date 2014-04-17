@@ -441,11 +441,11 @@ int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 
 void net_disconnect(netc_t *netc)
 {
-	netc->peer->ext_ptr = NULL;
-
 	// Inform the lower-layer
-	if (netc->peer && netc->peer->disconnect)
+	if (netc->peer && netc->peer->disconnect) {
+		netc->peer->ext_ptr = NULL;
 		netc->peer->disconnect(netc->peer);
+	}
 
 	net_connection_free(netc);
 }
