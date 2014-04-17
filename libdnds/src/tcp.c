@@ -262,7 +262,6 @@ int tcpbus_server(const char *in_addr,
 	peer->socket = socket(PF_INET, SOCK_STREAM, 0);
 	if (peer->socket < 0) {
 		jlog(L_NOTICE, "socket failed: %s", strerror(errno));
-		close(peer->socket);
 		free(peer);
 		return -1;
 	}
