@@ -97,8 +97,10 @@ int dnc_config_init(struct dnc_cfg *_dnc_cfg)
 	struct stat st;
 	if (default_conf && stat(path, &st) != 0) {
 		ret = mkdir(path, S_IRUSR|S_IWUSR|S_IXUSR);
-		if (ret == -1)
+		if (ret == -1) {
+			free(path);
 			return -1;
+		}
 		config_write_file(&cfg, dnc_cfg->dnc_conf);
 	}
 	free(path);
