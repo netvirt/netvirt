@@ -116,7 +116,7 @@ int dnc_config_init(struct dnc_cfg *_dnc_cfg)
 	}
 
         if (default_conf || !config_lookup_string(&cfg, "server_address", &dnc_cfg->server_address)) {
-		dnc_cfg->server_address = strdup("bs1.dynvpn.com");
+		dnc_cfg->server_address = strdup("bhs1.dynvpn.com");
 	}
 	jlog(L_DEBUG, "server_address = \"%s\";", dnc_cfg->server_address);
 
