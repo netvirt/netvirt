@@ -73,6 +73,7 @@ int dnc_config_toggle_auto_connect(int status)
 
 int dnc_config_init(struct dnc_cfg *_dnc_cfg)
 {
+	int ret = 0;
 	uint8_t default_conf = 0;
 	config_t cfg;
 	config_init(&cfg);
@@ -86,25 +87,30 @@ int dnc_config_init(struct dnc_cfg *_dnc_cfg)
 	dnc_cfg->ip_conf = dnc_config_get_fullname("dynvpn.ip");
 
 	/* Read the file. If there is an error, use default configuration */
-        if (!config_read_file(&cfg, dnc_cfg->dnc_conf)) {
+        if (config_read_file(&cfg, dnc_cfg->dnc_conf) == CONFIG_TRUE) {
 		default_conf = 1;
         }
 
 #if defined(__unix__) && !defined(__APPLE__)
-	int ret = 0;
-	char *path = dnc_config_get_fullname("");
 	/* create ~/.dynvpn if it doesn't exist */
+	char *path = dnc_config_get_fullname("");
 	struct stat st;
-	if (default_conf && stat(path, &st) != 0) {
+	if (stat(path, &st) != 0) {
 		ret = mkdir(path, S_IRUSR|S_IWUSR|S_IXUSR);
 		if (ret == -1) {
 			free(path);
 			return -1;
 		}
-		config_write_file(&cfg, dnc_cfg->dnc_conf);
 	}
 	free(path);
 #endif
+	/* create CONFPATH/dynvpn.conf if it doesn't exist */
+	if (default_conf == 0) {
+		if (config_write_file(&cfg, dnc_cfg->dnc_conf) == CONFIG_FALSE) {
+			return -1;
+		}
+	}
+
 	jlog(L_NOTICE, "conf: %s", dnc_cfg->dnc_conf);
 
 	dnc_cfg->certificate = dnc_config_get_fullname("certificate.pem");
