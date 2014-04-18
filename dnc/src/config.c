@@ -87,7 +87,7 @@ int dnc_config_init(struct dnc_cfg *_dnc_cfg)
 	dnc_cfg->ip_conf = dnc_config_get_fullname("dynvpn.ip");
 
 	/* Read the file. If there is an error, use default configuration */
-        if (config_read_file(&cfg, dnc_cfg->dnc_conf) == CONFIG_TRUE) {
+        if (config_read_file(&cfg, dnc_cfg->dnc_conf) == CONFIG_FALSE) {
 		default_conf = 1;
         }
 
@@ -105,7 +105,7 @@ int dnc_config_init(struct dnc_cfg *_dnc_cfg)
 	free(path);
 #endif
 	/* create CONFPATH/dynvpn.conf if it doesn't exist */
-	if (default_conf == 0) {
+	if (default_conf == 1) {
 		if (config_write_file(&cfg, dnc_cfg->dnc_conf) == CONFIG_FALSE) {
 			return -1;
 		}
@@ -131,9 +131,7 @@ int dnc_config_init(struct dnc_cfg *_dnc_cfg)
 	}
 	jlog(L_DEBUG, "server_port = \"%s\";", dnc_cfg->server_port);
 
-	if (!default_conf) {
-		config_lookup_bool(&cfg, "auto_connect", &dnc_cfg->auto_connect);
-	} else {
+	if (default_conf || !config_lookup_bool(&cfg, "auto_connect", &dnc_cfg->auto_connect) ) {
 		dnc_cfg->auto_connect = 0;
 	}
 
