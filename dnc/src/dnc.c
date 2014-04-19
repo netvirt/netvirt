@@ -198,6 +198,7 @@ void *try_to_reconnect(void *ptr)
 			on_disconnect, on_input, on_secure);
 
 		if (retry_netc) {
+			jlog(L_NOTICE, "net_client failed");
 			session->state = SESSION_STATE_NOT_AUTHED;
 			session->netc = retry_netc;
 			retry_netc->ext_ptr = session;
