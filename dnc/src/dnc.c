@@ -304,8 +304,8 @@ static void op_netinfo_response(struct session *session)
 	}
 	fclose(fp);
 
-	tapcfg_iface_set_ipv4(session->tapcfg, ipAddress, 24);
 	tapcfg_iface_set_status(session->tapcfg, TAPCFG_STATUS_IPV4_UP);
+	tapcfg_iface_set_ipv4(session->tapcfg, ipAddress, 24);
 	session->state = SESSION_STATE_AUTHED;
 }
 
