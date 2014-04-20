@@ -254,6 +254,7 @@ peer_t *udtbus_client(const char *listen_addr,
 	freeaddrinfo(local);
 	ret = getaddrinfo(listen_addr, port, &hints, &serv_info);
 	if (ret != 0) {
+		jlog(L_WARNING, "getaddrinfo failed: %s", gai_strerror(ret));
 		UDT::close(client);
 		return NULL;
 	}
