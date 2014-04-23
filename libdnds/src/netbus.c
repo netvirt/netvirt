@@ -309,7 +309,9 @@ static void net_on_input(peer_t *peer)
 		peer->disconnect(peer);		// inform lower-layer
 		net_connection_free(netc);
 	}
-	else {
+	else if (netc->security_level > NET_UNSECURE
+			&& netc->kconn->status == KRYPT_SECURE) {
+
 		if (mbuf_count(netc->queue_msg) > 0)
 			netc->on_input(netc);
 
