@@ -335,7 +335,10 @@ static void op_auth_response(struct session *session, DNDSMessage_t *msg)
 
 	case DNDSResult_secureStepUp:
 		jlog(L_NOTICE, "server authentication require step up");
+		break;
 
+	case DNDSResult_insufficientAccessRights:
+		jlog(L_ERROR, "Don't have access to connect");
 		break;
 
 	default:
