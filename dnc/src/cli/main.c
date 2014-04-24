@@ -40,14 +40,15 @@ int main(int argc, char *argv[])
 	while ((opt = getopt(argc, argv, "vhp:")) != -1) {
 		switch (opt) {
 		case 'p':
-			jlog(L_DEBUG, "provisioning code: %s", optarg);
+			fprintf(stdout, "provisioning code: %s\n", optarg);
 			dnc_cfg->prov_code = strdup(optarg);
 			break;
 		case 'v':
-			jlog(L_NOTICE, "version: %s", DNCVERSION);
+			fprintf(stdout, "version: %s\n", DNCVERSION);
+			fprintf(stdout, "%s\n", "Licensing Information: http://www.dynvpn.com/license");
 			return 0;
 		case 'h':
-			jlog(L_NOTICE, "\nDynVPN client:\n\n"
+			fprintf(stdout, "\nDynVPN client:\n\n"
 					"-p KEY\t\tclient provisioning\n"
 					"-v\t\tshow version\n"
 					"-h\t\tshow this help\n");
@@ -57,7 +58,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-        dnc_cfg->ev.on_log = on_log;
+	dnc_cfg->ev.on_log = on_log;
 
 	if (dnc_config_init(dnc_cfg)) {
 		jlog(L_ERROR, "dnc_config_init failed");
