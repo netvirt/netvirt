@@ -96,6 +96,9 @@ context_t *context_lookup(uint32_t context_id)
 int context_create(uint32_t id, char *address, char *netmask,
 			char *serverCert, char *serverPrivkey, char *trustedCert)
 {
+	(void)(address); /* unused */
+	(void)(netmask); /* unused */
+
 	context_t *context;
 
 	context = (context_t*)malloc(sizeof(context_t));
