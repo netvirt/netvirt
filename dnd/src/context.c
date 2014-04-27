@@ -101,10 +101,6 @@ int context_create(uint32_t id, char *address, char *netmask,
 	context = (context_t*)malloc(sizeof(context_t));
 	context_table[id] = context;
 
-	jlog(L_DEBUG, "id: %i", id);
-	jlog(L_DEBUG, "subnet: %s", address);
-	jlog(L_DEBUG, "netmask: %s", netmask);
-
 	context->id = id;
 
 	context->passport = pki_passport_load_from_memory(serverCert, serverPrivkey, trustedCert);
