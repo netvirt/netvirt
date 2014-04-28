@@ -6,7 +6,7 @@ SET(CPACK_PACKAGE_VERSION "0.5")
 # Using Hardening Options
 # https://wiki.debian.org/Hardening
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-set(compiler_options "-W -Wall -fstack-protector-all --param ssp-buffer-size=4 -Wl,-z,relro -Wl,-z,now -Wformat -Wformat-security -Werror=format-security -rdynamic -fPIE -pie -D_FORTIFY_SOURCE=2 -O1")
+set(compiler_options "-W -Wall -fstack-protector-all --param ssp-buffer-size=4 -Wl,-z,relro -Wl,-z,now -Wformat -Wformat-security -Werror=format-security -D_FORTIFY_SOURCE=2 -O1")
 else()
 set(compiler_options "-W -Wall -fstack-protector-all --param ssp-buffer-size=4 -Wformat -Wformat-security -Werror=format-security -fPIE -D_FORTIFY_SOURCE=2 -O1")
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
