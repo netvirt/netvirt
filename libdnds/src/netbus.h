@@ -79,6 +79,7 @@ typedef struct netc {
 
 } netc_t;
 
+int net_get_local_ip(char *ip_local, int len);
 void net_step_up(netc_t *netc);
 int net_send_msg(netc_t *, DNDSMessage_t *);
 void net_disconnect(netc_t *);

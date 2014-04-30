@@ -98,7 +98,7 @@ void transmit_netinfo_request(struct session *session)
 	int hwaddrlen;
 	char ip_local[16];
 
-//	inet_get_local_ip(ip_local, INET_ADDRSTRLEN);
+	net_get_local_ip(ip_local, INET_ADDRSTRLEN);
 	hwaddr = tapcfg_iface_get_hwaddr(session->tapcfg, &hwaddrlen);
 
 	DNDSMessage_t *msg;
@@ -111,7 +111,7 @@ void transmit_netinfo_request(struct session *session)
 	DNMessage_set_ackNumber(msg, 0);
 	DNMessage_set_operation(msg, dnop_PR_netinfoRequest);
 
-	NetinfoRequest_set_ipLocal(msg, ip_local); // Is it still usefull ?
+	NetinfoRequest_set_ipLocal(msg, ip_local);
 	NetinfoRequest_set_macAddr(msg, (uint8_t*)hwaddr);
 
 	net_send_msg(session->netc, msg);
