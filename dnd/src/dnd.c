@@ -122,10 +122,10 @@ void transmit_netinfo_response(netc_t *netc)
 
 void handle_netinfo_request(struct session *session, DNDSMessage_t *msg)
 {
-	//NetinfoRequest_get_ipLocal(msg, session->ip_local);
+	NetinfoRequest_get_ipLocal(msg, session->ip_local);
 	NetinfoRequest_get_macAddr(msg, session->tun_mac_addr);
 
-	//jlog(L_NOTICE, "client local ip: %s", session->ip_local);
+	jlog(L_NOTICE, "client local ip: %s", session->ip_local);
 	jlog(L_NOTICE, "client mac addr: %02x:%02x:%02x:%02x:%02x:%02x",
 		session->tun_mac_addr[0],
 		session->tun_mac_addr[1],
