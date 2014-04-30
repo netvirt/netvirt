@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 project(dnds)
 
-SET(CPACK_PACKAGE_VERSION "0.5")
+SET(CPACK_PACKAGE_VERSION "0.5.1")
 
 # Using Hardening Options
 # https://wiki.debian.org/Hardening
