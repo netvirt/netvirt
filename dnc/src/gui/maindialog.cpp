@@ -14,6 +14,7 @@
  * GNU General Public License for more details.
  */
 
+#include <QFile>
 #include <QLabel>
 #include <QDebug>
 
