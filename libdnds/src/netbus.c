@@ -393,8 +393,6 @@ static void net_on_disconnect(peer_t *peer)
 			netc->on_disconnect(netc);
 		}
 
-		jlog(L_NOTICE, "on disconnect");
-
 		net_connection_free(netc);
 	}
 	else {

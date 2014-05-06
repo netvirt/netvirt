@@ -34,7 +34,8 @@ static void p2p_on_secure(netc_t *netc)
 		return;
 	}
 
-	jlog(L_NOTICE, "p2p connection encrypted");
+	krypt_print_cipher(netc->kconn);
+	jlog(L_NOTICE, "p2p connection secured and authenticated");
 
 	p2p_session = netc->ext_ptr;
 	p2p_session->state = SESSION_STATE_AUTHED;

@@ -305,6 +305,7 @@ static void op_netinfo_response(struct session *session)
 
 	tapcfg_iface_set_status(session->tapcfg, TAPCFG_STATUS_IPV4_UP);
 	tapcfg_iface_set_ipv4(session->tapcfg, ipAddress, 24);
+	jlog(L_NOTICE, "ip address: %s", ipAddress);
 	session->state = SESSION_STATE_AUTHED;
 }
 
@@ -317,6 +318,7 @@ static void op_auth_response(struct session *session, DNDSMessage_t *msg)
 
 	switch (result) {
 	case DNDSResult_success:
+		krypt_print_cipher(session->netc->kconn);
 		jlog(L_NOTICE, "session secured and authenticated");
 
 		fp = fopen(dnc_cfg->ip_conf, "r");
@@ -398,7 +400,6 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 	fclose(fp);
 
 	ProvResponse_get_ipAddress(msg, ipAddress);
-	jlog(L_NOTICE, "ip address: %s", ipAddress);
 
 	fp = fopen(dnc_cfg->ip_conf, "w");
 	if (fp == NULL) {

@@ -208,7 +208,7 @@ void udtbus_poke_queue()
 		if (peer == NULL)
 			continue;
 
-		jlog(L_NOTICE, "peer <socket:%d> closed or broken connection", peer->socket);
+		jlog(L_NOTICE, "peer closed or broken connection", peer->socket);
 		on_disconnect(peer);
 	}
 }

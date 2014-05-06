@@ -196,8 +196,6 @@ static int verify_callback(int ok, X509_STORE_CTX *store)
 
 static int krypt_set_adh(krypt_t *kconn)
 {
-	jlog(L_NOTICE, "set adh");
-
 	SSL_CTX_set_cipher_list(kconn->ctx, "ADH");
 	DH *dh = get_dh_1024();
 	SSL_CTX_set_tmp_dh(kconn->ctx, dh);
@@ -212,8 +210,6 @@ static int krypt_set_adh(krypt_t *kconn)
 // XXX Clean up this function, we MUST handle all errors possible
 int krypt_set_rsa(krypt_t *kconn)
 {
-	jlog(L_NOTICE, "set rsa");
-
 	if (kconn->security_level == KRYPT_RSA) {
 		jlog(L_NOTICE, "the security level is already set to RSA");
 		return 0;
@@ -259,6 +255,11 @@ void krypt_set_renegotiate(krypt_t *kconn)
 	}
 }
 
+void krypt_print_cipher(krypt_t *kconn)
+{
+	jlog(L_NOTICE, "cipher: %s", SSL_get_cipher_name(kconn->ssl));
+}
+
 int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 {
 	int ret = 0;
@@ -283,8 +284,6 @@ int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 		post_handshake_check(kconn);
 		kconn->status = KRYPT_SECURE;
 		status = 0;
-
-		jlog(L_NOTICE, "cipher: %s", SSL_get_cipher_name(kconn->ssl));
 	}
 	else if (ret == 0) {
 		// Error
