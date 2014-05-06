@@ -91,23 +91,6 @@ static void on_disconnect(peer_t *peer)
 
 static int udtbus_send(peer_t *peer, void *data, int len)
 {
-	vector<UDTSOCKET>::iterator i;
-	vector<UDTSOCKET> list_socket;
-	vector<UDTSOCKET> exceptfds;
-
-	list_socket.push_back(peer->socket);
-
-	int res = UDT::selectEx(list_socket, NULL, NULL, &exceptfds, 0);
-	if (res != 0) {
-		for (i = exceptfds.begin(); i != exceptfds.end(); ++i) {
-			if (peer->socket == *i) {
-				jlog(L_NOTICE, "send: %s", UDT::getlasterror().getErrorMessage());
-				on_disconnect(peer);
-				return -1;
-			}
-		}
-	}
-
 	int ret = UDT::send(peer->socket, (char*)data, len, 0);
 	if (ret == UDT::ERROR) {
 		jlog(L_WARNING, "send: %s", UDT::getlasterror().getErrorMessage());
