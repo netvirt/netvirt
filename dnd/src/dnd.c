@@ -237,6 +237,7 @@ static void on_connect(netc_t *netc)
 		return;
 	}
 
+	session->ip = strdup(netc->peer->host);
 	session->netc = netc;
 	netc->ext_ptr = session;
 
