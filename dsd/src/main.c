@@ -111,7 +111,7 @@ int parse_config(config_t *cfg, struct dsd_cfg *dsd_cfg)
 	}
 
 	if (config_lookup_string(cfg, "db_pwd", &dsd_cfg->db_pwd))
-		jlog(L_DEBUG, "db_pwd: %s", dsd_cfg->db_pwd);
+		jlog(L_DEBUG, "db_pwd: ***");
 	else {
 		jlog(L_ERROR, "db_pwd is not present !");
 		return -1;
