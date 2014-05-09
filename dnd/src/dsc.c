@@ -263,7 +263,7 @@ static void on_disconnect(netc_t *netc)
 	   the current netc and return when max_retry is reached or
 	   connection is up again. */
 
-	jlog(L_NOTICE, "connection retry to dsd...\n");
+	jlog(L_NOTICE, "connection retry to dsd...");
 	do {
 		sleep(5);
 		retry_netc = net_client(dnd_cfg->dsd_ipaddr, dnd_cfg->dsd_port,

@@ -271,6 +271,16 @@ void dao_dump_statements()
 	printf("\n\n");
 }
 
+int dao_update_node_state(char *context_id, char *uuid, int status, char *public_ip)
+{
+	jlog(L_DEBUG, "context: %s", context_id);
+	jlog(L_DEBUG, "uuid: %s", uuid);
+	jlog(L_DEBUG, "status: %d", status);
+	jlog(L_DEBUG, "public ip: %s", public_ip);
+
+	return 0;
+}
+
 int dao_add_client(char *firstname,
 			char *lastname,
 			char *email,

@@ -39,6 +39,7 @@ int dao_fetch_context(char **id,
 			char **trustedCert);
 */
 
+int dao_update_node_state(char *context, char *uuid, int status, char *public_ip);
 int dao_add_context(char *client_id,
 			char *description,
 			char *topology_id,

@@ -83,7 +83,6 @@ void context_show_session_list(context_t *context)
 	jlog(L_DEBUG, "--\n");
 }
 
-
 context_t *context_lookup(uint32_t context_id)
 {
 	jlog(L_NOTICE, "context lookup id: %d", context_id);

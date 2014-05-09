@@ -13,7 +13,9 @@
  * GNU Affero General Public License for more details
  */
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <dnds.h>
 #include <logger.h>
@@ -62,6 +64,37 @@ void nodeConnectInfo(struct session *session, DNDSMessage_t *req_msg)
 {
 	(void)(session); /* unused */
 	NodeConnectInfo_printf(req_msg);
+
+	size_t length;
+	char *certName;
+	char ipAddress[INET_ADDRSTRLEN];
+	e_ConnectState state;
+	char *uuid = NULL;
+	char *context_id = NULL;
+	char *ptr = NULL;
+
+	NodeConnectInfo_get_certName(req_msg, &certName, &length);
+	NodeConnectInfo_get_ipAddr(req_msg, ipAddress);
+	NodeConnectInfo_get_state(req_msg, &state);
+
+	uuid = strdup(certName+4);
+	ptr = strchr(uuid, '@');
+	*ptr = '\0';
+	context_id = strdup(ptr+1);
+
+	switch(state) {
+	case ConnectState_connected:
+		dao_update_node_state(context_id, uuid, 1, ipAddress);
+		break;
+	case ConnectState_disconnected:
+		dao_update_node_state(context_id, uuid, 0, NULL);
+		break;
+	default:
+		jlog(L_WARNING, "the connection state is invalid");
+		break;
+	}
+
+	return;
 }
 
 void AddRequest_client(DNDSMessage_t *msg)
