@@ -38,6 +38,7 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 	char *certName;
 	size_t length;
 	uint32_t context_id;
+	node_info_t *ninfo;
 
 	AuthRequest_get_certName(req_msg, &certName, &length);
 
@@ -58,12 +59,20 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 
 	AuthRequest_get_certName(req_msg, &certName, &length);
 
-	/* something@id */
-	jlog(L_NOTICE, "certName: %s", certName);
-	context_id = atoi(strchr(certName,'@')+1); //XXX atoi(NULL) doesn't like it
-	jlog(L_NOTICE, "contextid: %d", context_id);
-	session->context = context_lookup(context_id);
+	ninfo = cn2node_info(certName);
+	if (ninfo == NULL) {
+		jlog(L_WARNING, "cn2node_info failed");
+		return -1;
+	}
 
+	jlog(L_DEBUG, "type: %s", ninfo->type);
+	jlog(L_DEBUG, "uuid: %s", ninfo->uuid);
+	jlog(L_DEBUG, "context_id: %s", ninfo->context_id);
+
+	context_id = atoi(ninfo->context_id);
+	free(ninfo);
+
+	session->context = context_lookup(context_id);
 	if (session->context != NULL) {
 
 		session->cert_name = strdup(certName);

@@ -18,6 +18,12 @@
 
 #include <openssl/x509_vfy.h>
 
+typedef struct node_info {
+	char type[3+1];
+	char uuid[36+1];
+	char context_id[5+1];
+} node_info_t;
+
 typedef struct passport {
 
         X509 *certificate;
@@ -25,7 +31,7 @@ typedef struct passport {
         X509_STORE *trusted_authority;
 } passport_t;
 
-void cn2uuid(char *cn, char **uuid, char *context_id);
+node_info_t *cn2node_info(char *cn);
 passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, char *trusted_authority);
 passport_t *pki_passport_load_from_file(const char *certificate_filename,
                                         const char *privatekey_filename,

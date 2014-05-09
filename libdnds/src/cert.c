@@ -21,6 +21,28 @@
 
 #include "cert.h"
 
+node_info_t *cn2node_info(char *cn)
+{
+	// expected: dnc-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX@99999
+	node_info_t *ninfo = NULL;
+
+	if (cn == NULL || strlen(cn) < 42)
+		return NULL;
+
+	ninfo = calloc(1, sizeof(node_info_t));
+
+	strncpy(ninfo->type, cn, 3);
+        ninfo->type[3] = '\0';
+
+        strncpy(ninfo->uuid, cn+4, 36);
+        ninfo->uuid[36] = '\0';
+
+        strncpy(ninfo->context_id, cn+41, 5);
+        ninfo->context_id[5] = '\0';
+
+	return ninfo;
+}
+
 passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, char *trusted_authority)
 {
 	BIO *bio_memory = NULL;
