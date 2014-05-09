@@ -119,5 +119,3 @@ passport_t *pki_passport_load_from_file(const char *certificate_filename,
 
 	return passport;
 }
-
-
