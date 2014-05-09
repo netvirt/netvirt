@@ -79,10 +79,10 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 			net_send_msg(session_dst->netc, msg);
 
 			int lnk_state = 0;
-			lnk_state = linkst_joined(session_src->id, session_dst->id, session_src->context->linkst, 1024);
+			lnk_state = linkst_joined(session_src->id, session_dst->id, session_src->context->linkst, MAX_NODE);
 			if (!lnk_state) {
 				p2pRequest(session_src, session_dst);
-				linkst_join(session_src->id, session_dst->id, session_src->context->linkst, 1024);
+				linkst_join(session_src->id, session_dst->id, session_src->context->linkst, MAX_NODE);
 			}
 
 

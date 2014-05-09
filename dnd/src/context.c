@@ -50,7 +50,7 @@ void context_del_session(context_t *context, struct session *session)
 		}
 	}
 
-	bitpool_release_bit(context->bitpool, 1024, session->id);
+	bitpool_release_bit(context->bitpool, MAX_NODE, session->id);
 	context->active_node--;
 }
 
@@ -67,7 +67,7 @@ void context_add_session(context_t *context, struct session *session)
 		context->session_list = session;
 	}
 
-	bitpool_allocate_bit(context->bitpool, 1024, &session->id);
+	bitpool_allocate_bit(context->bitpool, MAX_NODE, &session->id);
 	context->active_node++;
 }
 
@@ -107,13 +107,13 @@ int context_create(uint32_t id, char *address, char *netmask,
 
 	context->passport = pki_passport_load_from_memory(serverCert, serverPrivkey, trustedCert);
 
-	bitpool_new(&context->bitpool, 1024);
-	context->linkst = linkst_new(1024);
+	bitpool_new(&context->bitpool, MAX_NODE);
+	context->linkst = linkst_new(MAX_NODE);
 	context->active_node = 0;
 
 	context->session_list = NULL;
 
-	context->ftable = ftable_new(1024, session_itemdup, session_itemrel);
+	context->ftable = ftable_new(MAX_NODE, session_itemdup, session_itemrel);
 	return 0;
 }
 

@@ -6,6 +6,7 @@ include_directories(protocol)
 
 set(DNDS_SRCS
 	bitv.c
+	cert.c
 	dnds.c
 	ftable.c
 	hash.c

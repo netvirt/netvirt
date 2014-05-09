@@ -24,6 +24,8 @@
 #include "dnd.h"
 #include "linkst.h"
 
+#define MAX_NODE 1024				// the maximum of nodes per context
+
 typedef struct context {
 
 	int id;					// context unique identifier

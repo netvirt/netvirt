@@ -19,6 +19,8 @@
 #include <stdint.h>
 #include <openssl/ssl.h>
 
+#include "cert.h"
+
 #define KRYPT_TLS	0x1	// Transport Layer Security { NET_TCP, NET_UDT }
 #define KRYPT_DTLS	0x2	// Datagram Transport Layer Security { unused }
 
@@ -32,13 +34,6 @@
 
 #define KRYPT_ADH	0x1	// Basic security level ADH
 #define KRYPT_RSA	0x2	// Maximum security level RSA
-
-typedef struct passport {
-
-        X509 *certificate;
-        EVP_PKEY *keyring;
-        X509_STORE *trusted_authority;
-} passport_t;
 
 typedef struct krypt {
 
@@ -67,10 +62,6 @@ typedef struct krypt {
 
 } krypt_t;
 
-passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, char *trusted_authority);
-passport_t *pki_passport_load_from_file(const char *certificate_filename,
-                                        const char *privatekey_filename,
-                                        const char *trusted_authority_filename);
 void krypt_set_renegotiate(krypt_t *kconn);
 int krypt_set_rsa(krypt_t *kconn);
 int krypt_step_up(krypt_t *kconn);
