@@ -38,7 +38,9 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 	char *certName = NULL;
 	size_t length = 0;
 	uint32_t context_id = 0;
+#if 0
 	struct session *old_session = NULL;
+#endif
 
 	AuthRequest_get_certName(req_msg, &certName, &length);
 
