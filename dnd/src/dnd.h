@@ -31,6 +31,8 @@ struct dnd_cfg {
 	const char *certificate;
 	const char *privatekey;
 	const char *trusted_cert;
+
+	int dsc_initialized;
 };
 
 int dnd_init(struct dnd_cfg *dnd_cfg);

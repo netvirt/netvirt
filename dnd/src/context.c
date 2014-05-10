@@ -113,6 +113,7 @@ int context_create(uint32_t id, char *address, char *netmask,
 	context->session_list = NULL;
 
 	context->ftable = ftable_new(MAX_NODE, session_itemdup, session_itemrel);
+	context->ctable = ctable_new(MAX_NODE, session_itemdup, session_itemrel);
 	return 0;
 }
 

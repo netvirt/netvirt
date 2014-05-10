@@ -3,6 +3,7 @@ set(CMAKE_CXX_FLAGS "-g -W -Wall -DDNDVERSION='\"${CPACK_PACKAGE_VERSION}\"' ${c
 
 add_executable(dnd
 	context.c
+	ctable.c
 	dnd.c
 	dsc.c
 	inet.c

@@ -124,6 +124,8 @@ int main(int argc, char *argv[])
 
 	config_init(&cfg);
 
+	dnd_cfg->dsc_initialized = 0;
+
 	if (parse_config(&cfg, dnd_cfg)) {
 		jlog(L_ERROR, "parse_config failed");
 		exit(EXIT_FAILURE);
@@ -143,6 +145,12 @@ int main(int argc, char *argv[])
 	if (dsc_init(dnd_cfg)) {
 		jlog(L_ERROR, "dsc_init failed");
 		exit(EXIT_FAILURE);
+	}
+
+	/* make sure dsc is properly initialized before
+		accepting connection */
+	while (dnd_cfg->dsc_initialized == 0) {
+		sleep(1);
 	}
 
 	if (dnd_init(dnd_cfg)) {

@@ -266,7 +266,10 @@ static void on_disconnect(netc_t *netc)
 		free(mac_itr);
 	}
 
-	context_del_session(session->context, session);
+#if 0
+	ctable_erase(session->context->ctable, session->node_info->uuid);
+#endif
+	context_del_sessioa(session->context, session);
 	transmit_node_connectinfo(ConnectState_disconnected,
 				session->ip, session->cert_name);
 	session_free(session);

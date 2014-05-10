@@ -35,10 +35,10 @@ void provRequest(struct session *session, DNDSMessage_t *req_msg)
 
 int authRequest(struct session *session, DNDSMessage_t *req_msg)
 {
-	char *certName;
-	size_t length;
-	uint32_t context_id;
-	node_info_t *ninfo;
+	char *certName = NULL;
+	size_t length = 0;
+	uint32_t context_id = 0;
+	struct session *old_session = NULL;
 
 	AuthRequest_get_certName(req_msg, &certName, &length);
 
@@ -59,47 +59,58 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 
 	AuthRequest_get_certName(req_msg, &certName, &length);
 
-	ninfo = cn2node_info(certName);
-	if (ninfo == NULL) {
+	session->node_info = cn2node_info(certName);
+	if (session->node_info == NULL) {
 		jlog(L_WARNING, "cn2node_info failed");
 		return -1;
 	}
 
-	jlog(L_DEBUG, "type: %s", ninfo->type);
-	jlog(L_DEBUG, "uuid: %s", ninfo->uuid);
-	jlog(L_DEBUG, "context_id: %s", ninfo->context_id);
+	jlog(L_DEBUG, "type: %s", session->node_info->type);
+	jlog(L_DEBUG, "uuid: %s", session->node_info->uuid);
+	jlog(L_DEBUG, "context_id: %s", session->node_info->context_id);
 
-	context_id = atoi(ninfo->context_id);
-	free(ninfo);
-
+	context_id = atoi(session->node_info->context_id);
 	session->context = context_lookup(context_id);
-	if (session->context != NULL) {
 
-		session->cert_name = strdup(certName);
-		if (session->netc->security_level == NET_UNSECURE) {
-
-			AuthResponse_set_result(msg, DNDSResult_success);
-			net_send_msg(session->netc, msg);
-
-			session->state = SESSION_STATE_AUTHED;
-			session->netc->on_secure(session->netc);
-
-		} else {
-
-			AuthResponse_set_result(msg, DNDSResult_secureStepUp);
-			net_send_msg(session->netc, msg);
-
-			krypt_add_passport(session->netc->kconn, session->context->passport);
-			session->state = SESSION_STATE_WAIT_STEPUP;
-			net_step_up(session->netc);
-		}
-	} else {
-
+	if (session->context == NULL) {
 		AuthResponse_set_result(msg, DNDSResult_insufficientAccessRights);
 		net_send_msg(session->netc, msg);
 		DNDSMessage_del(msg);
 
 		return -1;
+	}
+
+#if 0
+	old_session = ctable_find(session->context->ctable, session->node_info->uuid);
+	if (old_session == NULL) {
+		ctable_insert(session->context->ctable, session->node_info->uuid, session);
+	} else {
+		// that node is already connected, if the new session is from the same IP
+		// disconnect the old session, and let this one connect
+		if (strcmp(old_session->ip, session->ip) == 0) {
+			// XXX disconnect the old session
+			ctable_insert(session->context->ctable, session->node_info->uuid, session);
+		}
+	}
+#endif
+
+	session->cert_name = strdup(certName);
+	if (session->netc->security_level == NET_UNSECURE) {
+
+		AuthResponse_set_result(msg, DNDSResult_success);
+		net_send_msg(session->netc, msg);
+
+		session->state = SESSION_STATE_AUTHED;
+		session->netc->on_secure(session->netc);
+
+	} else {
+
+		AuthResponse_set_result(msg, DNDSResult_secureStepUp);
+		net_send_msg(session->netc, msg);
+
+		krypt_add_passport(session->netc->kconn, session->context->passport);
+		session->state = SESSION_STATE_WAIT_STEPUP;
+		net_step_up(session->netc);
 	}
 
 	DNDSMessage_del(msg);

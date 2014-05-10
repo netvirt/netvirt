@@ -101,6 +101,7 @@ static void net_connection_free(netc_t *netc)
 		free(netc->buf_enc);
 		mbuf_free(&netc->queue_msg);
 		mbuf_free(&netc->queue_out);
+		netc->ext_ptr = NULL;
 		free(netc);
 	}
 }

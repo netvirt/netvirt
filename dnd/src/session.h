@@ -17,7 +17,9 @@
 #define SESSION_H
 
 #include <inttypes.h>
-#include "netbus.h"
+
+#include <cert.h>
+#include <netbus.h>
 
 #define SESSION_STATE_AUTHED           0x1
 #define SESSION_STATE_NOT_AUTHED       0x2
@@ -34,6 +36,7 @@ struct session {
 
 	char *ip;
 	char *cert_name;
+	node_info_t *node_info;
 
 	uint32_t id;
 	char ip_local[16];

@@ -205,6 +205,7 @@ static void handle_SearchResponse(DNDSMessage_t *msg)
 
 	if (SearchType == SearchType_all) {
 		handle_SearchResponse_Context(msg);
+		dnd_cfg->dsc_initialized = 1;
 	}
 
 	if (SearchType == SearchType_object) {
@@ -288,6 +289,8 @@ static void *dsc_loop(void *nil)
 int dsc_init(struct dnd_cfg *cfg)
 {
 	dnd_cfg = cfg;
+
+	jlog(L_NOTICE, "dsc initializing...");
 
 	dnd_passport = pki_passport_load_from_file(dnd_cfg->certificate, dnd_cfg->privatekey, dnd_cfg->trusted_cert);
 	dsc_netc = net_client(dnd_cfg->dsd_ipaddr, dnd_cfg->dsd_port, NET_PROTO_TCP, NET_SECURE_RSA, dnd_passport,

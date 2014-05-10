@@ -21,6 +21,7 @@
 #include <netbus.h>
 #include <mbuf.h>
 
+#include "ctable.h"
 #include "dnd.h"
 #include "linkst.h"
 
@@ -30,6 +31,7 @@ typedef struct context {
 
 	int id;					// context unique identifier
 	ftable_t *ftable;			// forwarding table
+	ctable_t *ctable;			// connection table
 
 	uint32_t active_node;			// number of connected node
 	linkst_t **linkst;			// linkstate adjacency matrix
