@@ -29,7 +29,7 @@
 
 typedef struct context {
 
-	int id;					// context unique identifier
+	uint32_t id;				// context unique identifier
 	ftable_t *ftable;			// forwarding table
 	ctable_t *ctable;			// connection table
 
@@ -43,8 +43,7 @@ typedef struct context {
 
 } context_t;
 
-int context_create(uint32_t id, char *address, char *netmask,
-			char *serverCert, char *serverPrivkey, char *trustedCert);
+int context_create(uint32_t id, char *address, char *netmask, char *serverCert, char *serverPrivkey, char *trustedCert);
 void context_del_session(context_t *ctx, struct session *session);
 void context_add_session(context_t *ctx, struct session *session);
 context_t *context_lookup(uint32_t id);

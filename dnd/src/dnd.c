@@ -13,10 +13,10 @@
  * GNU Affero General Public License for more details
  */
 
-#include <stdio.h>
-#include <string.h>
 #include <errno.h>
 #include <pthread.h>
+#include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <time.h>
 
@@ -279,7 +279,7 @@ static void on_disconnect(netc_t *netc)
 
 static void *dnd_loop(void *nil)
 {
-	(void)(nil); /* unused */
+	(void)(nil);
 
 	while (1) {
 		udtbus_poke_queue();

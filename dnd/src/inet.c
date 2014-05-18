@@ -45,12 +45,6 @@
  * using DNDS frame instead of peer buffer
  */
 
-#if defined(OPENBSD)
-# define CMD_GET_LOCAL_IP "ifconfig `route -n show | grep default | awk '{print $8}'` | grep -w 'inet' | awk '{print $2}'"
-#else
-# define CMD_GET_LOCAL_IP "/sbin/ifconfig `ip route show | grep default | awk '{print $5}'` | grep 'inet addr' | cut -d: -f2 | awk '{print $1}'"
-#endif
-
 const uint8_t mac_addr_broadcast[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 const uint8_t mac_addr_multicast[6] = { 0x01, 0x00, 0x5e, 0x0, 0x0, 0x0 };
 const uint8_t mac_addr_empty[6] = { 0, 0, 0, 0, 0, 0 };
