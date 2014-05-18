@@ -459,7 +459,7 @@ int udtbus_init()
 	// Initialize Winsock
 	iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
 	if (iResult != 0) {
-		printf("WSAStartup failed: %d\n", iResult);
+		jlog(L_WARNING, "WSAStartup failed: %d", iResult);
 		return -1;
 	}
 #endif
