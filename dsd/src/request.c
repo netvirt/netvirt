@@ -62,8 +62,7 @@ int CB_searchRequest_context_by_client_id(void *msg,
 
 void nodeConnectInfo(struct session *session, DNDSMessage_t *req_msg)
 {
-	(void)(session); /* unused */
-	NodeConnectInfo_printf(req_msg);
+	(void)(session);
 
 	size_t length;
 	char *certName;
@@ -84,15 +83,18 @@ void nodeConnectInfo(struct session *session, DNDSMessage_t *req_msg)
 
 	switch(state) {
 	case ConnectState_connected:
-		dao_update_node_state(context_id, uuid, 1, ipAddress);
+		dao_update_node_status(context_id, uuid, "1", ipAddress);
 		break;
 	case ConnectState_disconnected:
-		dao_update_node_state(context_id, uuid, 0, NULL);
+		dao_update_node_status(context_id, uuid, "0", ipAddress);
 		break;
 	default:
 		jlog(L_WARNING, "the connection state is invalid");
 		break;
 	}
+
+	free(uuid);
+	free(context_id);
 
 	return;
 }
@@ -398,14 +400,14 @@ void addRequest(DNDSMessage_t *msg)
 
 void delRequest(struct session *session, DNDSMessage_t *msg)
 {
-	(void)(session); /* unused */
-	(void)(msg); /* unused */
+	(void)(session);
+	(void)(msg);
 }
 
 void modifyRequest(struct session *session, DNDSMessage_t *msg)
 {
-	(void)(session); /* unused */
-	(void)(msg); /*unused */
+	(void)(session);
+	(void)(msg);
 }
 
 void searchRequest_client(struct session *session, DNDSMessage_t *req_msg)

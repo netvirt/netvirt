@@ -33,6 +33,7 @@ void provRequest(struct session *session, DNDSMessage_t *req_msg)
 	transmit_provisioning(session, provcode, length);
 }
 
+/* Authentication Request from the node */
 int authRequest(struct session *session, DNDSMessage_t *req_msg)
 {
 	char *certName = NULL;

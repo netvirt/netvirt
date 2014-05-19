@@ -125,6 +125,17 @@ int dao_prepare_statements()
 		goto error;
 
 	result = PQprepare(dbconn,
+			"dao_update_node_status",
+			"UPDATE node "
+			"SET status = $3, ipsrc = $4 "
+			"WHERE context_id = $1 AND uuid = $2;",
+			0,
+			NULL);
+
+	if (result == NULL)
+		goto error;
+
+	result = PQprepare(dbconn,
 			"dao_update_context_ippool",
 			"UPDATE context "
 			"SET ippool = $2::bytea "
@@ -271,12 +282,41 @@ void dao_dump_statements()
 	printf("\n\n");
 }
 
-int dao_update_node_state(char *context_id, char *uuid, int status, char *public_ip)
+int dao_update_node_status(char *context_id, char *uuid, char *status, char *ipsrc)
 {
 	jlog(L_DEBUG, "context: %s", context_id);
 	jlog(L_DEBUG, "uuid: %s", uuid);
-	jlog(L_DEBUG, "status: %d", status);
-	jlog(L_DEBUG, "public ip: %s", public_ip);
+	jlog(L_DEBUG, "status: %s", status);
+	jlog(L_DEBUG, "ip src: %s", ipsrc);
+
+	const char *paramValues[4];
+	int paramLengths[4];
+	PGresult *result = NULL;
+
+	if (!context_id || !uuid || !status || !ipsrc) {
+		jlog(L_WARNING, "invalid parameter");
+		return -1;
+	}
+
+	paramValues[0] = context_id;
+	paramValues[1] = uuid;
+	paramValues[2] = status;
+	paramValues[3] = ipsrc;
+
+	paramLengths[0] = strlen(context_id);
+	paramLengths[1] = strlen(uuid);
+	paramLengths[2] = strlen(status);
+	paramLengths[3] = strlen(ipsrc);
+
+	result = PQexecPrepared(dbconn, "dao_update_node_status", 4, paramValues, paramLengths, NULL, 1);
+
+	if (!result) {
+		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		return -1;
+	}
+
+	if (check_result_status(result) == -1)
+		return -1;
 
 	return 0;
 }

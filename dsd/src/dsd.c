@@ -87,7 +87,7 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 
 static void on_secure(netc_t *netc)
 {
-	jlog(L_DEBUG, "connection secured");
+	jlog(L_NOTICE, "connection secured");
 	if (!strncmp("dnd", netc->kconn->client_cn, 3)) {
 		jlog(L_NOTICE, "%s authenticated", netc->kconn->client_cn);
 		g_dnd_netc = netc;
@@ -144,7 +144,7 @@ static void on_connect(netc_t *netc)
 
 static void *dsd_loop(void *nil)
 {
-	(void)(nil); /* unused */
+	(void)(nil);
 
 	while (1) {
 		tcpbus_ion_poke();
