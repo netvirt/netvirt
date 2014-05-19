@@ -20,6 +20,6 @@ see GPLv3.txt and AGPLv3.txt
 OS :
  - Gnu/Linux: Supported.
  - Windows: Supported. 
- - OSX: Supported.
- - OpenBSD : Ongoing.
+ - OSX: Supported. (a bug need to be fixed in the launcher)
+ - OpenBSD : Ongoing. (the package must be generated)
  - FreeBSD/NetBSD : Planned.

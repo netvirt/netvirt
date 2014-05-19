@@ -37,11 +37,6 @@
 #define UDTBUS_SERVER	0x1
 #define UDTBUS_CLIENT	0x2
 
-/* TODO
- * use journal function istead of count <<
- * handle errors
- */
-
 using namespace std;
 vector<UDTSOCKET>g_list_socket;
 
