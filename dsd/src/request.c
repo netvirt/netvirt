@@ -380,6 +380,7 @@ free1:
 	free(node_pvkey_ptr);
 
 	free(serial);
+	free(emb);
 	free(emb_cert_ptr);
 	free(emb_pvkey_ptr);
 }
