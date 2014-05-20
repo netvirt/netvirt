@@ -205,6 +205,7 @@ void AddRequest_context(DNDSMessage_t *msg)
 
 	passport_t *dnd_passport;
 	dnd_passport = pki_embassy_deliver_passport(emb, server_id, exp_delay);
+	free(server_id);
 
 	char *serv_cert_ptr;
 	char *serv_pvkey_ptr;
