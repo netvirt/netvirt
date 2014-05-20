@@ -216,6 +216,7 @@ void AddRequest_context(DNDSMessage_t *msg)
 
 	char emb_serial[10];
 	snprintf(emb_serial, sizeof(emb_serial), "%d", emb->serial);
+	free(emb);
 
 	/* Create an IP pool */
 	ippool_t *ippool;
