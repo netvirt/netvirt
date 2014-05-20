@@ -190,6 +190,7 @@ void AddRequest_context(DNDSMessage_t *msg)
 
 	embassy_t *emb;
 	emb = pki_embassy_new(embassy_id, exp_delay);
+	free(embassy_id);
 
 	char *emb_cert_ptr; long size;
 	char *emb_pvkey_ptr;
