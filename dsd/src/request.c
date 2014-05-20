@@ -212,6 +212,7 @@ void AddRequest_context(DNDSMessage_t *msg)
 
 	pki_write_certificate_in_mem(dnd_passport->certificate, &serv_cert_ptr, &size);
 	pki_write_privatekey_in_mem(dnd_passport->keyring, &serv_pvkey_ptr, &size);
+	free(dnd_passport);
 
 	char emb_serial[10];
 	snprintf(emb_serial, sizeof(emb_serial), "%d", emb->serial);
