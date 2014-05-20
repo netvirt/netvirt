@@ -65,6 +65,7 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 	session->node_info = cn2node_info(certName);
 	if (session->node_info == NULL) {
 		jlog(L_WARNING, "cn2node_info failed");
+		DNDSMessage_del(msg);
 		return -1;
 	}
 
@@ -79,7 +80,6 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 		AuthResponse_set_result(msg, DNDSResult_insufficientAccessRights);
 		net_send_msg(session->netc, msg);
 		DNDSMessage_del(msg);
-
 		return -1;
 	}
 
