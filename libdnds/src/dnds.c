@@ -3633,5 +3633,3 @@ void DNDSObject_printf(DNDSObject_t *obj)
 			break;
 	}
 }
-
-
