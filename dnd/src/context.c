@@ -107,7 +107,7 @@ int context_create(uint32_t id, char *address, char *netmask,
 	context->passport = pki_passport_load_from_memory(serverCert, serverPrivkey, trustedCert);
 
 	bitpool_new(&context->bitpool, MAX_NODE);
-	context->linkst = linkst_new(MAX_NODE);
+	context->linkst = linkst_new(150); // XXX
 	context->active_node = 0;
 
 	context->session_list = NULL;
