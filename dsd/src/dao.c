@@ -935,15 +935,15 @@ int dao_fetch_context(void *data, void (*cb_data_handler)(void *data,
 	int i;
 	for (i = 0; i < tuples; i++) {
 		cb_data_handler(data,
-			strdup(PQgetvalue(result, i, 0)),
-			strdup(PQgetvalue(result, i, 1)),
-			strdup(PQgetvalue(result, i, 2)),
-			strdup(PQgetvalue(result, i, 3)),
-			strdup(PQgetvalue(result, i, 4)),
-			strdup(PQgetvalue(result, i, 5)),
-			strdup(PQgetvalue(result, i, 6)),
-			strdup(PQgetvalue(result, i, 7)),
-			strdup(PQgetvalue(result, i, 8)));
+			PQgetvalue(result, i, 0),
+			PQgetvalue(result, i, 1),
+			PQgetvalue(result, i, 2),
+			PQgetvalue(result, i, 3),
+			PQgetvalue(result, i, 4),
+			PQgetvalue(result, i, 5),
+			PQgetvalue(result, i, 6),
+			PQgetvalue(result, i, 7),
+			PQgetvalue(result, i, 8));
 	}
 
 	return 0;
