@@ -65,6 +65,7 @@ int dao_prepare_statements()
 
 	if (result == NULL)
 		goto error;
+	PQclear(result);
 
 	result = PQprepare(dbconn,
 			"dao_fetch_client_id",
@@ -77,6 +78,7 @@ int dao_prepare_statements()
 
 	if (result == NULL)
 		goto error;
+	PQclear(result);
 
 	result = PQprepare(dbconn,
 			"dao_add_context",
@@ -90,6 +92,7 @@ int dao_prepare_statements()
 
 	if (result == NULL)
 		goto error;
+	PQclear(result);
 
 	result = PQprepare(dbconn,
 			"dao_fetch_context_id",
@@ -101,6 +104,7 @@ int dao_prepare_statements()
 			NULL);
 	if (result == NULL)
 		goto error;
+	PQclear(result);
 
 	result = PQprepare(dbconn,
 			"dao_fetch_context_embassy",
@@ -112,6 +116,7 @@ int dao_prepare_statements()
 
 	if (result == NULL)
 		goto error;
+	PQclear(result);
 
 	result = PQprepare(dbconn,
 			"dao_add_node",
@@ -123,6 +128,7 @@ int dao_prepare_statements()
 
 	if (result == NULL)
 		goto error;
+	PQclear(result);
 
 	result = PQprepare(dbconn,
 			"dao_update_node_status",
@@ -134,6 +140,7 @@ int dao_prepare_statements()
 
 	if (result == NULL)
 		goto error;
+	PQclear(result);
 
 	result = PQprepare(dbconn,
 			"dao_update_context_ippool",
@@ -145,6 +152,7 @@ int dao_prepare_statements()
 
 	if (result == NULL)
 		goto error;
+	PQclear(result);
 
 	result = PQprepare(dbconn,
 			"dao_update_embassy_serial",
@@ -156,6 +164,7 @@ int dao_prepare_statements()
 
 	if (result == NULL)
 		goto error;
+	PQclear(result);
 
 	result = PQprepare(dbconn,
 			"dao_fetch_context_by_client_id",
@@ -167,6 +176,7 @@ int dao_prepare_statements()
 
 	if (result == NULL)
 		goto error;
+	PQclear(result);
 
 	result = PQprepare(dbconn,
 			"dao_fetch_context_by_client_id_desc",
@@ -178,6 +188,7 @@ int dao_prepare_statements()
 
 	if (result == NULL)
 		goto error;
+	PQclear(result);
 
 	result = PQprepare(dbconn,
 			"dao_fetch_context",
@@ -188,6 +199,7 @@ int dao_prepare_statements()
 
 	if (result == NULL)
 		goto error;
+	PQclear(result);
 
 	result = PQprepare(dbconn,
 			"dao_fetch_node_from_context_id",
@@ -199,6 +211,7 @@ int dao_prepare_statements()
 
 	if (result == NULL)
 		goto error;
+	PQclear(result);
 
 	return 0;
 
@@ -264,8 +277,10 @@ void dao_dump_statements()
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 	}
 
-	if (check_result_status(result) == -1)
+	if (check_result_status(result) == -1) {
+		PQclear(result);
 		return;
+	}
 
         /* print out the attribute names */
         nFields = PQnfields(result);
@@ -280,6 +295,7 @@ void dao_dump_statements()
                 printf("\n");
         }
 	printf("\n\n");
+	PQclear(result);
 }
 
 int dao_update_node_status(char *context_id, char *uuid, char *status, char *ipsrc)
@@ -315,8 +331,12 @@ int dao_update_node_status(char *context_id, char *uuid, char *status, char *ips
 		return -1;
 	}
 
-	if (check_result_status(result) == -1)
+	if (check_result_status(result) == -1) {
+		PQclear(result);
 		return -1;
+	}
+
+	PQclear(result);
 
 	return 0;
 }
@@ -373,8 +393,12 @@ int dao_add_client(char *firstname,
 		return -1;
 	}
 
-	if (check_result_status(result) == -1)
+	if (check_result_status(result) == -1) {
+		PQclear(result);
 		return -1;
+	}
+
+	PQclear(result);
 
 	return 0;
 }
@@ -405,8 +429,10 @@ int dao_fetch_client_id(char **client_id, char *email, char *password)
 		return -1;
 	}
 
-	if (check_result_status(result) == -1)
+	if (check_result_status(result) == -1) {
+		PQclear(result);
 		return -1;
+	}
 
 	tuples = PQntuples(result);
 	fields = PQnfields(result);
@@ -417,6 +443,8 @@ int dao_fetch_client_id(char **client_id, char *email, char *password)
 
 	jlog(L_DEBUG, "Tuples %d", tuples);
 	jlog(L_DEBUG, "Fields %d", fields);
+
+	PQclear(result);
 
 	return 0;
 }
@@ -455,8 +483,10 @@ int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatek
 		return -1;
 	}
 
-	if (check_result_status(result) == -1)
+	if (check_result_status(result) == -1) {
+		PQclear(result);
 		return -1;
+	}
 
 	return 0;
 }
@@ -519,8 +549,12 @@ int dao_add_context(char *client_id,
 
 	PQfreemem(ippool_str);
 
-	if (check_result_status(result) == -1)
+	if (check_result_status(result) == -1) {
+		PQclear(result);
 		return -1;
+	}
+
+	PQclear(result);
 
 	return 0;
 }
@@ -549,8 +583,10 @@ int dao_fetch_context_id(char **context_id, char *client_id, char *description)
 		return -1;
 	}
 
-	if (check_result_status(result) == -1)
+	if (check_result_status(result) == -1) {
+		PQclear(result);
 		return -1;
+	}
 
 	int tuples, fields;
 	tuples = PQntuples(result);
@@ -559,6 +595,8 @@ int dao_fetch_context_id(char **context_id, char *client_id, char *description)
 	if (tuples > 0 && fields > 0) {
 		*context_id = PQgetvalue(result, 0, 0);
 	}
+
+	PQclear(result);
 
 	return 0;
 }
@@ -591,8 +629,10 @@ int dao_fetch_context_embassy(char *context_id,
 		return -1;
 	}
 
-	if (check_result_status(result) == -1)
+	if (check_result_status(result) == -1) {
+		PQclear(result);
 		return -1;
+	}
 
 	tuples = PQntuples(result);
 	fields = PQnfields(result);
@@ -607,8 +647,11 @@ int dao_fetch_context_embassy(char *context_id,
 		ippool_size = PQgetlength(result, 0, 3);
 		*ippool = PQunescapeBytea(ippool_ptr, &ippool_size);
 	} else {
+		PQclear(result);
 		return -1;
 	}
+
+	PQclear(result);
 
 	return 0;
 }
@@ -643,8 +686,12 @@ int dao_update_context_ippool(char *context_id, unsigned char *ippool, int pool_
 		return -1;
 	}
 
-	if (check_result_status(result) == -1)
+	if (check_result_status(result) == -1) {
+		PQclear(result);
 		return -1;
+	}
+
+	PQclear(result);
 
 	return 0;
 }
@@ -673,8 +720,12 @@ int dao_update_embassy_serial(char *context_id, char *serial)
 		return -1;
 	}
 
-	if (check_result_status(result) == -1)
+	if (check_result_status(result) == -1) {
+		PQclear(result);
 		return -1;
+	}
+
+	PQclear(result);
 
 	return 0;
 }
@@ -703,8 +754,12 @@ int dao_fetch_embassy(char *context_id,
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 	}
 
-	if (check_result_status(result) == -1)
+	if (check_result_status(result) == -1) {
+		PQclear(result);
 		return -1;
+	}
+
+	PQclear(result);
 
 	return 0;
 }
@@ -735,8 +790,10 @@ int dao_fetch_node_from_context_id(char *context_id, void *data, int (*cb_data_h
 		return -1;
 	}
 
-	if (check_result_status(result) == -1)
+	if (check_result_status(result) == -1) {
+		PQclear(result);
 		return -1;
+	}
 
 	tuples = PQntuples(result);
 
@@ -748,6 +805,8 @@ int dao_fetch_node_from_context_id(char *context_id, void *data, int (*cb_data_h
 			strdup(PQgetvalue(result, i, 2)),
 			strdup(PQgetvalue(result, i, 3)));
 	}
+
+	PQclear(result);
 
 	return 0;
 }
@@ -772,6 +831,10 @@ int dao_fetch_node_from_provcode(char *provcode,
 
 	result = PQexec(dbconn, fetch_req);
 
+	if (!result) {
+		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+	}
+
 	int tuples, fields;
 	tuples = PQntuples(result);
 	fields = PQnfields(result);
@@ -781,15 +844,17 @@ int dao_fetch_node_from_provcode(char *provcode,
 		*private_key = strdup(PQgetvalue(result, 0, 1));
 		*ipAddress = strdup(PQgetvalue(result, 0, 2));
 		*trustedcert = strdup(PQgetvalue(result, 0, 3));
-	} else
+	} else {
+		PQclear(result);
 		return -1;
-
-	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 	}
 
-	if (check_result_status(result) == -1)
+	if (check_result_status(result) == -1) {
+		PQclear(result);
 		return -1;
+	}
+
+	PQclear(result);
 
 	return 0;
 }
@@ -828,8 +893,10 @@ int dao_fetch_context_by_client_id(
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 	}
 
-	if (check_result_status(result) == -1)
+	if (check_result_status(result) == -1) {
+		PQclear(result);
 		return -1;
+	}
 
 	tuples = PQntuples(result);
 
@@ -846,6 +913,8 @@ int dao_fetch_context_by_client_id(
 			strdup(PQgetvalue(result, i, 7)),
 			strdup(PQgetvalue(result, i, 8)));
 	}
+
+	PQclear(result);
 
 	return 0;
 }
@@ -878,15 +947,16 @@ int dao_fetch_context_by_client_id_desc(char *client_id, char *description,
 	paramLengths[0] = strlen(client_id);
 	paramLengths[1] = strlen(description);
 
-
 	result = PQexecPrepared(dbconn, "dao_fetch_context_by_client_id_desc", 2, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 	}
 
-	if (check_result_status(result) == -1)
+	if (check_result_status(result) == -1) {
+		PQclear(result);
 		return -1;
+	}
 
 	tuples = PQntuples(result);
 
@@ -904,6 +974,8 @@ int dao_fetch_context_by_client_id_desc(char *client_id, char *description,
 			strdup(PQgetvalue(result, i, 7)),
 			strdup(PQgetvalue(result, i, 8)));
 	}
+
+	PQclear(result);
 
 	return 0;
 }
@@ -927,8 +999,10 @@ int dao_fetch_context(void *data, void (*cb_data_handler)(void *data,
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 	}
 
-	if (check_result_status(result) == -1)
+	if (check_result_status(result) == -1) {
+		PQclear(result);
 		return -1;
+	}
 
 	tuples = PQntuples(result);
 
@@ -945,6 +1019,8 @@ int dao_fetch_context(void *data, void (*cb_data_handler)(void *data,
 			PQgetvalue(result, i, 7),
 			PQgetvalue(result, i, 8));
 	}
+
+	PQclear(result);
 
 	return 0;
 }
