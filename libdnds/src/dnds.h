@@ -213,6 +213,7 @@ int SearchResponse_get_object_count(DNDSMessage_t *msg, uint32_t *count);
 // terminateRequest -- need nothing
 
 // DNDS Objects
+int DNDSObject_del(DNDSObject_t *object);
 int DNDSObject_new(DNDSObject_t **object);
 
 // Acl
