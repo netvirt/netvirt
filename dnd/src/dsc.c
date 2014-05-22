@@ -193,6 +193,8 @@ static void handle_SearchResponse_Context(DNDSMessage_t *msg)
 			Context_get_trustedCert(object, &trustedCert, &length);
 
 			context_create(id, network, netmask, serverCert, serverPrivkey, trustedCert);
+
+			DNDSObject_del(object);
 		}
 	}
 }
