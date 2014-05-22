@@ -1896,6 +1896,17 @@ int SearchResponse_get_object_count(DNDSMessage_t *msg, uint32_t *count)
 // terminateRequest -- need nothing
 
 // DNDS Objects
+int DNDSObject_del(DNDSObject_t *object)
+{
+	if (object == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	asn_DEF_DNDSObject.free_struct(&asn_DEF_DNDSObject, object, 0);
+
+	return DNDS_success;
+}
+
 int DNDSObject_new(DNDSObject_t **object)
 {
 	if (object == NULL) {
