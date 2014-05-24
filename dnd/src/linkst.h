@@ -20,10 +20,11 @@
 
 typedef struct linkst linkst_t;
 
-int linkst_joined(int idx_a, int idx_b, linkst_t **adjacency_matrix, int max_node);
-int linkst_join(int idx_a, int idx_b, linkst_t **adjacency_matrix, int max_node);
-void linkst_disjoin(int idx, linkst_t **adjacency_matrix, int active_nodes);
-void linkst_free(linkst_t **adjacency_matrix, uint32_t max_node);
-linkst_t **linkst_new(uint32_t max_node);
+void linkst_disjoin(linkst_t *linkst, uint32_t idx);
+int linkst_joined(linkst_t *linkst, uint32_t idx_a, uint32_t idx_b);
+int linkst_join(linkst_t *linkst, uint32_t idx_a, uint32_t idx_b);
+
+void linkst_free(linkst_t *linkstate);
+linkst_t *linkst_new(uint32_t upper_limit, uint16_t timeout_sec);
 
 #endif
