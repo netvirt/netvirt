@@ -45,7 +45,8 @@ static void linkst_resize(linkst_t *linkst, uint32_t resize_size)
 		resize_size = linkst->upper_limit - linkst->matrix_size;
 	}
 
-	linkst->adjacency_matrix = realloc(linkst->adjacency_matrix, (linkst->matrix_size + resize_size) * sizeof(linkinfo_t *));
+	linkst->adjacency_matrix = realloc(linkst->adjacency_matrix,
+					(linkst->matrix_size + resize_size) * sizeof(linkinfo_t *));
 
 	for (i = linkst->matrix_size; i < linkst->matrix_size + resize_size; i++) {
 		linkst->adjacency_matrix[i] = calloc(i+1, sizeof(linkinfo_t));
@@ -166,6 +167,7 @@ linkst_t *linkst_new(uint32_t upper_limit, uint16_t timeout_sec)
 	return linkst;
 }
 
+#if 0
 void linkst_dump(linkst_t *linkst)
 {
 	uint32_t i, j;
@@ -178,7 +180,6 @@ void linkst_dump(linkst_t *linkst)
 	}
 }
 
-#if 0
 int main()
 {
 	int init_matrix_size = 1;
