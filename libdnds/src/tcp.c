@@ -64,6 +64,8 @@ int tcpbus_ion_add(int fd, void *data)
 	struct epoll_event nevent;
 	int ret;
 
+	memset(&nevent, 1, sizeof(struct epoll_event));
+
 	nevent.events = EPOLLIN | EPOLLRDHUP | EPOLLERR;
 	nevent.data.ptr = data;
 
