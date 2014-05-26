@@ -45,6 +45,12 @@ void session_free(struct session *session)
 
 	if (session->ip != NULL) {
 		free(session->ip);
+		session->ip = NULL;
+	}
+
+	if (session->cert_name != NULL) {
+		free(session->cert_name);
+		session->cert_name = NULL;
 	}
 
 	free(session);
