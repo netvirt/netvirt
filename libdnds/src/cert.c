@@ -21,6 +21,11 @@
 
 #include "cert.h"
 
+void node_info_destroy(node_info_t *node_info)
+{
+	free(node_info);
+}
+
 node_info_t *cn2node_info(char *cn)
 {
 	// expected: dnc-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX@99999
@@ -41,6 +46,14 @@ node_info_t *cn2node_info(char *cn)
         ninfo->context_id[5] = '\0';
 
 	return ninfo;
+}
+
+void pki_passport_destroy(passport_t *passport)
+{
+	EVP_PKEY_free(passport->keyring);
+	X509_free(passport->certificate);
+	X509_STORE_free(passport->trusted_authority);
+	free(passport);
 }
 
 passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, char *trusted_authority)
@@ -66,8 +79,10 @@ passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, c
 	// and add to the trusted store
 	bio_memory = BIO_new_mem_buf(trusted_authority, strlen(trusted_authority));
 	trusted_authority_certificate = PEM_read_bio_X509(bio_memory, NULL, NULL, NULL);
+	BIO_free(bio_memory);
 	passport->trusted_authority = X509_STORE_new();
 	X509_STORE_add_cert(passport->trusted_authority, trusted_authority_certificate);
+	X509_free(trusted_authority_certificate);
 
 	return passport;
 }

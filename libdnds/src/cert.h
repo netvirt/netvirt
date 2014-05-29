@@ -31,7 +31,9 @@ typedef struct passport {
         X509_STORE *trusted_authority;
 } passport_t;
 
+void node_info_destroy(node_info_t *node_info);
 node_info_t *cn2node_info(char *cn);
+void pki_passport_destroy(passport_t *passport);
 passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, char *trusted_authority);
 passport_t *pki_passport_load_from_file(const char *certificate_filename,
                                         const char *privatekey_filename,
