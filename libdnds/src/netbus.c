@@ -91,6 +91,18 @@ static void net_connection_free(netc_t *netc)
 	if (netc != NULL) {
 
 		if (netc->kconn != NULL) {
+
+			if (netc->kconn->ctx)
+				SSL_CTX_free(netc->kconn->ctx);
+			if (netc->kconn->ssl)
+				SSL_free(netc->kconn->ssl);
+
+			if (netc->kconn->internal_bio)
+				BIO_free(netc->kconn->internal_bio);
+
+			if (netc->kconn->network_bio);
+				BIO_free(netc->kconn->network_bio);
+
 			free(netc->kconn->buf_decrypt);
 			free(netc->kconn->buf_encrypt);
 			free(netc->kconn);
@@ -122,7 +134,6 @@ static netc_t *net_connection_new(uint8_t security_level)
 			net_connection_free(netc);
 			return NULL;
 		}
-
 		netc->kconn->ssl = NULL;
 		netc->kconn->ctx = NULL;
 		netc->kconn->cert_name = NULL;
