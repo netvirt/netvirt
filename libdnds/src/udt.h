@@ -58,7 +58,7 @@ struct p2p_args {
 	void *ext_ptr;
 };
 
-int udtbus_server(const char *listen_addr,
+peer_t *udtbus_server(const char *listen_addr,
                   const char *port,
                   void (*on_connect)(peer_t *),
                   void (*on_disconnect)(peer_t *),
@@ -73,6 +73,7 @@ peer_t *udtbus_client(const char *listen_addr,
                       void (*on_input)(peer_t *));
 void udtbus_poke_queue();
 int udtbus_init();
+void udtbus_fini();
 
 #ifdef __cplusplus
 }

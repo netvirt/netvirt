@@ -60,6 +60,7 @@ static void udtbus_disconnect(peer_t *peer)
 	}
 	peer->buffer_data_len = 0;
 	peer->ext_ptr = NULL;
+	free(peer->host);
 	free(peer->buffer);
 	free(peer);
 }
@@ -263,7 +264,7 @@ peer_t *udtbus_client(const char *listen_addr,
 	return peer;
 }
 
-int udtbus_server(const char *listen_addr,
+peer_t *udtbus_server(const char *listen_addr,
                   const char *port,
                   void (*on_connect)(peer_t *),
                   void (*on_disconnect)(peer_t *),
@@ -288,7 +289,7 @@ int udtbus_server(const char *listen_addr,
 
 	if (ret) {
 		jlog(L_ERROR, "illegal port number or port is busy: %s", gai_strerror(ret));
-		return -1;
+		return NULL;
 	}
 
 	UDTSOCKET serv = UDT::socket(res->ai_family, res->ai_socktype, res->ai_protocol);
@@ -299,7 +300,7 @@ int udtbus_server(const char *listen_addr,
 	UDT::setsockopt(serv, 0, UDT_MSS, &mss, sizeof(int));
 	if (UDT::bind(serv, res->ai_addr, res->ai_addrlen) == UDT::ERROR) {
 		jlog(L_WARNING, "bind: %s", UDT::getlasterror().getErrorMessage());
-		return -1;
+		return NULL;
 	}
 
 	freeaddrinfo(res);
@@ -308,7 +309,7 @@ int udtbus_server(const char *listen_addr,
 	if (UDT::listen(serv, 10) == UDT::ERROR) {
 
 		jlog(L_NOTICE, "listen: %s", UDT::getlasterror().getErrorMessage());
-		return -1;
+		return NULL;
 	}
 
 	peer = (peer_t *)calloc(sizeof(peer_t), 1);
@@ -326,7 +327,7 @@ int udtbus_server(const char *listen_addr,
 	UDT::set_ext_ptr(serv, (void*)peer);
 	udtbus_ion_add(serv);
 
-	return 0;
+	return peer;
 }
 
 void *udtbus_rendezvous(void *args)
@@ -434,7 +435,7 @@ retry:
 	return NULL;
 }
 
-extern "C" void udtbus_fini()
+void udtbus_fini()
 {
 	// use this function to release the UDT library
 	UDT::cleanup();
