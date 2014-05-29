@@ -31,6 +31,9 @@
 #include "request.h"
 #include "session.h"
 
+static struct dnd_cfg *dnd_cfg;
+static netc_t *dsd_netc = NULL;
+
 static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 {
 	uint8_t *frame;
@@ -281,21 +284,24 @@ static void *dnd_loop(void *nil)
 {
 	(void)(nil);
 
-	while (1) {
+	while (dnd_cfg->dnd_running) {
 		udtbus_poke_queue();
 	}
+
+	printf("dnd loop\n");
 
 	return NULL;
 }
 
-int dnd_init(struct dnd_cfg *dnd_cfg)
+int dnd_init(struct dnd_cfg *cfg)
 {
-	int ret;
+	dnd_cfg = cfg;
+	dnd_cfg->dnd_running = 1;
 
-	ret = net_server(dnd_cfg->ipaddr, dnd_cfg->port, NET_PROTO_UDT, NET_SECURE_ADH, NULL,
+	dsd_netc = net_server(dnd_cfg->ipaddr, dnd_cfg->port, NET_PROTO_UDT, NET_SECURE_ADH, NULL,
 		on_connect, on_disconnect, on_input, on_secure);
 
-	if (ret < 0) {
+	if (dsd_netc == NULL) {
 		jlog(L_ERROR, "net_server failed");
 		return -1;
 	}
@@ -303,7 +309,17 @@ int dnd_init(struct dnd_cfg *dnd_cfg)
 	context_init();
 
 	pthread_t thread_loop;
-	pthread_create(&thread_loop, NULL, dnd_loop, NULL);
+	pthread_attr_t attr;
+
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+	pthread_create(&thread_loop, &attr, dnd_loop, NULL);
 
 	return 0;
+}
+
+void dnd_fini()
+{
+	net_disconnect(dsd_netc);
 }
