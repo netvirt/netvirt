@@ -89,7 +89,7 @@ int mbuf_del(mbuf_t **mbuf_head, mbuf_t *mbuf)
 		free(mbuf->ext_buf);
 	}
 	else if (mbuf->mem_type == MBUF_BYREF) {
-		mbuf->free(mbuf->ext_buf);
+		mbuf->free_cb(mbuf->ext_buf);
 	}
 
 	free(mbuf);
@@ -103,7 +103,7 @@ void mbuf_free(mbuf_t **mbuf)
 		mbuf_del(mbuf, *mbuf);
 }
 
-mbuf_t *mbuf_new(const void *buf, size_t data_size, uint8_t mem_type, void (*free)(void *))
+mbuf_t *mbuf_new(const void *buf, size_t data_size, uint8_t mem_type, void (*free_cb)(void *))
 {
 	mbuf_t *mbuf = NULL;
 
@@ -121,7 +121,7 @@ mbuf_t *mbuf_new(const void *buf, size_t data_size, uint8_t mem_type, void (*fre
 			mbuf = (mbuf_t *)calloc(1, sizeof(mbuf_t));
 			mbuf->mem_type = mem_type;
 			mbuf->ext_buf = (uint8_t *)buf;
-			mbuf->free = free;
+			mbuf->free_cb = free_cb;
 			break;
 	}
 

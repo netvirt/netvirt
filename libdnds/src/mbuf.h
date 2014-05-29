@@ -34,7 +34,7 @@ typedef struct mbuf {
 	uint8_t *ext_buf;		// start of buffer
 	uint32_t ext_size;		// size of buffer
 
-	void (*free)(void *ext_buf);	// external free, use with MBUF_BYREF
+	void (*free_cb)(void *ext_buf);	// external free, use with MBUF_BYREF
 
 } mbuf_t;
 
