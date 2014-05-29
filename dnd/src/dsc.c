@@ -26,9 +26,9 @@
 #include "session.h"
 #include "tcp.h"
 
-netc_t *dsc_netc = NULL;
+static netc_t *dsc_netc = NULL;
 static passport_t *dnd_passport = NULL;
-struct dnd_cfg *dnd_cfg;
+static struct dnd_cfg *dnd_cfg;
 
 /* TODO extend this tracking table into a subsystem in it's own */
 #define MAX_SESSION 1024
@@ -252,20 +252,11 @@ static void on_input(netc_t *netc)
 
 static void on_disconnect(netc_t *netc)
 {
-	(void)(netc); /* unused */
+	(void)(netc);
 
 	netc_t *retry_netc = NULL;
 
 	jlog(L_NOTICE, "disconnected from dsd");
-
-	/* FIXME if we loop here, we can't serve anything else,
-	   we should do the same thing as DNC */
-
-	/* maybe net_client() should keep pointers to address,
-	   port and passport?  A net_connection_retry() would be given
-	   the current netc and return when max_retry is reached or
-	   connection is up again. */
-
 	jlog(L_NOTICE, "connection retry to dsd...");
 	do {
 		sleep(5);
@@ -279,18 +270,20 @@ static void on_disconnect(netc_t *netc)
 
 static void *dsc_loop(void *nil)
 {
-	(void)(nil); /*unused */
+	(void)(nil);
 
-	while (1) {
+	while (dnd_cfg->dsc_running) {
 		tcpbus_ion_poke();
 	}
 
+	printf("dsc loop end\n");
 	return NULL;
 }
 
 int dsc_init(struct dnd_cfg *cfg)
 {
 	dnd_cfg = cfg;
+	dnd_cfg->dsc_running = 1;
 
 	jlog(L_NOTICE, "dsc initializing...");
 
@@ -304,7 +297,19 @@ int dsc_init(struct dnd_cfg *cfg)
 	}
 
 	pthread_t thread_loop;
-	pthread_create(&thread_loop, NULL, dsc_loop, NULL);
+	pthread_attr_t attr;
+
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+	pthread_create(&thread_loop, &attr, dsc_loop, NULL);
 
 	return 0;
+}
+
+void dsc_fini()
+{
+	net_disconnect(dsc_netc);
+	pki_passport_destroy(dnd_passport);
+	context_free();
 }
