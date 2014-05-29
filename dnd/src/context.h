@@ -25,7 +25,8 @@
 #include "dnd.h"
 #include "linkst.h"
 
-#define MAX_NODE 1024				// the maximum of nodes per context
+#define MAX_NODE 1024	// the maximum of nodes per context
+#define TIMEOUT_SEC 300	// linkstate timeout in second
 
 typedef struct context {
 
@@ -34,7 +35,7 @@ typedef struct context {
 	ctable_t *ctable;			// connection table
 
 	uint32_t active_node;			// number of connected node
-	linkst_t **linkst;			// linkstate adjacency matrix
+	linkst_t *linkst;			// link state between nodes
 	uint8_t *bitpool;			// bitpool used to generated unique ID per session
 
 	struct session *session_list;		// all session open in this context
@@ -43,6 +44,7 @@ typedef struct context {
 
 } context_t;
 
+void context_free();
 int context_create(uint32_t id, char *address, char *netmask, char *serverCert, char *serverPrivkey, char *trustedCert);
 void context_del_session(context_t *ctx, struct session *session);
 void context_add_session(context_t *ctx, struct session *session);

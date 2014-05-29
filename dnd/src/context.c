@@ -91,6 +91,24 @@ context_t *context_lookup(uint32_t context_id)
 	return NULL;
 }
 
+void context_free()
+{
+	uint16_t i;
+	context_t *context = NULL;
+
+	for (i = 0; i < CONTEXT_LIST_SIZE; i++) {
+		context = context_table[i];
+		if (context) {
+			pki_passport_destroy(context->passport);
+			free(context->linkst);
+			ftable_delete(context->ftable);
+			ctable_delete(context->ctable);
+			bitpool_free(context->bitpool);
+			free(context);
+		}
+	}
+}
+
 int context_create(uint32_t id, char *address, char *netmask,
 			char *serverCert, char *serverPrivkey, char *trustedCert)
 {
