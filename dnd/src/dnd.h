@@ -38,5 +38,6 @@ struct dnd_cfg {
 };
 
 int dnd_init(struct dnd_cfg *dnd_cfg);
+void dnd_fini();
 
 #endif

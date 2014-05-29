@@ -138,19 +138,15 @@ static void handle_SearchResponse_Node(DNDSMessage_t *msg)
 
 		Node_get_certificate(object, &certificate, &length);
 		ProvResponse_set_certificate(new_msg, certificate, length);
-		//printf("cert: %s\n", certificate);
 
 		Node_get_certificateKey(object, &certificateKey, &length);
 		ProvResponse_set_certificateKey(new_msg, certificateKey, length);
-		//printf("certKey: %s\n", certificateKey);
 
 		Node_get_trustedCert(object, &trustedCert, &length);
 		ProvResponse_set_trustedCert(new_msg, trustedCert, length);
-		//printf("trustedcert: %s\n", trustedCert);
 
 		Node_get_ipAddress(object, ipAddress);
 		ProvResponse_set_ipAddress(new_msg, ipAddress);
-		//printf("ipAddress: %s\n", ipAddress);
 	}
 
 	DSMessage_get_seqNumber(msg, &tracked_id);
@@ -270,13 +266,12 @@ static void on_disconnect(netc_t *netc)
 
 static void *dsc_loop(void *nil)
 {
-	(void)(nil);
+	(void)nil;
 
 	while (dnd_cfg->dsc_running) {
 		tcpbus_ion_poke();
 	}
 
-	printf("dsc loop end\n");
 	return NULL;
 }
 

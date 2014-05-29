@@ -162,7 +162,6 @@ int main(int argc, char *argv[])
 		accepting connection */
 	while (dnd_cfg->dsc_initialized == 0) {
 		sleep(1);
-		printf("to be init\n");
 	}
 
 	if (dnd_init(dnd_cfg)) {
@@ -171,7 +170,7 @@ int main(int argc, char *argv[])
 	}
 
 	while (dnd_cfg->dsc_running || dnd_cfg->dnd_running) {
-		sleep(1); printf("loop...\n");
+		sleep(1);
 	}
 
 	/* clean up */

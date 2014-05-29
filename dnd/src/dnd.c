@@ -282,13 +282,11 @@ static void on_disconnect(netc_t *netc)
 
 static void *dnd_loop(void *nil)
 {
-	(void)(nil);
+	(void)nil;
 
 	while (dnd_cfg->dnd_running) {
 		udtbus_poke_queue();
 	}
-
-	printf("dnd loop\n");
 
 	return NULL;
 }
