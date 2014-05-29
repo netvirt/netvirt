@@ -86,6 +86,7 @@ void net_disconnect(netc_t *);
 
 void netbus_tcp_init();
 int netbus_init();
+void netbus_fini();
 
 netc_t *net_client(const char *listen_addr,
 			const char *port,
@@ -96,7 +97,7 @@ netc_t *net_client(const char *listen_addr,
 			void (*on_input)(netc_t *),
 			void (*on_secure)(netc_t *));
 
-int net_server(const char *listen_addr,
+netc_t *net_server(const char *listen_addr,
 		const char *port,
 		uint8_t protocol,
 		uint8_t security_level,

@@ -92,16 +92,21 @@ static void net_connection_free(netc_t *netc)
 
 		if (netc->kconn != NULL) {
 
-			if (netc->kconn->ctx)
+			if (netc->kconn->ctx) {
 				SSL_CTX_free(netc->kconn->ctx);
-			if (netc->kconn->ssl)
+			}
+
+			if (netc->kconn->ssl) {
 				SSL_free(netc->kconn->ssl);
+			}
 
-			if (netc->kconn->internal_bio)
+			if (netc->kconn->internal_bio) {
 				BIO_free(netc->kconn->internal_bio);
+			}
 
-			if (netc->kconn->network_bio);
+			if (netc->kconn->network_bio) {
 				BIO_free(netc->kconn->network_bio);
+			}
 
 			free(netc->kconn->buf_decrypt);
 			free(netc->kconn->buf_encrypt);
@@ -532,6 +537,11 @@ int netbus_init()
 	return udtbus_init();
 }
 
+void netbus_fini()
+{
+	udtbus_fini();
+}
+
 netc_t *net_client(const char *listen_addr,
 			const char *port,
 			uint8_t protocol,
@@ -608,7 +618,7 @@ netc_t *net_client(const char *listen_addr,
 	return netc;
 }
 
-int net_server(const char *listen_addr,
+netc_t *net_server(const char *listen_addr,
 		const char *port,
 		uint8_t protocol,
 		uint8_t security_level,
@@ -618,13 +628,13 @@ int net_server(const char *listen_addr,
 		void (*on_input)(netc_t *),
 		void (*on_secure)(netc_t *))
 {
-	int ret;
+	int ret = 0;
 	netc_t *netc = NULL;
 
 	netc = net_connection_new(security_level);
 	if (netc == NULL) {
 		jlog(L_NOTICE, "server initialization failed");
-		return -1;
+		return NULL;
 	}
 
 	netc->on_secure = on_secure;
@@ -648,7 +658,7 @@ int net_server(const char *listen_addr,
 			break;
 #endif
 		case NET_PROTO_UDT:
-			ret = udtbus_server(listen_addr, port,
+			netc->peer = udtbus_server(listen_addr, port,
 				net_on_connect, net_on_disconnect,
 				net_on_input, netc);
 			break;
@@ -656,16 +666,16 @@ int net_server(const char *listen_addr,
 		default:
 			jlog(L_NOTICE, "unknown protocol specified");
 			net_connection_free(netc);
-			return -1;
+			return NULL;
 	}
 
-	if (ret < 0) {
+	if (ret < 0 || netc->peer == NULL) {
 		jlog(L_NOTICE, "server initialization failed");
 		net_connection_free(netc);
-		return -1;
+		return NULL;
 	}
 
-	return 0;
+	return netc;
 }
 
 void net_p2p_on_connect(peer_t *peer)
