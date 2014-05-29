@@ -26,12 +26,6 @@ struct session *session_new()
 		return NULL;
 	}
 
-	session->next = NULL;
-	session->prev = NULL;
-	session->context = NULL;
-	session->id = 0;
-	session->mac_list = NULL;
-
 	session->state = SESSION_STATE_NOT_AUTHED;
 
 	return session;
@@ -51,6 +45,10 @@ void session_free(struct session *session)
 	if (session->cert_name != NULL) {
 		free(session->cert_name);
 		session->cert_name = NULL;
+	}
+
+	if (session->node_info) {
+		node_info_destroy(session->node_info);
 	}
 
 	free(session);
