@@ -13,6 +13,7 @@
  * GNU Affero General Public License for more details
  */
 
+#include <signal.h>
 #include <unistd.h>
 
 #include <libconfig.h>
@@ -24,12 +25,13 @@
 
 #define CONFIG_FILE "/etc/dnds/dnd.conf"
 
+static struct dnd_cfg *dnd_cfg;
 void on_log(const char *logline)
 {
 	fprintf(stdout, "%s", logline);
 }
 
-int parse_config(config_t *cfg, struct dnd_cfg *dnd_cfg)
+int config_parse(config_t *cfg, struct dnd_cfg *dnd_cfg)
 {
 	if (!config_read_file(cfg, CONFIG_FILE)) {
 		jlog(L_ERROR, "Can't open %s", CONFIG_FILE);
@@ -92,13 +94,22 @@ int parse_config(config_t *cfg, struct dnd_cfg *dnd_cfg)
 	return 0;
 }
 
+void int_handler(int sig)
+{
+	(void)sig;
+
+	dnd_cfg->dsc_running = 0;
+	dnd_cfg->dnd_running = 0;
+}
+
 int main(int argc, char *argv[])
 {
 	int opt;
 	uint8_t quiet = 0;
-	struct dnd_cfg *dnd_cfg;
 	config_t cfg;
 	dnd_cfg = calloc(1, sizeof(struct dnd_cfg));
+
+	signal(SIGINT, int_handler);
 
 	while ((opt = getopt(argc, argv, "qvh")) != -1) {
 		switch (opt) {
@@ -123,13 +134,13 @@ int main(int argc, char *argv[])
 	}
 
 	config_init(&cfg);
-
 	dnd_cfg->dsc_initialized = 0;
 
-	if (parse_config(&cfg, dnd_cfg)) {
-		jlog(L_ERROR, "parse_config failed");
+	if (config_parse(&cfg, dnd_cfg)) {
+		jlog(L_ERROR, "config parse failed");
 		exit(EXIT_FAILURE);
 	}
+
 
 	if (krypt_init()) {
 		jlog(L_ERROR, "krypt_init failed");
@@ -151,6 +162,7 @@ int main(int argc, char *argv[])
 		accepting connection */
 	while (dnd_cfg->dsc_initialized == 0) {
 		sleep(1);
+		printf("to be init\n");
 	}
 
 	if (dnd_init(dnd_cfg)) {
@@ -158,7 +170,16 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	while (1) { sleep(1); }
+	while (dnd_cfg->dsc_running || dnd_cfg->dnd_running) {
+		sleep(1); printf("loop...\n");
+	}
+
+	/* clean up */
+	dsc_fini();
+	dnd_fini();
+	netbus_fini();
+	config_destroy(&cfg);
+	free(dnd_cfg);
 
 	return 0;
 }
