@@ -130,6 +130,7 @@ passport_t *pki_passport_load_from_file(const char *certificate_filename,
 	trusted_authority_certificate = PEM_read_bio_X509(bio_file, NULL, NULL, NULL);
 	passport->trusted_authority = X509_STORE_new();
 	X509_STORE_add_cert(passport->trusted_authority, trusted_authority_certificate);
+	X509_free(trusted_authority_certificate);
 	BIO_free(bio_file);
 
 	return passport;
