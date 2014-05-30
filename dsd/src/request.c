@@ -266,6 +266,8 @@ void AddRequest_context(DNDSMessage_t *msg)
 
 	if (g_dnd_netc)
 		net_send_msg(g_dnd_netc, msg_up);
+
+	DNDSMessage_del(msg);
 }
 
 void AddRequest_node(DNDSMessage_t *msg)
