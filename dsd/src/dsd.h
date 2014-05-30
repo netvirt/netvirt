@@ -36,6 +36,8 @@ struct dsd_cfg {
 	const char *certificate;
 	const char *privatekey;
 	const char *trusted_cert;
+
+	int dsd_running;
 };
 
 netc_t *g_dnd_netc;
@@ -46,6 +48,7 @@ struct session {
 	uint8_t state;
 };
 
-int dsd_init(struct dsd_cfg *dsd_cfg);
+int dsd_init(struct dsd_cfg *cfg);
+void dsd_fini();
 
 #endif

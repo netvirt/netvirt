@@ -25,7 +25,9 @@
 #include "request.h"
 #include "tcp.h"
 
-passport_t *g_dsd_passport;
+static netc_t *dsd_netc = NULL;
+static passport_t *dsd_passport = NULL;
+static struct dsd_cfg *dsd_cfg = NULL;
 
 static void session_free(struct session *session)
 {
@@ -146,29 +148,41 @@ static void *dsd_loop(void *nil)
 {
 	(void)(nil);
 
-	while (1) {
+	while (dsd_cfg->dsd_running) {
 		tcpbus_ion_poke();
 	}
 
 	return NULL;
 }
 
-int dsd_init(struct dsd_cfg *dsd_cfg)
+int dsd_init(struct dsd_cfg *cfg)
 {
-	int ret;
+	dsd_cfg = cfg;
+	dsd_cfg->dsd_running = 1;
 
-	g_dsd_passport = pki_passport_load_from_file(dsd_cfg->certificate, dsd_cfg->privatekey, dsd_cfg->trusted_cert);
+	dsd_passport = pki_passport_load_from_file(dsd_cfg->certificate, dsd_cfg->privatekey, dsd_cfg->trusted_cert);
 
-	ret = net_server(dsd_cfg->ipaddr, dsd_cfg->port, NET_PROTO_TCP, NET_SECURE_RSA, g_dsd_passport,
+	dsd_netc = net_server(dsd_cfg->ipaddr, dsd_cfg->port, NET_PROTO_TCP, NET_SECURE_RSA, dsd_passport,
 			on_connect, on_disconnect, on_input, on_secure);
 
-	if (ret < 0) {
+	if (dsd_netc == NULL) {
 		jlog(L_NOTICE, "net_server failed");
 		return -1;
 	}
 
 	pthread_t thread_loop;
-	pthread_create(&thread_loop, NULL, dsd_loop, NULL);
+	pthread_attr_t attr;
+
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+	pthread_create(&thread_loop, &attr, dsd_loop, NULL);
 
 	return 0;
+}
+
+void dsd_fini()
+{
+	pki_passport_destroy(dsd_passport);
+	net_disconnect(dsd_netc);
 }

@@ -13,6 +13,7 @@
  * GNU Affero General Public License for more details
  */
 
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -29,6 +30,7 @@
 
 #define CONFIG_FILE "/etc/dnds/dsd.conf"
 
+static struct dsd_cfg *dsd_cfg;
 void on_log(const char *logline)
 {
         fprintf(stdout, "%s", logline);
@@ -147,14 +149,21 @@ int parse_config(config_t *cfg, struct dsd_cfg *dsd_cfg)
 	return 0;
 }
 
+void int_handler(int sig)
+{
+	(void)sig;
+	dsd_cfg->dsd_running = 0;
+}
+
 int main(int argc, char *argv[])
 {
 	int opt;
 	uint8_t quiet = 0;
 	uint8_t daemon = 0;
-	struct dsd_cfg *dsd_cfg;
 	config_t cfg;
 	dsd_cfg = calloc(1, sizeof(struct dsd_cfg));
+
+	signal(SIGINT, int_handler);
 
 	while ((opt = getopt(argc, argv, "dqvh")) != -1) {
 		switch (opt) {
@@ -214,7 +223,16 @@ int main(int argc, char *argv[])
 		daemonize();
 	}
 
-	while(1) { sleep(1); }
+	while (dsd_cfg->dsd_running) {
+		sleep(1);
+	}
+
+	dsd_fini();
+	netbus_fini();
+	config_destroy(&cfg);
+	free(dsd_cfg);
+
+	sleep(1);
 
 	return 0;
 }
