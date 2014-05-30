@@ -28,7 +28,7 @@
 
 static netc_t *dsc_netc = NULL;
 static passport_t *dnd_passport = NULL;
-static struct dnd_cfg *dnd_cfg;
+static struct dnd_cfg *dnd_cfg = NULL;
 
 /* TODO extend this tracking table into a subsystem in it's own */
 #define MAX_SESSION 1024
