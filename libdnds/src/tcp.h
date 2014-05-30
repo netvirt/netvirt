@@ -16,7 +16,7 @@
 #ifndef DNDS_TCPBUS_H
 #define DNDS_TCPBUS_H
 
-int tcpbus_server(const char *in_addr,
+peer_t *tcpbus_server(const char *in_addr,
 		   const char *port,
 		   void (*on_connect)(peer_t*),
 		   void (*on_disconnect)(peer_t*),

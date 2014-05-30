@@ -237,7 +237,7 @@ static void tcpbus_on_connect(peer_t *peer)
 	jlog(L_DEBUG, "successfully added TCP client {%i} on server {%i}", npeer->socket, peer->socket);
 }
 
-int tcpbus_server(const char *in_addr,
+peer_t *tcpbus_server(const char *in_addr,
 		   const char *port,
 		   void (*on_connect)(peer_t*),
 		   void (*on_disconnect)(peer_t*),
@@ -265,7 +265,7 @@ int tcpbus_server(const char *in_addr,
 	if (peer->socket < 0) {
 		jlog(L_NOTICE, "socket failed: %s", strerror(errno));
 		free(peer);
-		return -1;
+		return NULL;
 	}
 
 	memset(&addr, 0, sizeof(struct sockaddr_in));
@@ -278,7 +278,7 @@ int tcpbus_server(const char *in_addr,
 		jlog(L_NOTICE, "setreuse: %s", strerror(errno));
 		close(peer->socket);
 		free(peer);
-		return -1;
+		return NULL;
 	}
 
 	ret = bind(peer->socket, (const struct sockaddr *)&addr, sizeof(const struct sockaddr));
@@ -286,7 +286,7 @@ int tcpbus_server(const char *in_addr,
 		jlog(L_NOTICE, "bind failed: %s %s", strerror(errno), in_addr);
 		close(peer->socket);
 		free(peer);
-		return -1;
+		return NULL;
 	}
 
 	/* The backlog parameter defines the maximum length the
@@ -297,7 +297,7 @@ int tcpbus_server(const char *in_addr,
 		jlog(L_NOTICE, "set_nonblocking failed: %s", strerror(errno));
 		close(peer->socket);
 		free(peer);
-		return -1;
+		return NULL;
 	}
 
 	ret = tcpbus_ion_add(peer->socket, peer);
@@ -305,10 +305,10 @@ int tcpbus_server(const char *in_addr,
 		jlog(L_NOTICE, "tcpbus_ion_add failed: %s", strerror(errno));
 		close(peer->socket);
 		free(peer);
-		return -1;
+		return NULL;
 	}
 
-	return 0;
+	return peer;
 }
 
 peer_t *tcpbus_client(const char *addr,

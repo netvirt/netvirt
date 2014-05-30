@@ -99,7 +99,7 @@ static void net_connection_free(netc_t *netc)
 			if (netc->kconn->ssl) {
 				SSL_free(netc->kconn->ssl);
 			}
-
+/*
 			if (netc->kconn->internal_bio) {
 				BIO_free(netc->kconn->internal_bio);
 			}
@@ -107,7 +107,7 @@ static void net_connection_free(netc_t *netc)
 			if (netc->kconn->network_bio) {
 				BIO_free(netc->kconn->network_bio);
 			}
-
+*/
 			free(netc->kconn->buf_decrypt);
 			free(netc->kconn->buf_encrypt);
 			free(netc->kconn);
@@ -628,7 +628,6 @@ netc_t *net_server(const char *listen_addr,
 		void (*on_input)(netc_t *),
 		void (*on_secure)(netc_t *))
 {
-	int ret = 0;
 	netc_t *netc = NULL;
 
 	netc = net_connection_new(security_level);
@@ -652,7 +651,7 @@ netc_t *net_server(const char *listen_addr,
 	switch (protocol) {
 #ifdef __linux__
 		case NET_PROTO_TCP:
-			ret = tcpbus_server(listen_addr, port,
+			netc->peer = tcpbus_server(listen_addr, port,
 				net_on_connect, net_on_disconnect,
 				net_on_input, netc);
 			break;
@@ -669,7 +668,7 @@ netc_t *net_server(const char *listen_addr,
 			return NULL;
 	}
 
-	if (ret < 0 || netc->peer == NULL) {
+	if (netc->peer == NULL) {
 		jlog(L_NOTICE, "server initialization failed");
 		net_connection_free(netc);
 		return NULL;
