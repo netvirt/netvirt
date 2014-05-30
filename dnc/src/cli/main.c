@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +26,12 @@
 #include <logger.h>
 #include "../config.h"
 #include "../dnc.h"
+
+void int_handler(int sig)
+{
+	(void)sig;
+	exit(0);
+}
 
 void on_log(const char *logline)
 {
@@ -36,6 +43,8 @@ int main(int argc, char *argv[])
 	int opt;
 	struct dnc_cfg *dnc_cfg = NULL;
 	dnc_cfg = calloc(1, sizeof(struct dnc_cfg));
+
+	signal(SIGINT, int_handler);
 
 	while ((opt = getopt(argc, argv, "vhp:")) != -1) {
 		switch (opt) {
