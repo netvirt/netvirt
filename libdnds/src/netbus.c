@@ -91,7 +91,7 @@ static void net_connection_free(netc_t *netc)
 	if (netc != NULL) {
 
 		if (netc->kconn != NULL) {
-
+/*
 			if (netc->kconn->ctx) {
 				SSL_CTX_free(netc->kconn->ctx);
 			}
@@ -99,7 +99,7 @@ static void net_connection_free(netc_t *netc)
 			if (netc->kconn->ssl) {
 				SSL_free(netc->kconn->ssl);
 			}
-/*
+
 			if (netc->kconn->internal_bio) {
 				BIO_free(netc->kconn->internal_bio);
 			}
