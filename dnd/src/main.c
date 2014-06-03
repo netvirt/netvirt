@@ -98,8 +98,10 @@ void int_handler(int sig)
 {
 	(void)sig;
 
-	dnd_cfg->dsc_running = 0;
-	dnd_cfg->dnd_running = 0;
+	if (dnd_cfg->dsc_running && dnd_cfg->dnd_running) {
+		dnd_cfg->dsc_running = 0;
+		dnd_cfg->dnd_running = 0;
+	}
 }
 
 int main(int argc, char *argv[])
@@ -179,6 +181,8 @@ int main(int argc, char *argv[])
 	netbus_fini();
 	config_destroy(&cfg);
 	free(dnd_cfg);
+
+	printf("Goodbye dnd !\n");
 
 	return 0;
 }
