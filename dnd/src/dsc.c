@@ -250,6 +250,10 @@ static void on_disconnect(netc_t *netc)
 {
 	(void)(netc);
 
+	if (dnd_cfg->dsc_running == 0) {
+		return;
+	}
+
 	netc_t *retry_netc = NULL;
 
 	jlog(L_NOTICE, "disconnected from dsd");

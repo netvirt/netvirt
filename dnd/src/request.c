@@ -39,9 +39,8 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 	char *certName = NULL;
 	size_t length = 0;
 	uint32_t context_id = 0;
-#if 0
+
 	struct session *old_session = NULL;
-#endif
 
 	AuthRequest_get_certName(req_msg, &certName, &length);
 
@@ -83,7 +82,6 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 		return -1;
 	}
 
-#if 0
 	old_session = ctable_find(session->context->ctable, session->node_info->uuid);
 	if (old_session == NULL) {
 		ctable_insert(session->context->ctable, session->node_info->uuid, session);
@@ -91,11 +89,10 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 		// that node is already connected, if the new session is from the same IP
 		// disconnect the old session, and let this one connect
 		if (strcmp(old_session->ip, session->ip) == 0) {
-			// XXX disconnect the old session
+			net_disconnect(old_session->netc);
 			ctable_insert(session->context->ctable, session->node_info->uuid, session);
 		}
 	}
-#endif
 
 	session->cert_name = strdup(certName);
 	if (session->netc->security_level == NET_UNSECURE) {

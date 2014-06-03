@@ -516,7 +516,16 @@ int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 
 void net_disconnect(netc_t *netc)
 {
-	// Inform the lower-layer
+	if (netc == NULL) {
+		return;
+	}
+
+	// inform upper-layer
+	if (netc->on_disconnect) {
+		netc->on_disconnect(netc);
+	}
+
+	// inform the lower-layer
 	if (netc->peer && netc->peer->disconnect) {
 		netc->peer->ext_ptr = NULL;
 		netc->peer->disconnect(netc->peer);

@@ -256,6 +256,10 @@ static void on_disconnect(netc_t *netc)
 
 	session = netc->ext_ptr;
 
+	if (session == NULL) {
+		return;
+	}
+
 	if (session->state == SESSION_STATE_NOT_AUTHED) {
 		session_free(session);
 		return;
@@ -269,9 +273,8 @@ static void on_disconnect(netc_t *netc)
 		free(mac_itr);
 	}
 
-#if 0
 	ctable_erase(session->context->ctable, session->node_info->uuid);
-#endif
+
 	context_del_session(session->context, session);
 	transmit_node_connectinfo(ConnectState_disconnected,
 				session->ip, session->cert_name);
