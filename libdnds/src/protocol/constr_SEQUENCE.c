@@ -34,7 +34,7 @@
 #undef	ADVANCE
 #define	ADVANCE(num_bytes)	do {		\
 		size_t num = num_bytes;		\
-		ptr = ((const char *)ptr) + num;\
+		ptr = ((const char *)ptr) + num; \
 		size -= num;			\
 		if(ctx->left >= 0)		\
 			ctx->left -= num;	\
@@ -667,8 +667,7 @@ SEQUENCE_decode_xer(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
 
 			if(elm->flags & ATF_POINTER) {
 				/* Member is a pointer to another structure */
-				memb_ptr2 = (void **)((char *)st
-					+ elm->memb_offset);
+				memb_ptr2 = (void **)((char *)st + elm->memb_offset);
 			} else {
 				memb_ptr = (char *)st + elm->memb_offset;
 				memb_ptr2 = &memb_ptr;

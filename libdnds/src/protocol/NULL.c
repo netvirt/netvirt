@@ -73,11 +73,15 @@ static enum xer_pbd_rval
 NULL__xer_body_decode(asn_TYPE_descriptor_t *td, void *sptr, const void *chunk_buf, size_t chunk_size) {
 	(void)td;
 	(void)sptr;
+	(void)chunk_buf;    /* Going to be empty according to the rules below. */
 
-	if(xer_is_whitespace(chunk_buf, chunk_size))
-		return XPBD_BODY_CONSUMED;
-	else
+	/*
+	 * There must be no content in self-terminating <NULL/> tag.
+	 */
+	if(chunk_size)
 		return XPBD_BROKEN_ENCODING;
+	else
+		return XPBD_BODY_CONSUMED;
 }
 
 asn_dec_rval_t
