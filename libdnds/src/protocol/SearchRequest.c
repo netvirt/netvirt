@@ -17,7 +17,7 @@ static asn_TYPE_member_t asn_MBR_SearchRequest_1[] = {
 		0,
 		"searchtype"
 		},
-	{ ATF_POINTER, 2, offsetof(struct SearchRequest, objectname),
+	{ ATF_POINTER, 3, offsetof(struct SearchRequest, objectname),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_ObjectName,
@@ -26,7 +26,7 @@ static asn_TYPE_member_t asn_MBR_SearchRequest_1[] = {
 		0,
 		"objectname"
 		},
-	{ ATF_POINTER, 1, offsetof(struct SearchRequest, object),
+	{ ATF_POINTER, 2, offsetof(struct SearchRequest, object),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_DNDSObject,
@@ -35,6 +35,15 @@ static asn_TYPE_member_t asn_MBR_SearchRequest_1[] = {
 		0,
 		"object"
 		},
+	{ ATF_POINTER, 1, offsetof(struct SearchRequest, objects),
+		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_DNDSObjects,
+		0,	/* Defer constraints checking to the member type */
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"objects"
+		},
 };
 static ber_tlv_tag_t asn_DEF_SearchRequest_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
@@ -42,16 +51,17 @@ static ber_tlv_tag_t asn_DEF_SearchRequest_tags_1[] = {
 static asn_TYPE_tag2member_t asn_MAP_SearchRequest_tag2el_1[] = {
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* searchtype */
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* objectname */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 } /* object */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* object */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 } /* objects */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_SearchRequest_specs_1 = {
 	sizeof(struct SearchRequest),
 	offsetof(struct SearchRequest, _asn_ctx),
 	asn_MAP_SearchRequest_tag2el_1,
-	3,	/* Count of tags in the map */
+	4,	/* Count of tags in the map */
 	0, 0, 0,	/* Optional elements (not needed) */
-	2,	/* Start extensions */
-	4	/* Stop extensions */
+	3,	/* Start extensions */
+	5	/* Stop extensions */
 };
 asn_TYPE_descriptor_t asn_DEF_SearchRequest = {
 	"SearchRequest",
@@ -73,7 +83,7 @@ asn_TYPE_descriptor_t asn_DEF_SearchRequest = {
 		/sizeof(asn_DEF_SearchRequest_tags_1[0]), /* 1 */
 	0,	/* No PER visible constraints */
 	asn_MBR_SearchRequest_1,
-	3,	/* Elements count */
+	4,	/* Elements count */
 	&asn_SPC_SearchRequest_specs_1	/* Additional specs */
 };
 
