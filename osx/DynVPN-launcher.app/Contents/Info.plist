@@ -18,6 +18,8 @@
 	<string>DynVPN-launcher</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
 	<key>CFBundleSignature</key>
 	<string>aplt</string>
 	<key>LSMinimumSystemVersionByArchitecture</key>
@@ -38,7 +40,7 @@
 		<key>positionOfDivider</key>
 		<real>333</real>
 		<key>savedFrame</key>
-		<string>3 149 602 597 0 0 1024 746 </string>
+		<string>74 259 602 597 0 0 1280 1002 </string>
 		<key>selectedTabView</key>
 		<string>result</string>
 	</dict>
