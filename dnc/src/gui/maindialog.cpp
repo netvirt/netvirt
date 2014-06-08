@@ -43,9 +43,11 @@ MainDialog::MainDialog()
 	if (!file.exists()) {
 		this->wizardDialog = new WizardDialog(this);
 		this->wizardDialog->show();
+		this->wizardDialog->raise();
 	}
 	else {
 		NowRun();
+		this->raise();
 	}
 }
 
