@@ -340,7 +340,7 @@ static void op_auth_response(struct session *session, DNDSMessage_t *msg)
 		break;
 
 	case DNDSResult_insufficientAccessRights:
-		jlog(L_ERROR, "Don't have access to connect");
+		jlog(L_ERROR, "authentication failed, invalid certificate");
 		break;
 
 	default:

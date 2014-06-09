@@ -764,6 +764,48 @@ int dao_fetch_embassy(char *context_id,
 	return 0;
 }
 
+int dao_fetch_node_sequence(uint32_t *context_id_list, uint32_t list_size, void *data, void (*cb_data_handler)(void *data,
+								char *uuid, char *contextId))
+{
+	PGresult *result;
+
+	int cursor = 0;
+	int total_size = 0;
+	char *fetch_req = NULL;
+	uint32_t i = 0;
+
+	total_size = (5*list_size) + strlen("SELECT node.uuid, node.context_id FROM node WHERE node.context_id IN ();");
+	fetch_req = calloc(1, total_size);
+	cursor = snprintf(fetch_req, total_size, "SELECT node.uuid, node.context_id FROM node WHERE node.context_id IN (%d", context_id_list[0]);
+	for (i = 1; i < list_size; i++) {
+		cursor += snprintf(fetch_req+cursor, total_size-cursor, ",%d", context_id_list[i]);
+	}
+	snprintf(fetch_req+cursor, total_size-cursor, ");");
+
+	result = PQexec(dbconn, fetch_req);
+	if (!result) {
+		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+	}
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return -1;
+	}
+
+	int tuples;
+	tuples = PQntuples(result);
+
+	int j;
+	for (j = 0; j < tuples; j++) {
+		cb_data_handler(data, PQgetvalue(result, j, 0), PQgetvalue(result, j, 1));
+	}
+
+	PQclear(result);
+	free(fetch_req);
+
+	return 0;
+}
+
 int dao_fetch_node_from_context_id(char *context_id, void *data, int (*cb_data_handler)(void *data,
 								char *uuid,
 								char *description,

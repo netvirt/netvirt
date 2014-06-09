@@ -90,6 +90,35 @@ int transmit_node_connectinfo(e_ConnectState state, char *ipAddress, char *certN
 	return 0;
 }
 
+int transmit_search_node()
+{
+	uint16_t i = 0;
+	context_t *context = NULL;
+
+	DNDSObject_t *objNode;
+
+	DNDSMessage_t *msg;
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+	DSMessage_set_operation(msg, dsop_PR_searchRequest);
+	SearchRequest_set_searchType(msg, SearchType_sequence);
+
+	for (i = 0; i < 4096; i++) {
+		context = context_lookup(i);
+		if (context) {
+			DNDSObject_new(&objNode);
+			DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
+			Node_set_contextId(objNode, i);
+			SearchRequest_add_to_objects(msg, objNode);
+		}
+	}
+
+	net_send_msg(dsc_netc, msg);
+	DNDSMessage_del(msg);
+
+	return 0;
+}
+
 static void on_secure(netc_t *netc)
 {
 	jlog(L_DEBUG, "connection secured with DSD");
@@ -158,11 +187,38 @@ static void handle_SearchResponse_Node(DNDSMessage_t *msg)
 	DNDSMessage_del(new_msg);
 }
 
+static void handle_SearchResponse_node(DNDSMessage_t *msg)
+{
+	DNDSObject_t *object;
+	int ret;
+	size_t length;
+	uint32_t count;
+	char *uuid;
+	uint32_t contextId;
+	context_t *context;
+
+	SearchResponse_get_object_count(msg, &count);
+	while (count-- > 0) {
+		ret = SearchResponse_get_object(msg, &object);
+		if (ret == DNDS_success && object != NULL) {
+
+			Node_get_uuid(object, &uuid, &length);
+			Node_get_contextId(object, &contextId);
+
+			context = context_lookup(contextId);
+			if (context) {
+				ctable_insert(context->atable, uuid, context->access_session);
+
+			}
+		}
+	}
+}
+
 static void handle_SearchResponse_Context(DNDSMessage_t *msg)
 {
 	DNDSObject_t *object;
-	uint32_t count; int ret;
-
+	uint32_t count;
+	int ret;
 	size_t length;
 	uint32_t id;
 	e_Topology topology;
@@ -203,6 +259,11 @@ static void handle_SearchResponse(DNDSMessage_t *msg)
 
 	if (SearchType == SearchType_all) {
 		handle_SearchResponse_Context(msg);
+		transmit_search_node();
+	}
+
+	if (SearchType == SearchType_sequence) {
+		handle_SearchResponse_node(msg);
 		dnd_cfg->dsc_initialized = 1;
 	}
 

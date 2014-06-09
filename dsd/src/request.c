@@ -542,6 +542,62 @@ void searchRequest_context(struct session *session)
 	DNDSMessage_del(msg);
 }
 
+void CB_searchRequest_node_sequence(void *msg, char *uuid, char *context_id)
+{
+	DNDSObject_t *objNode;
+	DNDSObject_new(&objNode);
+	DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
+
+	Node_set_uuid(objNode, uuid, strlen(uuid));
+	Node_set_contextId(objNode, atoi(context_id));
+
+	SearchResponse_add_object(msg, objNode);
+}
+
+void searchRequest_node_sequence(struct session *session, DNDSMessage_t *req_msg)
+{
+	/* extraire la liste de Node ID de req_msg */
+	DNDSObject_t *object = NULL;
+	uint32_t count = 0;
+	uint32_t i = 0;
+	uint32_t *id_list = NULL;
+	uint32_t contextId = 0;
+	int ret = 0;
+
+	DNDSMessage_t *msg;
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+	DSMessage_set_operation(msg, dsop_PR_searchResponse);
+	SearchResponse_set_searchType(msg, SearchType_sequence);
+	SearchResponse_set_result(msg, DNDSResult_success);
+
+	SearchRequest_get_object_count(req_msg, &count);
+	if (count == 0) {
+		return;
+	}
+
+	id_list = calloc(count, sizeof(uint32_t));
+	for (i = 0; i < count; i++) {
+
+		ret = SearchRequest_get_from_objects(req_msg, &object);
+		if (ret == DNDS_success && object != NULL) {
+			Node_get_contextId(object, &contextId);
+			id_list[i] = contextId;
+		}
+		else {
+			/* XXX send failed reply */
+		}
+	}
+
+	/* lancer requete sql pour retourner les Node UUID */
+	dao_fetch_node_sequence(id_list, count, msg, CB_searchRequest_node_sequence);
+
+	free(id_list);
+
+	net_send_msg(session->netc, msg);
+	DNDSMessage_del(msg);
+}
+
 int CB_searchRequest_node_by_context_id(void *msg, char *uuid, char *description, char *provcode, char *ipaddress)
 {
 	DNDSObject_t *objNode;
@@ -646,14 +702,18 @@ void searchRequest(struct session *session, DNDSMessage_t *req_msg)
 
 	SearchRequest_get_searchType(req_msg, &SearchType);
 
+	SearchRequest_get_object(req_msg, &object);
+	DNDSObject_get_objectType(object, &objType);
+
 	if (SearchType == SearchType_all) {
 		searchRequest_context(session);
 	}
 
-	if (SearchType == SearchType_object) {
+	if (SearchType == SearchType_sequence) {
+		searchRequest_node_sequence(session, req_msg);
+	}
 
-		SearchRequest_get_object(req_msg, &object);
-	        DNDSObject_get_objectType(object, &objType);
+	if (SearchType == SearchType_object) {
 
 		switch (objType) {
 		case DNDSObject_PR_client:

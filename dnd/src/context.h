@@ -33,12 +33,14 @@ typedef struct context {
 	uint32_t id;				// context unique identifier
 	ftable_t *ftable;			// forwarding table
 	ctable_t *ctable;			// connection table
+	ctable_t *atable;			// access table
 
 	uint32_t active_node;			// number of connected node
 	linkst_t *linkst;			// link state between nodes
 	uint8_t *bitpool;			// bitpool used to generated unique ID per session
 
 	struct session *session_list;		// all session open in this context
+	struct session *access_session;		// store the access session in the access table for every known UUID
 
 	passport_t *passport;
 

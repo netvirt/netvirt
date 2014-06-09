@@ -201,6 +201,10 @@ int SearchRequest_get_objectName(DNDSMessage_t *msg, e_ObjectName *ObjectName);
 int SearchRequest_set_object(DNDSMessage_t *msg, DNDSObject_t *object);
 int SearchRequest_get_object(DNDSMessage_t *msg, DNDSObject_t **object);
 
+int SearchRequest_add_to_objects(DNDSMessage_t *msg, DNDSObject_t *object);
+int SearchRequest_get_from_objects(DNDSMessage_t *msg, DNDSObject_t **object);
+int SearchRequest_get_object_count(DNDSMessage_t *msg, uint32_t *count);
+
 // SearchResponse
 int SearchResponse_set_searchType(DNDSMessage_t *msg, e_SearchType SearchType);
 int SearchResponse_get_searchType(DNDSMessage_t *msg, e_SearchType *SearchType);
