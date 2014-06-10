@@ -119,6 +119,16 @@ int dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
+			"dao_del_node",
+			"DELETE FROM node "
+			"WHERE context_id = $1 AND uuid = $2;",
+			0,
+			NULL);
+	if (result == NULL)
+		goto error;
+	PQclear(result);
+
+	result = PQprepare(dbconn,
 			"dao_add_node",
 			"INSERT INTO NODE "
 			"(context_id, uuid, certificate, privatekey, provcode, description, ipaddress) "
@@ -445,6 +455,34 @@ int dao_fetch_client_id(char **client_id, char *email, char *password)
 	jlog(L_DEBUG, "Fields %d", fields);
 
 	PQclear(result);
+
+	return 0;
+}
+
+int dao_del_node(char *context_id, char *uuid)
+{
+	const char *paramValues[2];
+	int paramLengths[2];
+	PGresult *result;
+
+	if (!context_id || !uuid) {
+		jlog(L_WARNING, "invalid parameter");
+		return -1;
+	}
+
+	paramValues[0] = context_id;
+	paramValues[1] = uuid;
+
+	paramLengths[0] = strlen(context_id);
+	paramLengths[1] = strlen(uuid);
+
+	result = PQexecPrepared(dbconn, "dao_del_node", 2, paramValues, paramLengths, NULL, 0);
+
+	if (!result) {
+		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		PQclear(result);
+		return -1;
+	}
 
 	return 0;
 }

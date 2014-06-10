@@ -3621,13 +3621,21 @@ void Context_printf(DNDSObject_t *object)
 void Node_printf(DNDSObject_t *object)
 {
 	int ret = 0;
+	size_t length = 0;
 
 	uint32_t contextId = -1;
 	Node_get_contextId(object, &contextId);
 	printf("Node> contextId: %i\n", contextId);
 
+	char *description = NULL;
+	Node_get_description(object, &description, &length);
+	printf("Node> description: %s\n", description);
+
+	char *uuid = NULL;
+	Node_get_uuid(object, &uuid, &length);
+	printf("Node> uuid: %s\n", uuid);
+
 	char *certificate = NULL;
-	size_t length = 0;
 	Node_get_certificate(object, &certificate, &length);
 	printf("Node> certficiate: %s\n", certificate);
 
@@ -3638,11 +3646,11 @@ void Node_printf(DNDSObject_t *object)
 	uint32_t i;
 	for (i = 0; i < length; i++) { printf("%x", certificateKey[i]); }; printf("\n");
 
-	char ipAddress[INET_ADDRSTRLEN];
+	char ipAddress[INET_ADDRSTRLEN] = {0};
 	ret = Node_get_ipAddress(object, ipAddress);
 	printf("Node ipAddress(%i): %s\n", ret, ipAddress);
 
-	uint8_t status;
+	uint8_t status = 0;
 	Node_get_status(object, &status);
 	printf("Node> status: %i\n", status);
 }

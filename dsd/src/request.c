@@ -407,14 +407,27 @@ void addRequest(DNDSMessage_t *msg)
 
 void delRequest(struct session *session, DNDSMessage_t *msg)
 {
-	(void)(session);
-	(void)(msg);
+	(void)session;
+
+	DNDSObject_t *object;
+	DelRequest_get_object(msg, &object);
+
+	size_t length = 0;
+	uint32_t contextId = -1;
+	char context_id_str[10] = {0};
+	Node_get_contextId(object, &contextId);
+	snprintf(context_id_str, 10, "%d", contextId);
+
+	char *uuid = NULL;
+	Node_get_uuid(object, &uuid, &length);
+
+	dao_del_node(context_id_str, uuid);
 }
 
 void modifyRequest(struct session *session, DNDSMessage_t *msg)
 {
-	(void)(session);
-	(void)(msg);
+	(void)session;
+	(void)msg;
 }
 
 void searchRequest_client(struct session *session, DNDSMessage_t *req_msg)

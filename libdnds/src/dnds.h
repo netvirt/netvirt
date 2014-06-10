@@ -220,38 +220,7 @@ int SearchResponse_get_object_count(DNDSMessage_t *msg, uint32_t *count);
 int DNDSObject_del(DNDSObject_t *object);
 int DNDSObject_new(DNDSObject_t **object);
 
-// Acl
-int Acl_set_id(DNDSObject_t *AclObject, uint32_t id);
-int Acl_get_id(DNDSObject_t *AclObject, uint32_t *id);
-int Acl_set_contextId(DNDSObject_t *AclObject, uint32_t contextId);
-int Acl_get_contextId(DNDSObject_t *AclObject, uint32_t *contextId);
-int Acl_set_description(DNDSObject_t *AclObject, char *description, size_t length);
-int Acl_get_description(DNDSObject_t *AclObject, char **description, size_t *length);
-
-// AclGroup
-int AclGroup_set_id(DNDSObject_t *AclGroupObject, uint32_t id);
-int AclGroup_get_id(DNDSObject_t *AclGroupObject, uint32_t *id);
-int AclGroup_set_contextId(DNDSObject_t *AclGroupObject, uint32_t contextId);
-int AclGroup_get_contextId(DNDSObject_t *AclGroupObject, uint32_t *contextId);
-int AclGroup_set_name(DNDSObject_t *AclGroupObject, char *name, size_t length);
-int AclGroup_get_name(DNDSObject_t *AclGroupObject, char **name, size_t *length);
-int AclGroup_set_description(DNDSObject_t *AclGroupObject, char *description, size_t length);
-int AclGroup_get_description(DNDSObject_t *AclGroupObject, char **description, size_t *length);
-
-// IpPool
-int IpPool_set_id(DNDSObject_t *IpPoolObject, uint32_t id);
-int IpPool_get_id(DNDSObject_t *IpPoolObject, uint32_t *id);
-int IpPool_set_ipLocal(DNDSObject_t *IpPoolObject, char *ipLocal);
-int IpPool_get_ipLocal(DNDSObject_t *IpPoolObject, char *ipLocal);
-int IpPool_set_ipBegin(DNDSObject_t *IpPoolObject, char *ipBegin);
-int IpPool_get_ipBegin(DNDSObject_t *IpPoolObject, char *ipBegin);
-int IpPool_set_ipEnd(DNDSObject_t *IpPoolObject, char *ipEnd);
-int IpPool_get_ipEnd(DNDSObject_t *IpPoolObject, char *ipEnd);
-int IpPool_set_netmask(DNDSObject_t *IpPoolObject, char *netmask);
-int IpPool_get_netmask(DNDSObject_t *IpPoolObject, char *netmask);
-
 // Context
-
 int Context_set_id(DNDSObject_t *object, uint32_t id);
 int Context_get_id(DNDSObject_t *object, uint32_t *id);
 int Context_set_clientId(DNDSObject_t *object, uint32_t clientId);
@@ -270,30 +239,6 @@ int Context_set_serverPrivkey(DNDSObject_t *object, char *serverPrivkey, size_t 
 int Context_get_serverPrivkey(DNDSObject_t *object, char **serverPrivkey, size_t *length);
 int Context_set_trustedCert(DNDSObject_t *object, char *trustedCert, size_t length);
 int Context_get_trustedCert(DNDSObject_t *object, char **trustedCert, size_t *length);
-
-// WebCredential
-int WebCredential_set_clientId(DNDSObject_t *object, uint32_t id);
-int WebCredential_get_clientId(DNDSObject_t *object, uint32_t *id);
-int WebCredential_set_username(DNDSObject_t *object, char *username, size_t length);
-int WebCredential_get_username(DNDSObject_t *object, char **username, size_t *length);
-int WebCredential_set_password(DNDSObject_t *object, char *password, size_t length);
-int WebCredential_get_password(DNDSObject_t *object, char **password, size_t *length);
-
-// Host
-int Host_set_id(DNDSObject_t *HostObject, uint32_t id);
-int Host_get_id(DNDSObject_t *HostObject, uint32_t *id);
-int Host_set_contextId(DNDSObject_t *HostObject, uint32_t contextId);
-int Host_get_contextId(DNDSObject_t *HostObject, uint32_t *contextId);
-int Host_set_peerId(DNDSObject_t *HostObject, uint32_t peerId);
-int Host_get_peerId(DNDSObject_t *HostObject, uint32_t *peerId);
-int Host_set_name(DNDSObject_t *HostObject, char *name, size_t length);
-int Host_get_name(DNDSObject_t *HostObject, char **name, size_t *length);
-int Host_set_macAddress(DNDSObject_t *HostObject, uint8_t *macAddress);
-int Host_get_macAddress(DNDSObject_t *HostObject, uint8_t *macAddress);
-int Host_set_ipAddress(DNDSObject_t *HostObject, char *ipAddress);
-int Host_get_ipAddress(DNDSObject_t *HostObject, char *ipAddress);
-int Host_set_status(DNDSObject_t *HostObject, uint8_t status);
-int Host_get_status(DNDSObject_t *HostObject, uint8_t *status);
 
 // Node
 int Node_set_contextId(DNDSObject_t *object, uint32_t contextId);
@@ -315,7 +260,7 @@ int Node_get_ipAddress(DNDSObject_t *object, char *ipAddress);
 int Node_set_status(DNDSObject_t *object, uint8_t status);
 int Node_get_status(DNDSObject_t *object, uint8_t *status);
 
-// Node
+// Client
 int Client_set_id(DNDSObject_t *object, uint32_t id);
 int Client_get_id(DNDSObject_t *object, uint32_t *id);
 int Client_set_password(DNDSObject_t *object, char *password, size_t length);
@@ -341,43 +286,6 @@ int Client_get_postalCode(DNDSObject_t *object, char **postalCode, size_t *lengt
 int Client_set_status(DNDSObject_t *object, uint8_t status);
 int Client_get_status(DNDSObject_t *object, uint8_t *status);
 
-// Permission
-int Permission_set_id();
-int Permission_set_name();
-int Permission_set_matrix();
-
-// Peer
-int Peer_set_contextId(DNDSObject_t *PeerObject, uint32_t contextId);
-int Peer_get_contextId(DNDSObject_t *PeerObject, uint32_t *contextId);
-int Peer_set_description(DNDSObject_t *object, char *description, size_t length);
-int Peer_get_description(DNDSObject_t *object, char **description, size_t *length);
-int Peer_set_certificate(DNDSObject_t *PeerObject, char *certificate, size_t length);
-int Peer_get_certificate(DNDSObject_t *PeerObject, char **certificate, size_t *length);
-int Peer_set_certificateKey(DNDSObject_t *PeerObject, uint8_t *certificateKey, size_t length);
-int Peer_get_certificateKey(DNDSObject_t *PeerObject, uint8_t **certificateKey, size_t *length);
-int Peer_set_status(DNDSObject_t *PeerObject, uint8_t status);
-int Peer_get_status(DNDSObject_t *PeerObject, uint8_t *status);
-
-// User
-int User_set_id(DNDSObject_t *UserObject, uint32_t id);
-int User_get_id(DNDSObject_t *UserObject, uint32_t *id);
-int User_set_contextId(DNDSObject_t *UserObject, uint32_t contextId);
-int User_get_contextId(DNDSObject_t *UserObject, uint32_t *contextId);
-int User_set_name(DNDSObject_t *UserObject, char *name, size_t length);
-int User_get_name(DNDSObject_t *UserObject, char **name, size_t *length);
-int User_set_password(DNDSObject_t *UserObject, char *password, size_t length);
-int User_get_password(DNDSObject_t *UserObject, char **password, size_t *length);
-int User_set_firstname(DNDSObject_t *UserObject, char *firstname, size_t length);
-int User_get_firstname(DNDSObject_t *UserObject, char **firstname, size_t *length);
-int User_set_lastname(DNDSObject_t *UserObject, char *lastname, size_t length);
-int User_get_lastname(DNDSObject_t *UserObject, char **lastname, size_t *length);
-int User_set_email(DNDSObject_t *UserObject, char *email, size_t length);
-int User_get_email(DNDSObject_t *UserObject, char **email, size_t *length);
-int User_set_role(DNDSObject_t *UserObject, uint8_t role);
-int User_get_role(DNDSObject_t *UserObject, uint8_t *role);
-int User_set_status(DNDSObject_t *UserObject, uint8_t status);
-int User_get_status(DNDSObject_t *UserObject, uint8_t *status);
-
 // _printf functions usefull for debugging
 void DNDSMessage_printf(DNDSMessage_t *msg);
 void DNDSMessage_ethernet_printf(DNDSMessage_t *msg);
@@ -400,15 +308,8 @@ void NetinfoRequest_printf(DNDSMessage_t *msg);
 void NetinfoResponse_printf(DNDSMessage_t *msg);
 void SearchRequest_printf(DNDSMessage_t *msg);
 void SearchResponse_printf(DNDSMessage_t *msg);
-void Acl_printf(DNDSObject_t *object);
-void AclGroup_printf(DNDSObject_t *object);
-void IpPool_printf(DNDSObject_t *object);
 void Context_printf(DNDSObject_t *object);
-void Host_printf(DNDSObject_t *object);
 void Node_printf(DNDSObject_t *object);
-void Peer_printf(DNDSObject_t *object);
-void Permission_printf(DNDSObject_t *object);
-void User_printf(DNDSObject_t *object);
 void DNDSObject_printf(DNDSObject_t *obj);
 
 #endif /* DNDS_PROTOCOL_H */
