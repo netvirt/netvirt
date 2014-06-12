@@ -68,6 +68,12 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 	macaddr_dst_type = inet_get_mac_addr_type(macaddr_dst);
 	session_dst = ftable_find(session->context->ftable, macaddr_dst);
 
+	if (session_src != NULL && session_dst != NULL &&
+		(session_src == session_dst)) {
+		/* prevent loops */
+		return;
+	}
+
 	if (macaddr_dst_type == ADDR_MULTICAST) {
 		/* Multicast is not supported yet */
 		return;
