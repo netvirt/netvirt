@@ -119,6 +119,16 @@ int dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
+			"dao_del_node",
+			"DELETE FROM node "
+			"WHERE context_id = $1 AND uuid = $2;",
+			0,
+			NULL);
+	if (result == NULL)
+		goto error;
+	PQclear(result);
+
+	result = PQprepare(dbconn,
 			"dao_add_node",
 			"INSERT INTO NODE "
 			"(context_id, uuid, certificate, privatekey, provcode, description, ipaddress) "
@@ -449,6 +459,34 @@ int dao_fetch_client_id(char **client_id, char *email, char *password)
 	return 0;
 }
 
+int dao_del_node(char *context_id, char *uuid)
+{
+	const char *paramValues[2];
+	int paramLengths[2];
+	PGresult *result;
+
+	if (!context_id || !uuid) {
+		jlog(L_WARNING, "invalid parameter");
+		return -1;
+	}
+
+	paramValues[0] = context_id;
+	paramValues[1] = uuid;
+
+	paramLengths[0] = strlen(context_id);
+	paramLengths[1] = strlen(uuid);
+
+	result = PQexecPrepared(dbconn, "dao_del_node", 2, paramValues, paramLengths, NULL, 0);
+
+	if (!result) {
+		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		PQclear(result);
+		return -1;
+	}
+
+	return 0;
+}
+
 int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatekey, char *provcode, char *description, char *ipaddress)
 {
 	const char *paramValues[7];
@@ -760,6 +798,48 @@ int dao_fetch_embassy(char *context_id,
 	}
 
 	PQclear(result);
+
+	return 0;
+}
+
+int dao_fetch_node_sequence(uint32_t *context_id_list, uint32_t list_size, void *data, void (*cb_data_handler)(void *data,
+								char *uuid, char *contextId))
+{
+	PGresult *result;
+
+	int cursor = 0;
+	int total_size = 0;
+	char *fetch_req = NULL;
+	uint32_t i = 0;
+
+	total_size = (5*list_size) + strlen("SELECT node.uuid, node.context_id FROM node WHERE node.context_id IN ();");
+	fetch_req = calloc(1, total_size);
+	cursor = snprintf(fetch_req, total_size, "SELECT node.uuid, node.context_id FROM node WHERE node.context_id IN (%d", context_id_list[0]);
+	for (i = 1; i < list_size; i++) {
+		cursor += snprintf(fetch_req+cursor, total_size-cursor, ",%d", context_id_list[i]);
+	}
+	snprintf(fetch_req+cursor, total_size-cursor, ");");
+
+	result = PQexec(dbconn, fetch_req);
+	if (!result) {
+		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+	}
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return -1;
+	}
+
+	int tuples;
+	tuples = PQntuples(result);
+
+	int j;
+	for (j = 0; j < tuples; j++) {
+		cb_data_handler(data, PQgetvalue(result, j, 0), PQgetvalue(result, j, 1));
+	}
+
+	PQclear(result);
+	free(fetch_req);
 
 	return 0;
 }

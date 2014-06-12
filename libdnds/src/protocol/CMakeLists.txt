@@ -6,6 +6,7 @@ ADD_LIBRARY(dnds_protocol STATIC
 	DNMessage.c
 	DSMessage.c
 	DNDSObject.c
+	DNDSObjects.c
 	ObjectName.c
 	AuthRequest.c
 	AuthResponse.c

@@ -103,7 +103,9 @@ void context_free()
 			free(context->linkst);
 			ftable_delete(context->ftable);
 			ctable_delete(context->ctable);
+			ctable_delete(context->atable);
 			bitpool_free(context->bitpool);
+			session_free(context->access_session);
 			free(context);
 		}
 	}
@@ -112,8 +114,8 @@ void context_free()
 int context_create(uint32_t id, char *address, char *netmask,
 			char *serverCert, char *serverPrivkey, char *trustedCert)
 {
-	(void)(address); /* unused */
-	(void)(netmask); /* unused */
+	(void)address;
+	(void)netmask;
 
 	context_t *context;
 
@@ -129,9 +131,12 @@ int context_create(uint32_t id, char *address, char *netmask,
 	context->active_node = 0;
 
 	context->session_list = NULL;
+	context->access_session = session_new();
 
 	context->ftable = ftable_new(MAX_NODE, session_itemdup, session_itemrel);
 	context->ctable = ctable_new(MAX_NODE, session_itemdup, session_itemrel);
+	context->atable = ctable_new(MAX_NODE, session_itemdup, session_itemrel);
+
 	return 0;
 }
 

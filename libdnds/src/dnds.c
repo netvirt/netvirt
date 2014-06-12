@@ -1653,6 +1653,85 @@ int SearchRequest_get_objectName(DNDSMessage_t *msg, e_ObjectName *ObjectName)
 	return DNDS_success;
 }
 
+int SearchRequest_add_to_objects(DNDSMessage_t *msg, DNDSObject_t *object)
+{
+	if (msg == NULL || object == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_searchRequest) {
+		return DNDS_invalid_op;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.choice.searchRequest.objects == NULL) {
+		msg->pdu.choice.dsm.dsop.choice.searchRequest.objects = (DNDSObjects_t *)calloc(1, sizeof(DNDSObjects_t));
+		if (msg->pdu.choice.dsm.dsop.choice.searchRequest.objects == NULL) {
+			return DNDS_alloc_failed;
+		}
+	}
+
+	asn_set_add(&msg->pdu.choice.dsm.dsop.choice.searchRequest.objects->list, object);
+
+	return DNDS_success;
+}
+
+int SearchRequest_get_from_objects(DNDSMessage_t *msg, DNDSObject_t **object)
+{
+	if (msg == NULL || object == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_searchRequest) {
+		return DNDS_invalid_op;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.choice.searchRequest.objects == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	int count = msg->pdu.choice.dsm.dsop.choice.searchRequest.objects->list.count;
+	if (count > 0) {
+		*object = msg->pdu.choice.dsm.dsop.choice.searchRequest.objects->list.array[count-1];
+		asn_set_del(&msg->pdu.choice.dsm.dsop.choice.searchRequest.objects->list, count-1, 0);
+	}
+	else {
+		return DNDS_value_not_present;
+	}
+
+	return DNDS_success;
+}
+
+int SearchRequest_get_object_count(DNDSMessage_t *msg, uint32_t *count)
+{
+	if (msg == NULL || count == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_searchRequest) {
+		return DNDS_invalid_op;
+	}
+
+	if (msg->pdu.choice.dsm.dsop.choice.searchRequest.objects == NULL) {
+		*count = 0;
+	} else {
+		*count = msg->pdu.choice.dsm.dsop.choice.searchRequest.objects->list.count;
+	}
+
+	return DNDS_success;
+}
+
 int SearchRequest_set_object(DNDSMessage_t *msg, DNDSObject_t *object)
 {
 	if (msg == NULL || object == NULL) {
@@ -3542,13 +3621,21 @@ void Context_printf(DNDSObject_t *object)
 void Node_printf(DNDSObject_t *object)
 {
 	int ret = 0;
+	size_t length = 0;
 
 	uint32_t contextId = -1;
 	Node_get_contextId(object, &contextId);
 	printf("Node> contextId: %i\n", contextId);
 
+	char *description = NULL;
+	Node_get_description(object, &description, &length);
+	printf("Node> description: %s\n", description);
+
+	char *uuid = NULL;
+	Node_get_uuid(object, &uuid, &length);
+	printf("Node> uuid: %s\n", uuid);
+
 	char *certificate = NULL;
-	size_t length = 0;
 	Node_get_certificate(object, &certificate, &length);
 	printf("Node> certficiate: %s\n", certificate);
 
@@ -3559,11 +3646,11 @@ void Node_printf(DNDSObject_t *object)
 	uint32_t i;
 	for (i = 0; i < length; i++) { printf("%x", certificateKey[i]); }; printf("\n");
 
-	char ipAddress[INET_ADDRSTRLEN];
+	char ipAddress[INET_ADDRSTRLEN] = {0};
 	ret = Node_get_ipAddress(object, ipAddress);
 	printf("Node ipAddress(%i): %s\n", ret, ipAddress);
 
-	uint8_t status;
+	uint8_t status = 0;
 	Node_get_status(object, &status);
 	printf("Node> status: %i\n", status);
 }

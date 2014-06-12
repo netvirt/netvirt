@@ -75,6 +75,8 @@ DNDSObject ::= CHOICE {
 	...
 }
 
+DNDSObjects ::= SEQUENCE OF DNDSObject
+
 ObjectName ::= ENUMERATED {
 	client		(1),
 	context		(2),
@@ -176,13 +178,14 @@ SearchRequest ::= SEQUENCE {
 	searchtype	SearchType,
 	objectname	ObjectName OPTIONAL,
 	object		DNDSObject OPTIONAL,
+	objects		DNDSObjects OPTIONAL,
 	...
 }
 
 SearchResponse ::= SEQUENCE {
 	searchtype	SearchType,
 	dndsResult	DNDSResult,
-	objects		SEQUENCE OF DNDSObject,
+	objects		DNDSObjects,
 	...
 }
 

@@ -22,12 +22,14 @@ extern "C" {
 
 /* Forward declarations */
 struct DNDSObject;
+struct DNDSObjects;
 
 /* SearchRequest */
 typedef struct SearchRequest {
 	SearchType_t	 searchtype;
 	ObjectName_t	*objectname	/* OPTIONAL */;
 	struct DNDSObject	*object	/* OPTIONAL */;
+	struct DNDSObjects	*objects	/* OPTIONAL */;
 	/*
 	 * This type is extensible,
 	 * possible extensions are below.
@@ -46,6 +48,7 @@ extern asn_TYPE_descriptor_t asn_DEF_SearchRequest;
 
 /* Referred external types */
 #include "DNDSObject.h"
+#include "DNDSObjects.h"
 
 #endif	/* _SearchRequest_H_ */
 #include <asn_internal.h>

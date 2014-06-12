@@ -82,6 +82,16 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 		return -1;
 	}
 
+	/* check if the node has access */
+	if (ctable_find(session->context->atable, session->node_info->uuid) == NULL) {
+		AuthResponse_set_result(msg, DNDSResult_insufficientAccessRights);
+		net_send_msg(session->netc, msg);
+		DNDSMessage_del(msg);
+		jlog(L_ERROR, "authentication failed, invalid certificate");
+		return -1;
+	}
+
+	/* check if the node is already connected */
 	old_session = ctable_find(session->context->ctable, session->node_info->uuid);
 	if (old_session == NULL) {
 		ctable_insert(session->context->ctable, session->node_info->uuid, session);
