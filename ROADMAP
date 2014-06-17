@@ -1,25 +1,10 @@
 
 DNDS - Dynamic Network Directory Service ROADMAP
 ------------------------------------------------
-Last updated: 2013-06-22
-
+Last updated: 2014-06-17
 
 This ROADMAP file represent everything that has to be developped. If you are
 interested by anything listed below, please contact the dynvpn development team.
-
-
->> Web management platform
----------------------------
-Desc: The web platform will be written in Python/Django and will interact
-with the DNDS protocol via a Python/asn1 library called libdnm (taken from dsctl).
-
-- Delete a context from an account
-- Delete a node to a context
-- Regenerate provisioning-key
-- Send invitation via an email
-- control the maximum account possible (and being able to increase it easily)
-- Commecial account should be able to pay via paypal (or other)
-
 
 >> Multi platform VPN client
 -----------------------------
