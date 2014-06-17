@@ -7,7 +7,7 @@ A Dynamic VPN solution that allow you to securely access and manage computers/de
 Each computers/devices connect to a central point called DND (Dynamic Network Daemon) via a Layer2 SSL tunnel. When data is transfered between DNC (Dynamic Network Client), a direct connection is established between the peers (peer-to-peer). Using hole-punching techniques and DND as a fallback relay, every computers/devices can easily communicate to each other without bothering with NATs and firewalls. Every computers/devices receive an IP address from a subnet that is configurable as needed, this way the peers see each other as part of the same LAN (Local Area Network). In other word, they appear to be in the same broadcast domain.
 
 DNDS is Copyright (C) Nicolas J. Bouliane
-Mind4Networks - www.m4nt.com - M4N Technologies inc.
+M I N D  4  N E T W O R K S - www.m4nt.com - M4N Technologies inc.
 
 LICENSE :
  - dnc: GPLv3
