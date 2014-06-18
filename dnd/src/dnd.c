@@ -214,6 +214,11 @@ static void on_input(netc_t *netc)
 
 	mbuf_itr = &netc->queue_msg;
 	session = (struct session *)netc->ext_ptr;
+	if (session->state == SESSION_STATE_PURGE) {
+		jlog(L_NOTICE, "purge node: %s", session->cert_name);
+		net_disconnect(netc);
+		return;
+	}
 
 	while (*mbuf_itr != NULL) {
 		msg = (DNDSMessage_t *)(*mbuf_itr)->ext_buf;

@@ -140,6 +140,37 @@ static void on_secure(netc_t *netc)
 	DNDSMessage_del(msg);
 }
 
+static void delRequest(DNDSMessage_t *msg)
+{
+	DNDSObject_t *object;
+	DelRequest_get_object(msg, &object);
+
+	uint32_t contextId = -1;
+	Node_get_contextId(object, &contextId);
+
+	size_t length = 0;
+	char *uuid = NULL;
+	Node_get_uuid(object, &uuid, &length);
+
+	context_t *context = NULL;
+	context = context_lookup(contextId);
+
+	if (context == NULL) {
+		jlog(L_ERROR, "context id {%d} doesn't exist");
+		return;
+	}
+
+	/* remove the node from the access table */
+	ctable_erase(context->atable, uuid);
+
+	/* if the node is connected, mark it to be purged */
+	struct session *session = NULL;
+	session = ctable_find(context->ctable, uuid);
+	if (session) {
+		session->state = SESSION_STATE_PURGE;
+	}
+}
+
 static void handle_SearchResponse_Node(DNDSMessage_t *msg)
 {
 	struct session *session;
@@ -275,9 +306,20 @@ static void handle_SearchResponse(DNDSMessage_t *msg)
 static void dispatch_operation(DNDSMessage_t *msg)
 {
 	dsop_PR operation;
-
 	DSMessage_get_operation(msg, &operation);
-	handle_SearchResponse(msg);
+
+	switch (operation) {
+	case dsop_PR_delRequest:
+		delRequest(msg);
+		break;
+
+	case dsop_PR_searchResponse:
+		handle_SearchResponse(msg);
+		break;
+
+	default:
+		jlog(L_WARNING, "not a valid DSM operation");
+	}
 }
 
 static void on_input(netc_t *netc)

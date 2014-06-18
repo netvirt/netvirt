@@ -77,19 +77,10 @@ void session_terminate(struct session *session)
 
 void *session_itemdup(const void *item)
 {
-	struct session *session;
-	session = calloc(1, sizeof(struct session));
-
-	memmove(session, item, sizeof(struct session));
-
-	return session;
+	return (void*)item;
 }
 
 void session_itemrel(void *item)
 {
-	struct session *session;
-	if (item != NULL) {
-		session = (struct session *)item;
-		free(session);
-	}
+	(void)item;
 }

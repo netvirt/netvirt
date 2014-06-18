@@ -421,7 +421,12 @@ void delRequest(struct session *session, DNDSMessage_t *msg)
 	char *uuid = NULL;
 	Node_get_uuid(object, &uuid, &length);
 
+	jlog(L_NOTICE, "revoking node: %s", uuid);
 	dao_del_node(context_id_str, uuid);
+
+	/* forward the delRequest to DND */
+	if (g_dnd_netc)
+		net_send_msg(g_dnd_netc, msg);
 }
 
 void modifyRequest(struct session *session, DNDSMessage_t *msg)

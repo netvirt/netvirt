@@ -21,9 +21,10 @@
 #include <cert.h>
 #include <netbus.h>
 
-#define SESSION_STATE_AUTHED           0x1
-#define SESSION_STATE_NOT_AUTHED       0x2
-#define SESSION_STATE_WAIT_STEPUP      0x4
+#define SESSION_STATE_AUTHED		0x1
+#define SESSION_STATE_NOT_AUTHED	0x2
+#define SESSION_STATE_WAIT_STEPUP	0x4
+#define SESSION_STATE_PURGE		0x8
 
 struct mac_list {
 	uint8_t mac_addr[6];
