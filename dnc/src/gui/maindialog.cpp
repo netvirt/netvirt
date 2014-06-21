@@ -115,8 +115,8 @@ void MainDialog::slotWizardCancel()
 void MainDialog::slotWizardNext()
 {
 	this->ProvKey = this->wizardDialog->ProvKey;
-	delete this->wizardDialog;
 	this->NowRun();
+	delete this->wizardDialog;
 }
 
 void MainDialog::slotToggleAutoConnect(int checked)
