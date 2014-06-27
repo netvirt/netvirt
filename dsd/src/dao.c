@@ -448,7 +448,7 @@ int dao_fetch_client_id(char **client_id, char *email, char *password)
 	fields = PQnfields(result);
 
 	if (tuples > 0 && fields > 0) {
-		*client_id = PQgetvalue(result, 0, 0);
+		*client_id = strdup(PQgetvalue(result, 0, 0));
 	}
 
 	jlog(L_DEBUG, "Tuples %d", tuples);

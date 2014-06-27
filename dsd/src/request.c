@@ -476,6 +476,7 @@ void searchRequest_client(struct session *session, DNDSMessage_t *req_msg)
 	SearchResponse_add_object(msg, objClient);
 	net_send_msg(session->netc, msg);
 	DNDSMessage_del(msg);
+	free(id);
 }
 
 void searchRequest_context_by_client_id(struct session *session, DNDSMessage_t *req_msg)
