@@ -51,7 +51,7 @@ static int allocate_bit(uint8_t bitmap[], size_t bits, uint32_t *bit)
 {
 	int i, j, byte_size;
 
-	byte_size = bits/8;
+	byte_size = (bits+7)/8;
 
 	/* byte */
 	for (i = 0; (i < byte_size) && (bitmap[i] == 0xff); i++);
@@ -62,6 +62,10 @@ static int allocate_bit(uint8_t bitmap[], size_t bits, uint32_t *bit)
 	for (j = 0; get_bit( bitmap+i, j); j++);
 
 	*bit = i * 8 + j;
+
+	if (*bit > bits)
+		return 0;
+
 	set_bit(bitmap, *bit);
 
 	return 1;
@@ -112,8 +116,9 @@ void ipcalc(ippool_t *ippool, char *address, char *netmask)
 	inet_pton(AF_INET, netmask, &ippool->netmask);
 
 	ippool->hosts = ntohl(mask.s_addr - ippool->netmask.s_addr);
+	ippool->hosts -= 2; /* remove Network and Broadcast address */
 	ippool->hostmax.s_addr = (ippool->address.s_addr | ~ippool->netmask.s_addr) - htonl(1);
-	ippool->hostmin.s_addr = ippool->hostmax.s_addr - htonl(ippool->hosts-2);
+	ippool->hostmin.s_addr = ippool->hostmax.s_addr - htonl(ippool->hosts);
 }
 
 ippool_t *ippool_new(char *address, char *netmask)
@@ -127,20 +132,4 @@ ippool_t *ippool_new(char *address, char *netmask)
 
 	return ippool;
 }
-/*
-int main()
-{
-	char *ip = NULL;
-	ippool_t *my_pool = NULL;
 
-	my_pool = ippool_new("44.128.1.0", "255.255.255.0");
-
-	do {
-		ip = ippool_get_ip(my_pool);
-		if (ip)
-			printf("ip: %s\n", ip);
-	} while (ip);
-
-	printf("the end!\n");
-}
-*/
