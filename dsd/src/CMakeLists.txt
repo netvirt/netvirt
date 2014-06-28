@@ -6,6 +6,8 @@ endif (PostgreSQL_TYPE_INCLUDE_DIR)
 set(CMAKE_C_FLAGS "-g -W -Wall -DDSDVERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
 set(CMAKE_CXX_FLAGS "-g -W -Wall -DDSDVERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
 
+add_subdirectory(tests)
+
 add_executable(dsd
 	dao.c
 	dsd.c

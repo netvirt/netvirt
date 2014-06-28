@@ -2,6 +2,8 @@ set(CMAKE_C_FLAGS "-g -W -Wall -DDNCVERSION='\"${CPACK_PACKAGE_VERSION}\"' ${com
 set(CMAKE_CXX_FLAGS "-g -W -Wall -DDNCVERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+add_subdirectory(tests)
+
 option (WITH_GUI "WITH_GUI" ON)
 
 if (WIN32)

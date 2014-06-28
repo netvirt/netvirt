@@ -3,6 +3,8 @@ project(dnds)
 
 SET(CPACK_PACKAGE_VERSION "0.5.2")
 
+enable_testing()
+
 # Using Hardening Options
 # https://wiki.debian.org/Hardening
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
