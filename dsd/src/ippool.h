@@ -18,23 +18,21 @@
 
 #include <netinet/in.h>
 
-typedef struct ippool {
+struct ippool {
 
-	uint32_t hosts;
+	uint32_t hosts;			/* Maximum possible host. */
 
-	struct in_addr hostmin;
-	struct in_addr hostmax;
+	struct in_addr hostmin;		/* First host address. */
+	struct in_addr hostmax;		/* Last host address. */
+	struct in_addr address;		/* Network address. */
+	struct in_addr netmask;		/* Network address mask. */
 
-	struct in_addr address;
-	struct in_addr netmask;
+	unsigned char *pool;		/* Bitmap holding used address. */
+};
 
-	unsigned char *pool;
-
-} ippool_t;
-
-extern char *ippool_get_ip(ippool_t *);
-extern void ippool_release_ip(ippool_t *, char *);
-extern ippool_t *ippool_new(char *, char *);
-extern void ipcalc(ippool_t *ippool, char *address, char *netmask);
+char *ippool_get_ip(struct ippool *);
+void ippool_release_ip(struct ippool *, char *);
+struct ippool *ippool_new(char *, char *);
+void ippool_free(struct ippool *ippool);
 
 #endif

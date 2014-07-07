@@ -219,11 +219,10 @@ void AddRequest_context(DNDSMessage_t *msg)
 	free(emb);
 
 	/* Create an IP pool */
-	ippool_t *ippool;
+	struct ippool *ippool;
 	size_t pool_size;
 
 	ippool = ippool_new("44.128.0.0", "255.255.0.0");
-	ipcalc(ippool, "44.128.0.0", "255.255.0.0");
 	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
 
 	dao_add_context(client_id_str,
@@ -238,8 +237,7 @@ void AddRequest_context(DNDSMessage_t *msg)
 				ippool->pool,
 				pool_size);
 
-	free(ippool->pool);
-	free(ippool);
+	ippool_free(ippool);
 
 	free(serv_cert_ptr);
 	free(serv_pvkey_ptr);
@@ -345,7 +343,7 @@ void AddRequest_node(DNDSMessage_t *msg)
 	jlog(L_DEBUG, "dao_update_embassy_serial: %d", ret);
 
 	/* handle ip pool */
-	ippool_t *ippool;
+	struct ippool *ippool;
 	char *ip;
 	int pool_size;
 
@@ -368,8 +366,7 @@ void AddRequest_node(DNDSMessage_t *msg)
 	}
 
 free2:
-	free(ippool->pool);
-	free(ippool);
+	ippool_free(ippool);
 
 free1:
 	free(node_passport);
