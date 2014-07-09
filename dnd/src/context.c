@@ -50,7 +50,7 @@ void context_del_session(context_t *context, struct session *session)
 		}
 	}
 
-	bitpool_release_bit(context->bitpool, MAX_NODE, session->id);
+	bitpool_release_bit(context->bitpool, MAX_NODE, session->id-1);
 	context->active_node--;
 }
 
@@ -68,6 +68,7 @@ void context_add_session(context_t *context, struct session *session)
 	}
 
 	bitpool_allocate_bit(context->bitpool, MAX_NODE, &session->id);
+	session->id+=1;
 	context->active_node++;
 }
 
