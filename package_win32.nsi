@@ -122,11 +122,11 @@ SetCompressor /FINAL /SOLID lzma
 		DetailPrint "TAP INSTALL (May need confirmation)"
 
 		${If} ${RunningX64}
-			setOutPath "$TEMP\tap64\"
+			setOutPath "$TEMP\64-bit\"
 			nsExec::ExecToLog '"deltapall.bat" /S /SELECT_UTILITIES=1'
 			nsExec::ExecToLog '"addtap.bat" /S /SELECT_UTILITIES=1'
 		${Else}
-			setOutPath "$TEMP\tap32\"
+			setOutPath "$TEMP\32-bit\"
 			nsExec::ExecToLog '"deltapall.bat" /S /SELECT_UTILITIES=1'
 			nsExec::ExecToLog '"addtap.bat" /S /SELECT_UTILITIES=1'
 		${EndIf}
