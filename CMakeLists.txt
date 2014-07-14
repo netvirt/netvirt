@@ -18,18 +18,20 @@ set(HARDENING OPTIONS_COMMON
     -D_FORTIFY_SOURCE=2
 )
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+if (WIN32)
+    set(compiler_options "${HARDENING_OPTIONS_COMMON} -fPIE -O1")
+elseif(APPLE)
+    set(MACOS_10_6_FLAG "-stdlib=libstdc++")
+    set(CMAKE_OSX_SYSROOT "/SDKs/MacOSX10.6.sdk/")
+    set(compiler_options "${HARDENING_OPTIONS_COMMON} -fPIE ${MACOS_10_6_FLAG} -O1")
+elseif(UNIX)
     set(HARDENING_OPTIONS_LINUX
         ${HARDENING_OPTIONS_COMMON}
         -Wl,-z,relro
         -Wl,-z,now
     )
     set(compiler_options "${HARDENING_OPTIONS_LINUX} -O1")
-else()
-    set(MACOS_10_6_FLAG "-stdlib=libstdc++")
-    set(CMAKE_OSX_SYSROOT "/SDKs/MacOSX10.6.sdk/")
-    set(compiler_options "${HARDENING_OPTIONS_COMMON} -fPIE ${MACOS_10_6_FLAG}")
-endif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+endif()
 
 if(COMMAND cmake_policy)
 	cmake_policy(SET CMP0003 NEW)
