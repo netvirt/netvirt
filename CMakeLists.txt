@@ -7,10 +7,28 @@ enable_testing()
 
 # Using Hardening Options
 # https://wiki.debian.org/Hardening
+set(HARDENING OPTIONS_COMMON
+    -W
+    -Wall
+    -fstack-protector-all
+    --param ssp-buffer-size=4
+    -Wformat
+    -Wformat-security
+    -Werror=format-security
+    -D_FORTIFY_SOURCE=2
+)
+
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-set(compiler_options "-W -Wall -fstack-protector-all --param ssp-buffer-size=4 -Wl,-z,relro -Wl,-z,now -Wformat -Wformat-security -Werror=format-security -D_FORTIFY_SOURCE=2 -O1")
+    set(HARDENING_OPTIONS_LINUX
+        ${HARDENING_OPTIONS_COMMON}
+        -Wl,-z,relro
+        -Wl,-z,now
+    )
+    set(compiler_options "${HARDENING_OPTIONS_LINUX} -O1")
 else()
-set(compiler_options "-W -Wall -fstack-protector-all --param ssp-buffer-size=4 -Wformat -Wformat-security -Werror=format-security -fPIE -D_FORTIFY_SOURCE=2 -O1")
+    set(MACOS_10_6_FLAG "-stdlib=libstdc++")
+    set(CMAKE_OSX_SYSROOT "/SDKs/MacOSX10.6.sdk/")
+    set(compiler_options "${HARDENING_OPTIONS_COMMON} -fPIE ${MACOS_10_6_FLAG}")
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
 if(COMMAND cmake_policy)
