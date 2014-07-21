@@ -35,7 +35,7 @@
 #include <mbuf.h>
 #include <netbus.h>
 
-#include "dnc.h"
+#include "agent.h"
 #include "p2p.h"
 #include "session.h"
 

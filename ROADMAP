@@ -1,77 +1,30 @@
 
-DNDS - Dynamic Network Directory Service ROADMAP
-------------------------------------------------
-Last updated: 2014-06-17
+NetVirt - Network Virtualization Platform
+-----------------------------------------
 
-This ROADMAP file represent everything that has to be developped. If you are
-interested by anything listed below, please contact the dynvpn development team.
+General
+-------
+- Rebranding from DNDS to NetVirt.
+- Break down Libdnds --> Libcore
+                     |-> Libnvtp (NetVirt Tunneling Protocol)
+                     |-> Libnvp  (NetVirt Protocol)
 
->> Multi platform VPN client
------------------------------
-Desc: The portable VPN client will be written in C++/Qt and will work on
-BSD/Linux/Windows/MacOSX. The DNDS protocol that is part of libdnds will need
-to be extracted and be made in a seperate library that will be cross-platform
-and to which the VPN client will be linked. The work for the dynvpn-client
-should be derivated from dnc.
+NetVirt agent
+-------------
+- List the nodes with their status.
 
-Core
-- p2p non-blocking
+Libcore
+-------
+- Push udt patches upstream.
+- Use epoll with udt.
 
-GUI
-- list of reachable nodes with online status
-- systray icon
+NetVirt switch
+--------------
+- Do dynamic arp inspection.
+- Do dhcp snooping to build trust table.
+- Check MAC validity.
 
-Platform
-- Windows
-	- Installer
-	- OpenSSL manual compilation (not pre-compiled)
-- MacOSX
-
->> DNDS library (libdnds)
--------------------------
-Desc: This is the main library that contains all the subsystems used
-by the different DNDS components.
-
-- udt patch should be pushed upstream
-- udt should use epoll
-
-
->> Dynamic Network Daemon (DND)
--------------------------------
-Desc: DND represent the server that spawn virtual-switch into which nodes get
-connected.
-
-- dynamic arp inspection
-- dhcp snooping to build trust table
-- check MAC validity
-- jlog (journal log subsystem)
-
-
->> Directory Service (DSD)
---------------------------
-Desc: DSD represent the server that is responsible to interface the database.
-DSD interact with both DND and the web-interface.
-
-[DND] <- fetch context      -> [DSD] <- add new context -> [web-interface]
-      <- update node status ->       <- list all nodes  ->
-      <- ask for prov-key   ->       <- ...             ->
-      <- ...                ->
-
-- delete account, context, node
-- properly handle IP address format
-- create all certificates the first time
-- jlog (journal log subsystem)
-
-
->> DNDS Automated Building Plateform
-------------------------------------
-Desc: When code in git is pushed, it should be fetched by Jenkins, than compiled
-and tested and then package should be created.
-
-- automate the build process
-	- linux debian, redhat, arch
-	- OpenBSD, NetBSD, FreeBSD
-	- Windows, MacOSX
-	- i386, ppc, arm
-
-- setup jenkins server
+NetVirt controller
+------------------
+- Delete account, context, node.
+- Add an option to create the certificates (switch<->ctrler)

@@ -17,7 +17,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include "dnc.h"
+#include "agent.h"
 
 #ifdef __cplusplus
 extern "C" {

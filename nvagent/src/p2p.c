@@ -19,8 +19,8 @@
 #include <logger.h>
 #include <netbus.h>
 
+#include "agent.h"
 #include "session.h"
-#include "dnc.h"
 #include "p2p.h"
 
 ftable_t *ftable = NULL;

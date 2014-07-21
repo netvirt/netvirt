@@ -27,7 +27,7 @@
 #include <logger.h>
 
 #include "../config.h"
-#include "../dnc.h"
+#include "../agent.h"
 
 struct dnc_cfg *dnc_cfg;
 

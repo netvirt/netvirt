@@ -12,9 +12,9 @@ else()
 	set (win_rc_icon "")
 endif()
 
-set(dnc_sources
+set(nvagent_sources
+	agent.c
 	config.c
-	dnc.c
 	p2p.c
 	session.c)
 
@@ -49,7 +49,7 @@ if (WITH_GUI)
 		gui/generalsettings.h
 		gui/wizarddialog.h)
 
-	QT4_ADD_RESOURCES(gui_rccs_srcs "./gui/dnc.qrc")
+	QT4_ADD_RESOURCES(gui_rccs_srcs "./gui/agent.qrc")
 	QT4_WRAP_CPP(gui_headers_moc ${gui_headers})
 	QT4_WRAP_UI(gui_form_headers
 			gui/maindialog.ui
@@ -61,25 +61,25 @@ if (WITH_GUI)
 	include(${QT_USE_FILE})
 	add_definitions(${QT_DEFINITIONS})
 
-	add_executable(dnc MACOSX_BUNDLE WIN32 ${dnc_sources} ${gui_sources} ${gui_headers_moc} ${gui_form_headers} ${gui_rccs_srcs} ${win_rc_icon})
+	add_executable(nvagent MACOSX_BUNDLE WIN32 ${nvagent_sources} ${gui_sources} ${gui_headers_moc} ${gui_form_headers} ${gui_rccs_srcs} ${win_rc_icon})
 
 	if (WIN32)
-		set_target_properties(dnc PROPERTIES LINK_FLAGS "-mwindows")
+		set_target_properties(nvagent PROPERTIES LINK_FLAGS "-mwindows")
 	endif()
 
-	target_link_libraries(dnc ${QT_LIBRARIES})
+	target_link_libraries(nvagent ${QT_LIBRARIES})
 
 else()
 	set(cli_sources
 		cli/main.c)
 
-	add_executable(dnc ${dnc_sources} ${cli_sources})
+	add_executable(nvagent ${nvagent_sources} ${cli_sources})
 endif()
 
 find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
-include_directories("${CMAKE_SOURCE_DIR}/libdnds/src/protocol/")
+include_directories("${CMAKE_SOURCE_DIR}/libcore/src/protocol/")
 
 if (WIN32)
 	include_directories("${CMAKE_SOURCE_DIR}/tapcfg-win32/src/include/")
@@ -93,7 +93,7 @@ elseif (UNIX)
 endif()
 
 if (APPLE)
-	target_link_libraries(dnc
+	target_link_libraries(nvagent
 		${CMAKE_SOURCE_DIR}/tapcfg-macos/build/libtapcfg.a
 		${CMAKE_SOURCE_DIR}/libconfig-macos/lib/.libs/libconfig.a
 		dnds
@@ -102,7 +102,7 @@ if (APPLE)
 		pthread
 	)
 elseif (WIN32)
-	target_link_libraries(dnc
+	target_link_libraries(nvagent
 		config
 		dnds
 		pthread
@@ -111,7 +111,7 @@ elseif (WIN32)
 		${OPENSSL_LIBRARIES}
 	)
 else()
-	target_link_libraries(dnc
+	target_link_libraries(nvagent
 		-Wl,-Bstatic
 		tapcfg
 		config
@@ -123,7 +123,7 @@ else()
 	)
 endif()
 
-install(TARGETS dnc
+install(TARGETS nvagent
     BUNDLE DESTINATION . COMPONENT Runtime
     RUNTIME DESTINATION bin COMPONENT Runtime
     )

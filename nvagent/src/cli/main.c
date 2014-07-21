@@ -24,8 +24,9 @@
 #include <unistd.h>
 
 #include <logger.h>
+
+#include "../agent.h"
 #include "../config.h"
-#include "../dnc.h"
 
 void int_handler(int sig)
 {

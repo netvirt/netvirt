@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.6)
-project(dnds)
+project(netvirt)
 
 SET(CPACK_PACKAGE_VERSION "0.5.2")
 
@@ -28,7 +28,6 @@ elseif(UNIX)
     set(HARDENING_OPTIONS_LINUX
         ${HARDENING_OPTIONS_COMMON}
         -Wl,-z,relro
-        -Wl,-z,now
     )
     set(compiler_options "${HARDENING_OPTIONS_LINUX} -O1")
 endif()
@@ -38,28 +37,28 @@ if(COMMAND cmake_policy)
 endif(COMMAND cmake_policy)
 
 if(APPLE)
-	set(apple_package dnc.app) #DynVPN_Client.app)
+	set(apple_package netvirt.app) #NetVirt_Agent.app)
 	set(library_dest_dir ${apple_package}/Contents/MacOS)
 	set(qtconf_dest_dir ${apple_package}/Contents/Resources)
 else()
 	set(library_dest_dir lib)
 endif()
 
-add_subdirectory(libdnds)
+add_subdirectory(libcore)
 
-option (WITH_DNC "WITH_DNC" ON)
+option (WITH_NVAGENT "WITH_NVAGENT" ON)
 
-if (WITH_DNC)
-	add_subdirectory(dnc)
+if (WITH_NVAGENT)
+	add_subdirectory(nvagent)
 endif()
 
-option (WITH_DSD "WITH_DND" OFF)
-option (WITH_DSD "WITH_DSD" OFF)
+option (WITH_NVSWITCH "WITH_NVSWITCH" OFF)
+option (WITH_NVCTRLER "WITH_NVCTRLER" OFF)
 
-if (WITH_DSD)
-	add_subdirectory(dsd)
+if (WITH_NVCTRLER)
+	add_subdirectory(nvctrler)
 endif()
 
-if (WITH_DND)
-	add_subdirectory(dnd)
+if (WITH_NVSWITCH)
+	add_subdirectory(nvswitch)
 endif()
