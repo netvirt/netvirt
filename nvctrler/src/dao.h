@@ -16,7 +16,8 @@
 #ifndef DAO_H
 #define DAO_H
 
-#include "dsd.h"
+#include "ctrler.h"
+
 int dao_connect(struct dsd_cfg *dsd_cfg);
 
 /*int dao_fetch_context_by_client_id(char *client_id,

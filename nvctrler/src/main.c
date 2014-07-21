@@ -25,8 +25,8 @@
 #include <logger.h>
 #include <netbus.h>
 
+#include "ctrler.h"
 #include "dao.h"
-#include "dsd.h"
 
 #define CONFIG_FILE "/etc/dnds/dsd.conf"
 

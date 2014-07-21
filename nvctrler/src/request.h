@@ -17,7 +17,7 @@
 #define REQUEST_H
 
 #include <dnds.h>
-#include "dsd.h"
+#include "ctrler.h"
 
 void authRequest(struct session *session, DNDSMessage_t *msg);
 void addRequest(DNDSMessage_t *msg);

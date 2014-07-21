@@ -8,9 +8,9 @@ set(CMAKE_CXX_FLAGS "-g -W -Wall -DDSDVERSION='\"${CPACK_PACKAGE_VERSION}\"' ${c
 
 add_subdirectory(tests)
 
-add_executable(dsd
+add_executable(nvctrler
+	ctrler.c
 	dao.c
-	dsd.c
 	ippool.c
 	main.c
 	pki.c
@@ -20,8 +20,8 @@ add_executable(dsd
 link_directories("${CMAKE_SOURCE_DIR}/libconfig-linux/lib/.libs")
 include_directories("${CMAKE_SOURCE_DIR}/libconfig-linux/lib/")
 
-include_directories("${CMAKE_SOURCE_DIR}/libdnds/src/protocol/")
-target_link_libraries(dsd
+include_directories("${CMAKE_SOURCE_DIR}/libcore/src/protocol/")
+target_link_libraries(nvctrler
 	${CMAKE_SOURCE_DIR}/libconfig-linux/lib/.libs/libconfig.a
 	dnds
 	ssl
@@ -31,6 +31,6 @@ target_link_libraries(dsd
 	pthread
 )
 
-install(TARGETS dsd
+install(TARGETS nvctrler
 	DESTINATION bin)
 
