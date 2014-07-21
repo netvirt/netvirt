@@ -1,7 +1,7 @@
 /*
- * Dynamic Network Directory Service
+ * NetVirt - Network Virtualization Platform
  * Copyright (C) 2009-2014
- * Nicolas J. Bouliane <nib@dynvpn.com>
+ * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,7 +24,7 @@
 int transmit_provisioning(struct session *session, char *provCode, uint32_t length);
 int transmit_peerconnectinfo(e_ConnectState state, char *ipAddress, char *certName);
 int transmit_node_connectinfo(e_ConnectState state, char *ipAddress, char *certName);
-int dsc_init(struct dnd_cfg *cfg);
+int dsc_init(struct switch_cfg *cfg);
 void dsc_fini();
 
 #endif

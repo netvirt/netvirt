@@ -1,7 +1,7 @@
 /*
- * Dynamic Network Directory Service
+ * NetVirt - Network Virtualization Platform
  * Copyright (C) 2009-2014
- * Nicolas J. Bouliane <nib@dynvpn.com>
+ * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,8 +25,8 @@
 #include "tcp.h"
 
 static netc_t *dsc_netc = NULL;
-static passport_t *dnd_passport = NULL;
-static struct dnd_cfg *dnd_cfg = NULL;
+static passport_t *switch_passport = NULL;
+static struct switch_cfg *switch_cfg = NULL;
 
 /* TODO extend this tracking table into a subsystem in it's own */
 #define MAX_SESSION 1024
@@ -293,7 +293,7 @@ static void handle_SearchResponse(DNDSMessage_t *msg)
 
 	if (SearchType == SearchType_sequence) {
 		handle_SearchResponse_node(msg);
-		dnd_cfg->dsc_initialized = 1;
+		switch_cfg->dsc_initialized = 1;
 	}
 
 	if (SearchType == SearchType_object) {
@@ -351,7 +351,7 @@ static void on_disconnect(netc_t *netc)
 {
 	(void)(netc);
 
-	if (dnd_cfg->dsc_running == 0) {
+	if (switch_cfg->dsc_running == 0) {
 		return;
 	}
 
@@ -361,8 +361,8 @@ static void on_disconnect(netc_t *netc)
 	jlog(L_NOTICE, "connection retry to dsd...");
 	do {
 		sleep(5);
-		retry_netc = net_client(dnd_cfg->dsd_ipaddr, dnd_cfg->dsd_port,
-		    NET_PROTO_TCP, NET_SECURE_RSA, dnd_passport,
+		retry_netc = net_client(switch_cfg->dsd_ipaddr, switch_cfg->dsd_port,
+		    NET_PROTO_TCP, NET_SECURE_RSA, switch_passport,
 		    on_disconnect, on_input, on_secure);
 	} while (retry_netc == NULL);
 
@@ -373,22 +373,22 @@ static void *dsc_loop(void *nil)
 {
 	(void)nil;
 
-	while (dnd_cfg->dsc_running) {
+	while (switch_cfg->dsc_running) {
 		tcpbus_ion_poke();
 	}
 
 	return NULL;
 }
 
-int dsc_init(struct dnd_cfg *cfg)
+int dsc_init(struct switch_cfg *cfg)
 {
-	dnd_cfg = cfg;
-	dnd_cfg->dsc_running = 1;
+	switch_cfg = cfg;
+	switch_cfg->dsc_running = 1;
 
 	jlog(L_NOTICE, "dsc initializing...");
 
-	dnd_passport = pki_passport_load_from_file(dnd_cfg->certificate, dnd_cfg->privatekey, dnd_cfg->trusted_cert);
-	dsc_netc = net_client(dnd_cfg->dsd_ipaddr, dnd_cfg->dsd_port, NET_PROTO_TCP, NET_SECURE_RSA, dnd_passport,
+	switch_passport = pki_passport_load_from_file(switch_cfg->certificate, switch_cfg->privatekey, switch_cfg->trusted_cert);
+	dsc_netc = net_client(switch_cfg->dsd_ipaddr, switch_cfg->dsd_port, NET_PROTO_TCP, NET_SECURE_RSA, switch_passport,
 				on_disconnect, on_input, on_secure);
 
 	if (dsc_netc == NULL) {
@@ -410,6 +410,6 @@ int dsc_init(struct dnd_cfg *cfg)
 void dsc_fini()
 {
 	net_disconnect(dsc_netc);
-	pki_passport_destroy(dnd_passport);
+	pki_passport_destroy(switch_passport);
 	context_free();
 }

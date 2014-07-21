@@ -1,7 +1,7 @@
 /*
- * Dynamic Network Directory Service
+ * NetVirt - Network Virtualization Platform
  * Copyright (C) 2009-2014
- * Nicolas J. Bouliane <nib@dynvpn.com>
+ * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,7 +18,7 @@
 
 #include "context.h"
 
-struct dnd_cfg {
+struct switch_cfg {
 
 	const char *log_file;
 
@@ -34,10 +34,10 @@ struct dnd_cfg {
 
 	int dsc_initialized;
 	int dsc_running;
-	int dnd_running;
+	int switch_running;
 };
 
-int dnd_init(struct dnd_cfg *dnd_cfg);
-void dnd_fini();
+int switch_init(struct switch_cfg *switch_cfg);
+void switch_fini();
 
 #endif

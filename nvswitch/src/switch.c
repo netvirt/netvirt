@@ -1,7 +1,7 @@
 /*
- * Dynamic Network Directory Service
+ * NetVirt - Network Virtualization Platform
  * Copyright (C) 2009-2014
- * Nicolas J. Bouliane <nib@dynvpn.com>
+ * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -31,7 +31,7 @@
 #include "session.h"
 #include "switch.h"
 
-static struct dnd_cfg *dnd_cfg;
+static struct switch_cfg *switch_cfg;
 static netc_t *dsd_netc = NULL;
 
 static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
@@ -294,23 +294,23 @@ static void on_disconnect(netc_t *netc)
 	return;
 }
 
-static void *dnd_loop(void *nil)
+static void *switch_loop(void *nil)
 {
 	(void)nil;
 
-	while (dnd_cfg->dnd_running) {
+	while (switch_cfg->switch_running) {
 		udtbus_poke_queue();
 	}
 
 	return NULL;
 }
 
-int dnd_init(struct dnd_cfg *cfg)
+int switch_init(struct switch_cfg *cfg)
 {
-	dnd_cfg = cfg;
-	dnd_cfg->dnd_running = 1;
+	switch_cfg = cfg;
+	switch_cfg->switch_running = 1;
 
-	dsd_netc = net_server(dnd_cfg->ipaddr, dnd_cfg->port, NET_PROTO_UDT, NET_SECURE_ADH, NULL,
+	dsd_netc = net_server(switch_cfg->ipaddr, switch_cfg->port, NET_PROTO_UDT, NET_SECURE_ADH, NULL,
 		on_connect, on_disconnect, on_input, on_secure);
 
 	if (dsd_netc == NULL) {
@@ -326,12 +326,12 @@ int dnd_init(struct dnd_cfg *cfg)
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-	pthread_create(&thread_loop, &attr, dnd_loop, NULL);
+	pthread_create(&thread_loop, &attr, switch_loop, NULL);
 
 	return 0;
 }
 
-void dnd_fini()
+void switch_fini()
 {
 	net_disconnect(dsd_netc);
 }
