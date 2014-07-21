@@ -121,8 +121,10 @@ int agent_config_init(struct agent_cfg *_agent_cfg)
 		jlog_init_file(agent_cfg->log_file);
 	}
 
-        if (default_conf || !config_lookup_string(&cfg, "server_address", &agent_cfg->server_address)) {
-		agent_cfg->server_address = strdup("bhs1.dynvpn.com");
+        if (agent_cfg->server_address == NULL &&
+		(default_conf ||
+		!config_lookup_string(&cfg, "server_address", &agent_cfg->server_address))) {
+			agent_cfg->server_address = strdup("bhs1.dynvpn.com");
 	}
 	jlog(L_DEBUG, "server_address = \"%s\";", agent_cfg->server_address);
 
