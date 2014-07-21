@@ -23,7 +23,7 @@
 #include "control.h"
 #include "switch.h"
 
-#define CONFIG_FILE "/etc/netvirt/switch.conf"
+#define CONFIG_FILE "/etc/netvirt/nvswitch.conf"
 
 static struct switch_cfg *switch_cfg;
 void on_log(const char *logline)
