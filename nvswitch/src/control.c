@@ -21,9 +21,7 @@
 #include <netbus.h>
 
 #include "context.h"
-#include "dnd.h"
-#include "dsc.h"
-#include "session.h"
+#include "control.h"
 #include "tcp.h"
 
 static netc_t *dsc_netc = NULL;

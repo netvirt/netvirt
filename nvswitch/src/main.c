@@ -20,10 +20,10 @@
 #include <logger.h>
 #include <netbus.h>
 
-#include "dnd.h"
-#include "dsc.h"
+#include "control.h"
+#include "switch.h"
 
-#define CONFIG_FILE "/etc/dnds/dnd.conf"
+#define CONFIG_FILE "/etc/netvirt/switch.conf"
 
 static struct dnd_cfg *dnd_cfg;
 void on_log(const char *logline)

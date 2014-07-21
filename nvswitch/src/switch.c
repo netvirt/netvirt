@@ -25,11 +25,11 @@
 #include <dnds.h>
 
 #include "context.h"
-#include "dnd.h"
-#include "dsc.h"
+#include "control.h"
 #include "inet.h"
 #include "request.h"
 #include "session.h"
+#include "switch.h"
 
 static struct dnd_cfg *dnd_cfg;
 static netc_t *dsd_netc = NULL;

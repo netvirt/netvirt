@@ -9,5 +9,5 @@ include_directories("../libcore/protocol/")
 
 add_subdirectory(src)
 
-install(FILES nvswitch.conf
+install(FILES switch.conf
         DESTINATION /etc/netvirt/)

@@ -17,7 +17,7 @@
 #include <logger.h>
 
 #include "context.h"
-#include "dsc.h"
+#include "control.h"
 #include "request.h"
 #include "session.h"
 

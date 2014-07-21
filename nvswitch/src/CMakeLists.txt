@@ -3,23 +3,23 @@ set(CMAKE_CXX_FLAGS "-g -W -Wall -DDNDVERSION='\"${CPACK_PACKAGE_VERSION}\"' ${c
 
 add_subdirectory(tests)
 
-add_executable(dnd
+add_executable(nvswitch
 	context.c
+	control.c
 	ctable.c
-	dnd.c
-	dsc.c
 	inet.c
 	linkst.c
 	main.c
 	request.c
 	session.c
+	switch.c
 )
 link_directories("${CMAKE_SOURCE_DIR}/libconfig-linux/lib/.libs")
 include_directories("${CMAKE_SOURCE_DIR}/libconfig-linux/lib/")
 
-include_directories("${CMAKE_SOURCE_DIR}/libdnds/src/")
-include_directories("${CMAKE_SOURCE_DIR}/libdnds/src/protocol/")
-target_link_libraries(dnd
+include_directories("${CMAKE_SOURCE_DIR}/libcore/src/")
+include_directories("${CMAKE_SOURCE_DIR}/libcore/src/protocol/")
+target_link_libraries(nvswitch
 	${CMAKE_SOURCE_DIR}/libconfig-linux/lib/.libs/libconfig.a
 	dnds
 	ssl
@@ -27,5 +27,5 @@ target_link_libraries(dnd
 	pthread
 )
 
-install(TARGETS dnd
+install(TARGETS nvswitch
 	DESTINATION bin)
