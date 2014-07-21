@@ -1,7 +1,7 @@
 /*
- * Dynamic Network Directory Service
+ * NetVirt - Network Virtualization Platform
  * Copyright (C) 2009-2014
- * Nicolas J. Bouliane <nib@dynvpn.com>
+ * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,7 +18,7 @@
 
 #include "ctrler.h"
 
-int dao_connect(struct dsd_cfg *dsd_cfg);
+int dao_connect(struct ctrler_cfg *ctrler_cfg);
 
 /*int dao_fetch_context_by_client_id(char *client_id,
 			char **id,

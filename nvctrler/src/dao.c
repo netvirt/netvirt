@@ -1,7 +1,7 @@
 /*
- * Dynamic Network Directory Service
+ * NetVirt - Network Virtualization Platform
  * Copyright (C) 2009-2014
- * Nicolas J. Bouliane <nib@dynvpn.com>
+ * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -230,11 +230,11 @@ error:
 	return -1;
 }
 
-int dao_connect(struct dsd_cfg *dsd_cfg)
+int dao_connect(struct ctrler_cfg *ctrler_cfg)
 {
 	char conn_str[128];
 	snprintf(conn_str, sizeof(conn_str), "dbname = %s user = %s password = %s host = %s",
-						dsd_cfg->db_name, dsd_cfg->db_user, dsd_cfg->db_pwd, dsd_cfg->db_host);
+						ctrler_cfg->db_name, ctrler_cfg->db_user, ctrler_cfg->db_pwd, ctrler_cfg->db_host);
 
 	dbconn = PQconnectdb(conn_str);
 

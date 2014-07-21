@@ -1,7 +1,7 @@
 /*
- * Dynamic Network Directory Service
+ * NetVirt - Network Virtualization Platform
  * Copyright (C) 2009-2014
- * Nicolas J. Bouliane <nib@dynvpn.com>
+ * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -374,9 +374,9 @@ int main()
 	expiration_delay = pki_expiration_delay(50);
 
 	// DND <--> DSD <--> DSC
-	digital_id_t *dsd_digital_id, *dnd_digital_id, *dsc_digital_id;
+	digital_id_t *ctrler_digital_id, *dnd_digital_id, *dsc_digital_id;
 
-	dsd_digital_id = pki_digital_id("dsd-master", "CA", "Quebec",
+	ctrler_digital_id = pki_digital_id("nvctrler-master", "CA", "Quebec",
 					"Levis", "info@demo.com", "DNDS");
 
 	dnd_digital_id = pki_digital_id("dnd-0", "CA", "Quebec",
@@ -385,29 +385,29 @@ int main()
 	dsc_digital_id = pki_digital_id("demo@1", "", "",
 					"", "client@demo", "demo");
 
-	embassy_t *dsd_embassy;
-	dsd_embassy = pki_embassy_new(dsd_digital_id, expiration_delay);
+	embassy_t *ctrler_embassy;
+	ctrler_embassy = pki_embassy_new(ctrler_digital_id, expiration_delay);
 
 	passport_t *dnd_passport;
-	dnd_passport = pki_embassy_deliver_passport(dsd_embassy, dnd_digital_id, expiration_delay);
+	dnd_passport = pki_embassy_deliver_passport(ctrler_embassy, dnd_digital_id, expiration_delay);
 
 	passport_t *dsc_passport;
-	dsc_passport = pki_embassy_deliver_passport(dsd_embassy, dsc_digital_id, expiration_delay);
+	dsc_passport = pki_embassy_deliver_passport(ctrler_embassy, dsc_digital_id, expiration_delay);
 
 
 	char *cert_ptr; long size;
 	char *pvkey_ptr;
 
-	pki_write_certificate_in_mem(dsd_embassy->certificate, &cert_ptr, &size);
-	pki_write_privatekey_in_mem(dsd_embassy->keyring, &pvkey_ptr, &size);
+	pki_write_certificate_in_mem(ctrler_embassy->certificate, &cert_ptr, &size);
+	pki_write_privatekey_in_mem(ctrler_embassy->keyring, &pvkey_ptr, &size);
 
 	jlog(L_NOTICE, "cert %s", cert_ptr);
 	jlog(L_NOTICE, "pvkey %s", pvkey_ptr);
 
 	return 0;
 
-	pki_write_certificate(dsd_embassy->certificate, "./dsd_cert.pem");
-	pki_write_privatekey(dsd_embassy->keyring, "dsd_privkey.pem");
+	pki_write_certificate(ctrler_embassy->certificate, "./ctrler_cert.pem");
+	pki_write_privatekey(ctrler_embassy->keyring, "ctrler_privkey.pem");
 
 	pki_write_certificate(dnd_passport->certificate, "./dnd_cert.pem");
 	pki_write_privatekey(dnd_passport->keyring, "./dnd_privkey.pem");
@@ -449,7 +449,7 @@ int main()
 	// free
 	pki_passport_free(dnd_passport);
 	pki_passport_free(dsc_passport);
-	pki_embassy_free(dsd_embassy);
+	pki_embassy_free(ctrler_embassy);
 
 	pki_passport_free(dnc_passport_demo);
 	pki_passport_free(dnd_passport_demo);

@@ -1,7 +1,7 @@
 /*
- * Dynamic Network Directory Service
+ * NetVirt - Network Virtualization Platform
  * Copyright (C) 2009-2014
- * Nicolas J. Bouliane <nib@dynvpn.com>
+ * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -186,7 +186,7 @@ void AddRequest_context(DNDSMessage_t *msg)
 	exp_delay = pki_expiration_delay(10);
 
 	digital_id_t *embassy_id;
-	embassy_id = pki_digital_id("embassy", "CA", "Quebec", "", "info@dynvpn.com", "DNDS");
+	embassy_id = pki_digital_id("embassy", "CA", "Quebec", "", "admin@netvirt.org", "NetVirt");
 
 	embassy_t *emb;
 	emb = pki_embassy_new(embassy_id, exp_delay);
@@ -201,7 +201,7 @@ void AddRequest_context(DNDSMessage_t *msg)
 	/* 3.2- Initialise server passport */
 
 	digital_id_t *server_id;
-	server_id = pki_digital_id("dnd", "CA", "Quebec", "", "info@dynvpn.com", "DNDS");
+	server_id = pki_digital_id("nvswitch", "CA", "Quebec", "", "admin@netvirt.org", "NetVirt");
 
 	passport_t *dnd_passport;
 	dnd_passport = pki_embassy_deliver_passport(emb, server_id, exp_delay);
@@ -320,11 +320,11 @@ void AddRequest_node(DNDSMessage_t *msg)
 	uuid = uuid_v4();
 	provcode = uuid_v4();
 
-	snprintf(common_name, sizeof(common_name), "dnc-%s@%s", uuid, context_id_str);
+	snprintf(common_name, sizeof(common_name), "nvagent-%s@%s", uuid, context_id_str);
 	jlog(L_DEBUG, "common_name: %s", common_name);
 
 	digital_id_t *node_ident = NULL;
-	node_ident = pki_digital_id(common_name, "", "", "", "info@dynvpn.com", "DNDS");
+	node_ident = pki_digital_id(common_name, "", "", "", "admin@netvirt.org", "NetVirt");
 
 	passport_t *node_passport = NULL;
 	node_passport = pki_embassy_deliver_passport(emb, node_ident, exp_delay);

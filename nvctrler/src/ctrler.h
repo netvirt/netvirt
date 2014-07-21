@@ -1,7 +1,7 @@
 /*
- * Dynamic Network Directory Service
+ * NetVirt - Network Virtualization Platform
  * Copyright (C) 2009-2014
- * Nicolas J. Bouliane <nib@dynvpn.com>
+ * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,7 +21,7 @@
 #define SESSION_STATE_AUTHED           0x1
 #define SESSION_STATE_NOT_AUTHED       0x2
 
-struct dsd_cfg {
+struct ctrler_cfg {
 
 	const char *log_file;
 
@@ -37,7 +37,7 @@ struct dsd_cfg {
 	const char *privatekey;
 	const char *trusted_cert;
 
-	int dsd_running;
+	int ctrler_running;
 };
 
 netc_t *g_dnd_netc;
@@ -48,7 +48,7 @@ struct session {
 	uint8_t state;
 };
 
-int dsd_init(struct dsd_cfg *cfg);
-void dsd_fini();
+int ctrler_init(struct ctrler_cfg *cfg);
+void ctrler_fini();
 
 #endif

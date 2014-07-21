@@ -1,7 +1,7 @@
 /*
- * Dynamic Network Directory Service
+ * NetVirt - Network Virtualization Platform
  * Copyright (C) 2009-2014
- * Nicolas J. Bouliane <nib@dynvpn.com>
+ * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,9 +25,9 @@
 #include "request.h"
 #include "tcp.h"
 
-static netc_t *dsd_netc = NULL;
-static passport_t *dsd_passport = NULL;
-static struct dsd_cfg *dsd_cfg = NULL;
+static netc_t *ctrler_netc = NULL;
+static passport_t *ctrler_passport = NULL;
+static struct ctrler_cfg *ctrler_cfg = NULL;
 
 static void session_free(struct session *session)
 {
@@ -144,28 +144,28 @@ static void on_connect(netc_t *netc)
 	netc->ext_ptr = session;
 }
 
-static void *dsd_loop(void *nil)
+static void *ctrler_loop(void *nil)
 {
 	(void)(nil);
 
-	while (dsd_cfg->dsd_running) {
+	while (ctrler_cfg->ctrler_running) {
 		tcpbus_ion_poke();
 	}
 
 	return NULL;
 }
 
-int dsd_init(struct dsd_cfg *cfg)
+int ctrler_init(struct ctrler_cfg *cfg)
 {
-	dsd_cfg = cfg;
-	dsd_cfg->dsd_running = 1;
+	ctrler_cfg = cfg;
+	ctrler_cfg->ctrler_running = 1;
 
-	dsd_passport = pki_passport_load_from_file(dsd_cfg->certificate, dsd_cfg->privatekey, dsd_cfg->trusted_cert);
+	ctrler_passport = pki_passport_load_from_file(ctrler_cfg->certificate, ctrler_cfg->privatekey, ctrler_cfg->trusted_cert);
 
-	dsd_netc = net_server(dsd_cfg->ipaddr, dsd_cfg->port, NET_PROTO_TCP, NET_SECURE_RSA, dsd_passport,
+	ctrler_netc = net_server(ctrler_cfg->ipaddr, ctrler_cfg->port, NET_PROTO_TCP, NET_SECURE_RSA, ctrler_passport,
 			on_connect, on_disconnect, on_input, on_secure);
 
-	if (dsd_netc == NULL) {
+	if (ctrler_netc == NULL) {
 		jlog(L_NOTICE, "net_server failed");
 		return -1;
 	}
@@ -176,13 +176,13 @@ int dsd_init(struct dsd_cfg *cfg)
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-	pthread_create(&thread_loop, &attr, dsd_loop, NULL);
+	pthread_create(&thread_loop, &attr, ctrler_loop, NULL);
 
 	return 0;
 }
 
-void dsd_fini()
+void ctrler_fini()
 {
-	pki_passport_destroy(dsd_passport);
-	net_disconnect(dsd_netc);
+	pki_passport_destroy(ctrler_passport);
+	net_disconnect(ctrler_netc);
 }

@@ -9,5 +9,5 @@ include_directories("../libcore/protocol/")
 
 add_subdirectory(src)
 
-install(FILES ctrler.conf
+install(FILES nvctrler.conf
         DESTINATION /etc/netvirt/)
