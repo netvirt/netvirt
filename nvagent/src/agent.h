@@ -1,7 +1,7 @@
 /*
- * Dynamic Network Directory Service
+ * NetVirt - Network Virtualization Platform
  * Copyright (C) 2009-2014
- * Nicolas J. Bouliane <nib@dynvpn.com>
+ * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -14,12 +14,12 @@
  * GNU General Public License for more details.
  */
 
-#ifndef DNC_H
-#define DNC_H
+#ifndef AGENT_H
+#define AGENT_H
 
 #include <netbus.h>
 
-struct dnc_cfg {
+struct agent_cfg {
 	const char *server_address;
 	const char *server_port;
 	const char *certificate;
@@ -29,7 +29,7 @@ struct dnc_cfg {
 	const char *log_file;
 	int auto_connect;
 
-	const char *dnc_conf;
+	const char *agent_conf;
 	const char *ip_conf;
 
 	struct {
@@ -43,9 +43,9 @@ struct dnc_cfg {
 extern "C" {
 #endif
 
-void dnc_init_async(struct dnc_cfg *cfg);
-void *dnc_init(void *dnc_cfg);
-int dnc_config_toggle_auto_connect(int status);
+void agent_init_async(struct agent_cfg *cfg);
+void *agent_init(void *agent_cfg);
+int agent_config_toggle_auto_connect(int status);
 void on_input(netc_t *netc);
 
 #ifdef __cplusplus

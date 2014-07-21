@@ -7,9 +7,9 @@
     <file>rc/user.png</file>
     <file>rc/tick_32.png</file>
     <file>rc/delete_16.png</file>
-    <file>rc/dynvpn_header.png</file>
+    <file>rc/header.png</file>
     <file>rc/key_stroke.png</file>
     <file>rc/share.png</file>
-    <file>rc/dnc.ico</file>
+    <file>rc/nvagent.ico</file>
   </qresource>
 </RCC>

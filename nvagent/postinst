@@ -8,8 +8,8 @@ if [ -x /sbin/setcap ]
 then
 	setcap cap_net_bind_service,cap_net_admin=ep /usr/bin/nvagent
 else
-	echo "setcap(8) not installed. You need to set CAP_NET_BIND and CAP_NET_ADMIN \
-	to be able to run dynvpn without root privileges."
+	echo "setcap(8) is not installed. You need to set CAP_NET_BIND and CAP_NET_ADMIN \
+	to be able to run the NetVirt Agent (nvagent) without root privileges."
 fi
 
 exit 0

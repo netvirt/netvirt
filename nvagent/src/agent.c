@@ -1,7 +1,7 @@
 /*
- * Dynamic Network Directory Service
+ * NetVirt - Network Virtualization Platform
  * Copyright (C) 2009-2014
- * Nicolas J. Bouliane <nib@dynvpn.com>
+ * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -39,7 +39,7 @@
 #include "p2p.h"
 #include "session.h"
 
-struct dnc_cfg *dnc_cfg;
+struct agent_cfg *agent_cfg;
 struct session *master_session;
 static int g_shutdown = 0;
 char ipAddress[INET_ADDRSTRLEN];
@@ -132,7 +132,7 @@ void transmit_prov_request(netc_t *netc)
 	DNMessage_set_ackNumber(msg, 0);
 	DNMessage_set_operation(msg, dnop_PR_provRequest);
 
-	ProvRequest_set_provCode(msg, dnc_cfg->prov_code, strlen(dnc_cfg->prov_code));
+	ProvRequest_set_provCode(msg, agent_cfg->prov_code, strlen(agent_cfg->prov_code));
 
 	nbyte = net_send_msg(netc, msg);
 	DNDSMessage_del(msg);
@@ -193,7 +193,7 @@ void *try_to_reconnect(void *ptr)
 		sleep(5);
 #endif
 
-		retry_netc = net_client(dnc_cfg->server_address, dnc_cfg->server_port,
+		retry_netc = net_client(agent_cfg->server_address, agent_cfg->server_port,
 			NET_PROTO_UDT, NET_SECURE_ADH, session->passport,
 			on_disconnect, on_input, on_secure);
 
@@ -229,8 +229,8 @@ static void on_disconnect(netc_t *netc)
 
 	session->state = SESSION_STATE_DOWN;
 
-	if (dnc_cfg->ev.on_disconnect)
-		dnc_cfg->ev.on_disconnect();
+	if (agent_cfg->ev.on_disconnect)
+		agent_cfg->ev.on_disconnect();
 
 	jlog(L_NOTICE, "connection retry...");
 	pthread_create(&thread_reconnect, NULL, try_to_reconnect, (void *)session);
@@ -245,7 +245,7 @@ static void on_secure(netc_t *netc)
 	jlog(L_NOTICE, "connection secured");
 
 	if (session->state == SESSION_STATE_NOT_AUTHED) {
-		if (session->passport == NULL || dnc_cfg->prov_code != NULL) {
+		if (session->passport == NULL || agent_cfg->prov_code != NULL) {
 			jlog(L_NOTICE, "Provisioning mode...");
 			transmit_prov_request(netc);
 		}
@@ -292,14 +292,14 @@ static void op_netinfo_response(struct session *session)
 	FILE *fp = NULL;
 	int fret = 0;
 
-	fp = fopen(dnc_cfg->ip_conf, "r");
+	fp = fopen(agent_cfg->ip_conf, "r");
 	if (fp == NULL) {
-		jlog(L_ERROR, "%s doesn't exist, reprovision your client", dnc_cfg->ip_conf);
+		jlog(L_ERROR, "%s doesn't exist, reprovision your agent", agent_cfg->ip_conf);
 		return;
 	}
 	fret = fscanf(fp, "%s", ipAddress);
 	if (fret == EOF) {
-		jlog(L_ERROR, "can't fetch IP address from file: %s\n", dnc_cfg->ip_conf);
+		jlog(L_ERROR, "can't fetch IP address from file: %s\n", agent_cfg->ip_conf);
 	}
 	fclose(fp);
 
@@ -321,16 +321,16 @@ static void op_auth_response(struct session *session, DNDSMessage_t *msg)
 		krypt_print_cipher(session->netc->kconn);
 		jlog(L_NOTICE, "session secured and authenticated");
 
-		fp = fopen(dnc_cfg->ip_conf, "r");
+		fp = fopen(agent_cfg->ip_conf, "r");
 		if (fp) {
 			fret = fscanf(fp, "%s", ipAddress);
 			if (fret == EOF) {
-				jlog(L_ERROR, "can't fetch IP address from file: %s\n", dnc_cfg->ip_conf);
+				jlog(L_ERROR, "can't fetch IP address from file: %s\n", agent_cfg->ip_conf);
 			}
 			fclose(fp);
 		}
-		if (dnc_cfg->ev.on_connect)
-			dnc_cfg->ev.on_connect(ipAddress);
+		if (agent_cfg->ev.on_connect)
+			agent_cfg->ev.on_connect(ipAddress);
 
 		transmit_netinfo_request(session);
 		break;
@@ -370,30 +370,30 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 		return;
 	}
 
-	create_file_with_owner_right(dnc_cfg->certificate);
-	fp = fopen(dnc_cfg->certificate, "w");
+	create_file_with_owner_right(agent_cfg->certificate);
+	fp = fopen(agent_cfg->certificate, "w");
 	if (fp == NULL) {
-		jlog(L_ERROR, "can't write certifcate in file '%s'", dnc_cfg->certificate);
+		jlog(L_ERROR, "can't write certifcate in file '%s'", agent_cfg->certificate);
 		return;
 	}
 	fwrite(certificate, 1, strlen(certificate), fp);
 	fclose(fp);
 
 	ProvResponse_get_certificateKey(msg, &certificatekey, &length);
-	create_file_with_owner_right(dnc_cfg->privatekey);
-	fp = fopen(dnc_cfg->privatekey, "w");
+	create_file_with_owner_right(agent_cfg->privatekey);
+	fp = fopen(agent_cfg->privatekey, "w");
 	if (fp == NULL) {
-		jlog(L_ERROR, "can't write private key in file '%s'", dnc_cfg->privatekey);
+		jlog(L_ERROR, "can't write private key in file '%s'", agent_cfg->privatekey);
 		return;
 	}
 	fwrite(certificatekey, 1, strlen((char*)certificatekey), fp);
 	fclose(fp);
 
 	ProvResponse_get_trustedCert(msg, &trusted_authority, &length);
-	create_file_with_owner_right(dnc_cfg->trusted_cert);
-	fp = fopen(dnc_cfg->trusted_cert, "w");
+	create_file_with_owner_right(agent_cfg->trusted_cert);
+	fp = fopen(agent_cfg->trusted_cert, "w");
 	if (fp == NULL) {
-		jlog(L_ERROR, "can't write trusted certificate in file '%s'", dnc_cfg->trusted_cert);
+		jlog(L_ERROR, "can't write trusted certificate in file '%s'", agent_cfg->trusted_cert);
 		return;
 	}
 	fwrite(trusted_authority, 1, strlen((char *)trusted_authority), fp);
@@ -401,17 +401,17 @@ static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 
 	ProvResponse_get_ipAddress(msg, ipAddress);
 
-	fp = fopen(dnc_cfg->ip_conf, "w");
+	fp = fopen(agent_cfg->ip_conf, "w");
 	if (fp == NULL) {
-		jlog(L_ERROR, "can't write IP address in file '%s'", dnc_cfg->ip_conf);
+		jlog(L_ERROR, "can't write IP address in file '%s'", agent_cfg->ip_conf);
 		return;
 	}
 	fprintf(fp, "%s", ipAddress);
 	fclose(fp);
 
-	session->passport = pki_passport_load_from_file(dnc_cfg->certificate,
-					 dnc_cfg->privatekey,
-					 dnc_cfg->trusted_cert);
+	session->passport = pki_passport_load_from_file(agent_cfg->certificate,
+					 agent_cfg->privatekey,
+					 agent_cfg->trusted_cert);
 
 	krypt_add_passport(session->netc->kconn, session->passport);
 	transmit_register(session->netc);
@@ -440,7 +440,7 @@ static void dispatch_op(struct session *session, DNDSMessage_t *msg)
 		break;
 
 	/* `terminateRequest` is a special case since it has no
-	 * response message associated with it, simply disconnect the client.
+	 * response message associated with it, simply disconnect.
 	 */
 	case dnop_PR_NOTHING:
 	default:
@@ -451,7 +451,7 @@ static void dispatch_op(struct session *session, DNDSMessage_t *msg)
 	}
 }
 
-static void *dnc_loop(void *session)
+static void *agent_loop(void *session)
 {
 	while (!g_shutdown) {
 		udtbus_poke_queue();
@@ -461,17 +461,17 @@ static void *dnc_loop(void *session)
 	return NULL;
 }
 
-void dnc_init_async(struct dnc_cfg *cfg)
+void agent_init_async(struct agent_cfg *cfg)
 {
-	pthread_t dnc_init_async;
-	pthread_create(&dnc_init_async, NULL, dnc_init, (void*)cfg);
+	pthread_t agent_init_async;
+	pthread_create(&agent_init_async, NULL, agent_init, (void*)cfg);
 }
 
-void *dnc_init(void *cfg)
+void *agent_init(void *cfg)
 {
 	struct session *session;
 
-	dnc_cfg = (struct dnc_cfg *)cfg;
+	agent_cfg = (struct agent_cfg *)cfg;
 	session = calloc(1, sizeof(struct session));
 
 	p2p_init();
@@ -486,12 +486,12 @@ void *dnc_init(void *cfg)
 		return NULL;
 	}
 
-	if (dnc_cfg->prov_code == NULL)
+	if (agent_cfg->prov_code == NULL)
 		session->passport = pki_passport_load_from_file(
-			dnc_cfg->certificate, dnc_cfg->privatekey, dnc_cfg->trusted_cert);
+			agent_cfg->certificate, agent_cfg->privatekey, agent_cfg->trusted_cert);
 
-	if (session->passport == NULL && dnc_cfg->prov_code == NULL) {
-		jlog(L_ERROR, "Must provide a provisioning code: ./dnc -p ...");
+	if (session->passport == NULL && agent_cfg->prov_code == NULL) {
+		jlog(L_ERROR, "Must provide a provisioning code: ./nvagent -p ...");
 		free(session);
 		return NULL;
 	}
@@ -506,7 +506,7 @@ void *dnc_init(void *cfg)
 		return NULL;
 	}
 
-	if (tapcfg_start(session->tapcfg, "dynvpn0", 1) < 0) {
+	if (tapcfg_start(session->tapcfg, "netvirt0", 1) < 0) {
 		jlog(L_ERROR, "tapcfg_start failed");
 		free(session);
 		return NULL;
@@ -520,7 +520,7 @@ void *dnc_init(void *cfg)
 	pthread_detach(thread_reconnect);
 
 	pthread_t thread_loop;
-	pthread_create(&thread_loop, NULL, dnc_loop, session);
+	pthread_create(&thread_loop, NULL, agent_loop, session);
 
 	return NULL;
 }

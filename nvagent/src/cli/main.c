@@ -1,7 +1,7 @@
 /*
- * Dynamic Network Directory Service
+ * NetVirt - Network Virtualization Platform
  * Copyright (C) 2009-2014
- * Nicolas J. Bouliane <nib@dynvpn.com>
+ * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -42,8 +42,8 @@ void on_log(const char *logline)
 int main(int argc, char *argv[])
 {
 	int opt;
-	struct dnc_cfg *dnc_cfg = NULL;
-	dnc_cfg = calloc(1, sizeof(struct dnc_cfg));
+	struct agent_cfg *agent_cfg = NULL;
+	agent_cfg = calloc(1, sizeof(struct agent_cfg));
 
 	signal(SIGINT, int_handler);
 
@@ -51,15 +51,14 @@ int main(int argc, char *argv[])
 		switch (opt) {
 		case 'p':
 			fprintf(stdout, "provisioning code: %s\n", optarg);
-			dnc_cfg->prov_code = strdup(optarg);
+			agent_cfg->prov_code = strdup(optarg);
 			break;
 		case 'v':
-			fprintf(stdout, "version: %s\n", DNCVERSION);
-			fprintf(stdout, "%s\n", "Licensing Information: http://www.dynvpn.com/license");
+			fprintf(stdout, "NetVirt Agent version: %s\n", DNCVERSION);
 			return 0;
 		case 'h':
-			fprintf(stdout, "\nDynVPN client:\n\n"
-					"-p KEY\t\tclient provisioning\n"
+			fprintf(stdout, "\nNetVirt Agent:\n\n"
+					"-p KEY\t\tagent provisioning\n"
 					"-v\t\tshow version\n"
 					"-h\t\tshow this help\n");
 			return 0;
@@ -68,17 +67,17 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	dnc_cfg->ev.on_log = on_log;
+	agent_cfg->ev.on_log = on_log;
 
-	if (dnc_config_init(dnc_cfg)) {
-		jlog(L_ERROR, "dnc_config_init failed");
+	if (agent_config_init(agent_cfg)) {
+		jlog(L_ERROR, "agent_config_init failed");
 		exit(EXIT_FAILURE);
 	}
 
 	jlog(L_NOTICE, "connecting...");
 
-	if (dnc_init(dnc_cfg)) {
-		jlog(L_ERROR, "dnc_init failed");
+	if (agent_init(agent_cfg)) {
+		jlog(L_ERROR, "agent_init failed");
 		exit(EXIT_FAILURE);
 	}
 

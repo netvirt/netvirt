@@ -22,7 +22,7 @@
         <string/>
        </property>
        <property name="pixmap">
-        <pixmap resource="dnc.qrc">:/rc/delete_16.png</pixmap>
+        <pixmap resource="nvagent.qrc">:/rc/delete_16.png</pixmap>
        </property>
       </widget>
      </item>
@@ -59,7 +59,7 @@
         <string/>
        </property>
        <property name="pixmap">
-        <pixmap resource="dnc.qrc">:/rc/share.png</pixmap>
+        <pixmap resource="nvagent.qrc">:/rc/share.png</pixmap>
        </property>
       </widget>
      </item>
@@ -196,7 +196,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="dnc.qrc"/>
+  <include location="nvagent.qrc"/>
  </resources>
  <connections/>
 </ui>

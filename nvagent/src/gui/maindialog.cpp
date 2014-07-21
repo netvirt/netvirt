@@ -1,7 +1,7 @@
 /*
- * Dynamic Network Directory Service
+ * NetVirt - Network Virtualization Platform
  * Copyright (C) 2009-2014
- * Nicolas J. Bouliane <nib@dynvpn.com>
+ * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -29,16 +29,16 @@
 #include "../config.h"
 #include "../agent.h"
 
-struct dnc_cfg *dnc_cfg;
+struct agent_cfg *agent_cfg;
 
 /* Hack to access this from static method */
 static void *obj_this;
 
 MainDialog::MainDialog()
 {
-	/* Check if the client is provisioned */
+	/* Check if the agent is provisioned */
 	/* FIXME check harder */
-	char *ip_conf = dnc_config_get_fullname("dynvpn.ip");
+	char *ip_conf = agent_config_get_fullname("nvagent.ip");
 	QFile file(ip_conf);
 	if (!file.exists()) {
 		this->wizardDialog = new WizardDialog(this);
@@ -92,15 +92,15 @@ void MainDialog::NowRun()
 	setTrayIcon();
 	trayIcon->show();	
 	
-	dnc_cfg = (struct dnc_cfg*)calloc(1, sizeof(struct dnc_cfg));
-	dnc_cfg->ev.on_log = this->onLog;
+	agent_cfg = (struct agent_cfg*)calloc(1, sizeof(struct agent_cfg));
+	agent_cfg->ev.on_log = this->onLog;
 
-	if (dnc_config_init(dnc_cfg)) {
-		jlog(L_ERROR, "dnc_config_init failed");
+	if (agent_config_init(agent_cfg)) {
+		jlog(L_ERROR, "agent_config_init failed");
 		return;
 	}
 
-	if (dnc_cfg->auto_connect != 0) {
+	if (agent_cfg->auto_connect != 0) {
 		emit this->generalSettings->slotCheckAutoConnect();
 		emit accountSettings->slotConnWaiting();
 		emit this->slotFireConnection();
@@ -121,31 +121,31 @@ void MainDialog::slotWizardNext()
 
 void MainDialog::slotToggleAutoConnect(int checked)
 {
-	dnc_config_toggle_auto_connect(checked);
+	agent_config_toggle_auto_connect(checked);
 }
 
 void MainDialog::slotFireConnection(void)
 {
 	if (this->ProvKey.length() == 36) {
 		const char *str = this->ProvKey.toStdString().c_str();
-		dnc_cfg->prov_code = strdup(str);
+		agent_cfg->prov_code = strdup(str);
 	}
 
-	dnc_cfg->ev.on_connect = this->onConnect;
-	dnc_cfg->ev.on_disconnect = this->onDisconnect;
+	agent_cfg->ev.on_connect = this->onConnect;
+	agent_cfg->ev.on_disconnect = this->onDisconnect;
 
 	jlog(L_NOTICE, "connecting...");
-	dnc_init_async(dnc_cfg);
+	agent_init_async(agent_cfg);
 }
 
 void MainDialog::slotResetAccount()
 {
 	QMessageBox::StandardButton reply;
-	reply = QMessageBox::warning(this, "DynVPN Client", "Exit now, and manually restart DynVPN.",
+	reply = QMessageBox::warning(this, "NetVirt Agent", "Exit now, and manually restart me.",
 					QMessageBox::Yes|QMessageBox::No);
 
 	if (reply == QMessageBox::Yes) {
-		QFile file(dnc_cfg->ip_conf);
+		QFile file(agent_cfg->ip_conf);
 		file.remove();
 		qApp->quit();
 	}
@@ -154,7 +154,7 @@ void MainDialog::slotResetAccount()
 void MainDialog::slotExit()
 {
 	QMessageBox::StandardButton reply;
-	reply = QMessageBox::warning(this, "DynVPN Client", "Are you sure you want to exit ?",
+	reply = QMessageBox::warning(this, "NetVirt Agent", "Are you sure you want to exit ?",
 					QMessageBox::Yes|QMessageBox::No);
 
 	if (reply == QMessageBox::Yes) {

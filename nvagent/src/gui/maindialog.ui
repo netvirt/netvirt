@@ -11,11 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>DynVPN beta</string>
+   <string>NetVirt Agent</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="dnc.qrc">
-    <normaloff>:/rc/dnc.ico</normaloff>:/rc/dnc.ico</iconset>
+   <iconset resource="nvagent.qrc">
+    <normaloff>:/rc/nvagent.ico</normaloff>:/rc/nvagent.ico</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="margin">
@@ -94,7 +94,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="dnc.qrc"/>
+  <include location="nvagent.qrc"/>
  </resources>
  <connections/>
 </ui>

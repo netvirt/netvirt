@@ -122,7 +122,7 @@
            <enum>Qt::PlainText</enum>
           </property>
           <property name="pixmap">
-           <pixmap resource="dnc.qrc">:/rc/download.png</pixmap>
+           <pixmap resource="nvagent.qrc">:/rc/download.png</pixmap>
           </property>
          </widget>
         </item>
@@ -230,7 +230,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="dnc.qrc"/>
+  <include location="nvagent.qrc"/>
  </resources>
  <connections/>
 </ui>

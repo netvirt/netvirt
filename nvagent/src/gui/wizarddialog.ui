@@ -23,11 +23,11 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>DynVPN connection Wizard</string>
+   <string>NetVirt Agent connection Wizard</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="dnc.qrc">
-    <normaloff>:/rc/dnc.ico</normaloff>:/rc/dnc.ico</iconset>
+   <iconset resource="nvagent.qrc">
+    <normaloff>:/rc/nvagent.ico</normaloff>:/rc/nvagent.ico</iconset>
   </property>
   <widget class="QLineEdit" name="ProvKeyText">
    <property name="geometry">
@@ -132,7 +132,7 @@ p, li { white-space: pre-wrap; }
     <string/>
    </property>
    <property name="pixmap">
-    <pixmap resource="dnc.qrc">:/rc/dynvpn_header.png</pixmap>
+    <pixmap resource="nvagent.qrc">:/rc/dynvpn_header.png</pixmap>
    </property>
   </widget>
   <widget class="QPushButton" name="nextButton">
@@ -166,7 +166,7 @@ p, li { white-space: pre-wrap; }
   </widget>
  </widget>
  <resources>
-  <include location="dnc.qrc"/>
+  <include location="nvagent.qrc"/>
  </resources>
  <connections/>
 </ui>
