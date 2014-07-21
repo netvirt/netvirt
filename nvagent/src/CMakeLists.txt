@@ -79,7 +79,7 @@ endif()
 find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
-include_directories("${CMAKE_SOURCE_DIR}/libcore/src/protocol/")
+include_directories("${CMAKE_SOURCE_DIR}/libnvcore/src/protocol/")
 
 if (WIN32)
 	include_directories("${CMAKE_SOURCE_DIR}/tapcfg-win32/src/include/")
@@ -96,7 +96,7 @@ if (APPLE)
 	target_link_libraries(nvagent
 		${CMAKE_SOURCE_DIR}/tapcfg-macos/build/libtapcfg.a
 		${CMAKE_SOURCE_DIR}/libconfig-macos/lib/.libs/libconfig.a
-		dnds
+		nvcore
 		ssl
 		crypto
 		pthread
@@ -104,7 +104,7 @@ if (APPLE)
 elseif (WIN32)
 	target_link_libraries(nvagent
 		config
-		dnds
+		nvcore
 		pthread
 #		tapcfg
 		${CMAKE_SOURCE_DIR}/tapcfg-win32/build/tapcfg.dll
@@ -115,7 +115,7 @@ else()
 		-Wl,-Bstatic
 		tapcfg
 		config
-		dnds
+		nvcore
 		ssl
 		-Wl,-Bdynamic
 		crypto

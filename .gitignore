@@ -1,18 +1,18 @@
 # The actual Makefile produced
 Makefile
 
-# DNDS generated files during compilation
+# NetVirt generated files during compilation
 *.o
 *.lo
 *.la
 *.deps
 *.libs
 *.dylib
-dnc/src/dnc
-dnd/src/dnd
-dnd/src/dsd
-libdnds/src/libdnds.so
-libdnds/src/protocol/libdnds_protocol.a
+nvagent/src/nvagent
+nvswitch/src/nvswitch
+nvctrler/src/nvctrler
+libnvcore/src/libnvcore.a
+libnvcore/src/protocol/libdnds_protocol.a
 
 # CMake related files
 

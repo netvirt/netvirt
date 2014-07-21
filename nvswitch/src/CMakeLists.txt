@@ -17,11 +17,11 @@ add_executable(nvswitch
 link_directories("${CMAKE_SOURCE_DIR}/libconfig-linux/lib/.libs")
 include_directories("${CMAKE_SOURCE_DIR}/libconfig-linux/lib/")
 
-include_directories("${CMAKE_SOURCE_DIR}/libcore/src/")
-include_directories("${CMAKE_SOURCE_DIR}/libcore/src/protocol/")
+include_directories("${CMAKE_SOURCE_DIR}/libnvcore/src/")
+include_directories("${CMAKE_SOURCE_DIR}/libnvcore/src/protocol/")
 target_link_libraries(nvswitch
 	${CMAKE_SOURCE_DIR}/libconfig-linux/lib/.libs/libconfig.a
-	dnds
+	nvcore
 	ssl
 	crypto
 	pthread

@@ -13,7 +13,7 @@
  * GNU Affero General Public License for more details
  */
 
-/* gcc dao.c -lpq -ldnds -lossp-uuid
+/* gcc dao.c -lpq -lnvcore -lossp-uuid
  */
 
 #include <stdio.h>
