@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=NetVirt Agent
+Name[fr]=Agent NetVirt
+Comment=Connect to your virtual network
+Icon=nvagent.png
+Exec=nvagent %U
+Keywords=netvirt;nvagent;vpn;network;
+Categories=Network;P2P;Qt;
