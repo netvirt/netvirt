@@ -245,7 +245,7 @@ static void on_secure(netc_t *netc)
 	jlog(L_NOTICE, "connection secured");
 
 	if (session->state == SESSION_STATE_NOT_AUTHED) {
-		if (session->passport == NULL || agent_cfg->prov_code != NULL) {
+		if (session->passport == NULL && agent_cfg->prov_code != NULL) {
 			jlog(L_NOTICE, "Provisioning mode...");
 			transmit_prov_request(netc);
 		}
