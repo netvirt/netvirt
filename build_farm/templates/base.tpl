@@ -27,8 +27,8 @@ function submodule () {
 }
 
 function clone_dependencies () {
-    clone_or_pull https://github.com/nicboul/DNDS.git DNDS
-    cd DNDS
+    clone_or_pull https://github.com/netvirt/netvirt.git netvirt
+    cd netvirt
     clone_or_pull https://github.com/nicboul/udt4.git udt4
     clone_or_pull https://github.com/nicboul/libconfig.git {{ libconfig_dir_name }}
     clone_or_pull https://github.com/nicboul/tapcfg.git {{ tapcfg_dir_name }}
@@ -56,10 +56,10 @@ function build_dependencies () {
     popd
 }
 
-{% block build_dnc %}{% endblock %}
+{% block build_nvagent %}{% endblock %}
 
 install_build_dependencies
 clone_dependencies
 build_dependencies
-build_dnc
+build_nvagent
 

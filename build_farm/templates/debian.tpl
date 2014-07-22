@@ -22,29 +22,29 @@ function install_build_dependencies() {
     ./buildall.sh
 {% endblock %}
 
-{% block build_dnc %}
-function build_dnc_cli () {
+{% block build_nvagent %}
+function build_nvagent_cli () {
     mcd build.linux.cli
     rm -rf *
     cmake .. -DWITH_GUI=OFF
-    make dnc
+    make nvagent
     make package
     rsync *.deb "$release_dir"
     popd
 }
 
-function build_dnc_gui () {
+function build_nvagent_gui () {
     mcd build.linux.gui
     rm -rf *
     cmake ..
-    make dnc
+    make nvagent
     make package
     rsync *.deb "$release_dir"
     popd
 }
 
-function build_dnc () {
-    build_dnc_cli
-    build_dnc_gui
+function build_nvagent () {
+    build_nvagent_cli
+    build_nvagent_gui
 }
 {% endblock %}

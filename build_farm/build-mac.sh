@@ -41,8 +41,8 @@ function submodule () {
 }
 
 function clone_dependencies () {
-    clone_or_pull https://github.com/nicboul/DNDS.git DNDS
-    cd DNDS
+    clone_or_pull https://github.com/netvirt/netvirt.git netvirt
+    cd netvirt
     clone_or_pull https://github.com/nicboul/udt4.git udt4
     clone_or_pull https://github.com/nicboul/libconfig.git libconfig-macos
     clone_or_pull https://github.com/nicboul/tapcfg.git tapcfg-macos
@@ -71,12 +71,12 @@ function build_dependencies () {
     popd
 }
 
-function build_dnc () {
+function build_nvagent () {
     build_dir=build.mac.gui
     mcd "$build_dir"
     rm -rf *
     cmake ..
-    make dnc
+    make nvagent
     make package
     rsync *.dmg "$release_dir"
     popd
@@ -85,4 +85,4 @@ function build_dnc () {
 install_build_dependencies
 clone_dependencies
 build_dependencies
-build_dnc
+build_nvagent

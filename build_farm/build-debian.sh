@@ -28,8 +28,8 @@ function submodule () {
 }
 
 function clone_dependencies () {
-    clone_or_pull https://github.com/nicboul/DNDS.git DNDS
-    cd DNDS
+    clone_or_pull https://github.com/netvirt/netvirt.git netvirt
+    cd netvirt
     clone_or_pull https://github.com/nicboul/udt4.git udt4
     clone_or_pull https://github.com/nicboul/libconfig.git libconfig-linux
     clone_or_pull https://github.com/nicboul/tapcfg.git tapcfg-linux
@@ -58,32 +58,32 @@ function build_dependencies () {
     popd
 }
 
-function build_dnc_cli () {
+function build_nvagent_cli () {
     mcd build.linux.cli
     rm -rf *
     cmake .. -DWITH_GUI=OFF
-    make dnc
+    make nvagent
     make package
     rsync *.deb "$release_dir"
     popd
 }
 
-function build_dnc_gui () {
+function build_nvagent_gui () {
     mcd build.linux.gui
     rm -rf *
     cmake ..
-    make dnc
+    make nvagent
     make package
     rsync *.deb "$release_dir"
     popd
 }
 
-function build_dnc () {
-    build_dnc_cli
-    build_dnc_gui
+function build_nvagent () {
+    build_nvagent_cli
+    build_nvagent_gui
 }
 
 install_build_dependencies
 clone_dependencies
 build_dependencies
-build_dnc
+build_nvagent

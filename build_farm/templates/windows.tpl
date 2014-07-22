@@ -4,11 +4,11 @@
 {% set tapcfg_dir_name = "tapcfg-win32" %}
 
 {% block global_variables %}
-openssl_dir="/data/dnds/openssl"
+openssl_dir="/data/netvirt/openssl"
 openssl_root="$openssl_dir/mingw32"
-wine_dir="/data/dnds/wine"
+wine_dir="/data/netvirt/wine"
 qt_root="$wine_dir/drive_c/Qt/4.8.5"
-pthreads_dir="/data/dnds/pthreads"
+pthreads_dir="/data/netvirt/pthreads"
 {% endblock %}
 
 {% block install_build_dependencies %}
@@ -63,8 +63,8 @@ function install_build_dependencies() {
     [ -d build ] || scons --force-mingw32
 {% endblock %}
 
-{% block build_dnc %}
-function build_dnc () {
+{% block build_nvagent %}
+function build_nvagent () {
     build_dir=build.windows.gui
     mcd "$build_dir"
     rm -rf *
@@ -73,7 +73,7 @@ function build_dnc () {
           -DCROSS_COMPILER="i686-w64-mingw32" \
           -DCMAKE_FIND_ROOT_PATH="$qt_root" \
           ..
-    make dnc
+    make nvagent
     makensis -DOPENSSL_PATH="$openssl_dir/mingw32/lib" \
              -DQT_PATH="$qt_root" \
              -DBDIR="$build_dir" \

@@ -4,11 +4,11 @@ set -x
 
 release_dir="$1"
 
-openssl_dir="/data/dnds/openssl"
+openssl_dir="/data/netvirt/openssl"
 openssl_root="$openssl_dir/mingw32"
-wine_dir="/data/dnds/wine"
+wine_dir="/data/netvirt/wine"
 qt_root="$wine_dir/drive_c/Qt/4.8.5"
-pthreads_dir="/data/dnds/pthreads"
+pthreads_dir="/data/netvirt/pthreads"
 
 function install_openssl () {
     openssl_archive="/tmp/openssl-mingw32.tar.gz"
@@ -66,8 +66,8 @@ function submodule () {
 }
 
 function clone_dependencies () {
-    clone_or_pull https://github.com/nicboul/DNDS.git DNDS
-    cd DNDS
+    clone_or_pull https://github.com/netvirt/netvirt.git netvirt
+    cd netvirt
     clone_or_pull https://github.com/nicboul/udt4.git udt4
     clone_or_pull https://github.com/nicboul/libconfig.git libconfig-win32
     clone_or_pull https://github.com/nicboul/tapcfg.git tapcfg-win32
@@ -96,7 +96,7 @@ function build_dependencies () {
     popd
 }
 
-function build_dnc () {
+function build_nvagent () {
     build_dir=build.windows.gui
     mcd "$build_dir"
     rm -rf *
@@ -105,7 +105,7 @@ function build_dnc () {
           -DCROSS_COMPILER="i686-w64-mingw32" \
           -DCMAKE_FIND_ROOT_PATH="$qt_root" \
           ..
-    make dnc
+    make nvagent
     makensis -DOPENSSL_PATH="$openssl_dir/mingw32/lib" \
              -DQT_PATH="$qt_root" \
              -DBDIR="$build_dir" \
@@ -117,4 +117,4 @@ function build_dnc () {
 install_build_dependencies
 clone_dependencies
 build_dependencies
-build_dnc
+build_nvagent
