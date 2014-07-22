@@ -20,7 +20,7 @@
 
 typedef struct linkst linkst_t;
 
-void linkst_disjoin(linkst_t *linkst, uint32_t idx);
+int linkst_disjoin(linkst_t *linkst, uint32_t idx);
 int linkst_joined(linkst_t *linkst, uint32_t idx_a, uint32_t idx_b);
 int linkst_join(linkst_t *linkst, uint32_t idx_a, uint32_t idx_b);
 

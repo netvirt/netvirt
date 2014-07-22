@@ -31,7 +31,8 @@ typedef struct linkst {
 	uint16_t timeout_sec;
 } linkst_t;
 
-static void linkst_resize(linkst_t *linkst, uint32_t resize_size)
+static void
+linkst_resize(linkst_t *linkst, uint32_t resize_size)
 {
 	uint32_t i;
 
@@ -55,17 +56,17 @@ static void linkst_resize(linkst_t *linkst, uint32_t resize_size)
 	linkst->matrix_size += resize_size;
 }
 
-void linkst_disjoin(linkst_t *linkst, uint32_t idx)
+int
+linkst_disjoin(linkst_t *linkst, uint32_t idx)
 {
-	uint32_t x, y;
-	uint32_t i;
-
-	if (idx < 1 || idx > linkst->matrix_size) {
-		return;
-	}
+	uint32_t i, x, y;
 
 	if (linkst == NULL) {
-		return;
+		return -1;
+	}
+
+	if (idx < 1 || idx > linkst->matrix_size) {
+		return -1;
 	}
 
 	for (i = 1; i <= linkst->matrix_size; i++) {
@@ -82,20 +83,21 @@ void linkst_disjoin(linkst_t *linkst, uint32_t idx)
 		}
 	}
 
-	return;
+	return 0;
 }
 
-int linkst_joined(linkst_t *linkst, uint32_t idx_a, uint32_t idx_b)
+int
+linkst_joined(linkst_t *linkst, uint32_t idx_a, uint32_t idx_b)
 {
 	uint32_t x, y;
 	time_t now;
 
-	if (idx_a < 1 || idx_a > linkst->matrix_size
-		|| idx_b < 1 || idx_b > linkst->matrix_size) {
+	if (linkst == NULL) {
 		return -1;
 	}
 
-	if (linkst == NULL) {
+	if (idx_a < 1 || idx_a > linkst->matrix_size
+		|| idx_b < 1 || idx_b > linkst->matrix_size) {
 		return -1;
 	}
 
@@ -115,16 +117,17 @@ int linkst_joined(linkst_t *linkst, uint32_t idx_a, uint32_t idx_b)
 	return 0;
 }
 
-int linkst_join(linkst_t *linkst, uint32_t idx_a, uint32_t idx_b)
+int
+linkst_join(linkst_t *linkst, uint32_t idx_a, uint32_t idx_b)
 {
 	uint32_t x, y;
 
-	if (idx_a < 1 || idx_a > linkst->upper_limit
-		|| idx_b < 1 || idx_b > linkst->upper_limit) {
+	if (linkst == NULL) {
 		return -1;
 	}
 
-	if (linkst == NULL) {
+	if (idx_a < 1 || idx_a > linkst->upper_limit
+		|| idx_b < 1 || idx_b > linkst->upper_limit) {
 		return -1;
 	}
 
@@ -144,9 +147,15 @@ int linkst_join(linkst_t *linkst, uint32_t idx_a, uint32_t idx_b)
 	return 0;
 }
 
-void linkst_free(linkst_t *linkst)
+void
+linkst_free(linkst_t *linkst)
 {
 	uint32_t i;
+
+	if (linkst == NULL) {
+		return;
+	}
+
 	for (i = 1; i <= linkst->matrix_size; i++) {
 		free(linkst->adjacency_matrix[i-1]);
 	}
@@ -155,7 +164,8 @@ void linkst_free(linkst_t *linkst)
 	free(linkst);
 }
 
-linkst_t *linkst_new(uint32_t upper_limit, uint16_t timeout_sec)
+linkst_t *
+linkst_new(uint32_t upper_limit, uint16_t timeout_sec)
 {
 	linkst_t *linkst = NULL;
 
@@ -166,80 +176,3 @@ linkst_t *linkst_new(uint32_t upper_limit, uint16_t timeout_sec)
 
 	return linkst;
 }
-
-#if 0
-void linkst_dump(linkst_t *linkst)
-{
-	uint32_t i, j;
-
-	for (i = 0; i < linkst->matrix_size; i++) {
-		for (j = 0; j < i; j++) {
-
-			printf("(%d:%d\n", i, j);
-		}
-	}
-}
-
-int main()
-{
-	int init_matrix_size = 1;
-	linkst_t *linkst = NULL;
-
-	/* there is 4 active nodee */
-	int idx_a, idx_b, idx_c, idx_d;
-
-	idx_a = 1;
-	idx_b = 2;
-	idx_c = 3;
-	idx_d = 100;
-
-	linkst = linkst_new(100, 3);
-
-	linkst_join(linkst, idx_a, idx_b);
-
-	if (linkst_joined(linkst, idx_a, idx_b) != 1) {
-		printf("%d // %d\n", idx_a, idx_b);
-		goto out;
-	}
-
-	linkst_join(linkst, idx_a, idx_d);
-
-	if (linkst_joined(linkst, idx_a, idx_d) != 1) {
-		printf("%d // %d\n", idx_a, idx_d);
-		goto out;
-	}
-
-	int state;
-	int i = 4;
-
-	while (i--) {
-
-		state = linkst_joined(linkst, idx_a, idx_b);
-		printf("state [%d] || [%d] %s [%d]\n", state, idx_a, state == 1 ? "<==>": "//", idx_b);
-
-		state = linkst_joined(linkst, idx_a, idx_c);
-		printf("state [%d] || [%d] %s [%d]\n", state, idx_a, state == 1 ? "<==>": "//", idx_c);
-
-		printf("\n\n");
-
-		sleep(1);
-	}
-	printf("out of loop\n");
-
-	linkst_join(linkst, idx_a, idx_b);
-	linkst_join(linkst, idx_a, idx_d);
-
-	linkst_disjoin(linkst, idx_a);
-
-	state = linkst_joined(linkst, idx_a, idx_b);
-	printf("state [%d] || [%d] %s [%d]\n", state, idx_a, state == 1 ? "<==>": "//", idx_b);
-
-	state = linkst_joined(linkst, idx_a, idx_c);
-	printf("state [%d] || [%d] %s [%d]\n", state, idx_a, state == 1 ? "<==>": "//", idx_c);
-
-	printf("\n\n");
-
-out:
-	linkst_free(linkst);
-}
-#endif
