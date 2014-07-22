@@ -92,7 +92,7 @@ int agent_config_init(struct agent_cfg *_agent_cfg)
         }
 
 #if defined(__unix__) && !defined(__APPLE__)
-	/* create ~/.netvirt if it doesn't exist */
+	/* Create ~/.netvirt if it doesn't exist. */
 	char *path = agent_config_get_fullname("");
 	struct stat st;
 	if (stat(path, &st) != 0) {
@@ -104,7 +104,7 @@ int agent_config_init(struct agent_cfg *_agent_cfg)
 	}
 	free(path);
 #endif
-	/* create CONFPATH/nvagent.conf if it doesn't exist */
+	/* Create CONFPATH/nvagent.conf if it doesn't exist. */
 	if (default_conf == 1) {
 		if (config_write_file(&cfg, agent_cfg->agent_conf) == CONFIG_FALSE) {
 			jlog(L_ERROR, "Unable to create file %s, might be a permission problem.", agent_cfg->agent_conf);
