@@ -7,7 +7,7 @@ add_subdirectory(tests)
 option (WITH_GUI "WITH_GUI" ON)
 
 if (WIN32)
-	set (win_rc_icon icon.rc)
+	set (win_rc_icon gui/rc/icon.rc)
 else()
 	set (win_rc_icon "")
 endif()
