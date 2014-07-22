@@ -107,6 +107,7 @@ int agent_config_init(struct agent_cfg *_agent_cfg)
 	/* create CONFPATH/nvagent.conf if it doesn't exist */
 	if (default_conf == 1) {
 		if (config_write_file(&cfg, agent_cfg->agent_conf) == CONFIG_FALSE) {
+			jlog(L_ERROR, "Unable to create file %s, might be a permission problem.", agent_cfg->agent_conf);
 			return -1;
 		}
 	}
