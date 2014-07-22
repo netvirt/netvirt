@@ -29,6 +29,7 @@ struct agent_cfg {
 	const char *log_file;
 	int auto_connect;
 
+	const char *profile;
 	const char *agent_conf;
 	const char *ip_conf;
 

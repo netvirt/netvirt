@@ -47,22 +47,25 @@ int main(int argc, char *argv[])
 
 	signal(SIGINT, int_handler);
 
-	while ((opt = getopt(argc, argv, "s:vhp:")) != -1) {
+	while ((opt = getopt(argc, argv, "p:s:vhk:")) != -1) {
 		switch (opt) {
-		case 'p':
-			fprintf(stdout, "provisioning key: %s\n", optarg);
+		case 'k':
 			agent_cfg->prov_code = strdup(optarg);
 			break;
 		case 's':
 			agent_cfg->server_address = strdup(optarg);
+			break;
+		case 'p':
+			agent_cfg->profile = strdup(optarg);
 			break;
 		case 'v':
 			fprintf(stdout, "NetVirt Agent version: %s\n", DNCVERSION);
 			return 0;
 		case 'h':
 			fprintf(stdout, "NetVirt Agent:\n"
-					"-p key\t\tauto provisioning\n"
+					"-k key\t\tauto provisioning\n"
 					"-s hostname\tserver address\n"
+					"-p name\t\tselect profile\n"
 					"-v\t\tshow version\n"
 					"-h\t\tshow this help\n");
 			return 0;

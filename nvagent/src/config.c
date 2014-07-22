@@ -31,15 +31,15 @@ static struct agent_cfg *agent_cfg;
 
 char *agent_config_get_fullname(const char *file)
 {
-#ifdef _WIN32
 	char fullname[256];
-	snprintf(fullname, sizeof(fullname), "%s%s%s", getenv("AppData"), "\\netvirt\\", file);
+#ifdef _WIN32
+	snprintf(fullname, sizeof(fullname), "%s%s%s%s%s", getenv("AppData"), "\\netvirt\\", agent_cfg->profile, "\\", file);
 	return strdup(fullname);
 #elif __APPLE__
+	snprintf(fullname, sizeof(fullname), "%s%s%s", agent_cfg->profile, "/", file);
 	return strdup(file);
 #else
-	char fullname[256];
-	snprintf(fullname, sizeof(fullname), "%s%s%s", getenv("HOME"), "/.netvirt/", file);
+	snprintf(fullname, sizeof(fullname), "%s%s%s%s%s", getenv("HOME"), "/.netvirt/", agent_cfg->profile, "/", file);
 	return strdup(fullname);
 #endif
 }
@@ -82,6 +82,11 @@ int agent_config_init(struct agent_cfg *_agent_cfg)
 
 	jlog_init_cb(agent_cfg->ev.on_log);
 	jlog(L_NOTICE, "version: %s", DNCVERSION);
+
+	/* This must be set first. */
+	if (agent_cfg->profile == NULL) {
+		agent_cfg->profile = strdup("default");
+	}
 
 	agent_cfg->agent_conf = agent_config_get_fullname("nvagent.conf");
 	agent_cfg->ip_conf = agent_config_get_fullname("nvagent.ip");
