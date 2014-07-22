@@ -2,9 +2,9 @@ This file is a summary of the licensing of files in this distribution.
 Some files may be marked specifically with a different license, in
 which case that license applies to the file in question.
 
-    - dnc: GPLv3
-    - libdnds: AGPLv3
-    - dnd: AGPLv3
-    - dsd: AGPLv3
+    - nvagent: GPLv3
+    - nvswitch: AGPLv3
+    - nvctrler: AGPLv3
+    - libnvcore: AGPLv3
 
 
