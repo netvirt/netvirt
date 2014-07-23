@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-char *agent_config_get_fullname(const char *file);
+char *agent_config_get_fullname(const char *profile, const char *file);
 int agent_config_init(struct agent_cfg *agent_cfg);
 
 #ifdef __cplusplus

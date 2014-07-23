@@ -38,7 +38,7 @@ MainDialog::MainDialog()
 {
 	/* Check if the agent is provisioned */
 	/* FIXME check harder */
-	char *ip_conf = agent_config_get_fullname("nvagent.ip");
+	char *ip_conf = agent_config_get_fullname("default", "nvagent.ip");
 	QFile file(ip_conf);
 	if (!file.exists()) {
 		this->wizardDialog = new WizardDialog(this);

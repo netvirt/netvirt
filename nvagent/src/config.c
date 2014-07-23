@@ -32,7 +32,6 @@ static struct agent_cfg *agent_cfg;
 static int
 mkfullpath(const char *fullpath)
 {
-	int ret = 0;
 	char tmp[256];
 	char *p = NULL;
 
@@ -48,26 +47,23 @@ mkfullpath(const char *fullpath)
 
 	while ((p = strchr(p+1, '/')) != NULL) {
 		*p = '\0';
-		ret = mkdir(tmp, S_IRWXU|S_IWUSR|S_IXUSR);
-		if (ret != 0) {
-			return -1;
-		}
+		mkdir(tmp, S_IRWXU|S_IWUSR|S_IXUSR);
 		*p = '/';
 	}
 	return 0;
 }
 
-char *agent_config_get_fullname(const char *file)
+char *agent_config_get_fullname(const char *profile, const char *file)
 {
 	char fullname[256];
 #ifdef _WIN32
-	snprintf(fullname, sizeof(fullname), "%s%s%s%s%s", getenv("AppData"), "\\netvirt\\", agent_cfg->profile, "\\", file);
+	snprintf(fullname, sizeof(fullname), "%s%s%s%s%s", getenv("AppData"), "\\netvirt\\", profile, "\\", file);
 	return strdup(fullname);
 #elif __APPLE__
 	snprintf(fullname, sizeof(fullname), "%s%s%s", agent_cfg->profile, "/", file);
 	return strdup(file);
 #else
-	snprintf(fullname, sizeof(fullname), "%s%s%s%s%s", getenv("HOME"), "/.netvirt/", agent_cfg->profile, "/", file);
+	snprintf(fullname, sizeof(fullname), "%s%s%s%s%s", getenv("HOME"), "/.netvirt/", profile, "/", file);
 	return strdup(fullname);
 #endif
 }
@@ -115,8 +111,8 @@ int agent_config_init(struct agent_cfg *_agent_cfg)
 		agent_cfg->profile = strdup("default");
 	}
 
-	agent_cfg->agent_conf = agent_config_get_fullname("nvagent.conf");
-	agent_cfg->ip_conf = agent_config_get_fullname("nvagent.ip");
+	agent_cfg->agent_conf = agent_config_get_fullname(agent_cfg->profile, "nvagent.conf");
+	agent_cfg->ip_conf = agent_config_get_fullname(agent_cfg->profile, "nvagent.ip");
 
 	/* Read the file. If there is an error, use default configuration */
         if (config_read_file(&cfg, agent_cfg->agent_conf) == CONFIG_FALSE) {
@@ -125,29 +121,30 @@ int agent_config_init(struct agent_cfg *_agent_cfg)
 
 #if defined(__unix__) && !defined(__APPLE__)
 	/* Create ~/.netvirt if it doesn't exist. */
-	char *path = agent_config_get_fullname("");
+	char *path = agent_config_get_fullname(agent_cfg->profile, "");
 	struct stat st;
 	if (stat(path, &st) != 0) {
-		mkfullpath(path);
+		printf("path %s\n", path);
+		printf("ret %d\n", mkfullpath(path));
 	}
 	if (stat(path, &st) != 0) {
-		jlog(L_ERROR, "Unable to create the directory %s.", path);
+		jlog(L_ERROR, "Unable to create the directory '%s'.", path);
 	}
 	free(path);
 #endif
 	/* Create CONFPATH/nvagent.conf if it doesn't exist. */
 	if (default_conf == 1) {
 		if (config_write_file(&cfg, agent_cfg->agent_conf) == CONFIG_FALSE) {
-			jlog(L_ERROR, "Unable to create file %s, might be a permission problem.", agent_cfg->agent_conf);
+			jlog(L_ERROR, "Unable to create file '%s', might be a permission problem.", agent_cfg->agent_conf);
 			return -1;
 		}
 	}
 
 	jlog(L_NOTICE, "conf: %s", agent_cfg->agent_conf);
 
-	agent_cfg->certificate = agent_config_get_fullname("certificate.pem");
-	agent_cfg->privatekey = agent_config_get_fullname("privatekey.pem");
-	agent_cfg->trusted_cert = agent_config_get_fullname("trusted_cert.pem");
+	agent_cfg->certificate = agent_config_get_fullname(agent_cfg->profile, "certificate.pem");
+	agent_cfg->privatekey = agent_config_get_fullname(agent_cfg->profile, "privatekey.pem");
+	agent_cfg->trusted_cert = agent_config_get_fullname(agent_cfg->profile, "trusted_cert.pem");
 
 	if (config_lookup_string(&cfg, "log_file", &agent_cfg->log_file)) {
 		jlog_init_file(agent_cfg->log_file);

@@ -132,7 +132,7 @@ p, li { white-space: pre-wrap; }
     <string/>
    </property>
    <property name="pixmap">
-    <pixmap resource="nvagent.qrc">:/rc/dynvpn_header.png</pixmap>
+    <pixmap resource="nvagent.qrc">:/rc/header.png</pixmap>
    </property>
   </widget>
   <widget class="QPushButton" name="nextButton">
