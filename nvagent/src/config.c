@@ -29,6 +29,34 @@
 
 static struct agent_cfg *agent_cfg;
 
+static int
+mkfullpath(const char *fullpath)
+{
+	int ret = 0;
+	char tmp[256];
+	char *p = NULL;
+
+	if (fullpath == NULL) {
+		return -1;
+	}
+
+	snprintf(tmp, sizeof(tmp),"%s",fullpath);
+	p = strchr(tmp, '/');
+	if (!p) {
+		return -1;
+	}
+
+	while ((p = strchr(p+1, '/')) != NULL) {
+		*p = '\0';
+		ret = mkdir(tmp, S_IRWXU|S_IWUSR|S_IXUSR);
+		if (ret != 0) {
+			return -1;
+		}
+		*p = '/';
+	}
+	return 0;
+}
+
 char *agent_config_get_fullname(const char *file)
 {
 	char fullname[256];
@@ -73,7 +101,6 @@ int agent_config_toggle_auto_connect(int status)
 
 int agent_config_init(struct agent_cfg *_agent_cfg)
 {
-	int ret = 0;
 	uint8_t default_conf = 0;
 	config_t cfg;
 	config_init(&cfg);
@@ -101,11 +128,10 @@ int agent_config_init(struct agent_cfg *_agent_cfg)
 	char *path = agent_config_get_fullname("");
 	struct stat st;
 	if (stat(path, &st) != 0) {
-		ret = mkdir(path, S_IRUSR|S_IWUSR|S_IXUSR);
-		if (ret == -1) {
-			free(path);
-			return -1;
-		}
+		mkfullpath(path);
+	}
+	if (stat(path, &st) != 0) {
+		jlog(L_ERROR, "Unable to create the directory %s.", path);
 	}
 	free(path);
 #endif
