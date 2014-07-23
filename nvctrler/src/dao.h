@@ -126,7 +126,8 @@ int dao_fetch_node_from_context_id(char *context_id, void *data, int (*cb_data_h
 								char *uuid,
 								char *description,
 								char *provcode,
-								char *ipaddress));
+								char *ipaddress,
+								char *status));
 int dao_fetch_node_from_provcode(char *provcode,
 					char **certificate,
 					char **private_key,

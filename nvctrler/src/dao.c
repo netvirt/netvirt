@@ -213,7 +213,7 @@ int dao_prepare_statements()
 
 	result = PQprepare(dbconn,
 			"dao_fetch_node_from_context_id",
-			"SELECT uuid, description, provcode, ipaddress "
+			"SELECT uuid, description, provcode, ipaddress, status "
 			"FROM node "
 			"WHERE context_id = $1;",
 			0,
@@ -848,7 +848,8 @@ int dao_fetch_node_from_context_id(char *context_id, void *data, int (*cb_data_h
 								char *uuid,
 								char *description,
 								char *provcode,
-								char *ipaddress))
+								char *ipaddress,
+								char *status))
 {
 	const char *paramValues[1];
 	int paramLengths[1];
@@ -883,7 +884,8 @@ int dao_fetch_node_from_context_id(char *context_id, void *data, int (*cb_data_h
 			strdup(PQgetvalue(result, i, 0)),
 			strdup(PQgetvalue(result, i, 1)),
 			strdup(PQgetvalue(result, i, 2)),
-			strdup(PQgetvalue(result, i, 3)));
+			strdup(PQgetvalue(result, i, 3)),
+			strdup(PQgetvalue(result, i, 4)));
 	}
 
 	PQclear(result);
