@@ -1,9 +1,15 @@
 [submodule "udt4"]
 	path = udt4
-	url = https://github.com/nicboul/udt4.git
+	url = git://github.com/netvirt/udt4.git
 [submodule "libconfig-linux"]
 	path = libconfig-linux
 	url = https://github.com/nicboul/libconfig.git
 [submodule "tapcfg-linux"]
 	path = tapcfg-linux
 	url = https://github.com/nicboul/tapcfg.git
+[submodule "tapcfg"]
+	path = tapcfg
+	url = git://github.com/netvirt/tapcfg.git
+[submodule "libconfig"]
+	path = libconfig
+	url = git://github.com/netvirt/libconfig.git
