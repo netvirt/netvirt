@@ -20,16 +20,8 @@ set(nvagent_sources
 
 message(STATUS "CMAKE_SOURCE_DIR" ${CMAKE_SOURCE_DIR})
 
-if (WIN32)
-	link_directories("${CMAKE_SOURCE_DIR}/libconfig-win32/lib/.libs")
-	link_directories("${CMAKE_SOURCE_DIR}/tapcfg-win32/build")
-elseif(APPLE)
-	link_directories("${CMAKE_SOURCE_DIR}/libconfig-macos/lib/.libs")
-	link_directories("${CMAKE_SOURCE_DIR}/tapcfg-macos/build")
-elseif(UNIX)
-	link_directories("${CMAKE_SOURCE_DIR}/libconfig-linux/lib/.libs")
-	link_directories("${CMAKE_SOURCE_DIR}/tapcfg-linux/build")
-endif()
+link_directories("${CMAKE_SOURCE_DIR}/libconfig/lib/.libs")
+link_directories("${CMAKE_SOURCE_DIR}/tapcfg/build")
 
 if (WITH_GUI)
 	add_definitions( -DQT_EDITION=QT_EDITION_OPENSOURCE )
@@ -81,21 +73,13 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 
 include_directories("${CMAKE_SOURCE_DIR}/libnvcore/src/protocol/")
 
-if (WIN32)
-	include_directories("${CMAKE_SOURCE_DIR}/tapcfg-win32/src/include/")
-	include_directories("${CMAKE_SOURCE_DIR}/libconfig-win32/lib/")
-elseif (APPLE)
-	include_directories("${CMAKE_SOURCE_DIR}/tapcfg-macos/src/include/")
-	include_directories("${CMAKE_SOURCE_DIR}/libconfig-macos/lib/")
-elseif (UNIX)
-	include_directories("${CMAKE_SOURCE_DIR}/tapcfg-linux/src/include/")
-	include_directories("${CMAKE_SOURCE_DIR}/libconfig-linux/lib/")
-endif()
+include_directories("${CMAKE_SOURCE_DIR}/tapcfg/src/include/")
+include_directories("${CMAKE_SOURCE_DIR}/libconfig/lib/")
 
 if (APPLE)
 	target_link_libraries(nvagent
-		${CMAKE_SOURCE_DIR}/tapcfg-macos/build/libtapcfg.a
-		${CMAKE_SOURCE_DIR}/libconfig-macos/lib/.libs/libconfig.a
+		${CMAKE_SOURCE_DIR}/tapcfg/build/libtapcfg.a
+		${CMAKE_SOURCE_DIR}/libconfig/lib/.libs/libconfig.a
 		nvcore
 		ssl
 		crypto
@@ -107,7 +91,7 @@ elseif (WIN32)
 		nvcore
 		pthread
 #		tapcfg
-		${CMAKE_SOURCE_DIR}/tapcfg-win32/build/tapcfg.dll
+		${CMAKE_SOURCE_DIR}/tapcfg/build/tapcfg.dll
 		${OPENSSL_LIBRARIES}
 	)
 else()
