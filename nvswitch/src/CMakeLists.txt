@@ -14,13 +14,13 @@ add_executable(nvswitch
 	session.c
 	switch.c
 )
-link_directories("${CMAKE_SOURCE_DIR}/libconfig-linux/lib/.libs")
-include_directories("${CMAKE_SOURCE_DIR}/libconfig-linux/lib/")
+link_directories("${CMAKE_SOURCE_DIR}/libconfig/lib/.libs")
+include_directories("${CMAKE_SOURCE_DIR}/libconfig/lib/")
 
 include_directories("${CMAKE_SOURCE_DIR}/libnvcore/src/")
 include_directories("${CMAKE_SOURCE_DIR}/libnvcore/src/protocol/")
 target_link_libraries(nvswitch
-	${CMAKE_SOURCE_DIR}/libconfig-linux/lib/.libs/libconfig.a
+	${CMAKE_SOURCE_DIR}/libconfig/lib/.libs/libconfig.a
 	nvcore
 	ssl
 	crypto
