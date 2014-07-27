@@ -68,9 +68,8 @@ function submodule () {
 function clone_dependencies () {
     clone_or_pull https://github.com/netvirt/netvirt.git netvirt
     cd netvirt
-    clone_or_pull https://github.com/nicboul/udt4.git udt4
-    clone_or_pull https://github.com/nicboul/libconfig.git libconfig-win32
-    clone_or_pull https://github.com/nicboul/tapcfg.git tapcfg-win32
+    git submodule init
+    git submodule update
 }
 
 function fix_libconfig_git () {
@@ -85,13 +84,13 @@ function build_dependencies () {
     [ -f src/libudt.dll ] || make CXX='i686-w64-mingw32-g++' os=WIN32 -s
     popd
 
-    pushd libconfig-win32
+    pushd libconfig
     fix_libconfig_git
     [ -f Makefile ] || ./configure --host=i686-w64-mingw32
     [ -d lib/.libs ] || make -s
     popd
 
-    pushd tapcfg-win32
+    pushd tapcfg
     [ -d build ] || scons --force-mingw32
     popd
 }

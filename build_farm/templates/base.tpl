@@ -29,9 +29,8 @@ function submodule () {
 function clone_dependencies () {
     clone_or_pull https://github.com/netvirt/netvirt.git netvirt
     cd netvirt
-    clone_or_pull https://github.com/nicboul/udt4.git udt4
-    clone_or_pull https://github.com/nicboul/libconfig.git {{ libconfig_dir_name }}
-    clone_or_pull https://github.com/nicboul/tapcfg.git {{ tapcfg_dir_name }}
+    git submodule init
+    git submodule update
 }
 
 function fix_libconfig_git () {
@@ -46,12 +45,12 @@ function build_dependencies () {
     {% block build_udt4 %}{% endblock %}
     popd
 
-    pushd {{ libconfig_dir_name }}
+    pushd libconfig
     fix_libconfig_git
     {% block build_libconfig %}{% endblock %}
     popd
 
-    pushd {{ tapcfg_dir_name }}
+    pushd tapcfg
     {% block build_tapcfg %}{% endblock %}
     popd
 }

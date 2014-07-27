@@ -30,9 +30,8 @@ function submodule () {
 function clone_dependencies () {
     clone_or_pull https://github.com/netvirt/netvirt.git netvirt
     cd netvirt
-    clone_or_pull https://github.com/nicboul/udt4.git udt4
-    clone_or_pull https://github.com/nicboul/libconfig.git libconfig-linux
-    clone_or_pull https://github.com/nicboul/tapcfg.git tapcfg-linux
+    git submodule init
+    git submodule update
 }
 
 function fix_libconfig_git () {
@@ -47,13 +46,13 @@ function build_dependencies () {
     make
     popd
 
-    pushd libconfig-linux
+    pushd libconfig
     fix_libconfig_git
     [ ! -f Makefile ] && ./configure
     make
     popd
 
-    pushd tapcfg-linux
+    pushd tapcfg
     ./buildall.sh
     popd
 }

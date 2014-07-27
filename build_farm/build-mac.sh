@@ -43,9 +43,8 @@ function submodule () {
 function clone_dependencies () {
     clone_or_pull https://github.com/netvirt/netvirt.git netvirt
     cd netvirt
-    clone_or_pull https://github.com/nicboul/udt4.git udt4
-    clone_or_pull https://github.com/nicboul/libconfig.git libconfig-macos
-    clone_or_pull https://github.com/nicboul/tapcfg.git tapcfg-macos
+    git submodule init
+    git submodule update
 }
 
 function fix_libconfig_git () {
@@ -60,13 +59,13 @@ function build_dependencies () {
     [ -f src/libudt.dylib ] || make os=OS_X arch=AMD64
     popd
 
-    pushd libconfig-macos
+    pushd libconfig
     fix_libconfig_git
     [ ! -f Makefile ] && ./configure
     [ -d lib/.libs ] || make -s
     popd
 
-    pushd tapcfg-macos
+    pushd tapcfg
     [ -d build ] || scons
     popd
 }
