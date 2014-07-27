@@ -17,12 +17,12 @@ add_executable(nvctrler
 	request.c
 )
 
-link_directories("${CMAKE_SOURCE_DIR}/libconfig-linux/lib/.libs")
-include_directories("${CMAKE_SOURCE_DIR}/libconfig-linux/lib/")
+link_directories("${CMAKE_SOURCE_DIR}/libconfig/lib/.libs")
+include_directories("${CMAKE_SOURCE_DIR}/libconfig/lib/")
 
 include_directories("${CMAKE_SOURCE_DIR}/libnvcore/src/protocol/")
 target_link_libraries(nvctrler
-	${CMAKE_SOURCE_DIR}/libconfig-linux/lib/.libs/libconfig.a
+	${CMAKE_SOURCE_DIR}/libconfig/lib/.libs/libconfig.a
 	nvcore
 	ssl
 	ossp-uuid
