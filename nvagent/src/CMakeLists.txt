@@ -100,8 +100,8 @@ else()
 		tapcfg
 		config
 		nvcore
-		ssl
 		-Wl,-Bdynamic
+		ssl
 		crypto
 		pthread
 	)
