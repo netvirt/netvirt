@@ -104,7 +104,7 @@ int agent_config_init(struct agent_cfg *_agent_cfg)
 	agent_cfg = _agent_cfg;
 
 	jlog_init_cb(agent_cfg->ev.on_log);
-	jlog(L_NOTICE, "version: %s", DNCVERSION);
+	jlog(L_NOTICE, "version: %s", NVAGENT_VERSION);
 
 	/* This must be set first. */
 	if (agent_cfg->profile == NULL) {

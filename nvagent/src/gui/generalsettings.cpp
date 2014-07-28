@@ -38,7 +38,7 @@ GeneralSettings::GeneralSettings(MainDialog *dialog)
 
 	movie = new QMovie(":/rc/loader.gif");
 
-	ui.versionLabel->setText(QString("Version: %1.").arg(DNCVERSION));
+	ui.versionLabel->setText(QString("Version: %1.").arg(NVAGENT_VERSION));
 
 	emit this->slotCheckUpdate();
 
@@ -63,7 +63,7 @@ void GeneralSettings::slotDownloadFinished(QNetworkReply *reply)
 
 	StableVersion = reply->readAll();
 	StableVersion = StableVersion.simplified();
-	CurrentVersion = DNCVERSION;
+	CurrentVersion = NVAGENT_VERSION;
 
 	if (StableVersion > CurrentVersion) {
 		ui.updateLabel->setText(QString("<html><head/><body><p>The version %1 is available, please visit <a href=\"https://www.dynvpn.com/download\" target=\"_blank\"><span style=\" text-decoration: underline; color:#0000ff;\">dynvpn.com/download</span></a> to update your client.</p></body></html>").arg(StableVersion));

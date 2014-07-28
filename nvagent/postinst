@@ -6,10 +6,10 @@ chmod 666 /dev/net/tun
 
 if [ -x /sbin/setcap ]
 then
-	setcap cap_net_bind_service,cap_net_admin=ep /usr/bin/nvagent
+	setcap cap_net_bind_service,cap_net_admin=ep /usr/bin/netvirt-agent
 else
 	echo "setcap(8) is not installed. You need to set CAP_NET_BIND and CAP_NET_ADMIN \
-	to be able to run the NetVirt Agent (nvagent) without root privileges."
+	to be able to run netvirt-agent without root privileges."
 fi
 
 exit 0

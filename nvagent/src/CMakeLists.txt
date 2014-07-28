@@ -1,5 +1,5 @@
-set(CMAKE_C_FLAGS "-g -W -Wall -DDNCVERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
-set(CMAKE_CXX_FLAGS "-g -W -Wall -DDNCVERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
+set(CMAKE_C_FLAGS "-g -W -Wall -DNVAGENT_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
+set(CMAKE_CXX_FLAGS "-g -W -Wall -DNVAGENT_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_subdirectory(tests)
@@ -53,19 +53,19 @@ if (WITH_GUI)
 	include(${QT_USE_FILE})
 	add_definitions(${QT_DEFINITIONS})
 
-	add_executable(nvagent MACOSX_BUNDLE WIN32 ${nvagent_sources} ${gui_sources} ${gui_headers_moc} ${gui_form_headers} ${gui_rccs_srcs} ${win_rc_icon})
+	add_executable(netvirt-agent MACOSX_BUNDLE WIN32 ${nvagent_sources} ${gui_sources} ${gui_headers_moc} ${gui_form_headers} ${gui_rccs_srcs} ${win_rc_icon})
 
 	if (WIN32)
-		set_target_properties(nvagent PROPERTIES LINK_FLAGS "-mwindows")
+		set_target_properties(netvirt-agent PROPERTIES LINK_FLAGS "-mwindows")
 	endif()
 
-	target_link_libraries(nvagent ${QT_LIBRARIES})
+	target_link_libraries(netvirt-agent ${QT_LIBRARIES})
 
 else()
 	set(cli_sources
 		cli/main.c)
 
-	add_executable(nvagent ${nvagent_sources} ${cli_sources})
+	add_executable(netvirt-agent ${nvagent_sources} ${cli_sources})
 endif()
 
 find_package(OpenSSL REQUIRED)
@@ -77,7 +77,7 @@ include_directories("${CMAKE_SOURCE_DIR}/tapcfg/src/include/")
 include_directories("${CMAKE_SOURCE_DIR}/libconfig/lib/")
 
 if (APPLE)
-	target_link_libraries(nvagent
+	target_link_libraries(netvirt-agent
 		${CMAKE_SOURCE_DIR}/tapcfg/build/libtapcfg.a
 		${CMAKE_SOURCE_DIR}/libconfig/lib/.libs/libconfig.a
 		nvcore
@@ -86,7 +86,7 @@ if (APPLE)
 		pthread
 	)
 elseif (WIN32)
-	target_link_libraries(nvagent
+	target_link_libraries(netvirt-agent
 		config
 		nvcore
 		pthread
@@ -95,7 +95,7 @@ elseif (WIN32)
 		${OPENSSL_LIBRARIES}
 	)
 else()
-	target_link_libraries(nvagent
+	target_link_libraries(netvirt-agent
 		-Wl,-Bstatic
 		tapcfg
 		config
@@ -107,7 +107,7 @@ else()
 	)
 endif()
 
-install(TARGETS nvagent
+install(TARGETS netvirt-agent
     BUNDLE DESTINATION . COMPONENT Runtime
     RUNTIME DESTINATION bin COMPONENT Runtime
     )

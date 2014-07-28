@@ -59,10 +59,10 @@ int main(int argc, char *argv[])
 			agent_cfg->profile = strdup(optarg);
 			break;
 		case 'v':
-			fprintf(stdout, "NetVirt Agent version: %s\n", DNCVERSION);
+			fprintf(stdout, "netvirt-agent %s\n", NVAGENT_VERSION);
 			return 0;
 		case 'h':
-			fprintf(stdout, "NetVirt Agent:\n"
+			fprintf(stdout, "netvirt-agent:\n"
 					"-k key\t\tauto provisioning\n"
 					"-s hostname\tserver address\n"
 					"-p name\t\tselect profile\n"
