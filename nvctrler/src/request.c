@@ -320,7 +320,7 @@ void AddRequest_node(DNDSMessage_t *msg)
 	uuid = uuid_v4();
 	provcode = uuid_v4();
 
-	snprintf(common_name, sizeof(common_name), "dnc-%s@%s", uuid, context_id_str);
+	snprintf(common_name, sizeof(common_name), "nva-%s@%s", uuid, context_id_str);
 	jlog(L_DEBUG, "common_name: %s", common_name);
 
 	digital_id_t *node_ident = NULL;
