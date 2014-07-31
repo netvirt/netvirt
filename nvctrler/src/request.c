@@ -365,6 +365,30 @@ void AddRequest_node(DNDSMessage_t *msg)
 		goto free2;
 	}
 
+
+	/* send node update to nvswitch */
+
+	DNDSMessage_t *msg_up;
+	DNDSMessage_new(&msg_up);
+	DNDSMessage_set_pdu(msg_up, pdu_PR_dsm);
+	DSMessage_set_operation(msg_up, dsop_PR_searchResponse);
+	SearchResponse_set_searchType(msg_up, SearchType_sequence);
+	SearchResponse_set_result(msg_up, DNDSResult_success);
+
+	DNDSObject_t *objNode;
+	DNDSObject_new(&objNode);
+	DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
+
+	Node_set_uuid(objNode, uuid, strlen(uuid));
+	Node_set_contextId(objNode, context_id);
+
+	SearchResponse_add_object(msg_up, objNode);
+
+	if (g_switch_netc)
+		net_send_msg(g_switch_netc, msg_up);
+
+	DNDSMessage_del(msg_up);
+
 free2:
 	ippool_free(ippool);
 
