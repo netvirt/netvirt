@@ -124,8 +124,7 @@ int agent_config_init(struct agent_cfg *_agent_cfg)
 	char *path = agent_config_get_fullname(agent_cfg->profile, "");
 	struct stat st;
 	if (stat(path, &st) != 0) {
-		printf("path %s\n", path);
-		printf("ret %d\n", mkfullpath(path));
+		mkfullpath(path);
 	}
 	if (stat(path, &st) != 0) {
 		jlog(L_ERROR, "Unable to create the directory '%s'.", path);
