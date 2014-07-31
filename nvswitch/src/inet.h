@@ -13,8 +13,8 @@
  * GNU Affero General Public License for more details
  */
 
-#ifndef DNDS_INET_H
-#define DNDS_INET_H
+#ifndef INET_H
+#define INET_H
 
 #include "udt.h"
 
@@ -39,4 +39,4 @@ void inet_print_ether_type(void *);
 void inet_print_ethernet(void *);
 void inet_print_arp(peer_t *);
 
-#endif /* DNDS_INET_H */
+#endif

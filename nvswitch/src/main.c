@@ -42,31 +42,31 @@ int config_parse(config_t *cfg, struct switch_cfg *switch_cfg)
                 jlog_init_file(switch_cfg->log_file);
         }
 
-	if (config_lookup_string(cfg, "ipaddr", &switch_cfg->ipaddr))
-		jlog(L_DEBUG, "ipaddr: %s", switch_cfg->ipaddr);
+	if (config_lookup_string(cfg, "listen_ip", &switch_cfg->listen_ip))
+		jlog(L_DEBUG, "listen_ip: %s", switch_cfg->listen_ip);
 	else {
-		jlog(L_ERROR, "ipaddr is not present !");
+		jlog(L_ERROR, "listen_ip is not present !");
 		return -1;
 	}
 
-	if (config_lookup_string(cfg, "port", &switch_cfg->port))
-		jlog(L_DEBUG, "port: %s", switch_cfg->port);
+	if (config_lookup_string(cfg, "listen_port", &switch_cfg->listen_port))
+		jlog(L_DEBUG, "listen_port: %s", switch_cfg->listen_port);
 	else {
-		jlog(L_ERROR, "port is not present !");
+		jlog(L_ERROR, "listen_port is not present !");
 		return -1;
 	}
 
-	if (config_lookup_string(cfg, "dsd_ipaddr", &switch_cfg->dsd_ipaddr))
-		jlog(L_DEBUG, "dsd_ipaddr: %s", switch_cfg->dsd_ipaddr);
+	if (config_lookup_string(cfg, "controller_ip", &switch_cfg->ctrler_ip))
+		jlog(L_DEBUG, "ctrler_ip: %s", switch_cfg->ctrler_ip);
 	else {
-		jlog(L_ERROR, "dsd_ipaddr is not present !");
+		jlog(L_ERROR, "ctrler_ip is not present !");
 		return -1;
 	}
 
-	if (config_lookup_string(cfg, "dsd_port", &switch_cfg->dsd_port))
-		jlog(L_DEBUG, "dsd_port: %s", switch_cfg->dsd_port);
+	if (config_lookup_string(cfg, "controller_port", &switch_cfg->ctrler_port))
+		jlog(L_DEBUG, "ctrler_port: %s", switch_cfg->ctrler_port);
 	else {
-		jlog(L_ERROR, "dsd_port is not present !");
+		jlog(L_ERROR, "ctrler_port is not present !");
 		return -1;
 	}
 
@@ -98,8 +98,8 @@ void int_handler(int sig)
 {
 	(void)sig;
 
-	if (switch_cfg->dsc_running && switch_cfg->switch_running) {
-		switch_cfg->dsc_running = 0;
+	if (switch_cfg->ctrl_running && switch_cfg->switch_running) {
+		switch_cfg->ctrl_running = 0;
 		switch_cfg->switch_running = 0;
 	}
 }
@@ -119,11 +119,11 @@ int main(int argc, char *argv[])
 			quiet = 1;
 			break;
 		case 'v':
-			fprintf(stdout, "NetVirt switch server version: %s\n", DNDVERSION);
+			fprintf(stdout, "netvirt-switch %s\n", NVSWITCH_VERSION);
 			return 0;
 		default:
 		case 'h':
-			fprintf(stdout, "\nNetVirt switch server:\n\n"
+			fprintf(stdout, "netvirt-switch:\n"
 					"-q\t\tquiet mode\n"
 					"-v\t\tshow version\n"
 					"-h\t\tshow this help\n");
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
 	}
 
 	config_init(&cfg);
-	switch_cfg->dsc_initialized = 0;
+	switch_cfg->ctrl_initialized = 0;
 
 	if (config_parse(&cfg, switch_cfg)) {
 		jlog(L_ERROR, "config parse failed");
@@ -155,14 +155,14 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	if (dsc_init(switch_cfg)) {
-		jlog(L_ERROR, "dsc_init failed");
+	if (ctrl_init(switch_cfg)) {
+		jlog(L_ERROR, "ctrl_init failed");
 		exit(EXIT_FAILURE);
 	}
 
-	/* make sure dsc is properly initialized before
+	/* make sure control is properly initialized before
 		accepting connection */
-	while (switch_cfg->dsc_initialized == 0) {
+	while (switch_cfg->ctrl_initialized == 0) {
 		sleep(1);
 	}
 
@@ -171,18 +171,18 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	while (switch_cfg->dsc_running || switch_cfg->switch_running) {
+	while (switch_cfg->ctrl_running || switch_cfg->switch_running) {
 		sleep(1);
 	}
 
 	/* clean up */
-	dsc_fini();
+	ctrl_fini();
 	switch_fini();
 	netbus_fini();
 	config_destroy(&cfg);
 	free(switch_cfg);
 
-	printf("Goodbye nvswitch !\n");
+	printf("Goodbye netvirt-switch !\n");
 
 	return 0;
 }

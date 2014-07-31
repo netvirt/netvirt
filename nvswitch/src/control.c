@@ -24,7 +24,7 @@
 #include "control.h"
 #include "tcp.h"
 
-static netc_t *dsc_netc = NULL;
+static netc_t *ctrl_netc = NULL;
 static passport_t *switch_passport = NULL;
 static struct switch_cfg *switch_cfg = NULL;
 
@@ -57,7 +57,7 @@ int transmit_provisioning(struct session *session, char *provCode, uint32_t leng
 
 	SearchRequest_set_object(msg, objNode);
 
-	net_send_msg(dsc_netc, msg);
+	net_send_msg(ctrl_netc, msg);
 	DNDSMessage_del(msg);
 
 	session_tracking_table[tracking_id % MAX_SESSION] = session;
@@ -82,7 +82,7 @@ int transmit_node_connectinfo(e_ConnectState state, char *ipAddress, char *certN
         NodeConnectInfo_set_ipAddr(msg, ipAddress);
         NodeConnectInfo_set_state(msg, state);
 
-	net_send_msg(dsc_netc, msg);
+	net_send_msg(ctrl_netc, msg);
 	DNDSMessage_del(msg);
 
 	return 0;
@@ -111,7 +111,7 @@ int transmit_search_node()
 		}
 	}
 
-	net_send_msg(dsc_netc, msg);
+	net_send_msg(ctrl_netc, msg);
 	DNDSMessage_del(msg);
 
 	return 0;
@@ -119,7 +119,7 @@ int transmit_search_node()
 
 static void on_secure(netc_t *netc)
 {
-	jlog(L_DEBUG, "connection secured with DSD");
+	jlog(L_DEBUG, "connection secured with the controller");
 
 	DNDSMessage_t *msg;
 
@@ -293,7 +293,7 @@ static void handle_SearchResponse(DNDSMessage_t *msg)
 
 	if (SearchType == SearchType_sequence) {
 		handle_SearchResponse_node(msg);
-		switch_cfg->dsc_initialized = 1;
+		switch_cfg->ctrl_initialized = 1;
 	}
 
 	if (SearchType == SearchType_object) {
@@ -351,47 +351,47 @@ static void on_disconnect(netc_t *netc)
 {
 	(void)(netc);
 
-	if (switch_cfg->dsc_running == 0) {
+	if (switch_cfg->ctrl_running == 0) {
 		return;
 	}
 
 	netc_t *retry_netc = NULL;
 
-	jlog(L_NOTICE, "disconnected from dsd");
-	jlog(L_NOTICE, "connection retry to dsd...");
+	jlog(L_NOTICE, "disconnected from the controller");
+	jlog(L_NOTICE, "connection retry to the controller...");
 	do {
 		sleep(5);
-		retry_netc = net_client(switch_cfg->dsd_ipaddr, switch_cfg->dsd_port,
+		retry_netc = net_client(switch_cfg->ctrler_ip, switch_cfg->ctrler_port,
 		    NET_PROTO_TCP, NET_SECURE_RSA, switch_passport,
 		    on_disconnect, on_input, on_secure);
 	} while (retry_netc == NULL);
 
-	dsc_netc = retry_netc;
+	ctrl_netc = retry_netc;
 }
 
-static void *dsc_loop(void *nil)
+static void *ctrl_loop(void *nil)
 {
 	(void)nil;
 
-	while (switch_cfg->dsc_running) {
+	while (switch_cfg->ctrl_running) {
 		tcpbus_ion_poke();
 	}
 
 	return NULL;
 }
 
-int dsc_init(struct switch_cfg *cfg)
+int ctrl_init(struct switch_cfg *cfg)
 {
 	switch_cfg = cfg;
-	switch_cfg->dsc_running = 1;
+	switch_cfg->ctrl_running = 1;
 
-	jlog(L_NOTICE, "dsc initializing...");
+	jlog(L_NOTICE, "control initializing...");
 
 	switch_passport = pki_passport_load_from_file(switch_cfg->certificate, switch_cfg->privatekey, switch_cfg->trusted_cert);
-	dsc_netc = net_client(switch_cfg->dsd_ipaddr, switch_cfg->dsd_port, NET_PROTO_TCP, NET_SECURE_RSA, switch_passport,
+	ctrl_netc = net_client(switch_cfg->ctrler_ip, switch_cfg->ctrler_port, NET_PROTO_TCP, NET_SECURE_RSA, switch_passport,
 				on_disconnect, on_input, on_secure);
 
-	if (dsc_netc == NULL) {
+	if (ctrl_netc == NULL) {
 		jlog(L_NOTICE, "failed to connect to the Directory Service");
 		return -1;
 	}
@@ -402,14 +402,14 @@ int dsc_init(struct switch_cfg *cfg)
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-	pthread_create(&thread_loop, &attr, dsc_loop, NULL);
+	pthread_create(&thread_loop, &attr, ctrl_loop, NULL);
 
 	return 0;
 }
 
-void dsc_fini()
+void ctrl_fini()
 {
-	net_disconnect(dsc_netc);
+	net_disconnect(ctrl_netc);
 	pki_passport_destroy(switch_passport);
 	context_free();
 }

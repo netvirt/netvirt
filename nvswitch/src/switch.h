@@ -13,8 +13,8 @@
  * GNU Affero General Public License for more details
  */
 
-#ifndef DND_H
-#define DND_H
+#ifndef SWITCH_H
+#define SWITCH_H
 
 #include "context.h"
 
@@ -22,18 +22,18 @@ struct switch_cfg {
 
 	const char *log_file;
 
-	const char *ipaddr;
-	const char *port;
+	const char *listen_ip;
+	const char *listen_port;
 
-	const char *dsd_ipaddr;
-	const char *dsd_port;
+	const char *ctrler_ip;
+	const char *ctrler_port;
 
 	const char *certificate;
 	const char *privatekey;
 	const char *trusted_cert;
 
-	int dsc_initialized;
-	int dsc_running;
+	int ctrl_initialized;
+	int ctrl_running;
 	int switch_running;
 };
 

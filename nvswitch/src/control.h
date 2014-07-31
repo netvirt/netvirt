@@ -24,7 +24,7 @@
 int transmit_provisioning(struct session *session, char *provCode, uint32_t length);
 int transmit_peerconnectinfo(e_ConnectState state, char *ipAddress, char *certName);
 int transmit_node_connectinfo(e_ConnectState state, char *ipAddress, char *certName);
-int dsc_init(struct switch_cfg *cfg);
-void dsc_fini();
+int ctrl_init(struct switch_cfg *cfg);
+void ctrl_fini();
 
 #endif

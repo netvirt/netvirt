@@ -32,7 +32,7 @@
 #include "switch.h"
 
 static struct switch_cfg *switch_cfg;
-static netc_t *dsd_netc = NULL;
+static netc_t *switch_netc = NULL;
 
 static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 {
@@ -310,10 +310,10 @@ int switch_init(struct switch_cfg *cfg)
 	switch_cfg = cfg;
 	switch_cfg->switch_running = 1;
 
-	dsd_netc = net_server(switch_cfg->ipaddr, switch_cfg->port, NET_PROTO_UDT, NET_SECURE_ADH, NULL,
+	switch_netc = net_server(switch_cfg->listen_ip, switch_cfg->listen_port, NET_PROTO_UDT, NET_SECURE_ADH, NULL,
 		on_connect, on_disconnect, on_input, on_secure);
 
-	if (dsd_netc == NULL) {
+	if (switch_netc == NULL) {
 		jlog(L_ERROR, "net_server failed");
 		return -1;
 	}
@@ -333,5 +333,5 @@ int switch_init(struct switch_cfg *cfg)
 
 void switch_fini()
 {
-	net_disconnect(dsd_netc);
+	net_disconnect(switch_netc);
 }
