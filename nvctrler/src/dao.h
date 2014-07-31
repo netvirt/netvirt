@@ -20,26 +20,6 @@
 
 int dao_connect(struct ctrler_cfg *ctrler_cfg);
 
-/*int dao_fetch_context_by_client_id(char *client_id,
-			char **id,
-			char **topology_id,
-			char **description,
-			char **network,
-			char **netmask,
-			char **serverCert,
-			char **serverPrivkey,
-			char **trustedCert);
-
-int dao_fetch_context(char **id,
-			char **topology_id,
-			char **description,
-			char **network,
-			char **netmask,
-			char **serverCert,
-			char **serverPrivkey,
-			char **trustedCert);
-*/
-
 int dao_update_node_status(char *context, char *uuid, char *status, char *public_ip);
 int dao_add_context(char *client_id,
 			char *description,

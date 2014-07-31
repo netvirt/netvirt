@@ -83,17 +83,17 @@ int parse_config(config_t *cfg, struct ctrler_cfg *ctrler_cfg)
                 jlog_init_file(ctrler_cfg->log_file);
         }
 
-	if (config_lookup_string(cfg, "ipaddr", &ctrler_cfg->ipaddr))
-		jlog(L_DEBUG, "ipaddr: %s", ctrler_cfg->ipaddr);
+	if (config_lookup_string(cfg, "listen_ip", &ctrler_cfg->listen_ip))
+		jlog(L_DEBUG, "listen_ip: %s", ctrler_cfg->listen_ip);
 	else {
-		jlog(L_ERROR, "ipaddr is not present !");
+		jlog(L_ERROR, "listen_ip is not present !");
 		return -1;
 	}
 
-	if (config_lookup_string(cfg, "port", &ctrler_cfg->port))
-		jlog(L_DEBUG, "port: %s", ctrler_cfg->port);
+	if (config_lookup_string(cfg, "listen_port", &ctrler_cfg->listen_port))
+		jlog(L_DEBUG, "listen_port: %s", ctrler_cfg->listen_port);
 	else {
-		jlog(L_ERROR, "port is not present !");
+		jlog(L_ERROR, "listen_port is not present !");
 		return -1;
 	}
 
@@ -174,11 +174,11 @@ int main(int argc, char *argv[])
 			quiet = 1;
 			break;
 		case 'v':
-			fprintf(stdout, "NetVirt Controller version: %s\n", DSDVERSION);
+			fprintf(stdout, "netvirt-ctrler %s\n", NVCTRLER_VERSION);
 			return 0;
 		default:
 		case 'h':
-                        fprintf(stdout, "\nNetVirt Controller:\n\n"
+                        fprintf(stdout, "netvirt-ctrler:\n"
 					"-d\t\tdaemonize\n"
                                         "-q\t\tquiet mode\n"
                                         "-v\t\tshow version\n"
@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (ctrler_init(ctrler_cfg)) {
-		jlog(L_NOTICE, "dnds_init failed");
+		jlog(L_NOTICE, "ctrler_init failed");
 		exit(EXIT_FAILURE);
 	}
 

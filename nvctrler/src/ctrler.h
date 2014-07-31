@@ -13,8 +13,8 @@
  * GNU Affero General Public License for more details
  */
 
-#ifndef DSD_H
-#define DSD_H
+#ifndef CTRLER_H
+#define CTRLER_H
 
 #include <netbus.h>
 
@@ -25,8 +25,8 @@ struct ctrler_cfg {
 
 	const char *log_file;
 
-	const char *ipaddr;
-	const char *port;
+	const char *listen_ip;
+	const char *listen_port;
 
 	const char *db_host;
 	const char *db_user;
@@ -40,7 +40,7 @@ struct ctrler_cfg {
 	int ctrler_running;
 };
 
-netc_t *g_dnd_netc;
+netc_t *g_switch_netc;
 struct session {
 
 	netc_t *netc;

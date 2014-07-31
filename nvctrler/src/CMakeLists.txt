@@ -3,12 +3,12 @@ else (PostgreSQL_TYPE_INCLUDE_DIR)
 	set (PostgreSQL_TYPE_INCLUDE_DIR ${PostgreSQL_INCLUDE_DIR})
 endif (PostgreSQL_TYPE_INCLUDE_DIR)
 
-set(CMAKE_C_FLAGS "-g -W -Wall -DDSDVERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
-set(CMAKE_CXX_FLAGS "-g -W -Wall -DDSDVERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
+set(CMAKE_C_FLAGS "-g -W -Wall -DNVCTRLER_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
+set(CMAKE_CXX_FLAGS "-g -W -Wall -DNVCTRLER_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
 
 add_subdirectory(tests)
 
-add_executable(nvctrler
+add_executable(netvirt-ctrler
 	ctrler.c
 	dao.c
 	ippool.c
@@ -21,7 +21,7 @@ link_directories("${CMAKE_SOURCE_DIR}/libconfig/lib/.libs")
 include_directories("${CMAKE_SOURCE_DIR}/libconfig/lib/")
 
 include_directories("${CMAKE_SOURCE_DIR}/libnvcore/src/protocol/")
-target_link_libraries(nvctrler
+target_link_libraries(netvirt-ctrler
 	${CMAKE_SOURCE_DIR}/libconfig/lib/.libs/libconfig.a
 	nvcore
 	ssl
@@ -31,6 +31,6 @@ target_link_libraries(nvctrler
 	pthread
 )
 
-install(TARGETS nvctrler
+install(TARGETS netvirt-ctrler
 	DESTINATION bin)
 

@@ -90,10 +90,8 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 static void on_secure(netc_t *netc)
 {
 	jlog(L_NOTICE, "connection secured");
-	if (!strncmp("dnd", netc->kconn->client_cn, 3)) {
-		jlog(L_NOTICE, "%s authenticated", netc->kconn->client_cn);
-		g_dnd_netc = netc;
-	}
+	jlog(L_NOTICE, "%s authenticated", netc->kconn->client_cn);
+	g_switch_netc = netc;
 }
 
 static void on_input(netc_t *netc)
@@ -162,7 +160,7 @@ int ctrler_init(struct ctrler_cfg *cfg)
 
 	ctrler_passport = pki_passport_load_from_file(ctrler_cfg->certificate, ctrler_cfg->privatekey, ctrler_cfg->trusted_cert);
 
-	ctrler_netc = net_server(ctrler_cfg->ipaddr, ctrler_cfg->port, NET_PROTO_TCP, NET_SECURE_RSA, ctrler_passport,
+	ctrler_netc = net_server(ctrler_cfg->listen_ip, ctrler_cfg->listen_port, NET_PROTO_TCP, NET_SECURE_RSA, ctrler_passport,
 			on_connect, on_disconnect, on_input, on_secure);
 
 	if (ctrler_netc == NULL) {

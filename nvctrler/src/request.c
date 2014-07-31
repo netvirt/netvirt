@@ -198,21 +198,21 @@ void AddRequest_context(DNDSMessage_t *msg)
 	pki_write_certificate_in_mem(emb->certificate, &emb_cert_ptr, &size);
 	pki_write_privatekey_in_mem(emb->keyring, &emb_pvkey_ptr, &size);
 
-	/* 3.2- Initialise server passport */
+	/* 3.2- Initialize server passport */
 
 	digital_id_t *server_id;
 	server_id = pki_digital_id("nvswitch", "CA", "Quebec", "", "admin@netvirt.org", "NetVirt");
 
-	passport_t *dnd_passport;
-	dnd_passport = pki_embassy_deliver_passport(emb, server_id, exp_delay);
+	passport_t *nvswitch_passport;
+	nvswitch_passport = pki_embassy_deliver_passport(emb, server_id, exp_delay);
 	free(server_id);
 
 	char *serv_cert_ptr;
 	char *serv_pvkey_ptr;
 
-	pki_write_certificate_in_mem(dnd_passport->certificate, &serv_cert_ptr, &size);
-	pki_write_privatekey_in_mem(dnd_passport->keyring, &serv_pvkey_ptr, &size);
-	free(dnd_passport);
+	pki_write_certificate_in_mem(nvswitch_passport->certificate, &serv_cert_ptr, &size);
+	pki_write_privatekey_in_mem(nvswitch_passport->keyring, &serv_pvkey_ptr, &size);
+	free(nvswitch_passport);
 
 	char emb_serial[10];
 	snprintf(emb_serial, sizeof(emb_serial), "%d", emb->serial);
@@ -245,7 +245,7 @@ void AddRequest_context(DNDSMessage_t *msg)
 	free(emb_cert_ptr);
 	free(emb_pvkey_ptr);
 
-	/* send context update to DND */
+	/* send context update to nvswitch */
 
 	DNDSMessage_t *msg_up;
 	DNDSMessage_new(&msg_up);
@@ -262,8 +262,8 @@ void AddRequest_context(DNDSMessage_t *msg)
 	SearchResponse_set_searchType(msg_up, SearchType_all);
 	SearchResponse_set_result(msg_up, DNDSResult_success);
 
-	if (g_dnd_netc)
-		net_send_msg(g_dnd_netc, msg_up);
+	if (g_switch_netc)
+		net_send_msg(g_switch_netc, msg_up);
 
 	DNDSMessage_del(msg_up);
 }
@@ -421,9 +421,9 @@ void delRequest(struct session *session, DNDSMessage_t *msg)
 	jlog(L_NOTICE, "revoking node: %s", uuid);
 	dao_del_node(context_id_str, uuid);
 
-	/* forward the delRequest to DND */
-	if (g_dnd_netc)
-		net_send_msg(g_dnd_netc, msg);
+	/* forward the delRequest to nvswitch */
+	if (g_switch_netc)
+		net_send_msg(g_switch_netc, msg);
 }
 
 void modifyRequest(struct session *session, DNDSMessage_t *msg)
