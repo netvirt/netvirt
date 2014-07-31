@@ -27,7 +27,6 @@
 
 int CB_searchRequest_context_by_client_id(void *msg,
 						char *id,
-						char *topology_id,
 						char *description,
 						char *client_id,
 						char *network,
@@ -36,9 +35,6 @@ int CB_searchRequest_context_by_client_id(void *msg,
 						char *serverPrivkey,
 						char *trustedCert)
 {
-	/* FIXME the callback should not pass it to us */
-	(void)(topology_id);
-
 	DNDSMessage_printf(msg);
 	DNDSObject_t *objContext;
 	DNDSObject_new(&objContext);
@@ -46,7 +42,6 @@ int CB_searchRequest_context_by_client_id(void *msg,
 
 	Context_set_id(objContext, atoi(id));
 	Context_set_clientId(objContext, atoi(client_id));
-	Context_set_topology(objContext, Topology_mesh);
 	Context_set_description(objContext, description, strlen(description));
 	Context_set_network(objContext, network);
 	Context_set_netmask(objContext, netmask);
@@ -227,7 +222,6 @@ void AddRequest_context(DNDSMessage_t *msg)
 
 	dao_add_context(client_id_str,
 				description,
-				"1",
 				"44.128.0.0/16",
 				emb_cert_ptr,
 				emb_pvkey_ptr,
@@ -532,7 +526,6 @@ void searchRequest_context_by_client_id(struct session *session, DNDSMessage_t *
 
 void CB_searchRequest_context(void *msg,
 				char *id,
-				char *topology_id,
 				char *description,
 				char *client_id,
 				char *network,
@@ -541,9 +534,6 @@ void CB_searchRequest_context(void *msg,
 				char *serverPrivkey,
 				char *trustedCert)
 {
-
-	/* FIXME the callback should not pass them to us */
-	(void)(topology_id);
 	(void)(client_id);
 
 	DNDSObject_t *objContext;
@@ -551,7 +541,6 @@ void CB_searchRequest_context(void *msg,
 	DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
 
 	Context_set_id(objContext, atoi(id));
-	Context_set_topology(objContext, Topology_mesh);
 	Context_set_description(objContext, description, strlen(description));
 	Context_set_network(objContext, network);
 	Context_set_netmask(objContext, netmask);

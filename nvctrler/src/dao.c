@@ -83,10 +83,10 @@ int dao_prepare_statements()
 	result = PQprepare(dbconn,
 			"dao_add_context",
 			"INSERT INTO CONTEXT "
-			"(client_id, description, topology_id, network, "
+			"(client_id, description, network, "
 				"embassy_certificate, embassy_privatekey, embassy_serial, "
 				"passport_certificate, passport_privatekey, ippool)"
-			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::bytea);",
+			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::bytea);",
 			0,
 			NULL);
 
@@ -178,7 +178,7 @@ int dao_prepare_statements()
 
 	result = PQprepare(dbconn,
 			"dao_fetch_context_by_client_id",
-			"SELECT id, topology_id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
+			"SELECT id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
 			"FROM context "
 			"WHERE client_id = $1;",
 			0,
@@ -190,7 +190,7 @@ int dao_prepare_statements()
 
 	result = PQprepare(dbconn,
 			"dao_fetch_context_by_client_id_desc",
-			"SELECT id, topology_id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
+			"SELECT id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
 			"FROM context "
 			"WHERE client_id = $1 and description = $2;",
 			0,
@@ -202,7 +202,7 @@ int dao_prepare_statements()
 
 	result = PQprepare(dbconn,
 			"dao_fetch_context",
-			"SELECT id, topology_id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
+			"SELECT id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
 			"FROM context;",
 			0,
 			NULL);
@@ -531,7 +531,6 @@ int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatek
 
 int dao_add_context(char *client_id,
 			char *description,
-			char *topology_id,
 			char *network,
 			char *embassy_certificate,
 			char *embassy_privatekey,
@@ -547,7 +546,7 @@ int dao_add_context(char *client_id,
 	unsigned char *ippool_str;
 	size_t ippool_str_len;
 
-	if (!client_id || !description || !topology_id || !network ||
+	if (!client_id || !description || !network ||
 		!embassy_certificate || !embassy_privatekey || !embassy_serial ||
 		!passport_certificate || !passport_privatekey) {
 
@@ -559,27 +558,25 @@ int dao_add_context(char *client_id,
 
 	paramValues[0] = client_id;
 	paramValues[1] = description;
-	paramValues[2] = topology_id;
-	paramValues[3] = network;
-	paramValues[4] = embassy_certificate;
-	paramValues[5] = embassy_privatekey;
-	paramValues[6] = embassy_serial;
-	paramValues[7] = passport_certificate;
-	paramValues[8] = passport_privatekey;
-	paramValues[9] = (char *)ippool_str;
+	paramValues[2] = network;
+	paramValues[3] = embassy_certificate;
+	paramValues[4] = embassy_privatekey;
+	paramValues[5] = embassy_serial;
+	paramValues[6] = passport_certificate;
+	paramValues[7] = passport_privatekey;
+	paramValues[8] = (char *)ippool_str;
 
 	paramLengths[0] = strlen(client_id);
 	paramLengths[1] = strlen(description);
-	paramLengths[2] = strlen(topology_id);
-	paramLengths[3] = strlen(network);
-	paramLengths[4] = strlen(embassy_certificate);
-	paramLengths[5] = strlen(embassy_privatekey);
-	paramLengths[6] = strlen(embassy_serial);
-	paramLengths[7] = strlen(passport_certificate);
-	paramLengths[8] = strlen(passport_privatekey);
-	paramLengths[9] = ippool_str_len;
+	paramLengths[2] = strlen(network);
+	paramLengths[3] = strlen(embassy_certificate);
+	paramLengths[4] = strlen(embassy_privatekey);
+	paramLengths[5] = strlen(embassy_serial);
+	paramLengths[6] = strlen(passport_certificate);
+	paramLengths[7] = strlen(passport_privatekey);
+	paramLengths[8] = ippool_str_len;
 
-	result = PQexecPrepared(dbconn, "dao_add_context", 10, paramValues, paramLengths, NULL, 0);
+	result = PQexecPrepared(dbconn, "dao_add_context", 9, paramValues, paramLengths, NULL, 0);
 	if (!result) {
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
@@ -946,7 +943,6 @@ int dao_fetch_context_by_client_id(
 	void *data,
 	int (*cb_data_handler)(void *data,
 		char *id,
-		char *topology_id,
 		char *description,
 		char *client_id,
 		char *network,
@@ -992,8 +988,7 @@ int dao_fetch_context_by_client_id(
 			strdup(PQgetvalue(result, i, 4)),
 			strdup(PQgetvalue(result, i, 5)),
 			strdup(PQgetvalue(result, i, 6)),
-			strdup(PQgetvalue(result, i, 7)),
-			strdup(PQgetvalue(result, i, 8)));
+			strdup(PQgetvalue(result, i, 7)));
 	}
 
 	PQclear(result);
@@ -1004,7 +999,6 @@ int dao_fetch_context_by_client_id(
 int dao_fetch_context_by_client_id_desc(char *client_id, char *description,
 					void *data, int (*cb_data_handler)(void *data,
 					char *id,
-					char *topology_id,
 					char *description,
 					char *client_id,
 					char *network,
@@ -1053,8 +1047,7 @@ int dao_fetch_context_by_client_id_desc(char *client_id, char *description,
 			strdup(PQgetvalue(result, i, 4)),
 			strdup(PQgetvalue(result, i, 5)),
 			strdup(PQgetvalue(result, i, 6)),
-			strdup(PQgetvalue(result, i, 7)),
-			strdup(PQgetvalue(result, i, 8)));
+			strdup(PQgetvalue(result, i, 7)));
 	}
 
 	PQclear(result);
@@ -1063,7 +1056,6 @@ int dao_fetch_context_by_client_id_desc(char *client_id, char *description,
 }
 int dao_fetch_context(void *data, void (*cb_data_handler)(void *data,
 							char *id,
-							char *topology_id,
 							char *description,
 							char *client_id,
 							char *network,
@@ -1098,8 +1090,7 @@ int dao_fetch_context(void *data, void (*cb_data_handler)(void *data,
 			PQgetvalue(result, i, 4),
 			PQgetvalue(result, i, 5),
 			PQgetvalue(result, i, 6),
-			PQgetvalue(result, i, 7),
-			PQgetvalue(result, i, 8));
+			PQgetvalue(result, i, 7));
 	}
 
 	PQclear(result);
