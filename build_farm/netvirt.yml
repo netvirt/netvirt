@@ -1,0 +1,79 @@
+- hosts: 127.0.0.1:2222
+  sudo: yes
+  tasks:
+    - name: Update apt
+      apt: update_cache=yes
+
+    - name: Add netvirt user (pwd is netvirt)
+      user: name=netvirt shell=/bin/bash comment="netvirt user" password=$6$/fJ8pO463G$f4dzYIYI2cTHnJeAcW05e8F2lbiqNOSI8dK9OHb8LxpweXuhBXj8TA8MYMughSyEB6kQOv.OTMQ0dROWqPoWH1
+
+    - name: Install build-essential
+      apt: name=build-essential state=present
+
+    - name: Install libpq-dev
+      apt: name=libpq-dev state=present
+
+    - name: Install libossp-uuid-dev
+      apt: name=libossp-uuid-dev state=present
+
+    - name: Install scons
+      apt: name=scons state=present
+
+    - name: Install cmake
+      apt: name=cmake state=present
+
+    - name: Install libssl-dev
+      apt: name=libssl-dev state=present
+
+    - name: Install git
+      apt: name=git state=present
+
+    - name: Install postgresql
+      apt: name=postgresql state=present
+
+    - name: Install python-psycopg2
+      apt: name=python-psycopg2 state=present
+
+    - name: Checkout NetVirt
+      git: repo=https://github.com/netvirt/netvirt.git dest=/home/netvirt/netvirt
+
+    - name: Build udt4
+      command: chdir=/home/netvirt/netvirt/udt4 make
+
+    - name: Build libconfig 1/3
+      command: chdir=/home/netvirt/netvirt/libconfig/lib touch *.c
+
+    - name: Build libconfig 2/3
+      shell: chdir=/home/netvirt/netvirt/libconfig ./configure
+
+    - name: Build libconfig 3/3
+      command: chdir=/home/netvirt/netvirt/libconfig make
+
+    - name: Build tapcfg
+      shell: chdir=/home/netvirt/netvirt/tapcfg ./buildall.sh || /bin/true
+
+    - name: create build dir
+      file: state=directory path=/home/netvirt/netvirt/build.serv
+
+    - name: Compile NetVirt 1/2
+      command: chdir=/home/netvirt/netvirt/build.serv cmake .. -DWITH_NVAGENT=OFF -DWITH_NVSWITCH=ON -DWITH_NVCTRLER=ON
+
+    - name: Compile NetVirt 2/2
+      command: chdir=/home/netvirt/netvirt/build.serv make
+
+    - name: ensure database is created
+      sudo_user: postgres
+      postgresql_db: name=netvirt
+
+    - name: ensure user has access to database
+      sudo_user: postgres
+      postgresql_user: db=netvirt name=netvirt password=netvirt priv=ALL
+
+    - name: ensure user does not have unnecessary privilege
+      sudo_user: postgres
+      postgresql_user: name=netvirt role_attr_flags=NOSUPERUSER,NOCREATEDB
+
+    - name: Import NetVirt SQL schema
+      sudo_user: postgres
+      command: psql -d netvirt -f /home/netvirt/netvirt/nvctrler/netvirt.sql
+
