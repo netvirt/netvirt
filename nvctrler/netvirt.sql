@@ -4,31 +4,30 @@
 
 SET statement_timeout = 0;
 SET client_encoding = 'UTF8';
-SET standard_conforming_strings = off;
+SET standard_conforming_strings = on;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
-SET escape_string_warning = off;
 
 --
--- Name: dnds; Type: SCHEMA; Schema: -; Owner: dnds
+-- Name: netvirt; Type: SCHEMA; Schema: -; Owner: netvirt
 --
 
-CREATE SCHEMA dnds;
+CREATE SCHEMA netvirt;
 
 
-ALTER SCHEMA dnds OWNER TO dnds;
-
---
--- Name: SCHEMA dnds; Type: COMMENT; Schema: -; Owner: dnds
---
-
-COMMENT ON SCHEMA dnds IS 'Dynamic Network Directory Service';
-
-
-SET search_path = dnds, pg_catalog;
+ALTER SCHEMA netvirt OWNER TO netvirt;
 
 --
--- Name: inet_mask(inet, inet); Type: FUNCTION; Schema: dnds; Owner: dnds
+-- Name: SCHEMA netvirt; Type: COMMENT; Schema: -; Owner: netvirt
+--
+
+COMMENT ON SCHEMA netvirt IS 'www.netvirt.org';
+
+
+SET search_path = netvirt, pg_catalog;
+
+--
+-- Name: inet_mask(inet, inet); Type: FUNCTION; Schema: netvirt; Owner: netvirt
 --
 
 CREATE FUNCTION inet_mask(inet, inet) RETURNS inet
@@ -36,83 +35,61 @@ CREATE FUNCTION inet_mask(inet, inet) RETURNS inet
     AS $_$ select set_masklen($1,i) from generate_series(0, case when family($2)=4 then 32 else 128 end) i where netmask(set_masklen($1::cidr, i)) = $2; $_$;
 
 
-ALTER FUNCTION dnds.inet_mask(inet, inet) OWNER TO dnds;
+ALTER FUNCTION netvirt.inet_mask(inet, inet) OWNER TO netvirt;
 
 --
--- Name: client_id_seq; Type: SEQUENCE; Schema: dnds; Owner: dnds
+-- Name: client_id_seq; Type: SEQUENCE; Schema: netvirt; Owner: netvirt
 --
 
 CREATE SEQUENCE client_id_seq
     START WITH 1000
     INCREMENT BY 1
-    NO MAXVALUE
     MINVALUE 0
+    NO MAXVALUE
     CACHE 1;
 
 
-ALTER TABLE dnds.client_id_seq OWNER TO dnds;
-
---
--- Name: client_id_seq; Type: SEQUENCE SET; Schema: dnds; Owner: dnds
---
-
-SELECT pg_catalog.setval('client_id_seq', 1000, false);
-
+ALTER TABLE netvirt.client_id_seq OWNER TO netvirt;
 
 SET default_tablespace = '';
 
 SET default_with_oids = false;
 
 --
--- Name: client; Type: TABLE; Schema: dnds; Owner: dnds; Tablespace: 
+-- Name: client; Type: TABLE; Schema: netvirt; Owner: netvirt; Tablespace:
 --
 
 CREATE TABLE client (
     id integer DEFAULT nextval('client_id_seq'::regclass) NOT NULL,
-    firstname text NOT NULL,
-    lastname text NOT NULL,
     email text NOT NULL,
-    company text,
-    phone text NOT NULL,
-    country text NOT NULL,
-    state_province text NOT NULL,
-    city text NOT NULL,
-    postal_code text NOT NULL,
     status integer DEFAULT 0 NOT NULL,
-    password text NOT NULL
+    password text NOT NULL,
+    "timestamp" date DEFAULT now()
 );
 
 
-ALTER TABLE dnds.client OWNER TO dnds;
+ALTER TABLE netvirt.client OWNER TO netvirt;
 
 --
--- Name: context_id_seq; Type: SEQUENCE; Schema: dnds; Owner: dnds
+-- Name: context_id_seq; Type: SEQUENCE; Schema: netvirt; Owner: netvirt
 --
 
 CREATE SEQUENCE context_id_seq
     START WITH 1
     INCREMENT BY 1
-    NO MAXVALUE
     NO MINVALUE
+    NO MAXVALUE
     CACHE 1;
 
 
-ALTER TABLE dnds.context_id_seq OWNER TO dnds;
+ALTER TABLE netvirt.context_id_seq OWNER TO netvirt;
 
 --
--- Name: context_id_seq; Type: SEQUENCE SET; Schema: dnds; Owner: dnds
---
-
-SELECT pg_catalog.setval('context_id_seq', 1, false);
-
-
---
--- Name: context; Type: TABLE; Schema: dnds; Owner: dnds; Tablespace: 
+-- Name: context; Type: TABLE; Schema: netvirt; Owner: netvirt; Tablespace:
 --
 
 CREATE TABLE context (
     id integer DEFAULT nextval('context_id_seq'::regclass) NOT NULL,
-    topology_id integer NOT NULL,
     description text NOT NULL,
     client_id integer NOT NULL,
     network cidr NOT NULL,
@@ -120,14 +97,16 @@ CREATE TABLE context (
     embassy_privatekey text NOT NULL,
     embassy_serial integer NOT NULL,
     passport_certificate text NOT NULL,
-    passport_privatekey text NOT NULL
+    passport_privatekey text NOT NULL,
+    ippool bytea NOT NULL,
+    "timestamp" date DEFAULT now()
 );
 
 
-ALTER TABLE dnds.context OWNER TO dnds;
+ALTER TABLE netvirt.context OWNER TO netvirt;
 
 --
--- Name: node; Type: TABLE; Schema: dnds; Owner: dnds; Tablespace: 
+-- Name: node; Type: TABLE; Schema: netvirt; Owner: netvirt; Tablespace:
 --
 
 CREATE TABLE node (
@@ -137,82 +116,31 @@ CREATE TABLE node (
     privatekey text NOT NULL,
     status integer DEFAULT 0,
     provcode text,
-    description text
+    description text,
+    ipaddress text NOT NULL,
+    ipsrc text,
+    "timestamp" date DEFAULT now()
 );
 
 
-ALTER TABLE dnds.node OWNER TO dnds;
+ALTER TABLE netvirt.node OWNER TO netvirt;
 
 --
--- Name: topology_id_seq; Type: SEQUENCE; Schema: dnds; Owner: dnds
+-- Name: topology_id_seq; Type: SEQUENCE; Schema: netvirt; Owner: netvirt
 --
 
 CREATE SEQUENCE topology_id_seq
     START WITH 1
     INCREMENT BY 1
-    NO MAXVALUE
     NO MINVALUE
+    NO MAXVALUE
     CACHE 1;
 
 
-ALTER TABLE dnds.topology_id_seq OWNER TO dnds;
+ALTER TABLE netvirt.topology_id_seq OWNER TO netvirt;
 
 --
--- Name: topology_id_seq; Type: SEQUENCE SET; Schema: dnds; Owner: dnds
---
-
-SELECT pg_catalog.setval('topology_id_seq', 3, true);
-
-
---
--- Name: topology; Type: TABLE; Schema: dnds; Owner: dnds; Tablespace: 
---
-
-CREATE TABLE topology (
-    id integer DEFAULT nextval('topology_id_seq'::regclass) NOT NULL,
-    name text NOT NULL
-);
-
-
-ALTER TABLE dnds.topology OWNER TO dnds;
-
---
--- Data for Name: client; Type: TABLE DATA; Schema: dnds; Owner: dnds
---
-
-COPY client (id, firstname, lastname, email, company, phone, country, state_province, city, postal_code, status, password) FROM stdin;
-\.
-
-
---
--- Data for Name: context; Type: TABLE DATA; Schema: dnds; Owner: dnds
---
-
-COPY context (id, topology_id, description, client_id, network, embassy_certificate, embassy_privatekey, embassy_serial, passport_certificate, passport_privatekey) FROM stdin;
-\.
-
-
---
--- Data for Name: node; Type: TABLE DATA; Schema: dnds; Owner: dnds
---
-
-COPY node (context_id, uuid, certificate, privatekey, status, provcode, description) FROM stdin;
-\.
-
-
---
--- Data for Name: topology; Type: TABLE DATA; Schema: dnds; Owner: dnds
---
-
-COPY topology (id, name) FROM stdin;
-1	mesh
-2	hub-and-spoke
-3	gateway
-\.
-
-
---
--- Name: client_id_key; Type: CONSTRAINT; Schema: dnds; Owner: dnds; Tablespace: 
+-- Name: client_id_key; Type: CONSTRAINT; Schema: netvirt; Owner: netvirt; Tablespace:
 --
 
 ALTER TABLE ONLY client
@@ -220,7 +148,7 @@ ALTER TABLE ONLY client
 
 
 --
--- Name: client_pkey; Type: CONSTRAINT; Schema: dnds; Owner: dnds; Tablespace: 
+-- Name: client_pkey; Type: CONSTRAINT; Schema: netvirt; Owner: netvirt; Tablespace:
 --
 
 ALTER TABLE ONLY client
@@ -228,7 +156,7 @@ ALTER TABLE ONLY client
 
 
 --
--- Name: context_id_key; Type: CONSTRAINT; Schema: dnds; Owner: dnds; Tablespace: 
+-- Name: context_id_key; Type: CONSTRAINT; Schema: netvirt; Owner: netvirt; Tablespace:
 --
 
 ALTER TABLE ONLY context
@@ -236,7 +164,7 @@ ALTER TABLE ONLY context
 
 
 --
--- Name: context_pkey; Type: CONSTRAINT; Schema: dnds; Owner: dnds; Tablespace: 
+-- Name: context_pkey; Type: CONSTRAINT; Schema: netvirt; Owner: netvirt; Tablespace:
 --
 
 ALTER TABLE ONLY context
@@ -244,7 +172,7 @@ ALTER TABLE ONLY context
 
 
 --
--- Name: passport_client_pkey; Type: CONSTRAINT; Schema: dnds; Owner: dnds; Tablespace: 
+-- Name: passport_client_pkey; Type: CONSTRAINT; Schema: netvirt; Owner: netvirt; Tablespace:
 --
 
 ALTER TABLE ONLY node
@@ -252,23 +180,7 @@ ALTER TABLE ONLY node
 
 
 --
--- Name: topology_id_key; Type: CONSTRAINT; Schema: dnds; Owner: dnds; Tablespace: 
---
-
-ALTER TABLE ONLY topology
-    ADD CONSTRAINT topology_id_key UNIQUE (id);
-
-
---
--- Name: topology_pkey; Type: CONSTRAINT; Schema: dnds; Owner: dnds; Tablespace: 
---
-
-ALTER TABLE ONLY topology
-    ADD CONSTRAINT topology_pkey PRIMARY KEY (name);
-
-
---
--- Name: context; Type: FK CONSTRAINT; Schema: dnds; Owner: dnds
+-- Name: context; Type: FK CONSTRAINT; Schema: netvirt; Owner: netvirt
 --
 
 ALTER TABLE ONLY node
@@ -276,7 +188,7 @@ ALTER TABLE ONLY node
 
 
 --
--- Name: context_client_id_fkey; Type: FK CONSTRAINT; Schema: dnds; Owner: dnds
+-- Name: context_client_id_fkey; Type: FK CONSTRAINT; Schema: netvirt; Owner: netvirt
 --
 
 ALTER TABLE ONLY context
@@ -284,31 +196,13 @@ ALTER TABLE ONLY context
 
 
 --
--- Name: context_topology_id_fkey; Type: FK CONSTRAINT; Schema: dnds; Owner: dnds
+-- Name: netvirt; Type: ACL; Schema: -; Owner: netvirt
 --
 
-ALTER TABLE ONLY context
-    ADD CONSTRAINT context_topology_id_fkey FOREIGN KEY (topology_id) REFERENCES topology(id);
-
-
---
--- Name: dnds; Type: ACL; Schema: -; Owner: dnds
---
-
-REVOKE ALL ON SCHEMA dnds FROM PUBLIC;
-REVOKE ALL ON SCHEMA dnds FROM dnds;
-GRANT ALL ON SCHEMA dnds TO dnds;
-GRANT ALL ON SCHEMA dnds TO PUBLIC;
-
-
---
--- Name: public; Type: ACL; Schema: -; Owner: postgres
---
-
-REVOKE ALL ON SCHEMA public FROM PUBLIC;
-REVOKE ALL ON SCHEMA public FROM postgres;
-GRANT ALL ON SCHEMA public TO postgres;
-GRANT ALL ON SCHEMA public TO PUBLIC;
+REVOKE ALL ON SCHEMA netvirt FROM PUBLIC;
+REVOKE ALL ON SCHEMA netvirt FROM netvirt;
+GRANT ALL ON SCHEMA netvirt TO netvirt;
+GRANT ALL ON SCHEMA netvirt TO PUBLIC;
 
 
 --
