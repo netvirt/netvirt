@@ -32,16 +32,7 @@ int dao_add_context(char *client_id,
 			const unsigned char *ippool,
 			size_t pool_size);
 
-int dao_add_client(char *firstname,
-			char *lastname,
-			char *email,
-			char *company,
-			char *phone,
-			char *country,
-			char *state_province,
-			char *city,
-			char *postal_code,
-			char *password);
+int dao_add_client(char *email, char *password);
 
 int dao_fetch_context_by_client_id_desc(char *client_id, char *description,
 					void *data, int (*cb_data_handler)(void *data,

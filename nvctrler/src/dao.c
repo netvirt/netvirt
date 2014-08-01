@@ -58,8 +58,8 @@ int dao_prepare_statements()
 	result = PQprepare(dbconn,
 			"dao_add_client",
 			"INSERT INTO client "
-			"(firstname, lastname, email, company, phone, country, state_province, city, postal_code, password) "
-			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, crypt($10, gen_salt('bf')));",
+			"(email, password) "
+			"VALUES ($1, crypt($2, gen_salt('bf')));",
 			0,
 			NULL);
 
@@ -351,52 +351,26 @@ int dao_update_node_status(char *context_id, char *uuid, char *status, char *ips
 	return 0;
 }
 
-int dao_add_client(char *firstname,
-			char *lastname,
-			char *email,
-			char *company,
-			char *phone,
-			char *country,
-			char *state_province,
-			char *city,
-			char *postal_code,
-			char *password)
+int dao_add_client(char *email, char *password)
 {
 
-	const char *paramValues[10];
-	int paramLengths[10];
+	const char *paramValues[2];
+	int paramLengths[2];
 	PGresult *result = NULL;
 
-	if (!firstname || !lastname || !email || !company || !phone ||
-		!country || !state_province || !city || !postal_code || !password) {
+	if (!email || !password) {
 
 		jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
-	paramValues[0] = firstname;
-	paramValues[1] = lastname;
-	paramValues[2] = email;
-	paramValues[3] = company;
-	paramValues[4] = phone;
-	paramValues[5] = country;
-	paramValues[6] = state_province;
-	paramValues[7] = city;
-	paramValues[8] = postal_code;
-	paramValues[9] = password;
+	paramValues[0] = email;
+	paramValues[1] = password;
 
-	paramLengths[0] = strlen(firstname);
-	paramLengths[1] = strlen(lastname);
-	paramLengths[2] = strlen(email);
-	paramLengths[3] = strlen(company);
-	paramLengths[4] = strlen(phone);
-	paramLengths[5] = strlen(country);
-	paramLengths[6] = strlen(state_province);
-	paramLengths[7] = strlen(city);
-	paramLengths[8] = strlen(postal_code);
-	paramLengths[9] = strlen(password);
+	paramLengths[0] = strlen(email);
+	paramLengths[1] = strlen(password);
 
-	result = PQexecPrepared(dbconn, "dao_add_client", 10, paramValues, paramLengths, NULL, 1);
+	result = PQexecPrepared(dbconn, "dao_add_client", 2, paramValues, paramLengths, NULL, 1);
 
 	if (!result) {
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));

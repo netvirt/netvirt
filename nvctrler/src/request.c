@@ -108,42 +108,14 @@ void AddRequest_client(DNDSMessage_t *msg)
 
 	int ret = 0;
 	size_t length = 0;
-	uint32_t id = 0;
-	char *password = NULL;
-	char *firstname = NULL;
-	char *lastname = NULL;
+
 	char *email = NULL;
-	char *company = NULL;
-	char *phone = NULL;
-	char *country = NULL;
-	char *stateProvince = NULL;
-	char *city = NULL;
-	char *postalCode = NULL;
-	uint8_t status = 0;
+	char *password = NULL;
 
-        Client_get_id(obj, &id);
         Client_get_password(obj, &password, &length);
-        Client_get_firstname(obj, &firstname, &length);
-        Client_get_lastname(obj, &lastname, &length);
         Client_get_email(obj, &email, &length);
-        Client_get_company(obj, &company, &length);
-        Client_get_phone(obj, &phone, &length);
-        Client_get_country(obj, &country, &length);
-        Client_get_stateProvince(obj, &stateProvince, &length);
-        Client_get_city(obj, &city, &length);
-        Client_get_postalCode(obj, &postalCode, &length);
-        Client_get_status(obj, &status);
 
-	ret = dao_add_client(firstname,
-			lastname,
-			email,
-			company,
-			phone,
-			country,
-			stateProvince,
-			city,
-			postalCode,
-			password);
+	ret = dao_add_client(email, password);
 
 	if (ret == -1) {
 		jlog(L_ERROR, "failed to add client");
