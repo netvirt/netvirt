@@ -159,12 +159,17 @@ int ctrler_init(struct ctrler_cfg *cfg)
 	ctrler_cfg->ctrler_running = 1;
 
 	ctrler_passport = pki_passport_load_from_file(ctrler_cfg->certificate, ctrler_cfg->privatekey, ctrler_cfg->trusted_cert);
+	if (ctrler_passport == NULL) {
+		jlog(L_ERROR, "failed to load passport, make sure those files exist:\n\t%s\n\t%s\n\t%s",
+				ctrler_cfg->certificate, ctrler_cfg->privatekey, ctrler_cfg->trusted_cert);
+		return -1;
+	}
 
 	ctrler_netc = net_server(ctrler_cfg->listen_ip, ctrler_cfg->listen_port, NET_PROTO_TCP, NET_SECURE_RSA, ctrler_passport,
 			on_connect, on_disconnect, on_input, on_secure);
 
 	if (ctrler_netc == NULL) {
-		jlog(L_NOTICE, "net_server failed");
+		jlog(L_ERROR, "net_server failed");
 		return -1;
 	}
 

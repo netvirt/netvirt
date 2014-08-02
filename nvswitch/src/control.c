@@ -395,6 +395,11 @@ int ctrl_init(struct switch_cfg *cfg)
 	jlog(L_NOTICE, "control initializing...");
 
 	switch_passport = pki_passport_load_from_file(switch_cfg->certificate, switch_cfg->privatekey, switch_cfg->trusted_cert);
+        if (switch_passport == NULL) {
+                jlog(L_ERROR, "failed to load passport, make sure those files exist:\n\t%s\n\t%s\n\t%s",
+                                switch_cfg->certificate, switch_cfg->privatekey, switch_cfg->trusted_cert);
+                return -1;
+        }
 	ctrl_netc = net_client(switch_cfg->ctrler_ip, switch_cfg->ctrler_port, NET_PROTO_TCP, NET_SECURE_RSA, switch_passport,
 				on_disconnect, on_input, on_secure);
 
