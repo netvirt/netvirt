@@ -226,8 +226,6 @@ static void handle_SearchResponse_node(DNDSMessage_t *msg)
 	uint32_t contextId;
 	context_t *context;
 
-	printf("Handle search response !\n");
-
 	SearchResponse_get_object_count(msg, &count);
 	while (count-- > 0) {
 		ret = SearchResponse_get_object(msg, &object);
@@ -237,7 +235,6 @@ static void handle_SearchResponse_node(DNDSMessage_t *msg)
 			Node_get_contextId(object, &contextId);
 
 			context = context_lookup(contextId);
-			printf("context: %p\n", context);
 			if (context) {
 				ctable_insert(context->atable, uuid, context->access_session);
 
@@ -287,17 +284,14 @@ static void handle_SearchResponse(DNDSMessage_t *msg)
 {
 	e_SearchType SearchType;
 
-	printf("search response\n");
 	SearchResponse_get_searchType(msg, &SearchType);
 
 	if (SearchType == SearchType_all) {
-		printf("search type sequence\n");
 		handle_SearchResponse_Context(msg);
 		transmit_search_node();
 	}
 
 	if (SearchType == SearchType_sequence) {
-		printf("search type sequence\n");
 		handle_SearchResponse_node(msg);
 		switch_cfg->ctrl_initialized = 1;
 	}
@@ -312,7 +306,6 @@ static void dispatch_operation(DNDSMessage_t *msg)
 	dsop_PR operation;
 	DSMessage_get_operation(msg, &operation);
 
-	printf("dispatch operation\n");
 	switch (operation) {
 	case dsop_PR_delRequest:
 		delRequest(msg);
