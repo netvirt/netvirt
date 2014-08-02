@@ -27,6 +27,7 @@
 
 #include "ctrler.h"
 #include "dao.h"
+#include "pki.h"
 
 #define CONFIG_FILE "/etc/netvirt/nvctrler.conf"
 
@@ -165,8 +166,11 @@ int main(int argc, char *argv[])
 
 	signal(SIGINT, int_handler);
 
-	while ((opt = getopt(argc, argv, "dqvh")) != -1) {
+	while ((opt = getopt(argc, argv, "bdqvh")) != -1) {
 		switch (opt) {
+		case 'b':
+			pki_bootstrap_certs();
+			return 0;
 		case 'd':
 			daemon = 1;
 			break;
@@ -179,6 +183,7 @@ int main(int argc, char *argv[])
 		default:
 		case 'h':
                         fprintf(stdout, "netvirt-ctrler:\n"
+					"-b\t\tbootstrap certificates\n"
 					"-d\t\tdaemonize\n"
                                         "-q\t\tquiet mode\n"
                                         "-v\t\tshow version\n"

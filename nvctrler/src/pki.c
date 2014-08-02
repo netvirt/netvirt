@@ -340,28 +340,127 @@ void pki_write_privatekey_in_mem(EVP_PKEY *privatekey, char **privatekey_ptr, lo
 	BIO_free(bio_mem);
 }
 
-void pki_write_certificate(X509 *certificate, const char *filename)
+int pki_write_certificate(X509 *certificate, const char *filename)
 {
+	int ret = 0;
 	BIO *bio_file = NULL;
 
 	bio_file = BIO_new_file(filename, "w");
-	PEM_write_bio_X509(bio_file, certificate);
-
+	if (bio_file == NULL) {
+		ret = -1;
+		goto out;
+	}
+	ret = PEM_write_bio_X509(bio_file, certificate);
+	if (ret != 1) {
+		ret = -1;
+	}
 	BIO_free(bio_file);
+out:
+	return ret;
 }
 
-void pki_write_privatekey(EVP_PKEY *privatekey, const char *filename)
+int pki_write_privatekey(EVP_PKEY *privatekey, const char *filename)
 {
+	int ret = 0;
 	BIO *bio_file = NULL;
 
 	bio_file = BIO_new_file(filename, "w");
-	PEM_write_bio_PrivateKey(bio_file, privatekey, NULL, NULL, 0, 0, NULL);
-
+	if (bio_file == NULL) {
+		ret = -1;
+		goto out;
+	}
+	ret = PEM_write_bio_PrivateKey(bio_file, privatekey, NULL, NULL, 0, 0, NULL);
+	if (ret != 1) {
+		ret = -1;
+		goto out;
+	}
 	BIO_free(bio_file);
+out:
+	return ret;
 }
 
 void pki_init()
 {
 	//SSL_library_init();
 	//SSL_load_error_strings();
+}
+
+int pki_bootstrap_certs()
+{
+	uint32_t expiration_delay;
+	long size;
+	int ret = 0;
+	char *cert_ptr, *pvkey_ptr;
+
+	expiration_delay = pki_expiration_delay(10);
+
+	/* switch (nvs) <--> controller (nvc) <--> application (nvp) */
+	digital_id_t *nvs_digital_id, *nvc_digital_id, *nvp_digital_id;
+
+	nvs_digital_id = pki_digital_id("netvirt-switch", "", "", "", "admin@netvirt.org", "www.NetVirt.org");
+	nvc_digital_id = pki_digital_id("netvirt-controller", "", "", "", "admin@netvirt.org", "www.NetVirt.org");
+	nvp_digital_id = pki_digital_id("netvirt-application", "", "", "", "admin@netvirt.org", "www.NetVirt.org");
+
+	embassy_t *nvc_embassy;
+	nvc_embassy = pki_embassy_new(nvc_digital_id, expiration_delay);
+
+	passport_t *nvs_passport;
+	nvs_passport = pki_embassy_deliver_passport(nvc_embassy, nvs_digital_id, expiration_delay);
+
+	passport_t *nvp_passport;
+	nvp_passport = pki_embassy_deliver_passport(nvc_embassy, nvp_digital_id, expiration_delay);
+
+	pki_write_certificate_in_mem(nvc_embassy->certificate, &cert_ptr, &size);
+	pki_write_privatekey_in_mem(nvc_embassy->keyring, &pvkey_ptr, &size);
+
+	ret = pki_write_certificate(nvc_embassy->certificate, "/etc/netvirt/certs/netvirt-controller-cert.pem");
+	if (ret == -1) {
+		fprintf(stderr, "can't write: /etc/netvirt/certs/netvirt-controller-cert.pem\n");
+		goto out;
+	} else {
+		fprintf(stdout, "/etc/netvirt/certs/netvirt-controller-cert.pem... done\n");
+	}
+	ret = pki_write_privatekey(nvc_embassy->keyring, "/etc/netvirt/certs/netvirt-controller-privkey.pem");
+	if (ret == -1) {
+		fprintf(stderr, "can't write: /etc/netvirt/certs/netvirt-controller-privkey.pem\n");
+		goto out;
+	} else {
+		fprintf(stdout, "/etc/netvirt/certs/netvirt-controller-privkey.pem... done\n");
+	}
+
+	ret = pki_write_certificate(nvs_passport->certificate, "/etc/netvirt/certs/netvirt-switch-cert.pem");
+	if (ret == -1) {
+		fprintf(stderr, "can't write: /etc/netvirt/certs/netvirt-switch-cert.pem\n");
+		goto out;
+	} else {
+		fprintf(stdout, "/etc/netvirt/certs/netvirt-switch-cert.pem... done\n");
+	}
+	ret = pki_write_privatekey(nvs_passport->keyring, "/etc/netvirt/certs/netvirt-switch-privkey.pem");
+	if (ret == -1) {
+		fprintf(stderr, "can't write: /etc/netvirt/certs/netvirt-switch-privkey.pem\n");
+		goto out;
+	} else {
+		fprintf(stdout, "/etc/netvirt/certs/netvirt-switch-privkey.pem... done\n");
+	}
+
+	ret = pki_write_certificate(nvp_passport->certificate, "/etc/netvirt/certs/netvirt-application-cert.pem");
+	if (ret == -1) {
+		fprintf(stderr, "can't write: /etc/netvirt/certs/netvirt-application-cert.pem\n");
+		goto out;
+	} else {
+		fprintf(stdout, "/etc/netvirt/certs/netvirt-application-cert.pem... done\n");
+	}
+	ret = pki_write_privatekey(nvp_passport->keyring, "/etc/netvirt/certs/netvirt-application-privkey.pem");
+	if (ret == -1) {
+		fprintf(stderr, "/etc/netvirt/certs/netvirt-application-privkey.pem\n");
+		goto out;
+	} else {
+		fprintf(stdout, "/etc/netvirt/certs/netvirt-application-privkey.pem... done\n");
+	}
+out:
+	pki_embassy_free(nvc_embassy);
+	pki_passport_free(nvs_passport);
+	pki_passport_free(nvp_passport);
+
+	return 0;
 }
