@@ -520,8 +520,7 @@ void CB_searchRequest_context(void *msg,
 	Context_set_serverPrivkey(objContext, serverPrivkey, strlen(serverPrivkey));
 	Context_set_trustedCert(objContext, trustedCert, strlen(trustedCert));
 
-	SearchResponse_set_searchType(msg, SearchType_all);
-		SearchResponse_add_object(msg, objContext);
+	SearchResponse_add_object(msg, objContext);
 }
 
 void searchRequest_context(struct session *session)
@@ -538,6 +537,8 @@ void searchRequest_context(struct session *session)
         SearchResponse_set_result(msg, DNDSResult_success);
 
 	dao_fetch_context(msg, CB_searchRequest_context);
+
+	SearchResponse_set_searchType(msg, SearchType_all);
 
 	net_send_msg(session->netc, msg);
 	DNDSMessage_del(msg);
@@ -574,6 +575,8 @@ void searchRequest_node_sequence(struct session *session, DNDSMessage_t *req_msg
 
 	SearchRequest_get_object_count(req_msg, &count);
 	if (count == 0) {
+		net_send_msg(session->netc, msg);
+		DNDSMessage_del(msg);
 		return;
 	}
 
