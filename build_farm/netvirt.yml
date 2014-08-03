@@ -34,6 +34,9 @@
     - name: Install python-psycopg2
       apt: name=python-psycopg2 state=present
 
+    - name: Install postgresql-contrib-9.1 (pgcrypto)
+      apt: name=postgresql-contrib-9.1 state=present
+
     - name: Checkout NetVirt
       git: repo=https://github.com/netvirt/netvirt.git dest=/home/netvirt/netvirt
 
@@ -79,6 +82,10 @@
     - name: Import NetVirt SQL schema
       sudo_user: postgres
       command: psql -d netvirt -f /home/netvirt/netvirt/nvctrler/netvirt.sql
+
+    - name: Load pgcrypto extension
+      sudo_user: postgres
+      command: psql -d netvirt -c "CREATE EXTENSION pgcrypto;"
 
     - name: create build dir
       file: state=directory path=/etc/netvirt/certs/
