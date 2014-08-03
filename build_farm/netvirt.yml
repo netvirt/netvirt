@@ -55,11 +55,14 @@
     - name: create build dir
       file: state=directory path=/home/netvirt/netvirt/build.serv
 
-    - name: Compile NetVirt 1/2
+    - name: Compile NetVirt 1/3
       command: chdir=/home/netvirt/netvirt/build.serv cmake .. -DWITH_NVAGENT=OFF -DWITH_NVSWITCH=ON -DWITH_NVCTRLER=ON
 
-    - name: Compile NetVirt 2/2
+    - name: Compile NetVirt 2/3
       command: chdir=/home/netvirt/netvirt/build.serv make
+
+    - name: Compile NetVirt 3/3
+      command: chdir=/home/netvirt/netvirt/build.serv make install
 
     - name: ensure database is created
       sudo_user: postgres
@@ -77,3 +80,8 @@
       sudo_user: postgres
       command: psql -d netvirt -f /home/netvirt/netvirt/nvctrler/netvirt.sql
 
+    - name: create build dir
+      file: state=directory path=/etc/netvirt/certs/
+
+    - name: Bootstrap NetVirt certificates
+      command: netvirt-ctrler -b
