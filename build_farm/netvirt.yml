@@ -44,7 +44,7 @@
       command: chdir=/home/netvirt/netvirt/udt4 make
 
     - name: Build libconfig 1/3
-      command: chdir=/home/netvirt/netvirt/libconfig/lib touch *.c
+      command: chdir=/home/netvirt/netvirt/libconfig/lib touch -a *.c
 
     - name: Build libconfig 2/3
       shell: chdir=/home/netvirt/netvirt/libconfig ./configure
