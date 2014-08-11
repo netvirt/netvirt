@@ -1,40 +1,29 @@
+ INSTALLATION ON THE DEBIAN LINUX PLATEFORM
+ ------------------------------------------
 
- INSTALLATION ON THE LINUX PLATEFORM
- -----------------------------------
+ The following instructions are aimed at developers who want to get up and running quickly.
 
- Please use the build_farm scripts to build the client.
+ NetVirt Agent
+ -------------
 
+ The easiest way to compile the NetVirt Agent on Debian is
+ by using the build farm script. You can inspect the script
+ and see what it does if you need to build the client on another
+ Linux distribution/platform.
 
- Notes on installing the server.
- ---------------------------------------
- apt-get install libpq-dev
- apt-get install libossp-uuid-dev
- apt-get install libssl-dev
+ wget https://raw.githubusercontent.com/netvirt/netvirt/master/build_farm/build-debian.sh
+ sudo ./build-debian.sh
 
- Database - postgresql
- ---------------------------------------
- apt-get install postgresql
- apt-get install postgresql-contrib
+ NetVirt Server
+ --------------
 
-	# You first need to log into postgreSQL with the user 'postgres'
-		$ su - postgres
-		$ psql
+ We provide an Ansible playbook that you can use to setup a NetVirt
+ server on Debian. Using Vagrant and virtualbox it is possible to
+ create a fresh Debian install and tell Ansible to provision it.
 
-	# Load the pgcrypto module
-	\i /usr/share/postgresql/8.4/contrib/pgcrypto.sql
+ mkdir vm-debian-netvirt; cd vm-debian-netvirt
+ wget https://raw.githubusercontent.com/netvirt/netvirt/master/build_farm/netvirt.yml
+ vagrant init vogtmann/debian-7.5-32
+ vagrant up
+ ansible-playbook -i 127.0.0.1:2222, --private-key ~/.vagrant.d/insecure_private_key -u vagrant -v ./netvirt.yml
 
-	# Create the 'dnds' user
-	CREATE USER dnds WITH CREATEDB PASSWORD 'a_strong_password';
-	\du
-
-	# Now log into postgreSQL using your 'dnds' user, into the 'postgres' database
-	psql --host=127.0.0.1 -U dnds -W postgres
-
-	# Create the 'dnds' database container
-	CREATE DATABASE dnds;
-	\l
-	\c dnds;
-
-	# Load the 'dnds' schema into the 'dnds' database container
-	psql --host=127.0.0.1 -U dnds -W < dnds.sql
-	\dt
