@@ -40,10 +40,12 @@ function build_nvagent () {
     build_dir=build.mac.gui
     mcd "$build_dir"
     rm -rf *
+    set -e
     cmake ..
     make nvagent
     make package
     rsync *.dmg "$release_dir"
+    set +e
     popd
 }
 {% endblock %}
