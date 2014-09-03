@@ -68,16 +68,16 @@ function build_nvagent () {
     build_dir=build.windows.gui
     mcd "$build_dir"
     rm -rf *
-    cmake -DCMAKE_TOOLCHAIN_FILE=./toolchain-mingw32.cmake \
+    cmake -DCMAKE_TOOLCHAIN_FILE=win32/toolchain-mingw32.cmake \
           -DOPENSSL_ROOT_DIR="$openssl_dir/mingw32" \
           -DCROSS_COMPILER="i686-w64-mingw32" \
           -DCMAKE_FIND_ROOT_PATH="$qt_root" \
           ..
-    make nvagent
+    make netvirt-agent
     makensis -DOPENSSL_PATH="$openssl_dir/mingw32/lib" \
              -DQT_PATH="$qt_root" \
              -DBDIR="$build_dir" \
-             ../package_win32.nsi
+             ../win32/package_win32.nsi
     rsync *.exe "$release_dir"
     popd
 }

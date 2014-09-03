@@ -22,8 +22,8 @@ SetCompressor /FINAL /SOLID lzma
 ; Include Modern UI
 	!include "MUI2.nsh"
 
-	!define MUI_ICON "./dnc/src/gui/rc/dnc.ico"
-	!define MUI_UNICON "./dnc/src/gui/rc/dnc.ico"
+	!define MUI_ICON "../nvagent/src/gui/rc/nvagent.ico"
+	!define MUI_UNICON "../nvagent/src/gui/rc/nvagent.ico"
 
 	!define MUI_HEADERIMAGE
 	!define MUI_HEADERIMAGE_RIGH
@@ -75,7 +75,7 @@ SetCompressor /FINAL /SOLID lzma
 	Section "DynVPN client" dncExe
 		setOutPath $INSTDIR
 
-		File ${BDIR}/dnc/src/dnc.exe
+		File ${BDIR}/nvagent/src/nvagent.exe
 		File udt4/src/libudt.dll
 		File libconfig-win32/lib/.libs/libconfig-9.dll
 		File tapcfg-win32/build/tapcfg.dll
