@@ -99,6 +99,7 @@ function build_nvagent () {
     build_dir=build.windows.gui
     mcd "$build_dir"
     rm -rf *
+    set -e
     cmake -DCMAKE_TOOLCHAIN_FILE=win32/toolchain-mingw32.cmake \
           -DOPENSSL_ROOT_DIR="$openssl_dir/mingw32" \
           -DCROSS_COMPILER="i686-w64-mingw32" \
@@ -110,6 +111,7 @@ function build_nvagent () {
              -DBDIR="$build_dir" \
              ../win32/package_win32.nsi
     rsync *.exe "$release_dir"
+    set +e
     popd
 }
 

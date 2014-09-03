@@ -60,20 +60,24 @@ function build_dependencies () {
 function build_nvagent_cli () {
     mcd build.linux.cli
     rm -rf *
+    set -e
     cmake .. -DWITH_GUI=OFF
     make nvagent
     make package
     rsync *.deb "$release_dir"
+    set +e
     popd
 }
 
 function build_nvagent_gui () {
     mcd build.linux.gui
     rm -rf *
+    set -e
     cmake ..
     make nvagent
     make package
     rsync *.deb "$release_dir"
+    set +e
     popd
 }
 
