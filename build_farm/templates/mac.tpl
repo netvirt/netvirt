@@ -23,7 +23,7 @@ function install_build_dependencies() {
 {% endblock %}
 
 {% block build_udt4 %}
-    [ -f src/libudt.dylib ] || make os=OS_X arch=AMD64
+    [ -f src/libudt.dylib ] || make os=OSX arch=AMD64
 {% endblock %}
 
 {% block build_libconfig %}
