@@ -56,7 +56,7 @@ function fix_libconfig_git () {
 
 function build_dependencies () {
     pushd udt4
-    [ -f src/libudt.dylib ] || make os=OS_X arch=AMD64
+    [ -f src/libudt.dylib ] || make os=OSX arch=AMD64
     popd
 
     pushd libconfig
