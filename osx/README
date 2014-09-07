@@ -1,0 +1,7 @@
+How to create a new launcher package
+====================================
+
+- Write an Applescript.
+- Open it with Applescript Editor
+- File > Export > Application
+- Replace the .icns icon inside the created application

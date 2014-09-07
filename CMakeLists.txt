@@ -37,7 +37,7 @@ if(COMMAND cmake_policy)
 endif(COMMAND cmake_policy)
 
 if(APPLE)
-	set(apple_package netvirt.app) #NetVirt_Agent.app)
+	set(apple_package netvirt-agent.app)
 	set(library_dest_dir ${apple_package}/Contents/MacOS)
 	set(qtconf_dest_dir ${apple_package}/Contents/Resources)
 else()
