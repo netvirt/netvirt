@@ -29,6 +29,7 @@
 
 static struct agent_cfg *agent_cfg;
 
+#if defined(__unix__) && !defined(__APPLE__)
 static int
 mkfullpath(const char *fullpath)
 {
@@ -52,6 +53,7 @@ mkfullpath(const char *fullpath)
 	}
 	return 0;
 }
+#endif
 
 char *agent_config_get_fullname(const char *profile, const char *file)
 {
