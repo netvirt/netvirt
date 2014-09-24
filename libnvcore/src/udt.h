@@ -1,7 +1,7 @@
 /*
- * Dynamic Network Directory Service
+ * NetVirt - Network Virtualization Platform
  * Copyright (C) 2009-2014
- * Nicolas J. Bouliane <nib@dynvpn.com>
+ * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,8 +13,8 @@
  * GNU Affero General Public License for more details
  */
 
-#ifndef DNDS_UDTBUS_H
-#define DNDS_UDTBUS_H
+#ifndef UDTBUS_H
+#define UDTBUS_H
 
 #include <stdint.h>
 

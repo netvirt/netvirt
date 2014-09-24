@@ -1,7 +1,7 @@
 /*
- * Dynamic Network Directory Service
+ * NetVirt - Network Virtualization Platform
  * Copyright (C) 2009-2014
- * Nicolas J. Bouliane <nib@dynvpn.com>
+ * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,8 +13,8 @@
  * GNU Affero General Public License for more details
  */
 
-#ifndef DNDS_NET_H
-#define DNDS_NET_H
+#ifndef NETBUS_H
+#define NETBUS_H
 
 #ifndef __USE_BSD
 #define __USE_BSD
@@ -120,4 +120,4 @@ void net_p2p(const char *listen_addr,
 		void (*on_input)(netc_t *),
 		void *ext_ptr);
 
-#endif /* DNDS_NET_H */
+#endif /* NETBUS_H */
