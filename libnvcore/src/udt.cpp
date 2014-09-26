@@ -341,8 +341,21 @@ void *udtbus_rendezvous(void *args)
 	struct p2p_args *p2p_args = (struct p2p_args *)args;
 	int mss = 1450;
 	bool rdv = true;
+	UDTSOCKET socket = 0;
 
 	nb_port = sizeof(p2p_args->port)/sizeof(p2p_args->port[0]);
+
+	peer = (peer_t *)calloc(sizeof(peer_t), 1);
+	peer->type = UDTBUS_CLIENT;
+	peer->on_connect = p2p_args->on_connect;
+	peer->on_disconnect = p2p_args->on_disconnect;
+	peer->on_input = p2p_args->on_input;
+	peer->recv = udtbus_recv;
+	peer->send = udtbus_send;
+	peer->disconnect = udtbus_disconnect;
+	peer->buffer = NULL;
+	peer->buffer_offset = 0;
+	peer->ext_ptr = p2p_args->ext_ptr;
 
 retry:
 	jlog(L_NOTICE, "trying port %s...", p2p_args->port[port_itr]);
@@ -354,19 +367,20 @@ retry:
 
 	ret = getaddrinfo(p2p_args->listen_addr, p2p_args->port[port_itr], &hints, &local);
 	if (ret != 0) {
-		jlog(L_WARNING, "illegal port number or port is busy: %s", gai_strerror(ret));
-		freeaddrinfo(local);
-		return NULL;
+		jlog(L_ERROR, "illegal port number or port is busy");
+		p2p_failed = 1;
+		goto out;
 	}
 
-	UDTSOCKET socket = UDT::socket(local->ai_family, local->ai_socktype, local->ai_protocol);
+	socket = UDT::socket(local->ai_family, local->ai_socktype, local->ai_protocol);
 
 	UDT::setsockopt(socket, 0, UDT_MSS, &mss, sizeof(int));
 	UDT::setsockopt(socket, 0, UDT_RENDEZVOUS, &rdv, sizeof(bool));
 	if (UDT::ERROR == UDT::bind(socket, local->ai_addr, local->ai_addrlen)) {
 		jlog(L_WARNING, "bind: %s", UDT::getlasterror().getErrorMessage());
 		freeaddrinfo(local);
-		return NULL;
+		p2p_failed = 1;
+		goto out;
 	}
 
 	freeaddrinfo(local);
@@ -380,36 +394,32 @@ retry:
 	ret = getaddrinfo(p2p_args->dest_addr, p2p_args->port[port_itr], &hints, &server);
 	if (ret != 0) {
 		jlog(L_WARNING, "incorrect server address: %s", gai_strerror(ret));
-		freeaddrinfo(server);
-		return NULL;
+		p2p_failed = 1;
+		goto out;
 	}
 
 	if (UDT::connect(socket, server->ai_addr, server->ai_addrlen) == UDT::ERROR) {
 		jlog(L_ERROR, "%s", UDT::getlasterror().getErrorMessage());
+
 		UDT::close(socket);
 
 		if (port_itr < nb_port-1) {
 			port_itr++;
+			freeaddrinfo(server);
 			goto retry;
 		}
 
 		p2p_failed = 1;
+
+	} else {
+
+		peer->socket = socket;
+		UDT::set_ext_ptr(socket, (void *)peer);
+		udtbus_ion_add(socket);
 	}
 
 	freeaddrinfo(server);
-
-	peer = (peer_t *)calloc(sizeof(peer_t), 1);
-	peer->type = UDTBUS_CLIENT;
-	peer->socket = socket;
-	peer->on_connect = p2p_args->on_connect;
-	peer->on_disconnect = p2p_args->on_disconnect;
-	peer->on_input = p2p_args->on_input;
-	peer->recv = udtbus_recv;
-	peer->send = udtbus_send;
-	peer->disconnect = udtbus_disconnect;
-	peer->buffer = NULL;
-	peer->buffer_offset = 0;
-	peer->ext_ptr = p2p_args->ext_ptr;
+out:
 
 	free(p2p_args->listen_addr);
 	free(p2p_args->dest_addr);
@@ -419,18 +429,13 @@ retry:
 	free(p2p_args);
 
 	if (p2p_failed) {
-		/* this seem a bit redundant, but it keeps the logic flow clear
-		   without using any obscure shortcut to free everything in case
-		   of a p2p failure */
 		jlog(L_NOTICE, "p2p failed");
 		on_disconnect(peer);
 		return NULL;
+
+	} else {
+		peer->on_connect(peer);
 	}
-
-	UDT::set_ext_ptr(socket, (void *)peer);
-	udtbus_ion_add(socket);
-
-	peer->on_connect(peer);
 
 	return NULL;
 }

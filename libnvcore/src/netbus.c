@@ -769,7 +769,6 @@ void net_p2p(const char *listen_addr,
 	p2p_args->listen_addr = strdup(listen_addr);
 	p2p_args->dest_addr = strdup(dest_addr);
 
-	/* XXX hardcoded p2p sequence */
 	p2p_args->port[0] = strdup(port);
 	p2p_args->port[1] = strdup("443");
 	p2p_args->port[2] = strdup("80");
