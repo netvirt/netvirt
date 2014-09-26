@@ -28,6 +28,7 @@
 #include "agent.h"
 
 static struct agent_cfg *agent_cfg;
+static config_t cfg;
 
 #if defined(__unix__) && !defined(__APPLE__)
 static int
@@ -97,10 +98,26 @@ int agent_config_toggle_auto_connect(int status)
 	return 0;
 }
 
+void agent_config_destroy(struct agent_cfg *agent_cfg)
+{
+	config_destroy(&cfg);
+
+	free(agent_cfg->profile);
+	free(agent_cfg->agent_conf);
+	free(agent_cfg->ip_conf);
+
+	free(agent_cfg->certificate);
+	free(agent_cfg->privatekey);
+	free(agent_cfg->trusted_cert);
+
+	free(agent_cfg->server_port);
+	free(agent_cfg->server_address);
+}
+
 int agent_config_init(struct agent_cfg *_agent_cfg)
 {
+	const char *tmp;
 	uint8_t default_conf = 0;
-	config_t cfg;
 	config_init(&cfg);
 
 	agent_cfg = _agent_cfg;
@@ -151,15 +168,19 @@ int agent_config_init(struct agent_cfg *_agent_cfg)
 		jlog_init_file(agent_cfg->log_file);
 	}
 
+
         if (agent_cfg->server_address == NULL &&
-		(default_conf ||
-		!config_lookup_string(&cfg, "server_address", &agent_cfg->server_address))) {
+		(default_conf || !config_lookup_string(&cfg, "server_address", &tmp))) {
 			agent_cfg->server_address = strdup("bhs1.dynvpn.com");
+	} else if (agent_cfg->server_address == NULL) {
+			agent_cfg->server_address = strdup(tmp);
 	}
 	jlog(L_DEBUG, "server_address = \"%s\";", agent_cfg->server_address);
 
-        if (default_conf || !config_lookup_string(&cfg, "server_port", &agent_cfg->server_port)) {
+        if (default_conf || !config_lookup_string(&cfg, "server_port", &tmp)) {
 		agent_cfg->server_port = strdup("9090");
+	} else if (agent_cfg->server_port == NULL) {
+		agent_cfg->server_port = strdup(tmp);
 	}
 	jlog(L_DEBUG, "server_port = \"%s\";", agent_cfg->server_port);
 
@@ -167,5 +188,6 @@ int agent_config_init(struct agent_cfg *_agent_cfg)
 		agent_cfg->auto_connect = 0;
 	}
 
+	config_destroy(&cfg);
 	return 0;
 }

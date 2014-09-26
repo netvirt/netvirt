@@ -68,7 +68,13 @@ static void p2p_on_disconnect(netc_t *netc)
 	jlog(L_NOTICE, "p2p disconnected");
 
 	p2p_session = netc->ext_ptr;
-	ftable_erase(ftable, p2p_session->mac_dst);
+
+	if (p2p_session != ftable_find(ftable, p2p_session->mac_dst)) {
+		/* never been added to the table */
+		free(p2p_session);
+	} else {
+		ftable_erase(ftable, p2p_session->mac_dst);
+	}
 }
 
 void p2p_on_input(netc_t *netc)
@@ -114,6 +120,11 @@ void op_p2p_request(struct session *session, DNDSMessage_t *msg)
 		p2p_on_connect, p2p_on_secure, p2p_on_disconnect, p2p_on_input, (void *)p2p_session);
 
 	return;
+}
+
+void p2p_fini()
+{
+	ftable_delete(ftable);
 }
 
 void p2p_init()

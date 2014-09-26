@@ -41,7 +41,6 @@
 
 struct agent_cfg *agent_cfg;
 struct session *master_session;
-static int g_shutdown = 0;
 char ipAddress[INET_ADDRSTRLEN];
 
 void on_input(netc_t *netc);
@@ -186,7 +185,7 @@ void *try_to_reconnect(void *ptr)
 
 	session = (struct session *)ptr;
 
-	do {
+	while (agent_cfg->agent_running) {
 #if defined(_WIN32)
 		Sleep(5);
 #else
@@ -203,7 +202,7 @@ void *try_to_reconnect(void *ptr)
 			retry_netc->ext_ptr = session;
 			return NULL;
 		}
-	} while (!g_shutdown);
+	}
 
 	return NULL;
 }
@@ -232,7 +231,6 @@ static void on_disconnect(netc_t *netc)
 	if (agent_cfg->ev.on_disconnect)
 		agent_cfg->ev.on_disconnect();
 
-	jlog(L_NOTICE, "connection retry...");
 	pthread_create(&thread_reconnect, NULL, try_to_reconnect, (void *)session);
 	pthread_detach(thread_reconnect);
 }
@@ -453,11 +451,12 @@ static void dispatch_op(struct session *session, DNDSMessage_t *msg)
 
 static void *agent_loop(void *session)
 {
-	while (!g_shutdown) {
+	while (agent_cfg->agent_running) {
 		udtbus_poke_queue();
 		if (tapcfg_wait_readable(((struct session *)session)->tapcfg, 0))
 			tunnel_in((struct session *)session);
 	}
+
 	return NULL;
 }
 
@@ -467,11 +466,30 @@ void agent_init_async(struct agent_cfg *cfg)
 	pthread_create(&agent_init_async, NULL, agent_init, (void*)cfg);
 }
 
+static pthread_t thread_reconnect;
+static pthread_t thread_loop;
+static struct session *session;
+
+void agent_fini()
+{
+	pthread_join(thread_reconnect, NULL);
+	pthread_join(thread_loop, NULL);
+
+	net_disconnect(session->netc);
+	tapcfg_destroy(session->tapcfg);
+	pki_passport_destroy(session->passport);
+
+	p2p_fini();
+	netbus_fini();
+
+	free(session);
+}
+
 void *agent_init(void *cfg)
 {
-	struct session *session;
 
 	agent_cfg = (struct agent_cfg *)cfg;
+
 	session = calloc(1, sizeof(struct session));
 
 	p2p_init();
@@ -515,12 +533,14 @@ void *agent_init(void *cfg)
 	session->devname = tapcfg_get_ifname(session->tapcfg);
 	jlog(L_DEBUG, "devname: %s", session->devname);
 
-	pthread_t thread_reconnect;
-	pthread_create(&thread_reconnect, NULL, try_to_reconnect, (void *)session);
-	pthread_detach(thread_reconnect);
+	pthread_attr_t attr;
 
-	pthread_t thread_loop;
-	pthread_create(&thread_loop, NULL, agent_loop, session);
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+	agent_cfg->agent_running = 1;
+	pthread_create(&thread_reconnect, &attr, try_to_reconnect, (void *)session);
+	pthread_create(&thread_loop, &attr, agent_loop, session);
 
 	return NULL;
 }

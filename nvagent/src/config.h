@@ -25,6 +25,7 @@ extern "C" {
 
 char *agent_config_get_fullname(const char *profile, const char *file);
 int agent_config_init(struct agent_cfg *agent_cfg);
+void agent_config_destroy(struct agent_cfg *agent_cfg);
 
 #ifdef __cplusplus
 }

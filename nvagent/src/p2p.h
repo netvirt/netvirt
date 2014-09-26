@@ -22,5 +22,6 @@
 struct session *p2p_find_session(uint8_t *eth_frame);
 void op_p2p_request(struct session *session, DNDSMessage_t *msg);
 void p2p_init();
+void p2p_fini();
 
 #endif

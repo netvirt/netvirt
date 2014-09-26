@@ -20,30 +20,35 @@
 #include <netbus.h>
 
 struct agent_cfg {
-	const char *server_address;
-	const char *server_port;
-	const char *certificate;
-	const char *privatekey;
-	const char *trusted_cert;
+	char *server_address;
+	char *server_port;
+
+	char *certificate;
+	char *privatekey;
+	char *trusted_cert;
+
 	char *prov_code;
 	const char *log_file;
 	int auto_connect;
 
-	const char *profile;
-	const char *agent_conf;
-	const char *ip_conf;
+	char *profile;
+	char *agent_conf;
+	char *ip_conf;
 
 	struct {
 		void (*on_log)(const char *str);
 		void (*on_connect)(const char *ip);
 		void (*on_disconnect)();
 	} ev;
+
+	int agent_running;
 };
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+void agent_fini();
 void agent_init_async(struct agent_cfg *cfg);
 void *agent_init(void *agent_cfg);
 int agent_config_toggle_auto_connect(int status);

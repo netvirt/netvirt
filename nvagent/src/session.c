@@ -18,10 +18,7 @@
 
 void *session_itemdup(const void *item)
 {
-	struct session *session;
-	session = calloc(1, sizeof(struct session));
-	memcpy(session, item, sizeof(struct session));
-	return session;
+	return (void *)item;
 }
 
 void session_itemrel(void *item)
@@ -29,6 +26,8 @@ void session_itemrel(void *item)
 	struct session *session;
 	if (item != NULL) {
 		session = (struct session *)item;
+		session->netc->on_disconnect = NULL;
+		net_disconnect(session->netc);
 		free(session);
 	}
 }
