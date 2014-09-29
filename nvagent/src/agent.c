@@ -487,7 +487,6 @@ void agent_fini()
 
 void *agent_init(void *cfg)
 {
-
 	agent_cfg = (struct agent_cfg *)cfg;
 
 	session = calloc(1, sizeof(struct session));

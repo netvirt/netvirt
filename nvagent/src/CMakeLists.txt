@@ -90,7 +90,6 @@ elseif (WIN32)
 		config
 		nvcore
 		pthread
-#		tapcfg
 		${CMAKE_SOURCE_DIR}/tapcfg/build/tapcfg.dll
 		${OPENSSL_LIBRARIES}
 	)
