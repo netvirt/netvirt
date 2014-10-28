@@ -37,9 +37,9 @@ SetCompressor /FINAL /SOLID lzma
 ; General
 	!include "x64.nsh"
 	!define /date NOW "%y.%m.%d"
-	Name "DynVPN Client"
-	OutFile "${BDIR}/dynvpn-client-${NOW}_x86.exe"
-	InstallDir $PROGRAMFILES\dynvpn-client
+	Name "NetVirt Agent"
+	OutFile "${BDIR}/netvirt-agent-${NOW}_x86.exe"
+	InstallDir $PROGRAMFILES\netvirt-agent
 
 	; Ask admin privileges
 	RequestExecutionLevel admin
@@ -56,7 +56,7 @@ SetCompressor /FINAL /SOLID lzma
 	; Start Menu Folder Page Configuration
 	Var StartMenuFolder
 	!define MUI_STARTMENUPAGE_REGISTRY_ROOT "HKCU"
-	!define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\dnc"
+	!define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\netvirt-agent"
 	!define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "Start Menu Folder"
 	!insertmacro MUI_PAGE_STARTMENU Application $StartMenuFolder
 
@@ -72,13 +72,13 @@ SetCompressor /FINAL /SOLID lzma
 
 ;-------------------
 ; Installer section
-	Section "DynVPN client" dncExe
+	Section "NetVirt Agent"
 		setOutPath $INSTDIR
 
-		File ${BDIR}/nvagent/src/nvagent.exe
-		File udt4/src/libudt.dll
-		File libconfig-win32/lib/.libs/libconfig-9.dll
-		File tapcfg-win32/build/tapcfg.dll
+		File ${BDIR}/nvagent/src/netvirt-agent.exe
+		File ${UDT4_PATH}/src/libudt.dll
+		File ${LIBCONFIG_PATH}/lib/.libs/libconfig-9.dll
+		File ${TAPCFG_PATH}/build/tapcfg.dll
 		File ${MINGW_PATH}/libgcc_s_sjlj-1.dll
 		File ${MINGW_PATH}/libstdc++-6.dll
 		File ${MINGW_PATH}/libssp-0.dll
@@ -97,16 +97,16 @@ SetCompressor /FINAL /SOLID lzma
 		File ${QT_PATH}/plugins/imageformats/qgif4.dll
 		File ${QT_PATH}/plugins/imageformats/qico4.dll
 
-		CreateDirectory $APPDATA\dynvpn
+		CreateDirectory $APPDATA\netvirt
 
 		; Create uninstaller
-		WriteUninstaller "$INSTDIR\dnc-uninstall.exe"
+		WriteUninstaller "$INSTDIR\netvirt-agent-uninstall.exe"
 
 		!insertmacro MUI_STARTMENU_WRITE_BEGIN Application
 			CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-			CreateShortCut	"$DESKTOP\dynvpn-client.lnk" "$INSTDIR\dnc.exe"
-			CreateShortCut  "$SMPROGRAMS\$StartMenuFolder\dynvpn-client.lnk" "$INSTDIR\dnc.exe"
-			CreateShortCut  "$SMPROGRAMS\$StartMenuFolder\dynvpn-client-uninstall.lnk" "$INSTDIR\dnc-uninstall.exe"
+			CreateShortCut  "$DESKTOP\netvirt-agent.lnk" "$INSTDIR\netvirt-agent.exe"
+			CreateShortCut  "$SMPROGRAMS\$StartMenuFolder\netvirt-agent.lnk" "$INSTDIR\netvirt-agent.exe"
+			CreateShortCut  "$SMPROGRAMS\$StartMenuFolder\netvirt-agent-uninstall.lnk" "$INSTDIR\netvirt-agent-uninstall.exe"
 		!insertmacro MUI_STARTMENU_WRITE_END
 
 		; Update icons cache
@@ -142,20 +142,18 @@ SetCompressor /FINAL /SOLID lzma
 		Delete "$INSTDIR\*"
 		RMDir "$INSTDIR"
 
-		Delete "$APPDATA\dynvpn\*"
-		RMDir "$APPDATA\dynvpn"
+		Delete "$APPDATA\netvirt\*"
+		RMDir "$APPDATA\netvirt"
 
 		!insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
-		Delete "$DESKTOP\dynvpn-client.lnk"
-		Delete "$SMPROGRAMS\$StartMenuFolder\dynvpn-client.lnk"
-		Delete "$SMPROGRAMS\$StartMenuFolder\dynvpn-client-uninstall.lnk"
+		Delete "$DESKTOP\netvirt-agent.lnk"
+		Delete "$SMPROGRAMS\$StartMenuFolder\netvirt-agent.lnk"
+		Delete "$SMPROGRAMS\$StartMenuFolder\netvirt-agent-uninstall.lnk"
 		RMDir "$SMPROGRAMS\$StartMenuFolder"
 
 		StrCpy $2 $INSTDIR "" 3
 		Delete "$LOCALAPPDATA\VirtualStore\$2\*"
 		RMDir "$LOCALAPPDATA\VirtualStore\$2"
 
-		DeleteRegKey /ifempty HKCU "Software\dnc"
+		DeleteRegKey /ifempty HKCU "Software\netvirt-agent"
 	SectionEnd
-
-
