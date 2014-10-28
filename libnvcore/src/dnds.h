@@ -176,6 +176,8 @@ int P2pRequest_set_macAddrDst(DNDSMessage_t *msg, uint8_t *macAddrDst);
 int P2pRequest_get_macAddrDst(DNDSMessage_t *msg, uint8_t *macAddrDst);
 int P2pRequest_set_ipAddrDst(DNDSMessage_t *msg, char *ipAddrDst);
 int P2pRequest_get_ipAddrDst(DNDSMessage_t *msg, char *ipAddrDst);
+int P2pRequest_set_ipAddrLocal(DNDSMessage_t *msg, char *ipAddrLocal);
+int P2pRequest_get_ipAddrLocal(DNDSMessage_t *msg, char *ipAddrLocal);
 int P2pRequest_set_port(DNDSMessage_t *msg, uint32_t port);
 int P2pRequest_get_port(DNDSMessage_t *msg, uint32_t *port);
 int P2pRequest_set_side(DNDSMessage_t *msg, e_P2pSide side);
