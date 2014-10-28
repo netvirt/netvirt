@@ -1416,6 +1416,65 @@ int P2pRequest_get_ipAddrDst(DNDSMessage_t *msg, char *ipAddrDst)
 	return DNDS_success;
 }
 
+
+int P2pRequest_set_ipAddrLocal(DNDSMessage_t *msg, char *ipAddrLocal)
+{
+	if (msg == NULL || ipAddrLocal == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dnm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_p2pRequest) {
+		return DNDS_invalid_op;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.p2pRequest.ipAddrLocal = (OCTET_STRING_t *)calloc(1, sizeof(OCTET_STRING_t));
+	if (msg->pdu.choice.dnm.dnop.choice.p2pRequest.ipAddrLocal == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.p2pRequest.ipAddrLocal->buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
+	if (msg->pdu.choice.dnm.dnop.choice.p2pRequest.ipAddrLocal->buf == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	int ret;
+	ret = inet_pton(AF_INET, ipAddrLocal, msg->pdu.choice.dnm.dnop.choice.p2pRequest.ipAddrLocal->buf);
+	if (ret != 1) {
+		return DNDS_conversion_failed;
+	}
+
+	msg->pdu.choice.dnm.dnop.choice.p2pRequest.ipAddrLocal->size = sizeof(struct in_addr);
+
+	return DNDS_success;
+}
+
+int P2pRequest_get_ipAddrLocal(DNDSMessage_t *msg, char *ipAddrLocal)
+{
+	if (msg == NULL || ipAddrLocal == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dnm) {
+		return DNDS_invalid_pdu;
+	}
+
+	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_p2pRequest) {
+		return DNDS_invalid_op;
+	}
+
+	const char *ret;
+	ret = inet_ntop(AF_INET, msg->pdu.choice.dnm.dnop.choice.p2pRequest.ipAddrLocal->buf, ipAddrLocal, INET_ADDRSTRLEN);
+	if (ret == NULL) {
+		return DNDS_conversion_failed;
+	}
+
+	return DNDS_success;
+}
+
 int P2pRequest_set_port(DNDSMessage_t *msg, uint32_t port)
 {
 	if (msg == NULL) {

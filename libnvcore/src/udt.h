@@ -51,6 +51,7 @@ struct p2p_args {
 
 	char *listen_addr;
 	char *dest_addr;
+	char *local_addr;
 	char *port[3];
 	void (*on_connect)(struct peer *);
 	void (*on_disconnect)(struct peer *);

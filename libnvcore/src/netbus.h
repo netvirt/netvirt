@@ -109,6 +109,7 @@ netc_t *net_server(const char *listen_addr,
 
 void net_p2p(const char *listen_addr,
 		const char *dest_addr,
+		const char *local_addr,
 		const char *port,
 		uint8_t protocol,
 		uint8_t security_level,

@@ -132,7 +132,8 @@ P2pRequest ::= SEQUENCE {
 	ipAddrDst	OCTET STRING (SIZE(4..16)),
 	port		INTEGER (0..uint32max),
 	side		P2pSide,
-	...
+	...,
+	ipAddrLocal	OCTET STRING SIZE((4..16))
 }
 
 P2pResponse ::= SEQUENCE {

@@ -726,6 +726,7 @@ void net_p2p_on_connect(peer_t *peer)
 
 void net_p2p(const char *listen_addr,
 		const char *dest_addr,
+		const char *local_addr,
 		const char *port,
 		uint8_t protocol,
 		uint8_t security_level,
@@ -768,6 +769,7 @@ void net_p2p(const char *listen_addr,
 	p2p_args = (struct p2p_args *)calloc(1, sizeof(struct p2p_args));
 	p2p_args->listen_addr = strdup(listen_addr);
 	p2p_args->dest_addr = strdup(dest_addr);
+	p2p_args->local_addr = strdup(local_addr);
 
 	p2p_args->port[0] = strdup(port);
 	p2p_args->port[1] = strdup("443");

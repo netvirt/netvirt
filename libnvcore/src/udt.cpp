@@ -337,6 +337,7 @@ void *udtbus_rendezvous(void *args)
 	uint8_t p2p_failed = 0;
 	uint8_t nb_port = 0;
 	uint8_t port_itr = 0;
+	char *addr = NULL;
 	struct addrinfo hints, *local, *server;
 	struct p2p_args *p2p_args = (struct p2p_args *)args;
 	int mss = 1450;
@@ -344,6 +345,7 @@ void *udtbus_rendezvous(void *args)
 	UDTSOCKET socket = 0;
 
 	nb_port = sizeof(p2p_args->port)/sizeof(p2p_args->port[0]);
+	addr = p2p_args->dest_addr;
 
 	peer = (peer_t *)calloc(sizeof(peer_t), 1);
 	peer->type = UDTBUS_CLIENT;
@@ -358,7 +360,7 @@ void *udtbus_rendezvous(void *args)
 	peer->ext_ptr = p2p_args->ext_ptr;
 
 retry:
-	jlog(L_NOTICE, "trying port %s...", p2p_args->port[port_itr]);
+	jlog(L_NOTICE, "trying address %s:%s", addr, p2p_args->port[port_itr]);
 	memset(&hints, 0, sizeof(struct addrinfo));
 
 	hints.ai_flags = AI_PASSIVE;
@@ -391,7 +393,7 @@ retry:
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 
-	ret = getaddrinfo(p2p_args->dest_addr, p2p_args->port[port_itr], &hints, &server);
+	ret = getaddrinfo(addr, p2p_args->port[port_itr], &hints, &server);
 	if (ret != 0) {
 		jlog(L_WARNING, "incorrect server address: %s", gai_strerror(ret));
 		p2p_failed = 1;
@@ -404,7 +406,16 @@ retry:
 		UDT::close(socket);
 
 		if (port_itr < nb_port-1) {
+
 			port_itr++;
+			freeaddrinfo(server);
+			goto retry;
+
+		} else if (addr == p2p_args->dest_addr && p2p_args->local_addr[0] != '\0') {
+
+			/* Now try every port with the local address */
+			addr = p2p_args->local_addr;
+			port_itr = 0;
 			freeaddrinfo(server);
 			goto retry;
 		}
@@ -423,6 +434,7 @@ out:
 
 	free(p2p_args->listen_addr);
 	free(p2p_args->dest_addr);
+	free(p2p_args->local_addr);
 	free(p2p_args->port[0]);
 	free(p2p_args->port[1]);
 	free(p2p_args->port[2]);

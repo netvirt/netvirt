@@ -162,6 +162,7 @@ void p2pRequest(struct session *session_a, struct session *session_b)
 
 	P2pRequest_set_macAddrDst(msg, session_b->tun_mac_addr);
 	P2pRequest_set_ipAddrDst(msg, ip_b);
+	P2pRequest_set_ipAddrLocal(msg, session_b->ip_local);
 	P2pRequest_set_port(msg, port);
 	P2pRequest_set_side(msg, P2pSide_client);
 
@@ -176,6 +177,7 @@ void p2pRequest(struct session *session_a, struct session *session_b)
 
 	P2pRequest_set_macAddrDst(msg, session_a->tun_mac_addr);
 	P2pRequest_set_ipAddrDst(msg, ip_a);
+	P2pRequest_set_ipAddrLocal(msg, session_a->ip_local);
 	P2pRequest_set_port(msg, port);
 	P2pRequest_set_side(msg, P2pSide_server);
 
