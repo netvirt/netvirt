@@ -97,7 +97,7 @@ SetCompressor /FINAL /SOLID lzma
 		File ${QT_PATH}/plugins/imageformats/qgif4.dll
 		File ${QT_PATH}/plugins/imageformats/qico4.dll
 
-		CreateDirectory $APPDATA\netvirt
+		CreateDirectory $APPDATA\netvirt\default
 
 		; Create uninstaller
 		WriteUninstaller "$INSTDIR\netvirt-agent-uninstall.exe"
