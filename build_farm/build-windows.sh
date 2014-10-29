@@ -96,7 +96,7 @@ function build_dependencies () {
 }
 
 function build_nvagent () {
-    build_dir=build.windows.gui
+    build_dir="$PWD/build.windows.gui"
     mcd "$build_dir"
     rm -rf *
     set -e
@@ -108,6 +108,9 @@ function build_nvagent () {
     make netvirt-agent
     makensis -DOPENSSL_PATH="$openssl_dir/mingw32/lib" \
              -DQT_PATH="$qt_root" \
+             -DUDT4_PATH="../udt4" \
+             -DLIBCONFIG_PATH="../libconfig" \
+             -DTAPCFG_PATH="../tapcfg" \
              -DBDIR="$build_dir" \
              ../win32/package_win32.nsi
     rsync *.exe "$release_dir"
