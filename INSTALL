@@ -12,6 +12,11 @@ Then add the signature key:
 
 wget -qO - 'http://download.opensuse.org/repositories/home:netvirt/Debian_7.0/Release.key' | sudo apt-key add -
 
+Then install the package:
+
+apt-get update
+apt-get install netvirt-agent-cli
+
 Development
 -----------
 
