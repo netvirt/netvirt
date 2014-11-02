@@ -1,7 +1,22 @@
  INSTALLATION ON THE DEBIAN LINUX PLATEFORM
  ------------------------------------------
 
- The following instructions are aimed at developers who want to get up and running quickly.
+ Download
+ --------
+
+ Add the following line in /etc/apt/sources.list (or in /etc/apt/sources.list.d):
+
+ deb http://download.opensuse.org/repositories/home:/netvirt/Debian_7.0 ./
+
+ Then add the signature key:
+
+ wget -qO - 'http://download.opensuse.org/repositories/home:netvirt/Debian_7.0/Release.key' | sudo apt-key add -
+
+ Development
+ -----------
+
+ The following instructions are aimed at developers who want to get up and
+ running quickly.
 
  NetVirt Agent
  -------------
