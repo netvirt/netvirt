@@ -56,14 +56,14 @@ int config_parse(config_t *cfg, struct switch_cfg *switch_cfg)
 		return -1;
 	}
 
-	if (config_lookup_string(cfg, "controller_ip", &switch_cfg->ctrler_ip))
+	if (config_lookup_string(cfg, "ctrler_ip", &switch_cfg->ctrler_ip))
 		jlog(L_DEBUG, "ctrler_ip: %s", switch_cfg->ctrler_ip);
 	else {
 		jlog(L_ERROR, "ctrler_ip is not present !");
 		return -1;
 	}
 
-	if (config_lookup_string(cfg, "controller_port", &switch_cfg->ctrler_port))
+	if (config_lookup_string(cfg, "ctrler_port", &switch_cfg->ctrler_port))
 		jlog(L_DEBUG, "ctrler_port: %s", switch_cfg->ctrler_port);
 	else {
 		jlog(L_ERROR, "ctrler_port is not present !");
