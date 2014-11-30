@@ -138,7 +138,7 @@ static void on_secure(netc_t *netc)
 	DNDSMessage_del(msg);
 }
 
-static void delRequest(DNDSMessage_t *msg)
+static void DelRequest_node(DNDSMessage_t *msg)
 {
 	DNDSObject_t *object;
 	DelRequest_get_object(msg, &object);
@@ -166,6 +166,52 @@ static void delRequest(DNDSMessage_t *msg)
 	session = ctable_find(context->ctable, uuid);
 	if (session) {
 		session->state = SESSION_STATE_PURGE;
+	}
+}
+
+static void DelRequest_context(DNDSMessage_t *msg)
+{
+	DNDSObject_t *object;
+	DelRequest_get_object(msg, &object);
+
+	uint32_t contextId = -1;
+	Context_get_id(object, &contextId);
+
+	context_t *context = NULL;
+	context = context_lookup(contextId);
+
+	if (context == NULL) {
+		jlog(L_ERROR, "context id {%d} doesn't exist");
+		return;
+	}
+
+	/* FIXME:
+	 *
+	 * 1.	Disable context to prevent nodes from connecting.
+	 *
+	 * 2.	Loop through the existing nodes in this context
+	 * 	and mark each of the connected nodes as to be purged.
+	 *
+	 * 3.	Flush the context table
+	 */
+
+}
+
+void delRequest(DNDSMessage_t *msg)
+{
+	DNDSObject_PR objType;
+	DelRequest_get_objectType(msg, &objType);
+
+	if (objType == DNDSObject_PR_client) {
+		/* FIXME : DelRequest_client(msg); */
+	}
+
+	if (objType == DNDSObject_PR_context) {
+		DelRequest_context(msg);
+	}
+
+	if (objType == DNDSObject_PR_node) {
+		DelRequest_node(msg);
 	}
 }
 
