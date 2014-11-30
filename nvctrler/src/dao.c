@@ -81,6 +81,16 @@ int dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
+			"dao_del_context",
+			"DELETE FROM context "
+			"WHERE id = $1;",
+			0,
+			NULL);
+	if (result == NULL)
+		goto error;
+	PQclear(result);
+
+	result = PQprepare(dbconn,
 			"dao_add_context",
 			"INSERT INTO CONTEXT "
 			"(client_id, description, network, "
@@ -122,6 +132,16 @@ int dao_prepare_statements()
 			"dao_del_node",
 			"DELETE FROM node "
 			"WHERE context_id = $1 AND uuid = $2;",
+			0,
+			NULL);
+	if (result == NULL)
+		goto error;
+	PQclear(result);
+
+	result = PQprepare(dbconn,
+			"dao_del_node_by_context_id",
+			"DELETE FROM node "
+			"WHERE context_id = $1",
 			0,
 			NULL);
 	if (result == NULL)
@@ -461,6 +481,31 @@ int dao_del_node(char *context_id, char *uuid)
 	return 0;
 }
 
+int dao_del_node_by_context_id(char *context_id)
+{
+	const char *paramValues[1];
+	int paramLengths[1];
+	PGresult *result;
+
+	if (!context_id) {
+		jlog(L_WARNING, "invalid parameter");
+		return -1;
+	}
+
+	paramValues[0] = context_id;
+	paramLengths[0] = strlen(context_id);
+
+	result = PQexecPrepared(dbconn, "dao_del_node_by_context_id", 1, paramValues, paramLengths, NULL, 0);
+
+	if (!result) {
+		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		PQclear(result);
+		return -1;
+	}
+
+	return 0;
+}
+
 int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatekey, char *provcode, char *description, char *ipaddress)
 {
 	const char *paramValues[7];
@@ -496,6 +541,31 @@ int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatek
 	}
 
 	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return -1;
+	}
+
+	return 0;
+}
+
+int dao_del_context(char *context_id)
+{
+	const char *paramValues[1];
+	int paramLengths[1];
+	PGresult *result;
+
+	if (!context_id) {
+		jlog(L_WARNING, "invalid parameter");
+		return -1;
+	}
+
+	paramValues[0] = context_id;
+	paramLengths[0] = strlen(context_id);
+
+	result = PQexecPrepared(dbconn, "dao_del_context", 1, paramValues, paramLengths, NULL, 0);
+
+	if (!result) {
+		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		PQclear(result);
 		return -1;
 	}

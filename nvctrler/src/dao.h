@@ -32,6 +32,8 @@ int dao_add_context(char *client_id,
 			const unsigned char *ippool,
 			size_t pool_size);
 
+int dao_del_context(char *context_id);
+
 int dao_add_client(char *email, char *password);
 
 int dao_fetch_context_by_client_id_desc(char *client_id, char *description,
@@ -55,6 +57,7 @@ int dao_fetch_context_embassy(char *context_id,
 int dao_update_embassy_serial(char *context_id, char *serial);
 
 int dao_del_node(char *context_id, char *uuid);
+int dao_del_node_by_context_id(char *context_id);
 
 int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatekey, char *provcode, char *description, char *ipaddress);
 
