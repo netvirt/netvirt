@@ -234,6 +234,39 @@ void AddRequest_context(DNDSMessage_t *msg)
 	DNDSMessage_del(msg_up);
 }
 
+void DelRequest_context(DNDSMessage_t *msg)
+{
+	DNDSObject_t *object;
+	DelRequest_get_object(msg, &object);
+
+	int ret = 0;
+	uint32_t contextId = -1;
+	char context_id_str[10] = {0};
+	Context_get_id(object, &contextId);
+	snprintf(context_id_str, 10, "%d", contextId);
+
+	jlog(L_NOTICE, "deleting nodes belonging to context: %s", context_id_str);
+	ret = dao_del_node_by_context_id(context_id_str);
+	if (ret < 0) {
+		jlog(L_NOTICE, "deleting nodes failed!");
+		return;
+	}
+
+	jlog(L_NOTICE, "deleting context: %s", context_id_str);
+	ret = dao_del_context(context_id_str);
+	if (ret < 0) {
+		/* FIXME: multiple DAO calls should be commited to the DB once
+		 * all calls have succeeded.
+		 */
+		jlog(L_NOTICE, "deleting context failed!");
+		return;
+	}
+
+	/* forward the delRequest to nvswitch */
+	if (g_switch_netc)
+		net_send_msg(g_switch_netc, msg);
+}
+
 void AddRequest_node(DNDSMessage_t *msg)
 {
 	jlog(L_DEBUG, "AddRequest_node");
@@ -374,6 +407,28 @@ free1:
 	free(emb_pvkey_ptr);
 }
 
+void DelRequest_node(DNDSMessage_t *msg)
+{
+	DNDSObject_t *object;
+	DelRequest_get_object(msg, &object);
+
+	size_t length = 0;
+	uint32_t contextId = -1;
+	char context_id_str[10] = {0};
+	Node_get_contextId(object, &contextId);
+	snprintf(context_id_str, 10, "%d", contextId);
+
+	char *uuid = NULL;
+	Node_get_uuid(object, &uuid, &length);
+
+	jlog(L_NOTICE, "revoking node: %s", uuid);
+	dao_del_node(context_id_str, uuid);
+
+	/* forward the delRequest to nvswitch */
+	if (g_switch_netc)
+		net_send_msg(g_switch_netc, msg);
+}
+
 void addRequest(DNDSMessage_t *msg)
 {
 	DNDSObject_PR objType;
@@ -395,25 +450,20 @@ void addRequest(DNDSMessage_t *msg)
 void delRequest(struct session *session, DNDSMessage_t *msg)
 {
 	(void)session;
+	DNDSObject_PR objType;
+	DelRequest_get_objectType(msg, &objType);
 
-	DNDSObject_t *object;
-	DelRequest_get_object(msg, &object);
+	if (objType == DNDSObject_PR_client) {
+		/* FIXME : DelRequest_client(msg); */
+	}
 
-	size_t length = 0;
-	uint32_t contextId = -1;
-	char context_id_str[10] = {0};
-	Node_get_contextId(object, &contextId);
-	snprintf(context_id_str, 10, "%d", contextId);
+	if (objType == DNDSObject_PR_context) {
+		DelRequest_context(msg);
+	}
 
-	char *uuid = NULL;
-	Node_get_uuid(object, &uuid, &length);
-
-	jlog(L_NOTICE, "revoking node: %s", uuid);
-	dao_del_node(context_id_str, uuid);
-
-	/* forward the delRequest to nvswitch */
-	if (g_switch_netc)
-		net_send_msg(g_switch_netc, msg);
+	if (objType == DNDSObject_PR_node) {
+		DelRequest_node(msg);
+	}
 }
 
 void modifyRequest(struct session *session, DNDSMessage_t *msg)
