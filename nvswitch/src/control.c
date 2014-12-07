@@ -22,6 +22,7 @@
 
 #include "context.h"
 #include "control.h"
+#include "session.h"
 #include "tcp.h"
 
 static netc_t *ctrl_netc = NULL;
@@ -174,27 +175,25 @@ static void DelRequest_context(DNDSMessage_t *msg)
 	DNDSObject_t *object;
 	DelRequest_get_object(msg, &object);
 
-	uint32_t contextId = -1;
+	struct session *session_list = NULL;
+	uint32_t contextId = 0;
 	Context_get_id(object, &contextId);
 
 	context_t *context = NULL;
-	context = context_lookup(contextId);
+	context = context_disable(contextId);
 
 	if (context == NULL) {
 		jlog(L_ERROR, "context id {%d} doesn't exist");
 		return;
 	}
 
-	/* FIXME:
-	 *
-	 * 1.	Disable context to prevent nodes from connecting.
-	 *
-	 * 2.	Loop through the existing nodes in this context
-	 * 	and mark each of the connected nodes as to be purged.
-	 *
-	 * 3.	Flush the context table
-	 */
+	session_list = context->session_list;
+	while (session_list != NULL) {
+		session_list->state = SESSION_STATE_PURGE;
+		session_list = session_list->next;
+	}
 
+	context_free(context);
 }
 
 void delRequest(DNDSMessage_t *msg)

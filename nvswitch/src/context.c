@@ -92,6 +92,20 @@ context_t *context_lookup(uint32_t context_id)
 	return NULL;
 }
 
+void context_free(context_t *context)
+{
+	if (context) {
+		pki_passport_destroy(context->passport);
+		free(context->linkst);
+		ftable_delete(context->ftable);
+		ctable_delete(context->ctable);
+		ctable_delete(context->atable);
+		bitpool_free(context->bitpool);
+		session_free(context->access_session);
+		free(context);
+	}
+}
+
 void contexts_free()
 {
 	uint16_t i;
@@ -99,17 +113,18 @@ void contexts_free()
 
 	for (i = 0; i < CONTEXT_LIST_SIZE; i++) {
 		context = context_table[i];
-		if (context) {
-			pki_passport_destroy(context->passport);
-			free(context->linkst);
-			ftable_delete(context->ftable);
-			ctable_delete(context->ctable);
-			ctable_delete(context->atable);
-			bitpool_free(context->bitpool);
-			session_free(context->access_session);
-			free(context);
-		}
+		context_free(context);
 	}
+}
+
+context_t *context_disable(uint32_t id)
+{
+	context_t *context = NULL;
+	if (id < CONTEXT_LIST_SIZE) {
+		context = context_table[id];
+		context_table[id] = NULL;
+	}
+	return context;
 }
 
 int context_create(uint32_t id, char *address, char *netmask,
