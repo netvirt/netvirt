@@ -90,7 +90,9 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 static void on_secure(netc_t *netc)
 {
 	jlog(L_NOTICE, "%s connection secured", netc->kconn->client_cn);
-	g_switch_netc = netc;
+	if (strncmp("netvirt-switch", netc->kconn->client_cn, 14) == 0) {
+		g_switch_netc = netc;
+	}
 }
 
 static void on_input(netc_t *netc)
