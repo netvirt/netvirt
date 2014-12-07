@@ -92,7 +92,7 @@ context_t *context_lookup(uint32_t context_id)
 	return NULL;
 }
 
-void context_free()
+void contexts_free()
 {
 	uint16_t i;
 	context_t *context = NULL;

@@ -404,7 +404,7 @@ static void on_disconnect(netc_t *netc)
 	netc_t *retry_netc = NULL;
 
 	jlog(L_NOTICE, "disconnected from the controller");
-	jlog(L_NOTICE, "connection retry to the controller...");
+	jlog(L_NOTICE, "connection retry in 5sec...");
 	do {
 		sleep(5);
 		retry_netc = net_client(switch_cfg->ctrler_ip, switch_cfg->ctrler_port,
@@ -462,5 +462,5 @@ void ctrl_fini()
 {
 	net_disconnect(ctrl_netc);
 	pki_passport_destroy(switch_passport);
-	context_free();
+	contexts_free();
 }
