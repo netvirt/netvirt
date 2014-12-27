@@ -25,7 +25,10 @@
 
 // openssl x509 -in ./certificate.pem -text
 
-/* TODO handle errors */
+/* TODO handle errors
+ * 	use EVP_sha256
+ * 	add a function to write in a file/binary blob the signing request
+ */
 
 static EVP_PKEY *pki_generate_keyring()
 {
