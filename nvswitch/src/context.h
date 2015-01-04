@@ -39,20 +39,24 @@ typedef struct context {
 	linkst_t *linkst;			// link state between nodes
 	uint8_t *bitpool;			// bitpool used to generated unique ID per session
 
-	struct session *session_list;		// all session open in this context
-	struct session *access_session;		// store the access session in the access table for every known UUID
+	struct session *session_list;		// all active session in this context
+	struct session *access_session;		// store the 'access_session' placeholder
+						// in the access table for every known UUID as a marker
 
 	passport_t *passport;
 
 } context_t;
 
-void contexts_free();
-void context_free(context_t *context);
-int context_create(uint32_t id, char *address, char *netmask, char *serverCert, char *serverPrivkey, char *trustedCert);
-void context_del_session(context_t *ctx, struct session *session);
 void context_add_session(context_t *ctx, struct session *session);
+void context_del_session(context_t *ctx, struct session *session);
+
 context_t *context_disable(uint32_t id);
 context_t *context_lookup(uint32_t id);
+
+int context_create(uint32_t id, char *address, char *netmask, char *serverCert, char *serverPrivkey, char *trustedCert);
+void context_free(context_t *context);
+
+void contexts_free();
 
 void context_fini(void *ext_ptr);
 int context_init();
