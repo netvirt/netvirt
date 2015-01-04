@@ -25,9 +25,9 @@
 #include <logger.h>
 #include <netbus.h>
 
+#include "certs.h"
 #include "ctrler.h"
 #include "dao.h"
-#include "pki.h"
 
 #define CONFIG_FILE "/etc/netvirt/nvctrler.conf"
 
@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
 	while ((opt = getopt(argc, argv, "bdqvh")) != -1) {
 		switch (opt) {
 		case 'b':
-			pki_bootstrap_certs();
+			certs_bootstrap();
 			return 0;
 		case 'd':
 			daemon = 1;
