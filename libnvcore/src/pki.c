@@ -30,14 +30,16 @@
  * 	add a function to write in a file/binary blob the signing request
  */
 
-void node_info_destroy(node_info_t *node_info)
+void
+node_info_destroy(node_info_t *node_info)
 {
 	free(node_info);
 }
 
-node_info_t *cn2node_info(char *cn)
+node_info_t *
+cn2node_info(char *cn)
 {
-	// expected: dnc-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX@99999
+	/* expected: dnc-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX@99999 */
 	node_info_t *ninfo = NULL;
 
 	if (cn == NULL || strlen(cn) < 42)
@@ -57,51 +59,55 @@ node_info_t *cn2node_info(char *cn)
 	return ninfo;
 }
 
-static EVP_PKEY *pki_generate_keyring()
+EVP_PKEY *
+pki_generate_keyring()
 {
 	jlog(L_DEBUG, "pki_generate_keyring");
 
 	EVP_PKEY *keyring;
 	RSA *rsa_keys;
 
-	// create a new keyring
+	/* create a new keyring */
 	keyring = EVP_PKEY_new();
 
-	// generate RSA type public and private keys
-	rsa_keys = RSA_generate_key(2048, RSA_F4, NULL, NULL);
+	/* generate RSA-type public and private keys */
+	rsa_keys = RSA_generate_key(4096, RSA_F4, NULL, NULL);
 
-	// if the keys are not usable, give it another try
+	/* if the keys are not usable, give it another try */
 	if (RSA_check_key(rsa_keys) != 1) {
 
 		RSA_free(rsa_keys);
-		rsa_keys = RSA_generate_key(2048, RSA_F4, NULL, NULL);
+		rsa_keys = RSA_generate_key(4096, RSA_F4, NULL, NULL);
 
-		// we are in serious problem here
+		/* we are in serious problem here */
 		if (RSA_check_key(rsa_keys) != 1) {
 			RSA_free(rsa_keys);
 			return NULL;
 		}
 	}
 
-	// add the RSA keys into the keyring
+	/* add the RSA keys into the keyring */
 	EVP_PKEY_set1_RSA(keyring, rsa_keys);
 	RSA_free(rsa_keys);
 
 	return keyring;
 }
 
-static X509_REQ *pki_certificate_request(EVP_PKEY *keyring, digital_id_t *digital_id)
+X509_REQ *
+pki_certificate_request(EVP_PKEY *keyring, digital_id_t *digital_id)
 {
 	jlog(L_DEBUG, "pki_certificate_request");
 
 	X509_REQ *cert_req;
 	X509_NAME *subject;
-	const EVP_MD *message_digest;
 
-	// create a certificate request
+	/* create a certificate signing request */
 	cert_req = X509_REQ_new();
 
-	// set certificate request 'Subject:'
+	/* set public key to the CSR */
+	X509_REQ_set_pubkey(cert_req, keyring);
+
+	/* set certificate request 'Subject:' */
 	subject = X509_NAME_new();
 
 	X509_NAME_add_entry_by_txt(subject, "commonName", MBSTRING_ASC, (unsigned char*)digital_id->commonName, -1, -1, 0);
@@ -114,43 +120,51 @@ static X509_REQ *pki_certificate_request(EVP_PKEY *keyring, digital_id_t *digita
 	X509_REQ_set_subject_name(cert_req, subject);
 	X509_NAME_free(subject);
 
-	// set certificate request public key
-	X509_REQ_set_pubkey(cert_req, keyring);
-
-	// create a message digest
-	message_digest = EVP_sha1();
-
-	// sign certificate request
-	X509_REQ_sign(cert_req, keyring, message_digest);
+	/* sign the CSR with our keys */
+	X509_REQ_sign(cert_req, keyring, EVP_sha256());
 
 	return cert_req;
 }
 
-static X509 *pki_certificate(X509_NAME *issuer, EVP_PKEY *keyring, X509_REQ *cert_req,
-				uint8_t is_cert_authority, uint32_t serial, uint32_t expiration_delay)
+static X509 *
+pki_certificate(X509_NAME *issuer, X509_REQ *cert_req,
+		uint8_t is_cert_authority, uint32_t serial, uint32_t expiration_delay)
 {
 	jlog(L_DEBUG, "pki_certificate");
 
-	X509 *certificate;
-	X509_NAME *subject;
+	EVP_PKEY *pub_key = NULL;
+	X509 *certificate = NULL;
+	X509_NAME *subject = NULL;
 
 	X509V3_CTX ctx;
-	X509_EXTENSION *ext;
+	X509_EXTENSION *ext = NULL;
 
-	// create a new certificate
+	/* Verify CSR signature */
+	pub_key = X509_REQ_get_pubkey(cert_req);
+	if (pub_key == NULL) {
+		jlog(L_WARNING, "no signature present in the certificate signing request");
+		return NULL;
+	}
+
+	if (X509_REQ_verify(cert_req, pub_key) != 1) {
+		jlog(L_WARNING, "the certificate signing request signature is invalid");
+		return NULL;
+	}
+
+	/* create a new certificate */
 	certificate = X509_new();
 
-	// set certificate unique serial number
+	/* set certificate unique serial number */
 	ASN1_INTEGER_set(X509_get_serialNumber(certificate), serial);
 
-	// set certificate 'Subject:'
+	/* set certificate 'Subject:' */
 	subject = X509_REQ_get_subject_name(cert_req);
 	X509_set_subject_name(certificate, subject);
 
-	// set certificate 'Issuer:'
+	/* set certificate 'Issuer:' */
 	X509_set_issuer_name(certificate, issuer);
 
-	// set X509v3 extension "basicConstraints" CA:TRUE/FALSE
+	/* set X509v3 extension "basicConstraints" CA:TRUE/FALSE */
 	X509V3_set_ctx(&ctx, NULL, certificate, cert_req, NULL, 0);
 
 	if (is_cert_authority == true)
@@ -161,28 +175,28 @@ static X509 *pki_certificate(X509_NAME *issuer, EVP_PKEY *keyring, X509_REQ *cer
 	X509_add_ext(certificate, ext, -1);
 	X509_EXTENSION_free(ext);
 
-	// set certificate version 3
+	/* set certificate version 3 == 0x2 */
 	X509_set_version(certificate, 0x2);
 
-	// set certificate public key
-	X509_set_pubkey(certificate, keyring);
-
-	// set the 'notBefore' to yersterday
+	/* set the 'notBefore' to yersterday */
 	X509_gmtime_adj(X509_get_notBefore(certificate), -(24*60*60));
-	// set certificate expiration delay
+	/* set certificate expiration delay */
+
 	X509_gmtime_adj(X509_get_notAfter(certificate), expiration_delay);
 
 	return certificate;
 }
 
-static void pki_sign_certificate(EVP_PKEY *keyring, X509 *certificate)
+static void
+pki_sign_certificate(EVP_PKEY *keyring, X509 *certificate)
 {
 	jlog(L_NOTICE, "pki_sign_certificate");
 
-	X509_sign(certificate, keyring, EVP_sha1());
+	X509_sign(certificate, keyring, EVP_sha256());
 }
 
-void pki_free_digital_id(digital_id_t *digital_id)
+void
+pki_free_digital_id(digital_id_t *digital_id)
 {
 	free(digital_id->commonName);
 	free(digital_id->countryName);
@@ -194,12 +208,13 @@ void pki_free_digital_id(digital_id_t *digital_id)
 	free(digital_id);
 }
 
-digital_id_t *pki_digital_id(char *commonName,
-				char *countryName,
-				char *stateOrProvinceName,
-				char *localityName,
-				char *emailAddress,
-				char *organizationName)
+digital_id_t *
+pki_digital_id(char *commonName,
+		char *countryName,
+		char *stateOrProvinceName,
+		char *localityName,
+		char *emailAddress,
+		char *organizationName)
 {
 	jlog(L_DEBUG, "pki_digital_id");
 
@@ -216,14 +231,16 @@ digital_id_t *pki_digital_id(char *commonName,
 	return digital_id;
 }
 
-void pki_embassy_free(embassy_t *embassy)
+void
+pki_embassy_free(embassy_t *embassy)
 {
 	X509_free(embassy->certificate);
 	EVP_PKEY_free(embassy->keyring);
 	free(embassy);
 }
 
-embassy_t *pki_embassy_new(digital_id_t *digital_id, uint32_t expiration_delay)
+embassy_t *
+pki_embassy_new(digital_id_t *digital_id, uint32_t expiration_delay)
 {
 	jlog(L_NOTICE, "pki_embassy_new");
 
@@ -236,24 +253,24 @@ embassy_t *pki_embassy_new(digital_id_t *digital_id, uint32_t expiration_delay)
 	X509_NAME *issuer;
 	uint32_t serial = 0;
 
-	// generate RSA public and private keys
+	/* generate RSA public and private keys */
 	keyring = pki_generate_keyring();
 
-	// create a certificate signing request
+	/* create a certificate signing request */
 	cert_req = pki_certificate_request(keyring, digital_id);
 
-	// fetch the 'Subject:' name from the certificate request
-	// note that this is a self-signed certificate therefore
-	// the 'Subject:' and 'Issuer:' are the same
+	/* fetch the 'Subject:' name from the certificate request
+	 * note that this is a self-signed certificate therefore
+	 * the 'Subject:' and 'Issuer:' are the same */
 	issuer = X509_REQ_get_subject_name(cert_req);
 
-	// create the certificate from the certificate request and keyring
-	certificate = pki_certificate(issuer, keyring, cert_req, true, serial++, expiration_delay);
+	/* create the certificate from the certificate request and keyring */
+	certificate = pki_certificate(issuer, cert_req, true, serial++, expiration_delay);
 
-	// self-sign the certificate with our own keyring
+	/* self-sign the certificate with our own keyring */
 	pki_sign_certificate(keyring, certificate);
 
-	// create the new embassy
+	/* create the new embassy */
 	embassy->certificate = certificate;
 	embassy->keyring = keyring;
 	embassy->serial = serial;
@@ -261,7 +278,8 @@ embassy_t *pki_embassy_new(digital_id_t *digital_id, uint32_t expiration_delay)
 	return embassy;
 }
 
-void pki_passport_free(passport_t *passport)
+void
+pki_passport_free(passport_t *passport)
 {
 	X509_free(passport->certificate);
 	EVP_PKEY_free(passport->keyring);
@@ -270,7 +288,8 @@ void pki_passport_free(passport_t *passport)
 	free(passport);
 }
 
-passport_t *pki_embassy_deliver_passport(embassy_t *embassy, digital_id_t *digital_id, uint32_t expiration_delay)
+passport_t *
+pki_embassy_deliver_passport(embassy_t *embassy, digital_id_t *digital_id, uint32_t expiration_delay)
 {
 	jlog(L_NOTICE, "pki_embassy_deliver_passport");
 
@@ -282,57 +301,59 @@ passport_t *pki_embassy_deliver_passport(embassy_t *embassy, digital_id_t *digit
 	X509 *certificate;
 	X509_NAME *issuer;
 
-	// generate RSA public and private keys
+	/* generate RSA public and private keys */
 	keyring = pki_generate_keyring();
 
-	// create a certificate signing request
+	/* create a certificate signing request */
 	cert_req = pki_certificate_request(keyring, digital_id);
 
-	// fetch the 'Subject:' name from the certificate authority
+	/* fetch the 'Subject:' name from the certificate authority */
 	issuer = X509_get_subject_name(embassy->certificate);
 
-	// create the certificate from the certificate request and keyring
-	certificate = pki_certificate(issuer, keyring, cert_req, false, embassy->serial++, expiration_delay);
+	/* create the certificate from the certificate request and keyring */
+	certificate = pki_certificate(issuer, cert_req, false, embassy->serial++, expiration_delay);
 
-	// sign the certificate with the certificate authority
+	/* sign the certificate with the certificate authority */
 	pki_sign_certificate(embassy->keyring, certificate);
 
-	// create the new passport
+	/* create the new passport */
 	passport->certificate = certificate;
 	passport->keyring = keyring;
 	passport->trusted_authority = X509_STORE_new();
 
-	// add the trusted certificate authority
+	/* add the trusted certificate authority */
 	X509_STORE_add_cert(passport->trusted_authority, embassy->certificate);
 
-	// deliver the passport
+	/* deliver the passport */
 	return passport;
 }
 
-uint32_t pki_expiration_delay(uint8_t years)
+uint32_t
+pki_expiration_delay(uint8_t years)
 {
-	// if years > 68, it will overflow the certificate 'Not After Date'
-	// dont be silly, we will never need more than 68 years !
+	/* if years > 68, it will overflow the certificate 'Not After Date'
+	 * dont be silly, we will never need more than 68 years ! */
 	if (years > 68)
 		years = 68;
 
 	return years*365*24*60*60;
 }
 
-embassy_t *pki_embassy_load_from_memory(char *certificate, char *privatekey, uint32_t serial)
+embassy_t *
+pki_embassy_load_from_memory(char *certificate, char *privatekey, uint32_t serial)
 {
 	BIO *bio_memory = NULL;
 	embassy_t *embassy;
 
-	// create an empty embassy
+	/* create an empty embassy */
 	embassy = calloc(1, sizeof(embassy_t));
 
-	// fetch the certificate in PEM format and convert to X509
+	/* fetch the certificate in PEM format and convert to X509 */
 	bio_memory = BIO_new_mem_buf(certificate, strlen(certificate));
 	embassy->certificate = PEM_read_bio_X509(bio_memory, NULL, NULL, NULL);
 	BIO_free(bio_memory);
 
-	// fetch the private key in PEM format and convert to EVP
+	/* fetch the private key in PEM format and convert to EVP */
 	bio_memory = BIO_new_mem_buf(privatekey, strlen(privatekey));
 	embassy->keyring = PEM_read_bio_PrivateKey(bio_memory, NULL, NULL, NULL);
 	BIO_free(bio_memory);
@@ -342,9 +363,10 @@ embassy_t *pki_embassy_load_from_memory(char *certificate, char *privatekey, uin
 	return embassy;
 }
 
-passport_t *pki_passport_load_from_file(const char *certificate_filename,
-					const char *privatekey_filename,
-					const char *trusted_authority_filename)
+passport_t *
+pki_passport_load_from_file(const char *certificate_filename,
+			const char *privatekey_filename,
+			const char *trusted_authority_filename)
 {
 	BIO *bio_file = NULL;
 	passport_t *passport = NULL;
@@ -354,10 +376,10 @@ passport_t *pki_passport_load_from_file(const char *certificate_filename,
 		return NULL;
 	}
 
-	// create an empty passport
+	/* create an empty passport */
 	passport = calloc(1, sizeof(passport_t));
 
-	// fetch the certificate in PEM format and convert to X509
+	/* fetch the certificate in PEM format and convert to X509 */
 	bio_file = BIO_new_file(certificate_filename, "r");
 	if (bio_file == NULL) {
 		free(passport);
@@ -366,7 +388,7 @@ passport_t *pki_passport_load_from_file(const char *certificate_filename,
 	passport->certificate = PEM_read_bio_X509(bio_file, NULL, NULL, NULL);
 	BIO_free(bio_file);
 
-	// fetch the private key in PEM format and convert to EVP
+	/* fetch the private key in PEM format and convert to EVP */
 	bio_file = BIO_new_file(privatekey_filename, "r");
 		if (bio_file == NULL) {
 		free(passport);
@@ -375,8 +397,8 @@ passport_t *pki_passport_load_from_file(const char *certificate_filename,
 	passport->keyring = PEM_read_bio_PrivateKey(bio_file, NULL, NULL, NULL);
 	BIO_free(bio_file);
 
-	// fetch the certificate authority in PEM format convert to X509
-	// and add to the trusted store
+	/* fetch the certificate authority in PEM format convert to X509
+	 * and add to the trusted store */
 	bio_file = BIO_new_file(trusted_authority_filename, "r");
 	if (bio_file == NULL) {
 		free(passport);
@@ -391,27 +413,28 @@ passport_t *pki_passport_load_from_file(const char *certificate_filename,
 	return passport;
 }
 
-passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, char *trusted_authority)
+passport_t *
+pki_passport_load_from_memory(char *certificate, char *privatekey, char *trusted_authority)
 {
 	BIO *bio_memory = NULL;
 	passport_t *passport;
 	X509 *trusted_authority_certificate;
 
-	// create an empty passport
+	/* create an empty passport */
 	passport = calloc(1, sizeof(passport_t));
 
-	// fetch the certificate in PEM format and convert to X509
+	/* fetch the certificate in PEM format and convert to X509 */
 	bio_memory = BIO_new_mem_buf(certificate, strlen(certificate));
 	passport->certificate = PEM_read_bio_X509(bio_memory, NULL, NULL, NULL);
 	BIO_free(bio_memory);
 
-	// fetch the private key in PEM format and convert to EVP
+	/* fetch the private key in PEM format and convert to EVP */
 	bio_memory = BIO_new_mem_buf(privatekey, strlen(privatekey));
 	passport->keyring = PEM_read_bio_PrivateKey(bio_memory, NULL, NULL, NULL);
 	BIO_free(bio_memory);
 
-	// fetch the certificate authority in PEM format convert to X509
-	// and add to the trusted store
+	/* fetch the certificate authority in PEM format convert to X509
+	 * and add to the trusted store */
 	bio_memory = BIO_new_mem_buf(trusted_authority, strlen(trusted_authority));
 	trusted_authority_certificate = PEM_read_bio_X509(bio_memory, NULL, NULL, NULL);
 	BIO_free(bio_memory);
@@ -422,7 +445,8 @@ passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, c
 	return passport;
 }
 
-void pki_write_certificate_in_mem(X509 *certificate, char **certificate_ptr, long *size)
+void
+pki_write_certificate_in_mem(X509 *certificate, char **certificate_ptr, long *size)
 {
 	BIO *bio_mem = NULL;
 
@@ -436,7 +460,8 @@ void pki_write_certificate_in_mem(X509 *certificate, char **certificate_ptr, lon
 	BIO_free(bio_mem);
 }
 
-void pki_write_privatekey_in_mem(EVP_PKEY *privatekey, char **privatekey_ptr, long *size)
+void
+pki_write_privatekey_in_mem(EVP_PKEY *privatekey, char **privatekey_ptr, long *size)
 {
 	BIO *bio_mem = NULL;
 
@@ -450,7 +475,8 @@ void pki_write_privatekey_in_mem(EVP_PKEY *privatekey, char **privatekey_ptr, lo
 	BIO_free(bio_mem);
 }
 
-int pki_write_certificate(X509 *certificate, const char *filename)
+int
+pki_write_certificate(X509 *certificate, const char *filename)
 {
 	int ret = 0;
 	BIO *bio_file = NULL;
@@ -469,7 +495,8 @@ out:
 	return ret;
 }
 
-int pki_write_privatekey(EVP_PKEY *privatekey, const char *filename)
+int
+pki_write_privatekey(EVP_PKEY *privatekey, const char *filename)
 {
 	int ret = 0;
 	BIO *bio_file = NULL;
@@ -489,7 +516,8 @@ out:
 	return ret;
 }
 
-void pki_passport_destroy(passport_t *passport)
+void
+pki_passport_destroy(passport_t *passport)
 {
 	EVP_PKEY_free(passport->keyring);
 	X509_free(passport->certificate);
@@ -497,9 +525,10 @@ void pki_passport_destroy(passport_t *passport)
 	free(passport);
 }
 
-void pki_init()
+void
+pki_init()
 {
-	//SSL_library_init();
-	//SSL_load_error_strings();
+	/* SSL_library_init(); */
+	/* SSL_load_error_strings(); */
 }
 

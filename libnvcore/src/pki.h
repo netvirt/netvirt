@@ -53,6 +53,11 @@ typedef struct passport {
 } passport_t;
 
 void pki_init();
+
+
+EVP_PKEY *pki_generate_keyring();
+X509_REQ *pki_certificate_request(EVP_PKEY *keyring, digital_id_t *digital_id);
+
 void pki_passport_destroy(passport_t *passport);
 
 uint32_t pki_expiration_delay(uint8_t years);
@@ -86,5 +91,4 @@ passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, c
 passport_t *pki_passport_load_from_file(const char *certificate_filename,
                                         const char *privatekey_filename,
                                         const char *trusted_authority_filename);
-#
 #endif
