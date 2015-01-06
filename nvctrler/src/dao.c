@@ -151,8 +151,8 @@ int dao_prepare_statements()
 	result = PQprepare(dbconn,
 			"dao_add_node",
 			"INSERT INTO NODE "
-			"(context_id, uuid, certificate, privatekey, provcode, description, ipaddress) "
-			"VALUES ($1, $2, $3, $4, $5, $6, $7);",
+			"(context_id, uuid, provcode, description, ipaddress) "
+			"VALUES ($1, $2, $3, $4, $5);",
 			0,
 			NULL);
 
@@ -506,34 +506,30 @@ int dao_del_node_by_context_id(char *context_id)
 	return 0;
 }
 
-int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatekey, char *provcode, char *description, char *ipaddress)
+int dao_add_node(char *context_id, char *uuid, char *provcode, char *description, char *ipaddress)
 {
-	const char *paramValues[7];
-	int paramLengths[7];
+	const char *paramValues[5];
+	int paramLengths[5];
 	PGresult *result;
 
-	if (!context_id || !uuid || !certificate || !privatekey || !provcode || !ipaddress) {
+	if (!context_id || !uuid || !provcode || !description || !ipaddress) {
 		jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
 	paramValues[0] = context_id;
 	paramValues[1] = uuid;
-	paramValues[2] = certificate;
-	paramValues[3] = privatekey;
-	paramValues[4] = provcode;
-	paramValues[5] = description;
-	paramValues[6] = ipaddress;
+	paramValues[2] = provcode;
+	paramValues[3] = description;
+	paramValues[4] = ipaddress;
 
 	paramLengths[0] = strlen(context_id);
 	paramLengths[1] = strlen(uuid);
-	paramLengths[2] = strlen(certificate);
-	paramLengths[3] = strlen(privatekey);
-	paramLengths[4] = strlen(provcode);
-	paramLengths[5] = strlen(description);
-	paramLengths[6] = strlen(ipaddress);
+	paramLengths[2] = strlen(provcode);
+	paramLengths[3] = strlen(description);
+	paramLengths[4] = strlen(ipaddress);
 
-	result = PQexecPrepared(dbconn, "dao_add_node", 7, paramValues, paramLengths, NULL, 0);
+	result = PQexecPrepared(dbconn, "dao_add_node", 5, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
