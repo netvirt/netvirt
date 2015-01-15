@@ -446,6 +446,21 @@ pki_passport_load_from_memory(char *certificate, char *privatekey, char *trusted
 }
 
 void
+pki_write_certreq_in_mem(X509_REQ *certreq, char **certreq_ptr, long *size)
+{
+	BIO *bio_mem = NULL;
+
+	bio_mem = BIO_new(BIO_s_mem());
+	PEM_write_bio_X509_REQ(bio_mem, certreq);
+
+	*size = BIO_get_mem_data(bio_mem, certreq_ptr);
+	*(*certreq_ptr + *size) = '\0';
+
+	(void)BIO_set_close(bio_mem, BIO_NOCLOSE);
+	BIO_free(bio_mem);
+}
+
+void
 pki_write_certificate_in_mem(X509 *certificate, char **certificate_ptr, long *size)
 {
 	BIO *bio_mem = NULL;
