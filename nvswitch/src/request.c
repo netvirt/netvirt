@@ -15,6 +15,7 @@
 
 #include <dnds.h>
 #include <logger.h>
+#include <pki.h>
 
 #include "context.h"
 #include "control.h"
@@ -23,14 +24,8 @@
 
 void provRequest(struct session *session, DNDSMessage_t *req_msg)
 {
-	jlog(L_DEBUG, "provisioning request");
-	size_t length;
-	char *provcode = NULL;
-
-	ProvRequest_get_provCode(req_msg, &provcode, &length);
-	jlog(L_DEBUG, "provisioning code: %s", provcode);
-
-	transmit_provisioning(session, provcode, length);
+	jlog(L_DEBUG, "forward provisioning request to the netvirt-controller");
+	transmit_provisioning(session, req_msg);
 }
 
 /* Authentication Request from the node */
