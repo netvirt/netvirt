@@ -160,8 +160,12 @@ int NetinfoResponse_set_result(DNDSMessage_t *msg, e_DNDSResult result);
 int NetinfoResponse_get_result(DNDSMessage_t *msg, e_DNDSResult *result);
 
 // ProvRequest
+int ProvRequest_set_certreq(DNDSMessage_t *msg, char *certreq, size_t length);
+int ProvRequest_get_certreq(DNDSMessage_t *msg, char **certreq, size_t *length);
+
 int ProvRequest_set_provCode(DNDSMessage_t *msg, char *provCode, size_t length);
 int ProvRequest_get_provCode(DNDSMessage_t *msg, char **provCode, size_t *length);
+
 int ProvResponse_set_certificate(DNDSMessage_t *msg, char *certificate, size_t length);
 int ProvResponse_get_certificate(DNDSMessage_t *msg, char **certificate, size_t *length);
 int ProvResponse_set_certificateKey(DNDSMessage_t *msg, uint8_t *certificateKey, size_t length);

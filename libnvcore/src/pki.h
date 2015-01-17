@@ -52,6 +52,10 @@ typedef struct passport {
         X509_STORE *trusted_authority;
 } passport_t;
 
+
+void node_info_destroy(node_info_t *node_info);
+node_info_t *cn2node_info(char *cn);
+
 void pki_init();
 
 
@@ -70,6 +74,7 @@ digital_id_t *pki_digital_id(char *commonName,
 				char *organizationName);
 
 
+void pki_write_certreq_in_mem(X509_REQ *certreq, char **certreq_ptr, long *size);
 void pki_write_certificate_in_mem(X509 *certificate, char **certificate_ptr, long *size);
 void pki_write_privatekey_in_mem(EVP_PKEY *privatekey, char **privatekey_ptr, long *size);
 
