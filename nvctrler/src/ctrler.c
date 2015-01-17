@@ -53,7 +53,7 @@ dispatch_operation_dnm(struct session *session, DNDSMessage_t *msg)
 {
 	/* XXX make sure we are speaking with the
 	 * switch. */
-	dsop_PR operation;
+	dnop_PR operation;
 	DNMessage_get_operation(msg, &operation);
 	switch (operation) {
 	case dnop_PR_provRequest:
