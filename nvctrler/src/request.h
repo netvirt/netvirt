@@ -19,6 +19,8 @@
 #include <dnds.h>
 #include "ctrler.h"
 
+void provRequest(struct session *session, DNDSMessage_t *req_msg);
+
 void authRequest(struct session *session, DNDSMessage_t *msg);
 void addRequest(DNDSMessage_t *msg);
 void delRequest(struct session *session, DNDSMessage_t *msg);

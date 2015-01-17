@@ -48,7 +48,24 @@ static void terminate(struct session *session)
 	session_free(session);
 }
 
-static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
+static void
+dispatch_operation_dnm(struct session *session, DNDSMessage_t *msg)
+{
+	/* XXX make sure we are speaking with the
+	 * switch. */
+	dsop_PR operation;
+	DSMessage_get_operation(msg, &operation);
+	switch (operation) {
+	case dnop_PR_provRequest:
+		provRequest(session, msg);
+		break;
+	default:
+		terminate(session);
+		break;
+	}
+}
+
+static void dispatch_operation_dsm(struct session *session, DNDSMessage_t *msg)
 {
 	dsop_PR operation;
 	DSMessage_get_operation(msg, &operation);
@@ -111,8 +128,10 @@ static void on_input(netc_t *netc)
 
 		switch (pdu) {
 		case pdu_PR_dsm:
-			dispatch_operation(session, msg);
+			dispatch_operation_dsm(session, msg);
 			break;
+		case pdu_PR_dnm:
+			dispatch_operation_dnm(session, msg);
 		default:
 			terminate(session);
 			return;

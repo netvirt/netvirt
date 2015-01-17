@@ -614,6 +614,22 @@ int CB_searchRequest_node_by_context_id(void *msg, char *uuid, char *description
 	return 0;
 }
 
+void provRequest(struct session *session, DNDSMessage_t *req_msg)
+{
+	char *provcode = NULL;
+	char *certreq = NULL;
+	size_t cr_length = 0;
+	size_t pc_length = 0;
+
+	(void)session;
+
+	ProvRequest_get_certreq(req_msg, &certreq, &cr_length);
+	ProvRequest_get_provCode(req_msg, &provcode, &pc_length);
+
+	jlog(L_DEBUG, "provcode: %s", provcode);
+	jlog(L_DEBUG, "certreq: %s", certreq);
+}
+
 void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 {
 	char *provcode = NULL;
