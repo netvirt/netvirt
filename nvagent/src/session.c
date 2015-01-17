@@ -16,12 +16,14 @@
 
 #include "session.h"
 
-void *session_itemdup(const void *item)
+void *
+session_itemdup(const void *item)
 {
 	return (void *)item;
 }
 
-void session_itemrel(void *item)
+void
+session_itemrel(void *item)
 {
 	struct session *session;
 	if (item != NULL) {
