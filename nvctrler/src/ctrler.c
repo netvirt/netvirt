@@ -132,6 +132,7 @@ static void on_input(netc_t *netc)
 			break;
 		case pdu_PR_dnm:
 			dispatch_operation_dnm(session, msg);
+			break;
 		default:
 			terminate(session);
 			return;
