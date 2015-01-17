@@ -31,6 +31,7 @@ static struct ctrler_cfg *ctrler_cfg = NULL;
 
 static void session_free(struct session *session)
 {
+	jlog(L_DEBUG, "session freed: %p", session);
 	free(session);
 }
 
@@ -45,7 +46,6 @@ static struct session *session_new()
 static void terminate(struct session *session)
 {
 	net_disconnect(session->netc);
-	session_free(session);
 }
 
 static void
@@ -54,7 +54,7 @@ dispatch_operation_dnm(struct session *session, DNDSMessage_t *msg)
 	/* XXX make sure we are speaking with the
 	 * switch. */
 	dsop_PR operation;
-	DSMessage_get_operation(msg, &operation);
+	DMessage_get_operation(msg, &operation);
 	switch (operation) {
 	case dnop_PR_provRequest:
 		provRequest(session, msg);
