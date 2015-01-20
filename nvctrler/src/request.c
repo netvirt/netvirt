@@ -615,6 +615,7 @@ int CB_searchRequest_node_by_context_id(void *msg, char *uuid, char *description
 void
 provRequest(struct session *session, DNDSMessage_t *req_msg)
 {
+	int ret = 0;
 	char *provcode = NULL;
 	char *certreq_pem = NULL;
 	size_t cr_length = 0;
@@ -637,7 +638,7 @@ provRequest(struct session *session, DNDSMessage_t *req_msg)
 	node_info = cn2node_info(cn);
 	if (node_info == NULL) {
 		jlog(L_WARNING, "the common name <%s> is malformed", cn);
-		goto out;
+		goto out0;
 	}
 
 	if (strncmp(node_info->type, "nva", 3) != 0) {
@@ -645,29 +646,42 @@ provRequest(struct session *session, DNDSMessage_t *req_msg)
 		goto out;
 	}
 
-	jlog(L_DEBUG, "type: %s\n", node_info->type);
-	jlog(L_DEBUG, "uuid: %s\n", node_info->uuid);
+	jlog(L_DEBUG, "type: %s", node_info->type);
+	jlog(L_DEBUG, "uuid: %s", node_info->uuid);
 
 	char *context_id = NULL;
 	char *certificate = NULL;
 	char *private_key = NULL;
 	char *issue_serial = NULL;
 
-	dao_fetch_context_embassy_by_provisioning(node_info->uuid, provcode,
+	ret = dao_fetch_context_embassy_by_provisioning(node_info->uuid, provcode,
 			&context_id, &certificate, &private_key, &issue_serial);
+	if (ret != 0) {
+		jlog(L_WARNING, "failed to fetch the context embassy");
+		goto out;
+	}
+
+	if (strncmp(node_info->context_id, context_id, sizeof(node_info->context_id)) != 0) {
+		jlog(L_WARNING, "the context id <%s> doesn't match <%s>", node_info->context_id, context_id);
+		goto out;
+	}
 
 	jlog(L_DEBUG, "ctx id: %s", context_id);
 
 	/*
-	verify the cert common-name
-	fetch the context certs that has a node node with node-UUID + prov-UUID
-	verify if the context id match
+	verify the cert common-name [x]
+	fetch the context certs that has a node node with node-UUID + prov-UUID [x]
+	verify if the context id match [x]
+	load embassy in structure
+	create certificate
 	sign the cert req
 	update the serial number
 	build provResponse, populate it, and send it back to the switch
 	*/
 
 out:
+	node_info_destroy(node_info);
+out0:
 	return;
 }
 
