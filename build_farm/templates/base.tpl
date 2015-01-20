@@ -27,10 +27,12 @@ function submodule () {
 }
 
 function clone_dependencies () {
+    set -e
     clone_or_pull https://github.com/netvirt/netvirt.git netvirt
     cd netvirt
     git submodule init
     git submodule update
+    set +e
 }
 
 function fix_libconfig_git () {
@@ -61,4 +63,3 @@ install_build_dependencies
 clone_dependencies
 build_dependencies
 build_nvagent
-
