@@ -89,10 +89,9 @@ embassy_t *pki_embassy_new(digital_id_t *digital_id, uint32_t expiration_delay);
 void pki_passport_free(passport_t *passport);
 passport_t *pki_embassy_deliver_passport(embassy_t *embassy, digital_id_t *digital_id, uint32_t expiration_delay);
 
+X509_REQ *pki_load_csr_from_memory(char *certreq_pem);
 embassy_t *pki_embassy_load_from_memory(char *certificate, char *privatekey, uint32_t serial);
-
 passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, char *trusted_authority);
-
 passport_t *pki_passport_load_from_file(const char *certificate_filename,
                                         const char *privatekey_filename,
                                         const char *trusted_authority_filename);

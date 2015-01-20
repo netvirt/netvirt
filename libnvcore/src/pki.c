@@ -98,14 +98,14 @@ pki_certificate_request(EVP_PKEY *keyring, digital_id_t *digital_id)
 {
 	jlog(L_DEBUG, "pki_certificate_request");
 
-	X509_REQ *cert_req;
+	X509_REQ *certreq;
 	X509_NAME *subject;
 
 	/* create a certificate signing request */
-	cert_req = X509_REQ_new();
+	certreq = X509_REQ_new();
 
 	/* set public key to the CSR */
-	X509_REQ_set_pubkey(cert_req, keyring);
+	X509_REQ_set_pubkey(certreq, keyring);
 
 	/* set certificate request 'Subject:' */
 	subject = X509_NAME_new();
@@ -117,17 +117,17 @@ pki_certificate_request(EVP_PKEY *keyring, digital_id_t *digital_id)
 	X509_NAME_add_entry_by_txt(subject, "emailAddress", MBSTRING_ASC, (unsigned char*)digital_id->emailAddress, -1, -1, 0);
 	X509_NAME_add_entry_by_txt(subject, "organizationName", MBSTRING_ASC, (unsigned char*)digital_id->organizationName, -1, -1, 0);
 
-	X509_REQ_set_subject_name(cert_req, subject);
+	X509_REQ_set_subject_name(certreq, subject);
 	X509_NAME_free(subject);
 
 	/* sign the CSR with our keys */
-	X509_REQ_sign(cert_req, keyring, EVP_sha256());
+	X509_REQ_sign(certreq, keyring, EVP_sha256());
 
-	return cert_req;
+	return certreq;
 }
 
 static X509 *
-pki_certificate(X509_NAME *issuer, X509_REQ *cert_req,
+pki_certificate(X509_NAME *issuer, X509_REQ *certreq,
 		uint8_t is_cert_authority, uint32_t serial, uint32_t expiration_delay)
 {
 	jlog(L_DEBUG, "pki_certificate");
@@ -140,13 +140,13 @@ pki_certificate(X509_NAME *issuer, X509_REQ *cert_req,
 	X509_EXTENSION *ext = NULL;
 
 	/* Verify CSR signature */
-	pub_key = X509_REQ_get_pubkey(cert_req);
+	pub_key = X509_REQ_get_pubkey(certreq);
 	if (pub_key == NULL) {
 		jlog(L_WARNING, "no signature present in the certificate signing request");
 		return NULL;
 	}
 
-	if (X509_REQ_verify(cert_req, pub_key) != 1) {
+	if (X509_REQ_verify(certreq, pub_key) != 1) {
 		jlog(L_WARNING, "the certificate signing request signature is invalid");
 		return NULL;
 	}
@@ -158,14 +158,14 @@ pki_certificate(X509_NAME *issuer, X509_REQ *cert_req,
 	ASN1_INTEGER_set(X509_get_serialNumber(certificate), serial);
 
 	/* set certificate 'Subject:' */
-	subject = X509_REQ_get_subject_name(cert_req);
+	subject = X509_REQ_get_subject_name(certreq);
 	X509_set_subject_name(certificate, subject);
 
 	/* set certificate 'Issuer:' */
 	X509_set_issuer_name(certificate, issuer);
 
 	/* set X509v3 extension "basicConstraints" CA:TRUE/FALSE */
-	X509V3_set_ctx(&ctx, NULL, certificate, cert_req, NULL, 0);
+	X509V3_set_ctx(&ctx, NULL, certificate, certreq, NULL, 0);
 
 	if (is_cert_authority == true)
 		ext = X509V3_EXT_conf(NULL, &ctx, "basicConstraints", "CA:TRUE");
@@ -180,8 +180,8 @@ pki_certificate(X509_NAME *issuer, X509_REQ *cert_req,
 
 	/* set the 'notBefore' to yersterday */
 	X509_gmtime_adj(X509_get_notBefore(certificate), -(24*60*60));
-	/* set certificate expiration delay */
 
+	/* set certificate expiration delay */
 	X509_gmtime_adj(X509_get_notAfter(certificate), expiration_delay);
 
 	return certificate;
@@ -248,7 +248,7 @@ pki_embassy_new(digital_id_t *digital_id, uint32_t expiration_delay)
 	embassy = calloc(1, sizeof(embassy_t));
 
 	EVP_PKEY *keyring;
-	X509_REQ *cert_req;
+	X509_REQ *certreq;
 	X509 *certificate;
 	X509_NAME *issuer;
 	uint32_t serial = 0;
@@ -257,15 +257,15 @@ pki_embassy_new(digital_id_t *digital_id, uint32_t expiration_delay)
 	keyring = pki_generate_keyring();
 
 	/* create a certificate signing request */
-	cert_req = pki_certificate_request(keyring, digital_id);
+	certreq = pki_certificate_request(keyring, digital_id);
 
 	/* fetch the 'Subject:' name from the certificate request
 	 * note that this is a self-signed certificate therefore
 	 * the 'Subject:' and 'Issuer:' are the same */
-	issuer = X509_REQ_get_subject_name(cert_req);
+	issuer = X509_REQ_get_subject_name(certreq);
 
 	/* create the certificate from the certificate request and keyring */
-	certificate = pki_certificate(issuer, cert_req, true, serial++, expiration_delay);
+	certificate = pki_certificate(issuer, certreq, true, serial++, expiration_delay);
 
 	/* self-sign the certificate with our own keyring */
 	pki_sign_certificate(keyring, certificate);
@@ -297,7 +297,7 @@ pki_embassy_deliver_passport(embassy_t *embassy, digital_id_t *digital_id, uint3
 	passport = calloc(1, sizeof(passport_t));
 
 	EVP_PKEY *keyring;
-	X509_REQ *cert_req;
+	X509_REQ *certreq;
 	X509 *certificate;
 	X509_NAME *issuer;
 
@@ -305,13 +305,13 @@ pki_embassy_deliver_passport(embassy_t *embassy, digital_id_t *digital_id, uint3
 	keyring = pki_generate_keyring();
 
 	/* create a certificate signing request */
-	cert_req = pki_certificate_request(keyring, digital_id);
+	certreq = pki_certificate_request(keyring, digital_id);
 
 	/* fetch the 'Subject:' name from the certificate authority */
 	issuer = X509_get_subject_name(embassy->certificate);
 
 	/* create the certificate from the certificate request and keyring */
-	certificate = pki_certificate(issuer, cert_req, false, embassy->serial++, expiration_delay);
+	certificate = pki_certificate(issuer, certreq, false, embassy->serial++, expiration_delay);
 
 	/* sign the certificate with the certificate authority */
 	pki_sign_certificate(embassy->keyring, certificate);
@@ -337,6 +337,19 @@ pki_expiration_delay(uint8_t years)
 		years = 68;
 
 	return years*365*24*60*60;
+}
+
+X509_REQ *
+pki_load_csr_from_memory(char *certreq_pem)
+{
+	BIO *bio_memory = NULL;
+	X509_REQ *certreq = NULL;
+
+	bio_memory = BIO_new_mem_buf(certreq_pem, strlen(certreq_pem));
+	certreq = PEM_read_bio_X509_REQ(bio_memory, NULL, NULL, NULL);
+	BIO_free(bio_memory);
+
+	return certreq;
 }
 
 embassy_t *

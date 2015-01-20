@@ -13,12 +13,10 @@
  * GNU Affero General Public License for more details
  */
 
-/*
-	x509.h undef X509_NAME because wincrypt.h define it.
-	use winsock2.h, because it includes wincrypt.h and other usefull stuff
-*/
-
 #ifdef _WIN32
+	/* x509.h undef X509_NAME because wincrypt.h define it.
+	   use winsock2.h, because it includes wincrypt.h and other usefull stuff.
+	*/
 #include <winsock2.h>
 #endif
 
@@ -73,8 +71,8 @@ static DH *get_dh_1024() {
 // FIXME - could we remove this function?
 static DH *tmp_dh_callback(SSL *s, int is_export, int keylength)
 {
-	(void)(s); /* unused */
-	(void)(is_export); /* unused */
+	(void)(s);
+	(void)(is_export);
 
 	jlog(L_NOTICE, "keyl %i\n", keylength);
 	return NULL;
