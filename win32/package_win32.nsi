@@ -1,5 +1,5 @@
 !ifndef MINGW_PATH
-	!define MINGW_PATH /usr/lib/gcc/i686-w64-mingw32/4.6/
+	!define MINGW_PATH /usr/lib/gcc/i686-w64-mingw32/4.8/
 !endif
 !ifndef PTHREAD_PATH
 	!define PTHREAD_PATH /usr/i686-w64-mingw32/lib/
