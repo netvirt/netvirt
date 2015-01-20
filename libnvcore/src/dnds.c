@@ -1099,47 +1099,6 @@ int NetinfoResponse_get_result(DNDSMessage_t *msg, e_DNDSResult *result)
 }
 
 // ProvRequest
-int ProvRequest_set_certreq(DNDSMessage_t *msg, char *certreq, size_t length)
-{
-	if (msg == NULL || certreq == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_provRequest) {
-		return DNDS_invalid_op;
-	}
-
-	msg->pdu.choice.dnm.dnop.choice.provRequest.certreq = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
-	if (msg->pdu.choice.dnm.dnop.choice.provRequest.certreq == NULL) {
-		return DNDS_alloc_failed;
-	}
-
-	msg->pdu.choice.dnm.dnop.choice.provRequest.certreq->buf = (uint8_t *)strdup(certreq);
-	msg->pdu.choice.dnm.dnop.choice.provRequest.certreq->size = length;
-
-	return DNDS_success;
-}
-
-int ProvRequest_get_certreq(DNDSMessage_t *msg, char **certreq, size_t *length)
-{
-	if (msg == NULL || certreq == NULL || length == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (msg->pdu.choice.dnm.dnop.present != dnop_PR_provRequest) {
-		return DNDS_invalid_op;
-	}
-
-	if (msg->pdu.choice.dnm.dnop.choice.provRequest.certreq == NULL) {
-		return DNDS_value_not_present;
-	}
-
-	*certreq = (char *)msg->pdu.choice.dnm.dnop.choice.provRequest.certreq->buf;
-	*length = msg->pdu.choice.dnm.dnop.choice.provRequest.certreq->size;
-
-	return DNDS_success;
-}
-
 int ProvRequest_set_provCode(DNDSMessage_t *msg, char *provCode, size_t length)
 {
 	if (msg == NULL || provCode == NULL) {

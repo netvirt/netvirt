@@ -34,15 +34,33 @@ static struct switch_cfg *switch_cfg = NULL;
 struct session *session_tracking_table[MAX_SESSION];
 static uint32_t tracking_id = 0;
 
-int transmit_provisioning(struct session *session, DNDSMessage_t *req_msg)
+int transmit_provisioning(struct session *session, char *provCode, uint32_t length)
 {
-	/* XXX should have it's own tracking number field  ? */
-	DSMessage_set_seqNumber(req_msg, tracking_id);
-	net_send_msg(ctrl_netc, req_msg);
+	DNDSMessage_t *msg;
 
-	/* This packet is forwarded to the netvirt-controller,
-	 * it will then be freed by the caller, not here.
-         * DNDSMessage_del(req_msg); */
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+
+	/* XXX should have it's own tracking number field  ? */
+	DSMessage_set_seqNumber(msg, tracking_id);
+	DSMessage_set_ackNumber(msg, 0);
+	DSMessage_set_operation(msg, dsop_PR_searchRequest);
+
+	SearchRequest_set_searchType(msg, SearchType_object);
+
+	DNDSObject_t *objNode;
+	DNDSObject_new(&objNode);
+	DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
+
+	Node_set_contextId(objNode, 0);
+	Node_set_provCode(objNode, provCode, length);
+
+	SearchRequest_set_object(msg, objNode);
+
+	net_send_msg(ctrl_netc, msg);
+	DNDSMessage_del(msg);
+
 	session_tracking_table[tracking_id % MAX_SESSION] = session;
 	tracking_id++;
 

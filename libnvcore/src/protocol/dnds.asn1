@@ -109,7 +109,6 @@ NetinfoResponse ::= SEQUENCE {
 }
 
 ProvRequest ::= SEQUENCE {
-	certreq		PrintableString OPTIONAL,
 	provCode	PrintableString OPTIONAL,
 	...
 }

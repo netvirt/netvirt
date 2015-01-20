@@ -29,22 +29,18 @@
 #include "../config.h"
 
 static struct agent_cfg *agent_cfg = NULL;
-
-void
-int_handler(int sig)
+void int_handler(int sig)
 {
 	(void)sig;
 	agent_cfg->agent_running = 0;
 }
 
-void
-on_log(const char *logline)
+void on_log(const char *logline)
 {
 	fprintf(stdout, "%s", logline);
 }
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	int opt;
 	agent_cfg = calloc(1, sizeof(struct agent_cfg));
@@ -94,7 +90,7 @@ main(int argc, char *argv[])
 
 	agent_cfg->agent_running = 1;
 
-	while (agent_cfg->agent_running) {
+	while(agent_cfg->agent_running) {
 		sleep(1);
 	}
 

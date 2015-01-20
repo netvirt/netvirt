@@ -148,12 +148,12 @@ void AddRequest_context(DNDSMessage_t *msg)
 
 	pki_init();
 
-	/* initialize embassy */
+	/* 3.1- Initialise embassy */
 	int exp_delay;
 	exp_delay = pki_expiration_delay(10);
 
 	digital_id_t *embassy_id;
-	embassy_id = pki_digital_id("nvctrler", "", "", "", "admin@netvirt.org", "www.netvirt.org");
+	embassy_id = pki_digital_id("embassy", "CA", "Quebec", "", "admin@netvirt.org", "NetVirt");
 
 	embassy_t *emb;
 	emb = pki_embassy_new(embassy_id, exp_delay);
@@ -165,9 +165,10 @@ void AddRequest_context(DNDSMessage_t *msg)
 	pki_write_certificate_in_mem(emb->certificate, &emb_cert_ptr, &size);
 	pki_write_privatekey_in_mem(emb->keyring, &emb_pvkey_ptr, &size);
 
-	/* initialize nvswitch passport */
+	/* 3.2- Initialize server passport */
+
 	digital_id_t *server_id;
-	server_id = pki_digital_id("nvswitch", "", "", "", "admin@netvirt.org", "www.netvirt.org");
+	server_id = pki_digital_id("nvswitch", "CA", "Quebec", "", "admin@netvirt.org", "NetVirt");
 
 	passport_t *nvswitch_passport;
 	nvswitch_passport = pki_embassy_deliver_passport(emb, server_id, exp_delay);
@@ -184,7 +185,7 @@ void AddRequest_context(DNDSMessage_t *msg)
 	snprintf(emb_serial, sizeof(emb_serial), "%d", emb->serial);
 	free(emb);
 
-	/* create an IP pool */
+	/* Create an IP pool */
 	struct ippool *ippool;
 	size_t pool_size;
 
@@ -285,18 +286,60 @@ void AddRequest_node(DNDSMessage_t *msg)
 	char context_id_str[10] = {0};
 	char *description = NULL;
 
+	int exp_delay;
+	embassy_t *emb = NULL;
+	char *emb_cert_ptr = NULL;
+	char *emb_pvkey_ptr = NULL;
+	char *serial = NULL;
 	unsigned char *ippool_bin = NULL;
+	long size;
 
 	char *uuid = NULL;
 	char *provcode = NULL;
+	char common_name[256] = {0};
+	char *node_cert_ptr = NULL;
+	char *node_pvkey_ptr = NULL;
+	char emb_serial[10];
 
 	Node_get_contextId(obj, &context_id);
 	Node_get_description(obj, &description, &length);
 
 	snprintf(context_id_str, 10, "%d", context_id);
 
+	exp_delay = pki_expiration_delay(10);
+	ret = dao_fetch_context_embassy(context_id_str, &emb_cert_ptr, &emb_pvkey_ptr, &serial, &ippool_bin);
+	if (ret == -1) {
+		jlog(L_ERROR, "failed to fetch context embassy");
+		return;
+	}
+	jlog(L_DEBUG, "serial: %s", serial);
+
+	emb = pki_embassy_load_from_memory(emb_cert_ptr, emb_pvkey_ptr, atoi(serial));
+
 	uuid = uuid_v4();
 	provcode = uuid_v4();
+
+	snprintf(common_name, sizeof(common_name), "nva-%s@%s", uuid, context_id_str);
+	jlog(L_DEBUG, "common_name: %s", common_name);
+
+	digital_id_t *node_ident = NULL;
+	node_ident = pki_digital_id(common_name, "", "", "", "admin@netvirt.org", "NetVirt");
+
+	passport_t *node_passport = NULL;
+	node_passport = pki_embassy_deliver_passport(emb, node_ident, exp_delay);
+
+	/* FIXME verify is the value is freed or not via BIO_free() */
+	pki_write_certificate_in_mem(node_passport->certificate, &node_cert_ptr, &size);
+	pki_write_privatekey_in_mem(node_passport->keyring, &node_pvkey_ptr, &size);
+
+	snprintf(emb_serial, sizeof(emb_serial), "%d", emb->serial);
+
+	ret = dao_update_embassy_serial(context_id_str, emb_serial);
+	if (ret == -1) {
+		jlog(L_ERROR, "failed to update embassy serial");
+		goto free1;
+	}
+	jlog(L_DEBUG, "dao_update_embassy_serial: %d", ret);
 
 	/* handle ip pool */
 	struct ippool *ippool;
@@ -309,16 +352,16 @@ void AddRequest_node(DNDSMessage_t *msg)
 	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
 	ip = ippool_get_ip(ippool);
 
-	ret = dao_add_node(context_id_str, uuid, provcode, description, ip);
+	ret = dao_add_node(context_id_str, uuid, node_cert_ptr, node_pvkey_ptr, provcode, description, ip);
 	if (ret == -1) {
 		jlog(L_ERROR, "failed to add node");
-		goto err;
+		goto free2;
 	}
 
 	ret = dao_update_context_ippool(context_id_str, ippool->pool, pool_size);
 	if (ret == -1) {
 		jlog(L_ERROR, "failed to update embassy ippool");
-		goto err;
+		goto free2;
 	}
 
 
@@ -345,10 +388,23 @@ void AddRequest_node(DNDSMessage_t *msg)
 
 	DNDSMessage_del(msg_up);
 
-err:
+free2:
 	ippool_free(ippool);
+
+free1:
+	free(node_passport);
+	free(node_ident);
+
 	free(uuid);
 	free(provcode);
+
+	free(node_cert_ptr);
+	free(node_pvkey_ptr);
+
+	free(serial);
+	free(emb);
+	free(emb_cert_ptr);
+	free(emb_pvkey_ptr);
 }
 
 void DelRequest_node(DNDSMessage_t *msg)
@@ -612,22 +668,6 @@ int CB_searchRequest_node_by_context_id(void *msg, char *uuid, char *description
 	SearchResponse_add_object(msg, objNode);
 
 	return 0;
-}
-
-void provRequest(struct session *session, DNDSMessage_t *req_msg)
-{
-	char *provcode = NULL;
-	char *certreq = NULL;
-	size_t cr_length = 0;
-	size_t pc_length = 0;
-
-	(void)session;
-
-	ProvRequest_get_certreq(req_msg, &certreq, &cr_length);
-	ProvRequest_get_provCode(req_msg, &provcode, &pc_length);
-
-	jlog(L_DEBUG, "provcode: %s", provcode);
-	jlog(L_DEBUG, "certreq: %s", certreq);
 }
 
 void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)

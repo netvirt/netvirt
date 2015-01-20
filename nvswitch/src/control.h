@@ -21,7 +21,7 @@
 #include "session.h"
 #include "switch.h"
 
-int transmit_provisioning(struct session *session, DNDSMessage_t *req_msg);
+int transmit_provisioning(struct session *session, char *provCode, uint32_t length);
 int transmit_peerconnectinfo(e_ConnectState state, char *ipAddress, char *certName);
 int transmit_node_connectinfo(e_ConnectState state, char *ipAddress, char *certName);
 int ctrl_init(struct switch_cfg *cfg);

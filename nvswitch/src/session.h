@@ -18,6 +18,7 @@
 
 #include <inttypes.h>
 
+#include <cert.h>
 #include <netbus.h>
 
 #define SESSION_STATE_AUTHED		0x1

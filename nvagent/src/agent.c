@@ -34,7 +34,6 @@
 #include <logger.h>
 #include <mbuf.h>
 #include <netbus.h>
-#include <pki.h>
 
 #include "agent.h"
 #include "p2p.h"
@@ -49,8 +48,7 @@ static void on_secure(netc_t *netc);
 static void dispatch_op(struct session *session, DNDSMessage_t *msg);
 static void on_disconnect(netc_t *netc);
 
-static void
-tunnel_in(struct session* session)
+static void tunnel_in(struct session* session)
 {
 	DNDSMessage_t *msg = NULL;
 	size_t frame_size = 0;
@@ -77,8 +75,7 @@ tunnel_in(struct session* session)
 	DNDSMessage_del(msg);
 }
 
-static void
-tunnel_out(struct session *session, DNDSMessage_t *msg)
+static void tunnel_out(struct session *session, DNDSMessage_t *msg)
 {
 	uint8_t *framebuf;
 	size_t framebufsz;
@@ -87,16 +84,14 @@ tunnel_out(struct session *session, DNDSMessage_t *msg)
 	tapcfg_write(session->tapcfg, framebuf, framebufsz);
 }
 
-void
-terminate(struct session *session)
+void terminate(struct session *session)
 {
 	session->state = SESSION_STATE_DOWN;
 	net_disconnect(session->netc);
 	session->netc = NULL;
 }
 
-void
-transmit_netinfo_request(struct session *session)
+void transmit_netinfo_request(struct session *session)
 {
 	const char *hwaddr;
 	int hwaddrlen;
@@ -123,31 +118,8 @@ transmit_netinfo_request(struct session *session)
 
 }
 
-void
-transmit_prov_request(netc_t *netc)
+void transmit_prov_request(netc_t *netc)
 {
-
-	/* Create private key
-	 * Create CSR */
-
-	EVP_PKEY *keyring = NULL;
-	X509_REQ *certreq = NULL;
-	digital_id_t *nva_id = NULL;
-
-	char *certreq_pem = NULL;
-	long size = 0;
-
-	nva_id = pki_digital_id("nva-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",  "", "", "", "admin@netvirt.org", "www.netvirt.org");
-
-	/* generate RSA public and private keys */
-	keyring = pki_generate_keyring();
-
-	/* create a certificate signing request */
-	certreq = pki_certificate_request(keyring, nva_id);
-
-	/* write the certreq in PEM format */
-	pki_write_certreq_in_mem(certreq, &certreq_pem, &size);
-
 	ssize_t nbyte;
 	DNDSMessage_t *msg;
 
@@ -159,7 +131,6 @@ transmit_prov_request(netc_t *netc)
 	DNMessage_set_ackNumber(msg, 0);
 	DNMessage_set_operation(msg, dnop_PR_provRequest);
 
-	ProvRequest_set_certreq(msg, certreq_pem, size);
 	ProvRequest_set_provCode(msg, agent_cfg->prov_code, strlen(agent_cfg->prov_code));
 
 	nbyte = net_send_msg(netc, msg);
@@ -170,8 +141,7 @@ transmit_prov_request(netc_t *netc)
 	}
 }
 
-void
-transmit_register(netc_t *netc)
+void transmit_register(netc_t *netc)
 {
 	X509_NAME *subj_ptr;
 	char subj[256];
@@ -202,14 +172,13 @@ transmit_register(netc_t *netc)
         }
 	session->state = SESSION_STATE_WAIT_ANSWER;
 
-	/* Prepare re-handshake, set up certificates */
+	/* Prepare to the re-handshake, set up certificates */
 	krypt_set_rsa(session->netc->kconn);
 
         return;
 }
 
-void *
-try_to_reconnect(void *ptr)
+void *try_to_reconnect(void *ptr)
 {
 	struct session *session = NULL;
 	netc_t *retry_netc = NULL;
@@ -238,8 +207,7 @@ try_to_reconnect(void *ptr)
 	return NULL;
 }
 
-static void
-on_disconnect(netc_t *netc)
+static void on_disconnect(netc_t *netc)
 {
 	jlog(L_NOTICE, "disconnected...");
 
@@ -267,8 +235,7 @@ on_disconnect(netc_t *netc)
 	pthread_detach(thread_reconnect);
 }
 
-static void
-on_secure(netc_t *netc)
+static void on_secure(netc_t *netc)
 {
 	struct session *session;
 	session = netc->ext_ptr;
@@ -278,18 +245,16 @@ on_secure(netc_t *netc)
 	if (session->state == SESSION_STATE_NOT_AUTHED) {
 		if (session->passport == NULL && agent_cfg->prov_code != NULL) {
 			jlog(L_NOTICE, "Provisioning mode...");
-
-			/* XXX Verify server cert fingerprint */
 			transmit_prov_request(netc);
 		}
 		else {
 			transmit_register(netc);
 		}
+
 	}
 }
 
-void
-on_input(netc_t *netc)
+void on_input(netc_t *netc)
 {
 	DNDSMessage_t *msg;
 	struct session *session;
@@ -320,8 +285,7 @@ on_input(netc_t *netc)
 	}
 }
 
-static void
-op_netinfo_response(struct session *session)
+static void op_netinfo_response(struct session *session)
 {
 	FILE *fp = NULL;
 	int fret = 0;
@@ -343,8 +307,7 @@ op_netinfo_response(struct session *session)
 	session->state = SESSION_STATE_AUTHED;
 }
 
-static void
-op_auth_response(struct session *session, DNDSMessage_t *msg)
+static void op_auth_response(struct session *session, DNDSMessage_t *msg)
 {
 	e_DNDSResult result;
 	AuthResponse_get_result(msg, &result);
@@ -383,8 +346,7 @@ op_auth_response(struct session *session, DNDSMessage_t *msg)
 	}
 }
 
-static void
-create_file_with_owner_right(const char *filename)
+static void create_file_with_owner_right(const char *filename)
 {
 	int fd = 0;
 	fd = open(filename, O_CREAT, S_IRUSR|S_IWUSR);
@@ -392,8 +354,7 @@ create_file_with_owner_right(const char *filename)
 		close(fd);
 }
 
-static void
-op_prov_response(struct session *session, DNDSMessage_t *msg)
+static void op_prov_response(struct session *session, DNDSMessage_t *msg)
 {
 	size_t length;
 	char *certificate = NULL;
@@ -454,8 +415,7 @@ op_prov_response(struct session *session, DNDSMessage_t *msg)
 	transmit_register(session->netc);
 }
 
-static void
-dispatch_op(struct session *session, DNDSMessage_t *msg)
+static void dispatch_op(struct session *session, DNDSMessage_t *msg)
 {
 	dnop_PR operation;
 	DNMessage_get_operation(msg, &operation);
@@ -482,15 +442,14 @@ dispatch_op(struct session *session, DNDSMessage_t *msg)
 	 */
 	case dnop_PR_NOTHING:
 	default:
-		jlog(L_WARNING, "Message is not a valid DNM operation.");
+		jlog(L_NOTICE, "not a valid DNM operation");
 	case dnop_PR_terminateRequest:
 		terminate(session);
 		break;
 	}
 }
 
-static void *
-agent_loop(void *session)
+static void *agent_loop(void *session)
 {
 	while (agent_cfg->agent_running) {
 		udtbus_poke_queue();
@@ -501,8 +460,7 @@ agent_loop(void *session)
 	return NULL;
 }
 
-void
-agent_init_async(struct agent_cfg *cfg)
+void agent_init_async(struct agent_cfg *cfg)
 {
 	pthread_t agent_init_async;
 	pthread_create(&agent_init_async, NULL, agent_init, (void*)cfg);
@@ -512,8 +470,7 @@ static pthread_t thread_reconnect;
 static pthread_t thread_loop;
 static struct session *session;
 
-void
-agent_fini()
+void agent_fini()
 {
 	pthread_join(thread_reconnect, NULL);
 	pthread_join(thread_loop, NULL);
@@ -528,8 +485,7 @@ agent_fini()
 	free(session);
 }
 
-void *
-agent_init(void *cfg)
+void *agent_init(void *cfg)
 {
 	agent_cfg = (struct agent_cfg *)cfg;
 
@@ -547,10 +503,9 @@ agent_init(void *cfg)
 		return NULL;
 	}
 
-	if (agent_cfg->prov_code == NULL) {
+	if (agent_cfg->prov_code == NULL)
 		session->passport = pki_passport_load_from_file(
 			agent_cfg->certificate, agent_cfg->privatekey, agent_cfg->trusted_cert);
-	}
 
 	if (session->passport == NULL && agent_cfg->prov_code == NULL) {
 		jlog(L_ERROR, "Must provide a provisioning code: ./nvagent -p ...");
@@ -568,7 +523,7 @@ agent_init(void *cfg)
 		return NULL;
 	}
 
-	if (tapcfg_start(session->tapcfg, "nv0", 1) < 0) {
+	if (tapcfg_start(session->tapcfg, "netvirt0", 1) < 0) {
 		jlog(L_ERROR, "tapcfg_start failed");
 		free(session);
 		return NULL;

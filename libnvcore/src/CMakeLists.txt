@@ -1,20 +1,21 @@
 set(CMAKE_C_FLAGS "-g -W -Wall ${compiler_options}")
 set(CMAKE_CXX_FLAGS "-g -W -Wall ${compiler_options}")
 
+add_subdirectory(tests)
 add_subdirectory(protocol)
 include_directories(protocol)
 
 set(NVCORE_SRCS
 	bitv.c
-	crypto.c
+	cert.c
 	dnds.c
 	ftable.c
 	hash.c
 	jsw_hlib.c
 	logger.c
+	crypto.c
 	mbuf.c
 	netbus.c
-	pki.c
 	udt.cpp
 )
 
@@ -38,12 +39,20 @@ if(WIN32)
 else()
 	set(UDT_LIBRARIES ${CMAKE_SOURCE_DIR}/udt4/src/libudt.a)
 	target_link_libraries(nvcore
-		ssl
-		crypto
+#		-Wl,-Bstatic
+#		dl
+#		crypto
+#		ssl
+#		-Wl,-Bdynamic
 	)
+
+#	install(TARGETS nvcore
+#		LIBRARY DESTINATION ${library_dest_dir} COMPONENT Runtime)
 endif()
 
 target_link_libraries(nvcore
 	${UDT_LIBRARIES}
+#	${OPENSSL_LIBRARIES}
 	dnds_protocol
+#	pthread
 )

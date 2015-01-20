@@ -59,7 +59,7 @@ int dao_update_embassy_serial(char *context_id, char *serial);
 int dao_del_node(char *context_id, char *uuid);
 int dao_del_node_by_context_id(char *context_id);
 
-int dao_add_node(char *context_id, char *uuid, char *provcode, char *description, char *ipaddress);
+int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatekey, char *provcode, char *description, char *ipaddress);
 
 int dao_update_context_ippool(char *context_id, unsigned char *ippool, int pool_size);
 

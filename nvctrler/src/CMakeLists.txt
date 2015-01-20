@@ -10,10 +10,10 @@ add_subdirectory(tests)
 
 add_executable(netvirt-ctrler
 	ctrler.c
-	certs.c
 	dao.c
 	ippool.c
 	main.c
+	pki.c
 	request.c
 )
 
