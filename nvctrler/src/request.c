@@ -552,7 +552,6 @@ void CB_searchRequest_node_sequence(void *msg, char *uuid, char *context_id)
 
 void searchRequest_node_sequence(struct session *session, DNDSMessage_t *req_msg)
 {
-	/* extraire la liste de Node ID de req_msg */
 	DNDSObject_t *object = NULL;
 	uint32_t count = 0;
 	uint32_t i = 0;
@@ -587,7 +586,6 @@ void searchRequest_node_sequence(struct session *session, DNDSMessage_t *req_msg
 		}
 	}
 
-	/* lancer requete sql pour retourner les Node UUID */
 	dao_fetch_node_sequence(id_list, count, msg, CB_searchRequest_node_sequence);
 
 	free(id_list);
@@ -614,20 +612,63 @@ int CB_searchRequest_node_by_context_id(void *msg, char *uuid, char *description
 	return 0;
 }
 
-void provRequest(struct session *session, DNDSMessage_t *req_msg)
+void
+provRequest(struct session *session, DNDSMessage_t *req_msg)
 {
 	char *provcode = NULL;
-	char *certreq = NULL;
+	char *certreq_pem = NULL;
 	size_t cr_length = 0;
 	size_t pc_length = 0;
 
+	X509_REQ *certreq = NULL; /* Certificate signing request */
+	X509_NAME *name = NULL;
+	char cn[128];
+	node_info_t *node_info = NULL;
+
 	(void)session;
 
-	ProvRequest_get_certreq(req_msg, &certreq, &cr_length);
+	ProvRequest_get_certreq(req_msg, &certreq_pem, &cr_length);
 	ProvRequest_get_provCode(req_msg, &provcode, &pc_length);
 
-	jlog(L_DEBUG, "provcode: %s", provcode);
-	jlog(L_DEBUG, "certreq: %s", certreq);
+	certreq = pki_load_csr_from_memory(certreq_pem);
+	name = X509_REQ_get_subject_name(certreq);
+	X509_NAME_get_text_by_NID(name, NID_commonName, cn, sizeof(cn));
+
+	node_info = cn2node_info(cn);
+	if (node_info == NULL) {
+		jlog(L_WARNING, "the common name <%s> is malformed", cn);
+		goto out;
+	}
+
+	if (strncmp(node_info->type, "nva", 3) != 0) {
+		jlog(L_WARNING, "the common name <%s> is invalid", cn);
+		goto out;
+	}
+
+	jlog(L_DEBUG, "type: %s\n", node_info->type);
+	jlog(L_DEBUG, "uuid: %s\n", node_info->uuid);
+
+	char *context_id = NULL;
+	char *certificate = NULL;
+	char *private_key = NULL;
+	char *issue_serial = NULL;
+
+	dao_fetch_context_embassy_by_provisioning(node_info->uuid, provcode,
+			&context_id, &certificate, &private_key, &issue_serial);
+
+	jlog(L_DEBUG, "ctx id: %s", context_id);
+
+	/*
+	verify the cert common-name
+	fetch the context certs that has a node node with node-UUID + prov-UUID
+	verify if the context id match
+	sign the cert req
+	update the serial number
+	build provResponse, populate it, and send it back to the switch
+	*/
+
+out:
+	return;
 }
 
 void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)

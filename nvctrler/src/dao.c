@@ -105,6 +105,19 @@ int dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
+			"dao_fetch_context_embassy_by_provisioning",
+			"SELECT context_id, embassy_certificate, embassy_privatekey, embassy_serial "
+			"FROM context, node "
+			"WHERE uuid = $1 "
+			"AND provcode = $2 "
+			"AND node.context_id = context.id;",
+			0,
+			NULL);
+	if (result == NULL)
+		goto error;
+	PQclear(result);
+
+	result = PQprepare(dbconn,
 			"dao_fetch_context_id",
 			"SELECT id "
 			"FROM CONTEXT "
@@ -792,6 +805,60 @@ int dao_update_embassy_serial(char *context_id, char *serial)
 
 	if (!result) {
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		return -1;
+	}
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return -1;
+	}
+
+	PQclear(result);
+
+	return 0;
+}
+
+int
+dao_fetch_context_embassy_by_provisioning(char *uuid, char *provcode,
+				char **context_id,
+				char **certificate,
+				char **private_key,
+				char **issue_serial)
+{
+	const char *paramValues[2];
+	int paramLengths[2];
+	int tuples = 0;
+	int fields = 0;
+	PGresult *result;
+
+	paramValues[0] = uuid;
+	paramValues[1] = provcode;
+
+	paramLengths[0] = strlen(uuid);
+	paramLengths[1] = strlen(provcode);
+
+	result = PQexecPrepared(dbconn, "dao_fetch_context_embassy_by_provisioning", 2, paramValues, paramLengths, NULL, 0);
+
+	if (!result) {
+		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		return -1;
+	}
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return -1;
+	}
+
+	tuples = PQntuples(result);
+	fields = PQnfields(result);
+
+	if (tuples > 0 && fields == 4) {
+		*context_id = strdup(PQgetvalue(result, 0, 0));
+                *certificate = strdup(PQgetvalue(result, 0, 1));
+                *private_key = strdup(PQgetvalue(result, 0, 2));
+                *issue_serial = strdup(PQgetvalue(result, 0, 3));
+	} else {
+		PQclear(result);
 		return -1;
 	}
 
