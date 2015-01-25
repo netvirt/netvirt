@@ -34,10 +34,23 @@ static struct switch_cfg *switch_cfg = NULL;
 struct session *session_tracking_table[MAX_SESSION];
 static uint32_t tracking_id = 0;
 
+void handle_provResponse(DNDSMessage_t *msg)
+{
+	struct session *session = NULL;
+	uint32_t tracked_id = 0;
+	DNMessage_get_seqNumber(msg, &tracked_id);
+
+	session = session_tracking_table[tracked_id % MAX_SESSION];
+	session_tracking_table[tracked_id % MAX_SESSION] = NULL;
+	if (session) {
+		net_send_msg(session->netc, msg);
+	}
+}
+
 int transmit_provisioning(struct session *session, DNDSMessage_t *req_msg)
 {
 	/* XXX should have it's own tracking number field  ? */
-	DSMessage_set_seqNumber(req_msg, tracking_id);
+	DNMessage_set_seqNumber(req_msg, tracking_id);
 	net_send_msg(ctrl_netc, req_msg);
 
 	/* This packet is forwarded to the netvirt-controller,
@@ -328,7 +341,23 @@ static void handle_SearchResponse(DNDSMessage_t *msg)
 	}
 }
 
-static void dispatch_operation(DNDSMessage_t *msg)
+static void dispatch_operation_dnm(DNDSMessage_t *msg)
+{
+	dnop_PR operation;
+	DNMessage_get_operation(msg, &operation);
+
+	switch (operation) {
+	case dnop_PR_provResponse:
+		handle_provResponse(msg);
+		break;
+
+	default:
+		jlog(L_WARNING, "not a valid DNM operation");
+	}
+
+}
+
+static void dispatch_operation_dsm(DNDSMessage_t *msg)
 {
 	dsop_PR operation;
 	DSMessage_get_operation(msg, &operation);
@@ -361,8 +390,11 @@ static void on_input(netc_t *netc)
 		DNDSMessage_get_pdu(msg, &pdu);
 
 		switch (pdu) {
-		case pdu_PR_dsm:	/* DNDS protocol */
-			dispatch_operation(msg);
+		case pdu_PR_dnm:
+			dispatch_operation_dnm(msg);
+			break;
+		case pdu_PR_dsm:
+			dispatch_operation_dsm(msg);
 			break;
 		default:
 			/* TODO disconnect session */
