@@ -27,6 +27,7 @@ struct agent_cfg {
 	char *privatekey;
 	char *trusted_cert;
 
+	char *tmp_pvkey_pem;
 	char *prov_code;
 	const char *log_file;
 	int auto_connect;

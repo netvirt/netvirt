@@ -127,8 +127,7 @@ void
 transmit_prov_request(netc_t *netc)
 {
 
-	/* Create private key
-	 * Create CSR */
+	/* XXX wrap these into a PKI function */
 
 	EVP_PKEY *keyring = NULL;
 	X509_REQ *certreq = NULL;
@@ -137,7 +136,8 @@ transmit_prov_request(netc_t *netc)
 	char *certreq_pem = NULL;
 	long size = 0;
 
-	nva_id = pki_digital_id("nva-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",  "", "", "", "admin@netvirt.org", "www.netvirt.org");
+	/* XXX hardcoded for testing purpose, we don't have nv://URL parser yet */
+	nva_id = pki_digital_id("nva-d057a4ac-b601-446b-b64d-6b1966fde430@1",  "", "", "", "admin@netvirt.org", "www.netvirt.org");
 
 	/* generate RSA public and private keys */
 	keyring = pki_generate_keyring();
@@ -147,6 +147,9 @@ transmit_prov_request(netc_t *netc)
 
 	/* write the certreq in PEM format */
 	pki_write_certreq_in_mem(certreq, &certreq_pem, &size);
+
+	/* write the private key in PEM format */
+	pki_write_privatekey_in_mem(keyring, &agent_cfg->tmp_pvkey_pem, &size);
 
 	ssize_t nbyte;
 	DNDSMessage_t *msg;
@@ -416,14 +419,13 @@ op_prov_response(struct session *session, DNDSMessage_t *msg)
 	fwrite(certificate, 1, strlen(certificate), fp);
 	fclose(fp);
 
-	ProvResponse_get_certificateKey(msg, &certificatekey, &length);
 	create_file_with_owner_right(agent_cfg->privatekey);
 	fp = fopen(agent_cfg->privatekey, "w");
 	if (fp == NULL) {
 		jlog(L_ERROR, "can't write private key in file '%s'", agent_cfg->privatekey);
 		return;
 	}
-	fwrite(certificatekey, 1, strlen((char*)certificatekey), fp);
+	fwrite(agent_cfg->tmp_pvkey_pem, 1, strlen(agent_cfg->tmp_pvkey_pem), fp);
 	fclose(fp);
 
 	ProvResponse_get_trustedCert(msg, &trusted_authority, &length);
@@ -446,12 +448,14 @@ op_prov_response(struct session *session, DNDSMessage_t *msg)
 	fprintf(fp, "%s", ipAddress);
 	fclose(fp);
 
+/*
 	session->passport = pki_passport_load_from_file(agent_cfg->certificate,
 					 agent_cfg->privatekey,
 					 agent_cfg->trusted_cert);
 
 	krypt_add_passport(session->netc->kconn, session->passport);
 	transmit_register(session->netc);
+*/
 }
 
 static void
