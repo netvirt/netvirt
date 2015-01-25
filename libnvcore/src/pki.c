@@ -39,11 +39,13 @@ node_info_destroy(node_info_t *node_info)
 node_info_t *
 cn2node_info(char *cn)
 {
-	/* expected: dnc-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX@99999 */
+	/* expected: nva-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX@99999 */
 	node_info_t *ninfo = NULL;
 
-	if (cn == NULL || strlen(cn) < 42)
+	if (cn == NULL || strlen(cn) < 42) {
+		jlog(L_WARNING, "the common name <%s> is malformed", cn);
 		return NULL;
+	}
 
 	ninfo = calloc(1, sizeof(node_info_t));
 
@@ -59,6 +61,20 @@ cn2node_info(char *cn)
 	return ninfo;
 }
 
+node_info_t *
+certreq2node_info(char *certreq_pem)
+{
+	char cn[128];
+	X509_NAME *name = NULL;
+	X509_REQ *certreq = NULL;
+
+	certreq = pki_load_csr_from_memory(certreq_pem);
+	name = X509_REQ_get_subject_name(certreq);
+	X509_NAME_get_text_by_NID(name, NID_commonName, cn, sizeof(cn));
+
+	return cn2node_info(cn);
+}
+
 EVP_PKEY *
 pki_generate_keyring()
 {
@@ -71,13 +87,13 @@ pki_generate_keyring()
 	keyring = EVP_PKEY_new();
 
 	/* generate RSA-type public and private keys */
-	rsa_keys = RSA_generate_key(4096, RSA_F4, NULL, NULL);
+	rsa_keys = RSA_generate_key(2048, RSA_F4, NULL, NULL);
 
 	/* if the keys are not usable, give it another try */
 	if (RSA_check_key(rsa_keys) != 1) {
 
 		RSA_free(rsa_keys);
-		rsa_keys = RSA_generate_key(4096, RSA_F4, NULL, NULL);
+		rsa_keys = RSA_generate_key(2048, RSA_F4, NULL, NULL);
 
 		/* we are in serious problem here */
 		if (RSA_check_key(rsa_keys) != 1) {
@@ -329,6 +345,37 @@ pki_embassy_deliver_passport(embassy_t *embassy, digital_id_t *digital_id, uint3
 
 	/* deliver the passport */
 	return passport;
+}
+
+char *
+pki_deliver_cert_from_certreq(char *certreq_pem, char *emb_cert, char *emb_pvkey, uint32_t emb_serial)
+{
+	char *cert_pem = NULL;
+	long cert_pem_len = 0;
+	X509 *cert = NULL;
+	X509_NAME *issuer = NULL;
+	X509_REQ *certreq = NULL;
+	embassy_t *embassy = NULL;
+	int exp_delay = 0;
+
+	/* convert from PEM format */
+	certreq = pki_load_csr_from_memory(certreq_pem);
+
+	/* load embassy object */
+	embassy = pki_embassy_load_from_memory(emb_cert, emb_pvkey, emb_serial);
+
+	exp_delay = pki_expiration_delay(10);
+
+	/* extract issuer from CA certificate */
+	issuer = X509_get_subject_name(embassy->certificate);
+
+	cert = pki_certificate(issuer, certreq, false, embassy->serial, exp_delay);
+	pki_sign_certificate(embassy->keyring, cert);
+
+	/* convert to PEM format */
+	pki_write_certificate_in_mem(cert, &cert_pem, &cert_pem_len);
+
+	return cert_pem;
 }
 
 uint32_t

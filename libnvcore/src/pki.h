@@ -55,6 +55,7 @@ typedef struct passport {
 
 void node_info_destroy(node_info_t *node_info);
 node_info_t *cn2node_info(char *cn);
+node_info_t *certreq2node_info(char *certreq_pem);
 
 void pki_init();
 
@@ -88,6 +89,8 @@ embassy_t *pki_embassy_new(digital_id_t *digital_id, uint32_t expiration_delay);
 
 void pki_passport_free(passport_t *passport);
 passport_t *pki_embassy_deliver_passport(embassy_t *embassy, digital_id_t *digital_id, uint32_t expiration_delay);
+
+char *pki_deliver_cert_from_certreq(char *certreq_pem, char *emb_cert, char *emb_pvkey, uint32_t emb_serial);
 
 X509_REQ *pki_load_csr_from_memory(char *certreq_pem);
 embassy_t *pki_embassy_load_from_memory(char *certificate, char *privatekey, uint32_t serial);
