@@ -618,8 +618,9 @@ provRequest(struct session *session, DNDSMessage_t *req_msg)
 	int ret = 0;
 	char *provcode = NULL;
 	char *certreq_pem = NULL;
-	size_t cr_length = 0;
-	size_t pc_length = 0;
+	size_t certreq_len = 0;
+	size_t provcode_len = 0;
+	uint32_t tracked_id = 0;
 
 	X509_REQ *certreq = NULL; /* Certificate signing request */
 	X509_NAME *name = NULL;
@@ -628,8 +629,10 @@ provRequest(struct session *session, DNDSMessage_t *req_msg)
 
 	(void)session;
 
-	ProvRequest_get_certreq(req_msg, &certreq_pem, &cr_length);
-	ProvRequest_get_provCode(req_msg, &provcode, &pc_length);
+	DNMessage_get_seqNumber(req_msg, &tracked_id);
+	ProvRequest_get_certreq(req_msg, &certreq_pem, &certreq_len);
+	ProvRequest_get_provCode(req_msg, &provcode, &provcode_len);
+
 
 	certreq = pki_load_csr_from_memory(certreq_pem);
 	name = X509_REQ_get_subject_name(certreq);
@@ -651,11 +654,12 @@ provRequest(struct session *session, DNDSMessage_t *req_msg)
 
 	char *context_id = NULL;
 	char *certificate = NULL;
-	char *private_key = NULL;
+	char *privatekey = NULL;
+	char *ipaddr = NULL;
 	char *issue_serial = NULL;
 
 	ret = dao_fetch_context_embassy_by_provisioning(node_info->uuid, provcode,
-			&context_id, &certificate, &private_key, &issue_serial);
+			&context_id, &certificate, &privatekey, &issue_serial, &ipaddr);
 	if (ret != 0) {
 		jlog(L_WARNING, "failed to fetch the context embassy");
 		goto out;
@@ -668,15 +672,50 @@ provRequest(struct session *session, DNDSMessage_t *req_msg)
 
 	jlog(L_DEBUG, "ctx id: %s", context_id);
 
+	embassy_t *embassy = NULL;
+	int exp_delay = 0;
+	X509 *cert = NULL;
+	X509_NAME *issuer = NULL;
+	char emb_serial[10];
+	char *cert_pem = NULL;
+	long cert_pem_len = 0;
+
+	embassy = pki_embassy_load_from_memory(certificate, privatekey, atoi(emb_serial));
+	exp_delay = pki_expiration_delay(10);
+	issuer = X509_get_subject_name(embassy->certificate);
+
+	cert = pki_certificate(issuer, certreq, false, embassy->serial, exp_delay);
+	pki_sign_certificate(embassy->keyring, cert);
+
+	snprintf(emb_serial, sizeof(emb_serial), "%d", atoi(emb_serial)+1);
+	ret = dao_update_embassy_serial(context_id, emb_serial);
+
+	pki_write_certificate_in_mem(cert, &cert_pem, &cert_pem_len);
+
+	DNDSMessage_t *new_msg = NULL;
+	DNDSMessage_new(&new_msg);
+	DNDSMessage_set_channel(new_msg, 0);
+	DNDSMessage_set_pdu(new_msg, pdu_PR_dnm);
+
+	DNMessage_set_operation(new_msg, dnop_PR_provResponse);
+	DNMessage_set_seqNumber(new_msg, tracked_id);
+	ProvResponse_set_certificate(new_msg, cert_pem, strlen(cert_pem));
+	ProvResponse_set_trustedCert(new_msg, (uint8_t*)certificate, strlen(certificate));
+	ProvResponse_set_ipAddress(new_msg, ipaddr);
+
+	net_send_msg(session->netc, new_msg);
+	DNDSMessage_del(new_msg);
+
 	/*
 	verify the cert common-name [x]
 	fetch the context certs that has a node node with node-UUID + prov-UUID [x]
 	verify if the context id match [x]
-	load embassy in structure
-	create certificate
-	sign the cert req
-	update the serial number
-	build provResponse, populate it, and send it back to the switch
+	load embassy in structure [x]
+	create certificate [x]
+	sign the cert req [x]
+	update the serial number [x]
+	build provResponse, populate it, and send it back to the switch [x]
+	move CSR related stuff into pki
 	*/
 
 out:

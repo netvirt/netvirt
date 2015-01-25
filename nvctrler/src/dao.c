@@ -106,7 +106,7 @@ int dao_prepare_statements()
 
 	result = PQprepare(dbconn,
 			"dao_fetch_context_embassy_by_provisioning",
-			"SELECT context_id, embassy_certificate, embassy_privatekey, embassy_serial "
+			"SELECT context_id, embassy_certificate, embassy_privatekey, embassy_serial, ipaddress "
 			"FROM context, node "
 			"WHERE uuid = $1 "
 			"AND provcode = $2 "
@@ -823,7 +823,8 @@ dao_fetch_context_embassy_by_provisioning(char *uuid, char *provcode,
 				char **context_id,
 				char **certificate,
 				char **private_key,
-				char **issue_serial)
+				char **issue_serial,
+				char **ipaddr)
 {
 	const char *paramValues[2];
 	int paramLengths[2];
@@ -852,11 +853,12 @@ dao_fetch_context_embassy_by_provisioning(char *uuid, char *provcode,
 	tuples = PQntuples(result);
 	fields = PQnfields(result);
 
-	if (tuples > 0 && fields == 4) {
+	if (tuples > 0 && fields == 5) {
 		*context_id = strdup(PQgetvalue(result, 0, 0));
-                *certificate = strdup(PQgetvalue(result, 0, 1));
-                *private_key = strdup(PQgetvalue(result, 0, 2));
-                *issue_serial = strdup(PQgetvalue(result, 0, 3));
+		*certificate = strdup(PQgetvalue(result, 0, 1));
+		*private_key = strdup(PQgetvalue(result, 0, 2));
+		*issue_serial = strdup(PQgetvalue(result, 0, 3));
+		*ipaddr = strdup(PQgetvalue(result, 0, 4));
 	} else {
 		PQclear(result);
 		return -1;

@@ -58,7 +58,8 @@ int dao_fetch_context_embassy_by_provisioning(char *uuid, char *provcode,
 				char **context_id,
 				char **certificate,
 				char **private_key,
-				char **issue_serial);
+				char **issue_serial,
+				char **ipaddr);
 
 int dao_update_embassy_serial(char *context_id, char *serial);
 
