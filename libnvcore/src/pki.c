@@ -126,7 +126,7 @@ pki_certificate_request(EVP_PKEY *keyring, digital_id_t *digital_id)
 	return certreq;
 }
 
-static X509 *
+X509 *
 pki_certificate(X509_NAME *issuer, X509_REQ *certreq,
 		uint8_t is_cert_authority, uint32_t serial, uint32_t expiration_delay)
 {
@@ -178,6 +178,9 @@ pki_certificate(X509_NAME *issuer, X509_REQ *certreq,
 	/* set certificate version 3 == 0x2 */
 	X509_set_version(certificate, 0x2);
 
+	/* set certificate public key */
+	X509_set_pubkey(certificate, pub_key);
+
 	/* set the 'notBefore' to yersterday */
 	X509_gmtime_adj(X509_get_notBefore(certificate), -(24*60*60));
 
@@ -187,7 +190,7 @@ pki_certificate(X509_NAME *issuer, X509_REQ *certreq,
 	return certificate;
 }
 
-static void
+void
 pki_sign_certificate(EVP_PKEY *keyring, X509 *certificate)
 {
 	jlog(L_NOTICE, "pki_sign_certificate");
