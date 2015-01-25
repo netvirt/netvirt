@@ -105,7 +105,7 @@ int dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
-			"dao_fetch_context_embassy_by_provisioning",
+			"dao_fetch_provisioning_info",
 			"SELECT context_id, embassy_certificate, embassy_privatekey, embassy_serial, ipaddress "
 			"FROM context, node "
 			"WHERE uuid = $1 "
@@ -819,7 +819,7 @@ int dao_update_embassy_serial(char *context_id, char *serial)
 }
 
 int
-dao_fetch_context_embassy_by_provisioning(char *uuid, char *provcode,
+dao_fetch_provisioning_info(char *uuid, char *provcode,
 				char **context_id,
 				char **certificate,
 				char **private_key,
@@ -838,7 +838,7 @@ dao_fetch_context_embassy_by_provisioning(char *uuid, char *provcode,
 	paramLengths[0] = strlen(uuid);
 	paramLengths[1] = strlen(provcode);
 
-	result = PQexecPrepared(dbconn, "dao_fetch_context_embassy_by_provisioning", 2, paramValues, paramLengths, NULL, 0);
+	result = PQexecPrepared(dbconn, "dao_fetch_provisioning_info", 2, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));

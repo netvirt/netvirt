@@ -54,7 +54,7 @@ int dao_fetch_context_embassy(char *context_id,
 			unsigned char **ippool);
 
 
-int dao_fetch_context_embassy_by_provisioning(char *uuid, char *provcode,
+int dao_fetch_provisioning_info(char *uuid, char *provcode,
 				char **context_id,
 				char **certificate,
 				char **private_key,

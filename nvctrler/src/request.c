@@ -615,16 +615,19 @@ int CB_searchRequest_node_by_context_id(void *msg, char *uuid, char *description
 void
 provRequest(struct session *session, DNDSMessage_t *req_msg)
 {
-	int ret = 0;
-	char *provcode = NULL;
+	char *context_id = NULL;
+	char *cert_pem = NULL;
 	char *certreq_pem = NULL;
+	char *emb_cert = NULL;
+	char *emb_pvkey = NULL;
+	char *emb_serial = NULL;
+	char emb_serial_str[10];
+	char *ipaddr = NULL;
+	char *provcode = NULL;
 	size_t certreq_len = 0;
 	size_t provcode_len = 0;
 	uint32_t tracked_id = 0;
-
-	X509_REQ *certreq = NULL; /* Certificate signing request */
-	X509_NAME *name = NULL;
-	char cn[128];
+	int ret = 0;
 	node_info_t *node_info = NULL;
 
 	(void)session;
@@ -633,35 +636,23 @@ provRequest(struct session *session, DNDSMessage_t *req_msg)
 	ProvRequest_get_certreq(req_msg, &certreq_pem, &certreq_len);
 	ProvRequest_get_provCode(req_msg, &provcode, &provcode_len);
 
-
-	certreq = pki_load_csr_from_memory(certreq_pem);
-	name = X509_REQ_get_subject_name(certreq);
-	X509_NAME_get_text_by_NID(name, NID_commonName, cn, sizeof(cn));
-
-	node_info = cn2node_info(cn);
+	node_info = certreq2node_info(certreq_pem);
 	if (node_info == NULL) {
-		jlog(L_WARNING, "the common name <%s> is malformed", cn);
 		goto out0;
 	}
 
 	if (strncmp(node_info->type, "nva", 3) != 0) {
-		jlog(L_WARNING, "the common name <%s> is invalid", cn);
+		jlog(L_WARNING, "the node type <%s> is invalid", node_info->type);
 		goto out;
 	}
 
 	jlog(L_DEBUG, "type: %s", node_info->type);
 	jlog(L_DEBUG, "uuid: %s", node_info->uuid);
 
-	char *context_id = NULL;
-	char *certificate = NULL;
-	char *privatekey = NULL;
-	char *ipaddr = NULL;
-	char *issue_serial = NULL;
-
-	ret = dao_fetch_context_embassy_by_provisioning(node_info->uuid, provcode,
-			&context_id, &certificate, &privatekey, &issue_serial, &ipaddr);
+	ret = dao_fetch_provisioning_info(node_info->uuid, provcode,
+			&context_id, &emb_cert, &emb_pvkey, &emb_serial, &ipaddr);
 	if (ret != 0) {
-		jlog(L_WARNING, "failed to fetch the context embassy");
+		jlog(L_WARNING, "failed to fetch the provisioning informations");
 		goto out;
 	}
 
@@ -670,27 +661,12 @@ provRequest(struct session *session, DNDSMessage_t *req_msg)
 		goto out;
 	}
 
-	jlog(L_DEBUG, "ctx id: %s", context_id);
+	cert_pem = pki_deliver_cert_from_certreq(certreq_pem, emb_cert, emb_pvkey, atoi(emb_serial));
 
-	embassy_t *embassy = NULL;
-	int exp_delay = 0;
-	X509 *cert = NULL;
-	X509_NAME *issuer = NULL;
-	char emb_serial[10];
-	char *cert_pem = NULL;
-	long cert_pem_len = 0;
+	snprintf(emb_serial_str, sizeof(emb_serial_str), "%d", atoi(emb_serial)+1);
+	ret = dao_update_embassy_serial(context_id, emb_serial_str);
 
-	embassy = pki_embassy_load_from_memory(certificate, privatekey, atoi(emb_serial));
-	exp_delay = pki_expiration_delay(10);
-	issuer = X509_get_subject_name(embassy->certificate);
-
-	cert = pki_certificate(issuer, certreq, false, embassy->serial, exp_delay);
-	pki_sign_certificate(embassy->keyring, cert);
-
-	snprintf(emb_serial, sizeof(emb_serial), "%d", atoi(emb_serial)+1);
-	ret = dao_update_embassy_serial(context_id, emb_serial);
-
-	pki_write_certificate_in_mem(cert, &cert_pem, &cert_pem_len);
+	jlog(L_DEBUG, "serial: %s\n", emb_serial);
 
 	DNDSMessage_t *new_msg = NULL;
 	DNDSMessage_new(&new_msg);
@@ -700,24 +676,11 @@ provRequest(struct session *session, DNDSMessage_t *req_msg)
 	DNMessage_set_operation(new_msg, dnop_PR_provResponse);
 	DNMessage_set_seqNumber(new_msg, tracked_id);
 	ProvResponse_set_certificate(new_msg, cert_pem, strlen(cert_pem));
-	ProvResponse_set_trustedCert(new_msg, (uint8_t*)certificate, strlen(certificate));
+	ProvResponse_set_trustedCert(new_msg, (uint8_t*)emb_cert, strlen(emb_cert));
 	ProvResponse_set_ipAddress(new_msg, ipaddr);
 
 	net_send_msg(session->netc, new_msg);
 	DNDSMessage_del(new_msg);
-
-	/*
-	verify the cert common-name [x]
-	fetch the context certs that has a node node with node-UUID + prov-UUID [x]
-	verify if the context id match [x]
-	load embassy in structure [x]
-	create certificate [x]
-	sign the cert req [x]
-	update the serial number [x]
-	build provResponse, populate it, and send it back to the switch [x]
-	move CSR related stuff into pki
-	*/
-
 out:
 	node_info_destroy(node_info);
 out0:
