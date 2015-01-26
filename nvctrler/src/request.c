@@ -666,6 +666,8 @@ provRequest(struct session *session, DNDSMessage_t *req_msg)
 	snprintf(emb_serial_str, sizeof(emb_serial_str), "%d", atoi(emb_serial)+1);
 	ret = dao_update_embassy_serial(context_id, emb_serial_str);
 
+	dao_update_node_provcode(context_id, "");
+
 	jlog(L_DEBUG, "serial: %s\n", emb_serial);
 
 	DNDSMessage_t *new_msg = NULL;

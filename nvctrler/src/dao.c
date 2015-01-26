@@ -174,6 +174,18 @@ int dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
+			"dao_update_node_provcode",
+			"UPDATE node "
+			"SET provcode = $2 "
+			"WHERE context_id = $1;",
+			0,
+			NULL);
+
+	if (result == NULL)
+		goto error;
+	PQclear(result);
+
+	result = PQprepare(dbconn,
 			"dao_update_node_status",
 			"UPDATE node "
 			"SET status = $3, ipsrc = $4 "
@@ -339,6 +351,40 @@ void dao_dump_statements()
         }
 	printf("\n\n");
 	PQclear(result);
+}
+
+int dao_update_node_provcode(char *context_id, char *provcode)
+{
+	const char *paramValues[2];
+	int paramLengths[2];
+	PGresult *result = NULL;
+
+	if (!context_id || !provcode) {
+		jlog(L_WARNING, "invalid parameter");
+		return -1;
+	}
+
+	paramValues[0] = context_id;
+	paramValues[1] = provcode;
+
+	paramLengths[0] = strlen(context_id);
+	paramLengths[1] = strlen(provcode);
+
+	result = PQexecPrepared(dbconn, "dao_update_node_provcode", 2, paramValues, paramLengths, NULL, 1);
+
+	if (!result) {
+		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		return -1;
+	}
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return -1;
+	}
+
+	PQclear(result);
+
+	return 0;
 }
 
 int dao_update_node_status(char *context_id, char *uuid, char *status, char *ipsrc)

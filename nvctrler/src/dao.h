@@ -20,6 +20,7 @@
 
 int dao_connect(struct ctrler_cfg *ctrler_cfg);
 
+int dao_update_node_provcode(char *context_id, char *provcode);
 int dao_update_node_status(char *context, char *uuid, char *status, char *public_ip);
 int dao_add_context(char *client_id,
 			char *description,
