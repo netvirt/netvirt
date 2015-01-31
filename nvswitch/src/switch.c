@@ -310,8 +310,8 @@ int switch_init(struct switch_cfg *cfg)
 	switch_cfg = cfg;
 	switch_cfg->switch_running = 1;
 
-	switch_netc = net_server(switch_cfg->listen_ip, switch_cfg->listen_port, NET_PROTO_UDT, NET_SECURE_ADH, NULL,
-		on_connect, on_disconnect, on_input, on_secure);
+	switch_netc = net_server(switch_cfg->listen_ip, switch_cfg->listen_port, NET_PROTO_UDT, NULL,
+				on_connect, on_disconnect, on_input, on_secure, servername_cb);
 
 	if (switch_netc == NULL) {
 		jlog(L_ERROR, "net_server failed");

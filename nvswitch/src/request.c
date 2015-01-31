@@ -28,6 +28,28 @@ void provRequest(struct session *session, DNDSMessage_t *req_msg)
 	transmit_provisioning(session, req_msg);
 }
 
+passport_t *servername_cb(const char *cn)
+{
+	context_t *context = NULL;
+	uint32_t context_id = 0;
+	node_info_t *node_info = NULL;
+
+	node_info = cn2node_info(cn);
+	if (node_info == NULL) {
+		return NULL;
+	}
+
+	context_id = atoi(node_info->context_id);
+	context = context_lookup(context_id);
+
+	if (context == NULL) {
+		return NULL;
+	}
+
+	return context->passport;
+}
+
+/* XXX Now use a callback for Server Name Indication */
 /* Authentication Request from the node */
 int authRequest(struct session *session, DNDSMessage_t *req_msg)
 {
@@ -100,23 +122,12 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 	}
 
 	session->cert_name = strdup(certName);
-	if (session->netc->security_level == NET_UNSECURE) {
 
-		AuthResponse_set_result(msg, DNDSResult_success);
-		net_send_msg(session->netc, msg);
+	AuthResponse_set_result(msg, DNDSResult_secureStepUp);
+	net_send_msg(session->netc, msg);
 
-		session->state = SESSION_STATE_AUTHED;
-		session->netc->on_secure(session->netc);
-
-	} else {
-
-		AuthResponse_set_result(msg, DNDSResult_secureStepUp);
-		net_send_msg(session->netc, msg);
-
-		krypt_add_passport(session->netc->kconn, session->context->passport);
-		session->state = SESSION_STATE_WAIT_STEPUP;
-		net_step_up(session->netc);
-	}
+	krypt_add_passport(session->netc->kconn, session->context->passport);
+	session->state = SESSION_STATE_WAIT_STEPUP;
 
 	DNDSMessage_del(msg);
 
