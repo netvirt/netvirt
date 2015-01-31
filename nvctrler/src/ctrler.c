@@ -186,8 +186,8 @@ int ctrler_init(struct ctrler_cfg *cfg)
 		return -1;
 	}
 
-	ctrler_netc = net_server(ctrler_cfg->listen_ip, ctrler_cfg->listen_port, NET_PROTO_TCP, NET_SECURE_RSA, ctrler_passport,
-			on_connect, on_disconnect, on_input, on_secure);
+	ctrler_netc = net_server(ctrler_cfg->listen_ip, ctrler_cfg->listen_port, NET_PROTO_TCP, ctrler_passport,
+				on_connect, on_disconnect, on_input, on_secure, NULL);
 
 	if (ctrler_netc == NULL) {
 		jlog(L_ERROR, "net_server failed");
