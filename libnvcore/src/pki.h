@@ -54,7 +54,7 @@ typedef struct passport {
 
 
 void node_info_destroy(node_info_t *node_info);
-node_info_t *cn2node_info(char *cn);
+node_info_t *cn2node_info(const char *cn);
 node_info_t *certreq2node_info(char *certreq_pem);
 
 void pki_init();

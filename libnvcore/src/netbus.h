@@ -40,10 +40,6 @@
 #define NET_P2P_CLIENT	1
 #define NET_P2P_SERVER	2
 
-#define NET_UNSECURE		0X01
-#define NET_SECURE_ADH		0x02
-#define NET_SECURE_RSA		0x04
-
 #define NET_QUEUE_IN	0x1
 #define NET_QUEUE_OUT	0x2
 
@@ -64,7 +60,6 @@ typedef struct netc {
 	mbuf_t *queue_out;		/* Queue of encoded DNDS Message ready to be sent */
 
 	struct krypt *kconn;		/* SSL-related security informations */
-	uint8_t security_level;		/* Security level set { UNSECURE, ADH, RSA } */
 
 	uint8_t protocol;		/* Transport protocol { TCP, UDT } */
 	uint8_t conn_type;		/* Connection type { SERVER, CLIENT, P2P_CLIENT, P2P_SERVER } */
@@ -91,7 +86,6 @@ void netbus_fini();
 netc_t *net_client(const char *listen_addr,
 			const char *port,
 			uint8_t protocol,
-			uint8_t secure_flag,
 			passport_t *passport,
 			void (*on_disconnect)(netc_t *),
 			void (*on_input)(netc_t *),
@@ -100,18 +94,17 @@ netc_t *net_client(const char *listen_addr,
 netc_t *net_server(const char *listen_addr,
 		const char *port,
 		uint8_t protocol,
-		uint8_t security_level,
 		passport_t *passport,
 		void (*on_connect)(netc_t *),
 		void (*on_disconnect)(netc_t *),
 		void (*on_input)(netc_t *),
-		void (*on_secure)(netc_t *));
+		void (*on_secure)(netc_t *),
+		passport_t *(*servername_cb)(const char *));
 
 void net_p2p(const char *listen_addr,
 		const char *dest_addr,
 		const char *port,
 		uint8_t protocol,
-		uint8_t security_level,
 		uint8_t state,
 		passport_t *passport,
 		void (*on_connect)(netc_t *),

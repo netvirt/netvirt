@@ -123,7 +123,7 @@ static void net_connection_free(netc_t *netc)
 	}
 }
 
-static netc_t *net_connection_new(uint8_t security_level)
+static netc_t *net_connection_new()
 {
 	netc_t *netc;
 
@@ -132,28 +132,26 @@ static netc_t *net_connection_new(uint8_t security_level)
 		return NULL;
 	}
 
-	if (security_level > NET_UNSECURE) {
-
-		netc->kconn = calloc(1, sizeof(krypt_t));
-		if (netc->kconn == NULL) {
-			net_connection_free(netc);
-			return NULL;
-		}
-		netc->kconn->ssl = NULL;
-		netc->kconn->ctx = NULL;
-		netc->kconn->cert_name = NULL;
-		netc->kconn->internal_bio = NULL;
-		netc->kconn->network_bio = NULL;
-		netc->kconn->status = KRYPT_NOINIT;
-
-		netc->kconn->buf_decrypt = calloc(1, 1000000);	// XXX dynamic buffer
-		netc->kconn->buf_decrypt_size = 1000000;
-		netc->kconn->buf_decrypt_data_size = 0;
-
-		netc->kconn->buf_encrypt = calloc(1, 1000000);	// XXX dynamic buffer
-		netc->kconn->buf_encrypt_size = 1000000;
-		netc->kconn->buf_encrypt_data_size = 0;
+	netc->kconn = calloc(1, sizeof(krypt_t));
+	if (netc->kconn == NULL) {
+		net_connection_free(netc);
+		return NULL;
 	}
+	netc->kconn->ssl = NULL;
+	netc->kconn->ctx = NULL;
+	netc->kconn->cert_name = NULL;
+	netc->kconn->internal_bio = NULL;
+	netc->kconn->network_bio = NULL;
+	netc->kconn->status = KRYPT_NOINIT;
+	netc->kconn->servername_cb = NULL;
+
+	netc->kconn->buf_decrypt = calloc(1, 1000000);	// XXX dynamic buffer
+	netc->kconn->buf_decrypt_size = 1000000;
+	netc->kconn->buf_decrypt_data_size = 0;
+
+	netc->kconn->buf_encrypt = calloc(1, 1000000);	// XXX dynamic buffer
+	netc->kconn->buf_encrypt_size = 1000000;
+	netc->kconn->buf_encrypt_data_size = 0;
 
 	netc->buf_enc = malloc(1000000);	// XXX dynamic buffer
 	netc->buf_enc_size = 1000000;	// XXX initialization size
@@ -310,8 +308,7 @@ static void net_on_input(peer_t *peer)
 	netc = peer->ext_ptr;
 	peer->buffer_data_len = peer->recv(peer);
 
-	if (netc->security_level > NET_UNSECURE
-			&& netc->kconn->status == KRYPT_HANDSHAKE) {
+	if (netc->kconn->status == KRYPT_HANDSHAKE) {
 
 
 		ret = krypt_do_handshake(netc->kconn, peer->buffer, peer->buffer_data_len);
@@ -344,8 +341,7 @@ static void net_on_input(peer_t *peer)
 		// handshake flow ends here if no more data has to be processed
 	}
 
-	if (netc->security_level > NET_UNSECURE
-			&& netc->kconn->status == KRYPT_SECURE) {
+	if (netc->kconn->status == KRYPT_SECURE) {
 
 		int peek = 0; // buffer to hold the byte we are peeking at
 		int state_p = 0;
@@ -374,9 +370,6 @@ static void net_on_input(peer_t *peer)
 			// decryption doesn't fail and (SSL data pending or data to feed to BIO)
 		} while (ret == 0 && (state_p == 1 || peer->buffer_data_len > 0));
 	}
-	else if (netc->security_level == NET_UNSECURE) {
-		serialize_buf_in(netc, peer->buffer, peer->buffer_data_len);
-	}
 
 	ret = net_decode_msg(netc);
 	if (ret == -1) {
@@ -384,8 +377,7 @@ static void net_on_input(peer_t *peer)
 		peer->disconnect(peer);		// inform lower-layer
 		net_connection_free(netc);
 	}
-	else if (netc->security_level > NET_UNSECURE
-			&& netc->kconn->status == KRYPT_SECURE) {
+	else if (netc->kconn->status == KRYPT_SECURE) {
 
 		/* Catch server renegotiation */
 		krypt_decrypt_buf(netc->kconn);
@@ -423,7 +415,7 @@ static void net_on_connect(peer_t *peer)
 	netc = peer->ext_ptr;
 
 	// the new connection inherit the security level of his parent
-	new_netc = net_connection_new(netc->security_level);
+	new_netc = net_connection_new();
 	if (new_netc == NULL) {
 		peer->disconnect(peer);
 		return;
@@ -435,30 +427,16 @@ static void net_on_connect(peer_t *peer)
 	new_netc->on_input = netc->on_input;
 	new_netc->protocol = netc->protocol;
 	new_netc->conn_type = NET_SERVER;
+	new_netc->kconn->servername_cb = netc->kconn->servername_cb;
 
 	peer->ext_ptr = new_netc;
 	new_netc->peer = peer;
 
-	new_netc->security_level = netc->security_level;
-	if (netc->security_level > NET_UNSECURE) {
-
-		// FIXME net and krypt should share constants
-		int krypt_security_level;
-		if (netc->security_level == NET_SECURE_ADH)
-			krypt_security_level = KRYPT_ADH;
-		else
-			krypt_security_level = KRYPT_RSA;
-
-		new_netc->kconn->passport = netc->kconn->passport;
-
-		krypt_secure_connection(new_netc->kconn, KRYPT_TLS, KRYPT_SERVER, krypt_security_level);
-	}
-
+	new_netc->kconn->passport = netc->kconn->passport;
+	krypt_secure_connection(new_netc->kconn, KRYPT_SERVER);
 	new_netc->on_connect(new_netc);
-	if (netc->security_level == NET_UNSECURE)
-		new_netc->on_secure(new_netc);
 }
-
+#if 0
 void net_step_up(netc_t *netc)
 {
 	if (netc->conn_type == NET_SERVER) {	// Server send HelloRequest
@@ -472,6 +450,7 @@ void net_step_up(netc_t *netc)
 		krypt_set_renegotiate(netc->kconn);	// set handshake mode
 	}
 }
+#endif
 
 int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 {
@@ -486,15 +465,13 @@ int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 		return -1;
 	}
 
-	if (netc->security_level > NET_UNSECURE
-		&& netc->kconn->status != KRYPT_SECURE) {
+	if (netc->kconn->status != KRYPT_SECURE) {
 
 		jlog(L_ERROR, "the network connection is not yet secure");
 		return -1;
 	}
 
-	if (netc->security_level > NET_UNSECURE
-		&& netc->kconn->status == KRYPT_SECURE) {
+	if (netc->kconn->status == KRYPT_SECURE) {
 
 		do {
 			ret = krypt_encrypt_buf(netc->kconn, netc->buf_enc, netc->buf_enc_data_size);
@@ -553,7 +530,6 @@ void netbus_fini()
 netc_t *net_client(const char *listen_addr,
 			const char *port,
 			uint8_t protocol,
-			uint8_t security_level,
 			passport_t *passport,
 			void (*on_disconnect)(netc_t *),
 			void (*on_input)(netc_t *),
@@ -562,7 +538,7 @@ netc_t *net_client(const char *listen_addr,
 	int ret = 0;
 	netc_t *netc = NULL;
 
-	netc = net_connection_new(security_level);
+	netc = net_connection_new();
 	if (netc == NULL) {
 	        return NULL;
 	}
@@ -572,10 +548,8 @@ netc_t *net_client(const char *listen_addr,
 	netc->on_disconnect = on_disconnect;
 	netc->on_input = on_input;
 	netc->conn_type = NET_CLIENT;
-	netc->security_level = security_level;
 
-	if (security_level > NET_UNSECURE)
-		krypt_add_passport(netc->kconn, passport);
+	krypt_add_passport(netc->kconn, passport);
 
 	switch (protocol) {
 #ifdef __linux__
@@ -603,25 +577,15 @@ netc_t *net_client(const char *listen_addr,
 
 	netc->peer->ext_ptr = netc;
 
-	if (security_level > NET_UNSECURE) {
-
-		// FIXME net and krypt should share constants
-		int krypt_security_level;
-		if (netc->security_level == NET_SECURE_ADH)
-			krypt_security_level = KRYPT_ADH;
-		else
-			krypt_security_level = KRYPT_RSA;
-
-		ret = krypt_secure_connection(netc->kconn, KRYPT_TLS, KRYPT_CLIENT, krypt_security_level);
-		if (ret < 0) {
-			jlog(L_NOTICE, "securing client connection failed");
-			net_connection_free(netc);
-			return NULL;
-		}
-
-		krypt_do_handshake(netc->kconn, NULL, 0);
-		net_do_krypt(netc);
+	ret = krypt_secure_connection(netc->kconn, KRYPT_CLIENT);
+	if (ret < 0) {
+		jlog(L_NOTICE, "securing client connection failed");
+		net_connection_free(netc);
+		return NULL;
 	}
+
+	krypt_do_handshake(netc->kconn, NULL, 0);
+	net_do_krypt(netc);
 
 	return netc;
 }
@@ -629,16 +593,16 @@ netc_t *net_client(const char *listen_addr,
 netc_t *net_server(const char *listen_addr,
 		const char *port,
 		uint8_t protocol,
-		uint8_t security_level,
 		passport_t *passport,
 		void (*on_connect)(netc_t *),
 		void (*on_disconnect)(netc_t *),
 		void (*on_input)(netc_t *),
-		void (*on_secure)(netc_t *))
+		void (*on_secure)(netc_t *),
+		passport_t *(*servername_cb)(const char *))
 {
 	netc_t *netc = NULL;
 
-	netc = net_connection_new(security_level);
+	netc = net_connection_new();
 	if (netc == NULL) {
 		jlog(L_NOTICE, "server initialization failed");
 		return NULL;
@@ -650,11 +614,10 @@ netc_t *net_server(const char *listen_addr,
 	netc->on_input = on_input;
 	netc->conn_type = NET_SERVER;
 	netc->protocol = protocol;
-	netc->security_level = security_level;
 	netc->conn_type = NET_SERVER;
+	netc->kconn->servername_cb = servername_cb;
 
-	if (security_level > NET_UNSECURE)
-		krypt_add_passport(netc->kconn, passport);
+	krypt_add_passport(netc->kconn, passport);
 
 	switch (protocol) {
 #ifdef __linux__
@@ -700,24 +663,22 @@ void net_p2p_on_connect(peer_t *peer)
 	netc = peer->ext_ptr;
 	netc->peer = peer;
 
-	if (netc->security_level > NET_UNSECURE) {
 
-		if (netc->conn_type == NET_P2P_CLIENT) {
-			kconn_type = KRYPT_CLIENT;
-		} else {
-			kconn_type = KRYPT_SERVER;
-		}
-
-		ret = krypt_secure_connection(netc->kconn, KRYPT_TLS, kconn_type, KRYPT_RSA);
-		if (ret < 0) {
-			jlog(L_NOTICE, "securing client connection failed");
-			net_connection_free(netc);
-			return;
-		}
-
-		krypt_do_handshake(netc->kconn, NULL, 0);
-		net_do_krypt(netc);
+	if (netc->conn_type == NET_P2P_CLIENT) {
+		kconn_type = KRYPT_CLIENT;
+	} else {
+		kconn_type = KRYPT_SERVER;
 	}
+
+	ret = krypt_secure_connection(netc->kconn, kconn_type);
+	if (ret < 0) {
+		jlog(L_NOTICE, "securing client connection failed");
+		net_connection_free(netc);
+		return;
+	}
+
+	krypt_do_handshake(netc->kconn, NULL, 0);
+	net_do_krypt(netc);
 
 	netc->on_connect(netc);
 
@@ -728,7 +689,6 @@ void net_p2p(const char *listen_addr,
 		const char *dest_addr,
 		const char *port,
 		uint8_t protocol,
-		uint8_t security_level,
 		uint8_t conn_type,
 		passport_t *passport,
 		void (*on_connect)(netc_t *),
@@ -747,7 +707,7 @@ void net_p2p(const char *listen_addr,
 		return;
 	}
 
-	netc = net_connection_new(security_level);
+	netc = net_connection_new();
 	if (netc == NULL) {
 		jlog(L_ERROR, "unable to initialize connection");
 		return;
@@ -759,11 +719,9 @@ void net_p2p(const char *listen_addr,
 	netc->on_input = on_input;
 	netc->conn_type = conn_type;
 	netc->protocol = protocol;
-	netc->security_level = security_level;
 	netc->ext_ptr = ext_ptr;
 
-	if (security_level > NET_UNSECURE)
-		krypt_add_passport(netc->kconn, passport);
+	krypt_add_passport(netc->kconn, passport);
 
 	p2p_args = (struct p2p_args *)calloc(1, sizeof(struct p2p_args));
 	p2p_args->listen_addr = strdup(listen_addr);

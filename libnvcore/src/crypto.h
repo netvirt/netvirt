@@ -32,9 +32,6 @@
 #define KRYPT_SECURE	0x4	// Conecction status Secure
 #define KRYPT_FAIL	0x8	// Connection status Fail, something went wrong during the handshake
 
-#define KRYPT_ADH	0x1	// Basic security level ADH
-#define KRYPT_RSA	0x2	// Maximum security level RSA
-
 typedef struct krypt {
 
 	SSL *ssl;			// SSL Connection
@@ -48,7 +45,6 @@ typedef struct krypt {
 	passport_t *passport;		// Certificate and key used to negotiate RSA
 	char client_cn[256];		// Client certificate commonName
 
-	uint8_t security_level;		// Security level negotiated { ADH, RSA }
 	uint8_t status;			// Status { NOINIT, HANDSHAKE, SECURE, FAIL }
 	uint8_t conn_type;
 
@@ -60,6 +56,8 @@ typedef struct krypt {
 	size_t buf_encrypt_size;	// Buffer size in memory
 	size_t buf_encrypt_data_size;	// Data size in the buffer
 
+	passport_t *(*servername_cb)(const char *); // TLS Server Name Indication callback
+
 } krypt_t;
 
 void krypt_set_renegotiate(krypt_t *kconn);
@@ -69,7 +67,7 @@ int krypt_encrypt_buf(krypt_t *kcon, uint8_t *buf, size_t buf_data_size);
 int krypt_push_encrypted_data(krypt_t *kconn, uint8_t *buf, size_t buf_data_size);
 int krypt_decrypt_buf(krypt_t *kconn);
 int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size);
-int krypt_secure_connection(krypt_t *kconn, uint8_t protocol, uint8_t state, uint8_t security_level);
+int krypt_secure_connection(krypt_t *kconn, uint8_t state);
 void krypt_add_passport(krypt_t *kconn, passport_t *passport);
 void krypt_print_cipher(krypt_t *kconn);
 

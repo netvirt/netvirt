@@ -37,7 +37,7 @@ node_info_destroy(node_info_t *node_info)
 }
 
 node_info_t *
-cn2node_info(char *cn)
+cn2node_info(const char *cn)
 {
 	/* expected: nva-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX@99999 */
 	node_info_t *ninfo = NULL;
@@ -155,7 +155,7 @@ pki_certificate(X509_NAME *issuer, X509_REQ *certreq,
 	X509V3_CTX ctx;
 	X509_EXTENSION *ext = NULL;
 
-	/* Verify CSR signature */
+	/* verify CSR signature */
 	pub_key = X509_REQ_get_pubkey(certreq);
 	if (pub_key == NULL) {
 		jlog(L_WARNING, "no signature present in the certificate signing request");

@@ -115,38 +115,23 @@ static int verify_callback(int ok, X509_STORE_CTX *store)
 	return ok;
 }
 
-static int krypt_set_adh(krypt_t *kconn)
-{
-	SSL_CTX_set_cipher_list(kconn->ctx, "ADH");
-	DH *dh = get_dh_1024();
-	SSL_CTX_set_tmp_dh(kconn->ctx, dh);
-	DH_free(dh);
-
-	SSL_CTX_set_tmp_dh_callback(kconn->ctx, tmp_dh_callback);
-	SSL_CTX_set_verify(kconn->ctx, SSL_VERIFY_NONE, NULL);
-
-	return 0;
-}
-
 // XXX Clean up this function, we MUST handle all errors possible
 int krypt_set_rsa(krypt_t *kconn)
 {
-	if (kconn->security_level == KRYPT_RSA) {
-		jlog(L_NOTICE, "the security level is already set to RSA");
-		return 0;
-	}
-
+	// XXX use PFS
 	SSL_set_cipher_list(kconn->ssl, "AES256-SHA");
 
-	// Load the trusted certificate store into our SSL_CTX
-	SSL_CTX_set_cert_store(kconn->ctx, kconn->passport->trusted_authority);
-
 	// Force the peer cert verifying + fail if no cert is sent by the peer
+	// XXX we don't verify client in provisioning mode
 	SSL_set_verify(kconn->ssl, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, verify_callback);
 
-	// Set the certificate and key
-	SSL_use_certificate(kconn->ssl, kconn->passport->certificate);
-	SSL_use_PrivateKey(kconn->ssl, kconn->passport->keyring);
+	if (kconn->passport) {
+		/* Load the trusted certificate store into our SSL_CTX */
+		SSL_CTX_set_cert_store(kconn->ctx, kconn->passport->trusted_authority);
+		/* Set the certificate and key */
+		SSL_use_certificate(kconn->ssl, kconn->passport->certificate);
+		SSL_use_PrivateKey(kconn->ssl, kconn->passport->keyring);
+	}
 
 	if (kconn->conn_type == KRYPT_SERVER) {
 		jlog(L_NOTICE, "set verify");
@@ -155,8 +140,6 @@ int krypt_set_rsa(krypt_t *kconn)
 		SSL_set_session_id_context(kconn->ssl, (void*)&s_server_auth_session_id_context,
 							sizeof(s_server_auth_session_id_context));
 	}
-
-	kconn->security_level = KRYPT_RSA;
 
 	return 0;
 }
@@ -209,7 +192,7 @@ int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 	else if (ret == 0) {
 		// Error
 		kconn->status = KRYPT_FAIL;
-		jlog(L_ERROR, "ssl_get_error: %d\n", SSL_get_error(kconn->ssl, ret));
+		jlog(L_ERROR, "ssl_get_error: %d", SSL_get_error(kconn->ssl, ret));
 		ssl_error_stack();
 		jlog(L_ERROR, "handshake error");
 		status = -1;
@@ -309,18 +292,39 @@ int krypt_encrypt_buf(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 	return status;
 }
 
-int krypt_secure_connection(krypt_t *kconn, uint8_t protocol, uint8_t conn_type, uint8_t security_level)
+int ssl_servername_cb(SSL *ssl, int *ad, void *arg)
 {
-	switch (protocol) {
+	const char *cn = NULL;
+	krypt_t *kconn = NULL;
 
-		case KRYPT_TLS:
-			kconn->ctx = SSL_CTX_new(TLSv1_method());
-			break;
+	(void)ad;
 
-		default:
-			jlog(L_ERROR, "unknown protocol");
-			return -1;
+	kconn = (krypt_t*)arg;
+	cn = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
+	if (cn == NULL) {
+		SSL_TLSEXT_ERR_NOACK;
 	}
+
+	jlog(L_DEBUG, "servername: %s", cn);
+
+	kconn->passport = kconn->servername_cb(cn);
+	if (kconn->passport = NULL) {
+		return SSL_TLSEXT_ERR_NOACK;
+	}
+
+	/* Load the trusted certificate store into our SSL_CTX */
+	SSL_CTX_set_cert_store(kconn->ctx, kconn->passport->trusted_authority);
+
+	/* Set the certificate and key */
+	SSL_use_certificate(kconn->ssl, kconn->passport->certificate);
+	SSL_use_PrivateKey(kconn->ssl, kconn->passport->keyring);
+
+	return SSL_TLSEXT_ERR_OK;
+}
+
+int krypt_secure_connection(krypt_t *kconn, uint8_t conn_type)
+{
+	kconn->ctx = SSL_CTX_new(TLSv1_method());
 
 	if (kconn->ctx == NULL) {
 		jlog(L_ERROR, "unable to create SSL context");
@@ -332,9 +336,6 @@ int krypt_secure_connection(krypt_t *kconn, uint8_t protocol, uint8_t conn_type,
 		(void*)&s_server_session_id_context,
 		sizeof(s_server_session_id_context));
 
-	if (security_level == KRYPT_ADH)
-		krypt_set_adh(kconn);
-
 	// Create the BIO pair
 	BIO_new_bio_pair(&kconn->internal_bio, 0, &kconn->network_bio, 0);
 
@@ -343,8 +344,7 @@ int krypt_secure_connection(krypt_t *kconn, uint8_t protocol, uint8_t conn_type,
 	SSL_set_bio(kconn->ssl, kconn->internal_bio, kconn->internal_bio);
 	SSL_set_mode(kconn->ssl, SSL_MODE_AUTO_RETRY);
 
-	if (security_level == KRYPT_RSA)
-		krypt_set_rsa(kconn);
+	krypt_set_rsa(kconn);
 
 	kconn->conn_type = conn_type;
 	switch (conn_type) {
@@ -352,12 +352,17 @@ int krypt_secure_connection(krypt_t *kconn, uint8_t protocol, uint8_t conn_type,
 		case KRYPT_SERVER:
 			jlog(L_NOTICE, "connection type server");
 			SSL_set_accept_state(kconn->ssl);
+			if (kconn->servername_cb != NULL) {
+				SSL_CTX_set_tlsext_servername_callback(kconn->ctx, ssl_servername_cb);
+				SSL_CTX_set_tlsext_servername_arg(kconn->ctx, kconn);
+			}
 
 			break;
 
 		case KRYPT_CLIENT:
 			jlog(L_NOTICE, "connection type client");
 			SSL_set_connect_state(kconn->ssl);
+			SSL_set_tlsext_host_name(kconn->ssl, "nva-d057a4ac-b601-446b-b64d-6b1966fde430@1");
 
 			break;
 
