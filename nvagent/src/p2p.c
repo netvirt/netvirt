@@ -116,7 +116,7 @@ void op_p2p_request(struct session *session, DNDSMessage_t *msg)
 	memmove(p2p_session->mac_dst, mac_dst, ETHER_ADDR_LEN);
 
 	snprintf(port_str, 6, "%d", port);
-	net_p2p("0.0.0.0", ip_dst, port_str, NET_PROTO_UDT, NET_SECURE_RSA, side, p2p_session->passport,
+	net_p2p("0.0.0.0", ip_dst, port_str, NET_PROTO_UDT, side, p2p_session->passport,
 		p2p_on_connect, p2p_on_secure, p2p_on_disconnect, p2p_on_input, (void *)p2p_session);
 
 	return;

@@ -226,9 +226,8 @@ try_to_reconnect(void *ptr)
 		sleep(5);
 #endif
 
-		retry_netc = net_client(agent_cfg->server_address, agent_cfg->server_port,
-			NET_PROTO_UDT, NET_SECURE_ADH, session->passport,
-			on_disconnect, on_input, on_secure);
+		retry_netc = net_client(agent_cfg->server_address, agent_cfg->server_port, NET_PROTO_UDT,
+					session->passport, on_disconnect, on_input, on_secure);
 
 		if (retry_netc) {
 			session->state = SESSION_STATE_NOT_AUTHED;
@@ -400,7 +399,6 @@ op_prov_response(struct session *session, DNDSMessage_t *msg)
 {
 	size_t length;
 	char *certificate = NULL;
-	unsigned char *certificatekey = NULL;
 	unsigned char *trusted_authority = NULL;
 	FILE *fp = NULL;
 
@@ -448,14 +446,14 @@ op_prov_response(struct session *session, DNDSMessage_t *msg)
 	fprintf(fp, "%s", ipAddress);
 	fclose(fp);
 
-/*
+
 	session->passport = pki_passport_load_from_file(agent_cfg->certificate,
 					 agent_cfg->privatekey,
 					 agent_cfg->trusted_cert);
 
 	krypt_add_passport(session->netc->kconn, session->passport);
 	transmit_register(session->netc);
-*/
+
 }
 
 static void
