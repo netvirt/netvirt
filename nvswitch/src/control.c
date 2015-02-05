@@ -421,7 +421,7 @@ static void on_disconnect(netc_t *netc)
 	do {
 		sleep(5);
 		retry_netc = net_client(switch_cfg->ctrler_ip, switch_cfg->ctrler_port,
-					NET_PROTO_TCP, switch_passport,
+					NET_PROTO_TCP, switch_passport, NULL,
 					on_disconnect, on_input, on_secure);
 	} while (retry_netc == NULL);
 
@@ -452,7 +452,8 @@ int ctrl_init(struct switch_cfg *cfg)
                                 switch_cfg->certificate, switch_cfg->privatekey, switch_cfg->trusted_cert);
                 return -1;
         }
-	ctrl_netc = net_client(switch_cfg->ctrler_ip, switch_cfg->ctrler_port, NET_PROTO_TCP, switch_passport,
+	ctrl_netc = net_client(switch_cfg->ctrler_ip, switch_cfg->ctrler_port, NET_PROTO_TCP,
+				switch_passport, NULL,
 				on_disconnect, on_input, on_secure);
 
 	if (ctrl_netc == NULL) {
