@@ -87,6 +87,7 @@ netc_t *net_client(const char *listen_addr,
 			const char *port,
 			uint8_t protocol,
 			passport_t *passport,
+			const char *servername,
 			void (*on_disconnect)(netc_t *),
 			void (*on_input)(netc_t *),
 			void (*on_secure)(netc_t *));

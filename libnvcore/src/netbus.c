@@ -433,24 +433,9 @@ static void net_on_connect(peer_t *peer)
 	new_netc->peer = peer;
 
 	new_netc->kconn->passport = netc->kconn->passport;
-	krypt_secure_connection(new_netc->kconn, KRYPT_SERVER);
+	krypt_secure_connection(new_netc->kconn, KRYPT_SERVER, NULL);
 	new_netc->on_connect(new_netc);
 }
-#if 0
-void net_step_up(netc_t *netc)
-{
-	if (netc->conn_type == NET_SERVER) {	// Server send HelloRequest
-
-		krypt_set_rsa(netc->kconn);         // set security level to RSA
-		SSL_renegotiate(netc->kconn->ssl);	// move the SSL connection into renegotiation state
-
-		krypt_do_handshake(netc->kconn, NULL, 0); // call SSL_do_handshake (1st time)
-		net_do_krypt(netc);
-
-		krypt_set_renegotiate(netc->kconn);	// set handshake mode
-	}
-}
-#endif
 
 int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 {
@@ -531,6 +516,7 @@ netc_t *net_client(const char *listen_addr,
 			const char *port,
 			uint8_t protocol,
 			passport_t *passport,
+			const char *servername,
 			void (*on_disconnect)(netc_t *),
 			void (*on_input)(netc_t *),
 			void (*on_secure)(netc_t *))
@@ -577,7 +563,7 @@ netc_t *net_client(const char *listen_addr,
 
 	netc->peer->ext_ptr = netc;
 
-	ret = krypt_secure_connection(netc->kconn, KRYPT_CLIENT);
+	ret = krypt_secure_connection(netc->kconn, KRYPT_CLIENT, servername);
 	if (ret < 0) {
 		jlog(L_NOTICE, "securing client connection failed");
 		net_connection_free(netc);
@@ -670,7 +656,7 @@ void net_p2p_on_connect(peer_t *peer)
 		kconn_type = KRYPT_SERVER;
 	}
 
-	ret = krypt_secure_connection(netc->kconn, kconn_type);
+	ret = krypt_secure_connection(netc->kconn, kconn_type, NULL);
 	if (ret < 0) {
 		jlog(L_NOTICE, "securing client connection failed");
 		net_connection_free(netc);
