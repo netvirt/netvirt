@@ -18,12 +18,13 @@
 #define SESSION_H
 
 #include <netbus.h>
+#include <pki.h>
 #include <tapcfg.h>
 
-#define SESSION_STATE_AUTHED		0x1
-#define SESSION_STATE_NOT_AUTHED	0x2
-#define SESSION_STATE_WAIT_ANSWER	0x4
-#define SESSION_STATE_DOWN		0x8
+#define SESSION_PROV    0x4 /* Provisioning mode */
+#define SESSION_AUTH	0x3 /* Secured and Authenticated */
+#define SESSION_CNTG	0x2 /* Connecting */
+#define SESSION_DOWN	0x1 /* Down */
 
 #define SESSION_TYPE_CLIENT		0x1
 #define SESSION_TYPE_SERVER		0x2
@@ -32,10 +33,14 @@
 
 struct session {
 	passport_t *passport;
+	node_info_t *node_info;
+
 	netc_t *netc;
 	tapcfg_t *tapcfg;
+
 	const char *devname;
 	uint8_t mac_dst[ETHER_ADDR_LEN];
+
 	char state;
 	char type;
 };

@@ -64,7 +64,7 @@ tunnel_in(struct session* session)
 		session = p2p_session;
 	}
 
-	if (session->state != SESSION_STATE_AUTHED)
+	if (session->state != SESSION_AUTH)
 		return;
 
 	DNDSMessage_new(&msg);
@@ -90,7 +90,7 @@ tunnel_out(struct session *session, DNDSMessage_t *msg)
 void
 terminate(struct session *session)
 {
-	session->state = SESSION_STATE_DOWN;
+	session->state = SESSION_DOWN;
 	net_disconnect(session->netc);
 	session->netc = NULL;
 }
@@ -120,7 +120,6 @@ transmit_netinfo_request(struct session *session)
 
 	net_send_msg(session->netc, msg);
 	DNDSMessage_del(msg);
-
 }
 
 void
@@ -173,44 +172,6 @@ transmit_prov_request(netc_t *netc)
 	}
 }
 
-void
-transmit_register(netc_t *netc)
-{
-	X509_NAME *subj_ptr;
-	char subj[256];
-        ssize_t nbyte;
-	struct session *session = (struct session *)netc->ext_ptr;
-
-        DNDSMessage_t *msg;
-
-        DNDSMessage_new(&msg);
-        DNDSMessage_set_channel(msg, 0);
-        DNDSMessage_set_pdu(msg, pdu_PR_dnm);
-
-        DNMessage_set_seqNumber(msg, 1);
-        DNMessage_set_ackNumber(msg, 0);
-        DNMessage_set_operation(msg, dnop_PR_authRequest);
-
-	subj_ptr = X509_get_subject_name(session->passport->certificate);
-	X509_NAME_get_text_by_NID(subj_ptr, NID_commonName, subj, 256);
-
-	jlog(L_NOTICE, "CN=%s", subj);
-        AuthRequest_set_certName(msg, subj, strlen(subj));
-
-        nbyte = net_send_msg(netc, msg);
-	DNDSMessage_del(msg);
-        if (nbyte == -1) {
-                jlog(L_NOTICE, "malformed message: %d", nbyte);
-                return;
-        }
-	session->state = SESSION_STATE_WAIT_ANSWER;
-
-	/* Prepare re-handshake, set up certificates */
-	krypt_set_rsa(session->netc->kconn);
-
-        return;
-}
-
 void *
 try_to_reconnect(void *ptr)
 {
@@ -227,10 +188,12 @@ try_to_reconnect(void *ptr)
 #endif
 
 		retry_netc = net_client(agent_cfg->server_address, agent_cfg->server_port, NET_PROTO_UDT,
-					session->passport, on_disconnect, on_input, on_secure);
+							/* XXX get this from the prov url */
+					session->passport, "nva-d057a4ac-b601-446b-b64d-6b1966fde430@1",
+					on_disconnect, on_input, on_secure);
 
 		if (retry_netc) {
-			session->state = SESSION_STATE_NOT_AUTHED;
+			session->state = SESSION_CNTG;
 			session->netc = retry_netc;
 			retry_netc->ext_ptr = session;
 			return NULL;
@@ -255,12 +218,7 @@ on_disconnect(netc_t *netc)
 		return;
 	}
 
-	if (session->state == SESSION_STATE_DOWN) {
-		jlog(L_DEBUG, "session->state == SESSION_STATE_DOWN");
-		return;
-	}
-
-	session->state = SESSION_STATE_DOWN;
+	session->state = SESSION_DOWN;
 
 	if (agent_cfg->ev.on_disconnect)
 		agent_cfg->ev.on_disconnect();
@@ -275,17 +233,39 @@ on_secure(netc_t *netc)
 	struct session *session;
 	session = netc->ext_ptr;
 
-	jlog(L_NOTICE, "connection secured");
+	FILE *fp = NULL;
+	int ret = 0;
 
-	if (session->state == SESSION_STATE_NOT_AUTHED) {
-		if (session->passport == NULL && agent_cfg->prov_code != NULL) {
-			jlog(L_NOTICE, "Provisioning mode...");
-
-			/* XXX Verify server cert fingerprint */
+	if (session->state == SESSION_PROV) {
+		jlog(L_NOTICE, "connection secured");
+		jlog(L_NOTICE, "provisioning mode...");
+		/* XXX Verify server cert fingerprint */
 			transmit_prov_request(netc);
-		}
-		else {
-			transmit_register(netc);
+
+	} else if (session->state == SESSION_CNTG) {
+
+		/* Set up the network interface */
+		/* XXX move it to a seperate function */
+
+		krypt_print_cipher(session->netc->kconn);
+		jlog(L_NOTICE, "session secured and authenticated");
+
+		fp = fopen(agent_cfg->ip_conf, "r");
+                if (fp != NULL) {
+                        ret = fscanf(fp, "%s", ipAddress);
+                        if (ret == EOF) {
+                                jlog(L_ERROR, "can't fetch IP address from file: %s", agent_cfg->ip_conf);
+                        }
+                        fclose(fp);
+                }
+
+		tapcfg_iface_set_status(session->tapcfg, TAPCFG_STATUS_IPV4_UP);
+		tapcfg_iface_set_ipv4(session->tapcfg, ipAddress, 24);
+		jlog(L_NOTICE, "ip address: %s", ipAddress);
+		session->state = SESSION_AUTH;
+
+		if (agent_cfg->ev.on_connect) {
+			agent_cfg->ev.on_connect(ipAddress);
 		}
 	}
 }
@@ -319,69 +299,6 @@ on_input(netc_t *netc)
 			return;
 		}
 		mbuf_del(mbuf_itr, *mbuf_itr);
-	}
-}
-
-static void
-op_netinfo_response(struct session *session)
-{
-	FILE *fp = NULL;
-	int fret = 0;
-
-	fp = fopen(agent_cfg->ip_conf, "r");
-	if (fp == NULL) {
-		jlog(L_ERROR, "%s doesn't exist, reprovision your agent", agent_cfg->ip_conf);
-		return;
-	}
-	fret = fscanf(fp, "%s", ipAddress);
-	if (fret == EOF) {
-		jlog(L_ERROR, "can't fetch IP address from file: %s\n", agent_cfg->ip_conf);
-	}
-	fclose(fp);
-
-	tapcfg_iface_set_status(session->tapcfg, TAPCFG_STATUS_IPV4_UP);
-	tapcfg_iface_set_ipv4(session->tapcfg, ipAddress, 24);
-	jlog(L_NOTICE, "ip address: %s", ipAddress);
-	session->state = SESSION_STATE_AUTHED;
-}
-
-static void
-op_auth_response(struct session *session, DNDSMessage_t *msg)
-{
-	e_DNDSResult result;
-	AuthResponse_get_result(msg, &result);
-	FILE *fp = NULL;
-	int fret = 0;
-
-	switch (result) {
-	case DNDSResult_success:
-		krypt_print_cipher(session->netc->kconn);
-		jlog(L_NOTICE, "session secured and authenticated");
-
-		fp = fopen(agent_cfg->ip_conf, "r");
-		if (fp) {
-			fret = fscanf(fp, "%s", ipAddress);
-			if (fret == EOF) {
-				jlog(L_ERROR, "can't fetch IP address from file: %s\n", agent_cfg->ip_conf);
-			}
-			fclose(fp);
-		}
-		if (agent_cfg->ev.on_connect)
-			agent_cfg->ev.on_connect(ipAddress);
-
-		transmit_netinfo_request(session);
-		break;
-
-	case DNDSResult_secureStepUp:
-		jlog(L_NOTICE, "server authentication require step up");
-		break;
-
-	case DNDSResult_insufficientAccessRights:
-		jlog(L_ERROR, "authentication failed, invalid certificate");
-		break;
-
-	default:
-		jlog(L_NOTICE, "unknown AuthResponse result (%i)", result);
 	}
 }
 
@@ -452,8 +369,6 @@ op_prov_response(struct session *session, DNDSMessage_t *msg)
 					 agent_cfg->trusted_cert);
 
 	krypt_add_passport(session->netc->kconn, session->passport);
-	transmit_register(session->netc);
-
 }
 
 static void
@@ -465,14 +380,6 @@ dispatch_op(struct session *session, DNDSMessage_t *msg)
 	switch (operation) {
 	case dnop_PR_provResponse:
 		op_prov_response(session, msg);
-		break;
-
-	case dnop_PR_authResponse:
-		op_auth_response(session, msg);
-		break;
-
-	case dnop_PR_netinfoResponse:
-		op_netinfo_response(session);
 		break;
 
 	case dnop_PR_p2pRequest:
@@ -561,7 +468,7 @@ agent_init(void *cfg)
 	}
 
 	session->tapcfg = NULL;
-	session->state = SESSION_STATE_NOT_AUTHED;
+	session->state = SESSION_DOWN;
 
 	session->tapcfg = tapcfg_init();
 	if (session->tapcfg == NULL) {

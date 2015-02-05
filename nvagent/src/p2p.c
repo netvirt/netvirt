@@ -38,7 +38,7 @@ static void p2p_on_secure(netc_t *netc)
 	jlog(L_NOTICE, "p2p connection secured and authenticated");
 
 	p2p_session = netc->ext_ptr;
-	p2p_session->state = SESSION_STATE_AUTHED;
+	p2p_session->state = SESSION_AUTH;
 	p2p_session->netc->ext_ptr = p2p_session;
 
 	ftable_insert(ftable, p2p_session->mac_dst, p2p_session);
