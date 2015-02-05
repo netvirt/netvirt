@@ -75,6 +75,23 @@ certreq2node_info(char *certreq_pem)
 	return cn2node_info(cn);
 }
 
+void
+pki_get_pubkey(X509 *cert, char **pubkey_pem, long *size)
+{
+	BIO *bio_mem = NULL;
+	EVP_PKEY *pubkey = NULL;
+
+	pubkey = X509_get_pubkey(cert);
+
+	bio_mem = BIO_new(BIO_s_mem());
+	PEM_write_bio_PUBKEY(bio_mem, pubkey);
+
+	*size = BIO_get_mem_data(bio_mem, pubkey_pem);
+
+	(void)BIO_set_close(bio_mem, BIO_NOCLOSE);
+	BIO_free(bio_mem);
+}
+
 EVP_PKEY *
 pki_generate_keyring()
 {
