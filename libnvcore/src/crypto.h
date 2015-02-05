@@ -67,7 +67,7 @@ int krypt_encrypt_buf(krypt_t *kcon, uint8_t *buf, size_t buf_data_size);
 int krypt_push_encrypted_data(krypt_t *kconn, uint8_t *buf, size_t buf_data_size);
 int krypt_decrypt_buf(krypt_t *kconn);
 int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size);
-int krypt_secure_connection(krypt_t *kconn, uint8_t state);
+int krypt_secure_connection(krypt_t *kconn, uint8_t state, const char *servername);
 void krypt_add_passport(krypt_t *kconn, passport_t *passport);
 void krypt_print_cipher(krypt_t *kconn);
 

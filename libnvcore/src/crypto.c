@@ -30,8 +30,10 @@
 static int s_server_session_id_context = 1;
 static int s_server_auth_session_id_context = 2;
 
-static DH *get_dh_1024() {
+static DH *
+get_dh_1024() {
 
+	DH *dh = NULL;
 	static unsigned char dh1024_p[]={
 		0xDE,0xD3,0x80,0xD7,0xE1,0x8E,0x1B,0x5D,0x5C,0x76,0x61,0x79,
 		0xCA,0x8E,0xCD,0xAD,0x83,0x49,0x9E,0x0B,0xC0,0x2E,0x67,0x33,
@@ -50,8 +52,6 @@ static DH *get_dh_1024() {
 		0x02,
 	};
 
-	DH *dh;
-
 	dh = DH_new();
 	if (dh == NULL) {
 		return NULL;
@@ -68,17 +68,8 @@ static DH *get_dh_1024() {
 	return dh;
 }
 
-// FIXME - could we remove this function?
-static DH *tmp_dh_callback(SSL *s, int is_export, int keylength)
-{
-	(void)(s);
-	(void)(is_export);
-
-	jlog(L_NOTICE, "keyl %i\n", keylength);
-	return NULL;
-}
-
-static void ssl_error_stack()
+static void
+ssl_error_stack()
 {
 	const char *file;
 	int line;
@@ -90,14 +81,16 @@ static void ssl_error_stack()
 	} while (e);
 }
 
-static long post_handshake_check(krypt_t *krypt)
+static long
+post_handshake_check(krypt_t *krypt)
 {
 	X509 *cert;
 	X509_NAME *subj_ptr;
 
 	cert = SSL_get_peer_certificate(krypt->ssl);
-	if (cert == NULL)
+	if (cert == NULL) {
 		return 0;
+	}
 
 	subj_ptr = X509_get_subject_name(cert);
 	X509_NAME_get_text_by_NID(subj_ptr, NID_commonName, krypt->client_cn, 256);
@@ -107,19 +100,23 @@ static long post_handshake_check(krypt_t *krypt)
 	return 0;
 }
 
-static int verify_callback(int ok, X509_STORE_CTX *store)
+static int
+verify_callback(int ok, X509_STORE_CTX *store)
 {
-	(void)(store); /* unused */
+	(void)(store);
+
+	jlog(L_NOTICE, "verify callback");
 
 	/* FIXME Verify Not Before / Not After.. etc */
 	return ok;
 }
 
 // XXX Clean up this function, we MUST handle all errors possible
-int krypt_set_rsa(krypt_t *kconn)
+int
+krypt_set_rsa(krypt_t *kconn)
 {
 	// XXX use PFS
-	SSL_set_cipher_list(kconn->ssl, "AES256-SHA");
+	SSL_set_cipher_list(kconn->ssl, "DHE-RSA-AES256-GCM-SHA384");
 
 	// Force the peer cert verifying + fail if no cert is sent by the peer
 	// XXX we don't verify client in provisioning mode
@@ -144,27 +141,20 @@ int krypt_set_rsa(krypt_t *kconn)
 	return 0;
 }
 
-void krypt_add_passport(krypt_t *kconn, passport_t *passport)
+void
+krypt_add_passport(krypt_t *kconn, passport_t *passport)
 {
 	kconn->passport = passport;
 }
 
-void krypt_set_renegotiate(krypt_t *kconn)
-{
-	if (kconn->conn_type == KRYPT_SERVER) {
-
-		kconn->status = KRYPT_HANDSHAKE;
-		// bring back the connection to handshake mode
-		kconn->ssl->state = SSL_ST_ACCEPT;
-	}
-}
-
-void krypt_print_cipher(krypt_t *kconn)
+void
+krypt_print_cipher(krypt_t *kconn)
 {
 	jlog(L_NOTICE, "cipher: %s", SSL_get_cipher_name(kconn->ssl));
 }
 
-int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
+int
+krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 {
 	int ret = 0;
 	int nbyte = 0;
@@ -179,18 +169,18 @@ int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 	jlog(L_NOTICE, "SSL state: %s", SSL_state_string_long(kconn->ssl));
 
 	if (ret > 0 && !SSL_is_init_finished(kconn->ssl)) {
-		// Need more data to continue ?
+		/* Need more data to continue ? */
 		jlog(L_ERROR, "handshake need more data to continue ??");
 		status = 1;
 	}
 	else if (ret > 0 && SSL_is_init_finished(kconn->ssl)) {
-		// Handshake successfully completed
+		/* Handshake successfully completed */
 		post_handshake_check(kconn);
 		kconn->status = KRYPT_SECURE;
 		status = 0;
 	}
 	else if (ret == 0) {
-		// Error
+		/* Error ! */
 		kconn->status = KRYPT_FAIL;
 		jlog(L_ERROR, "ssl_get_error: %d", SSL_get_error(kconn->ssl, ret));
 		ssl_error_stack();
@@ -198,13 +188,13 @@ int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 		status = -1;
 	}
 	else if (ret < 0) {
-		// Need more data to continue
+		/* Need more data to continue */
 		status = 1;
 	}
 
 	nbyte = BIO_ctrl_pending(kconn->network_bio);
 
-	if (nbyte > 0) { // Read pending data into the BIO
+	if (nbyte > 0) { /* Read pending data into the BIO */
 		nbyte = BIO_read(kconn->network_bio, kconn->buf_encrypt, kconn->buf_encrypt_size);
 		kconn->buf_encrypt_data_size = nbyte; // FIXME dynamic buffer
 	}
@@ -212,7 +202,8 @@ int krypt_do_handshake(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 	return status;
 }
 
-int krypt_push_encrypted_data(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
+int
+krypt_push_encrypted_data(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 {
 	int nbyte;
 	nbyte = BIO_write(kconn->network_bio, buf, buf_data_size);
@@ -220,7 +211,8 @@ int krypt_push_encrypted_data(krypt_t *kconn, uint8_t *buf, size_t buf_data_size
 	return nbyte;
 }
 
-int krypt_decrypt_buf(krypt_t *kconn)
+int
+krypt_decrypt_buf(krypt_t *kconn)
 {
 	int nbyte = 0;
 	int error = 0;
@@ -257,7 +249,8 @@ int krypt_decrypt_buf(krypt_t *kconn)
 	return status;
 }
 
-int krypt_encrypt_buf(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
+int
+krypt_encrypt_buf(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 {
 	int nbyte = 0;
 	int pbyte = 0;
@@ -292,7 +285,8 @@ int krypt_encrypt_buf(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 	return status;
 }
 
-int ssl_servername_cb(SSL *ssl, int *ad, void *arg)
+int
+ssl_servername_cb(SSL *ssl, int *ad, void *arg)
 {
 	const char *cn = NULL;
 	krypt_t *kconn = NULL;
@@ -302,13 +296,13 @@ int ssl_servername_cb(SSL *ssl, int *ad, void *arg)
 	kconn = (krypt_t*)arg;
 	cn = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
 	if (cn == NULL) {
-		SSL_TLSEXT_ERR_NOACK;
+		return SSL_TLSEXT_ERR_NOACK;
 	}
 
 	jlog(L_DEBUG, "servername: %s", cn);
 
 	kconn->passport = kconn->servername_cb(cn);
-	if (kconn->passport = NULL) {
+	if (kconn->passport == NULL) {
 		return SSL_TLSEXT_ERR_NOACK;
 	}
 
@@ -322,9 +316,12 @@ int ssl_servername_cb(SSL *ssl, int *ad, void *arg)
 	return SSL_TLSEXT_ERR_OK;
 }
 
-int krypt_secure_connection(krypt_t *kconn, uint8_t conn_type)
+int
+krypt_secure_connection(krypt_t *kconn, uint8_t conn_type, const char *servername)
 {
-	kconn->ctx = SSL_CTX_new(TLSv1_method());
+	kconn->ctx = SSL_CTX_new(SSLv23_method());
+	SSL_CTX_set_options(kconn->ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TICKET);
+	SSL_CTX_set_tmp_dh(kconn->ctx, get_dh_1024());
 
 	if (kconn->ctx == NULL) {
 		jlog(L_ERROR, "unable to create SSL context");
@@ -336,10 +333,10 @@ int krypt_secure_connection(krypt_t *kconn, uint8_t conn_type)
 		(void*)&s_server_session_id_context,
 		sizeof(s_server_session_id_context));
 
-	// Create the BIO pair
+	/* Create the BIO pair */
 	BIO_new_bio_pair(&kconn->internal_bio, 0, &kconn->network_bio, 0);
 
-	// Create the SSL object
+	/* Create the SSL object */
 	kconn->ssl = SSL_new(kconn->ctx);
 	SSL_set_bio(kconn->ssl, kconn->internal_bio, kconn->internal_bio);
 	SSL_set_mode(kconn->ssl, SSL_MODE_AUTO_RETRY);
@@ -348,27 +345,24 @@ int krypt_secure_connection(krypt_t *kconn, uint8_t conn_type)
 
 	kconn->conn_type = conn_type;
 	switch (conn_type) {
-
-		case KRYPT_SERVER:
-			jlog(L_NOTICE, "connection type server");
-			SSL_set_accept_state(kconn->ssl);
-			if (kconn->servername_cb != NULL) {
-				SSL_CTX_set_tlsext_servername_callback(kconn->ctx, ssl_servername_cb);
-				SSL_CTX_set_tlsext_servername_arg(kconn->ctx, kconn);
-			}
-
-			break;
-
-		case KRYPT_CLIENT:
-			jlog(L_NOTICE, "connection type client");
-			SSL_set_connect_state(kconn->ssl);
-			SSL_set_tlsext_host_name(kconn->ssl, "nva-d057a4ac-b601-446b-b64d-6b1966fde430@1");
-
-			break;
-
-		default:
-			jlog(L_ERROR, "unknown connection type");
-			return -1;
+	case KRYPT_SERVER:
+		jlog(L_NOTICE, "connection type server");
+		SSL_set_accept_state(kconn->ssl);
+		if (kconn->servername_cb != NULL) {
+			SSL_CTX_set_tlsext_servername_callback(kconn->ctx, ssl_servername_cb);
+			SSL_CTX_set_tlsext_servername_arg(kconn->ctx, kconn);
+		}
+		break;
+	case KRYPT_CLIENT:
+		jlog(L_NOTICE, "connection type client");
+		SSL_set_connect_state(kconn->ssl);
+		if (servername) {
+			SSL_set_tlsext_host_name(kconn->ssl, servername);
+		}
+		break;
+	default:
+		jlog(L_ERROR, "unknown connection type");
+		return -1;
 	}
 
 	kconn->status = KRYPT_HANDSHAKE;
@@ -376,12 +370,14 @@ int krypt_secure_connection(krypt_t *kconn, uint8_t conn_type)
 	return 0;
 }
 
-void krypt_fini()
+void
+krypt_fini()
 {
 
 }
 
-int krypt_init()
+int
+krypt_init()
 {
 	SSL_library_init();
 	SSL_load_error_strings();
@@ -389,5 +385,3 @@ int krypt_init()
 
 	return 0;
 }
-
-
