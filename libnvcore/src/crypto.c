@@ -97,6 +97,12 @@ post_handshake_check(krypt_t *krypt)
 
 	jlog(L_NOTICE, "CN=%s", krypt->client_cn);
 
+	char *pubkey_pem = NULL;
+	long size = 0;
+
+	pki_get_pubkey(cert, &pubkey_pem, &size);
+	printf("%s\n", pubkey_pem);
+
 	return 0;
 }
 
