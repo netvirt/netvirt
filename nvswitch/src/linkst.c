@@ -90,7 +90,7 @@ int
 linkst_joined(linkst_t *linkst, uint32_t idx_a, uint32_t idx_b)
 {
 	uint32_t x, y;
-	time_t now;
+//	time_t now;
 
 	if (linkst == NULL) {
 		return -1;
@@ -107,10 +107,10 @@ linkst_joined(linkst_t *linkst, uint32_t idx_a, uint32_t idx_b)
 		x = idx_b; y = idx_a;
 	}
 
-	time(&now);
+//	time(&now);
 
-	if ((linkst->adjacency_matrix[x-1][y-1]).linked == 1
-		&& difftime(now, (linkst->adjacency_matrix[x-1][y-1]).timestamp) < linkst->timeout_sec) {
+	if ((linkst->adjacency_matrix[x-1][y-1]).linked == 1) {
+//		&& difftime(now, (linkst->adjacency_matrix[x-1][y-1]).timestamp) < linkst->timeout_sec) {
 		return 1; /* nodes are joined */
 	}
 
