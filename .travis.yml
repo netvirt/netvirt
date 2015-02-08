@@ -4,12 +4,12 @@ language:
 compiler:
   - gcc
   - clang
-  - g++
-  - clang++
 
 before_install:
   - echo "yes" | sudo add-apt-repository ppa:kalakris/cmake
   - sudo apt-get update -qq
   - sudo apt-get install cmake
+  - git submodule init
+  - git submodule update
 
 script: mkdir build && cd build && cmake .. -DWITH_NVAGENT=no -DWITH_NVSWITCH=YES -DWITH_NVCTRLER=YES && make
