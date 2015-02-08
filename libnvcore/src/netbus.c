@@ -210,7 +210,11 @@ static void net_queue_out(netc_t *netc, uint8_t *buf, size_t data_size)
 // serialize data coming from the low-level network layer
 static void serialize_buf_in(netc_t *netc, const void *buf, size_t data_size)
 {
-	memmove(netc->buf_in + netc->buf_in_offset + netc->buf_in_data_size, buf, data_size);
+	if (netc->buf_in_data_size + data_size > netc->buf_in_size) {
+		netc->buf_in_size = (netc->buf_in_size + data_size) * 2;
+		netc->buf_in = realloc(netc->buf_in, netc->buf_in_size);
+	}
+	memmove(netc->buf_in + netc->buf_in_data_size, buf, data_size);
 	netc->buf_in_data_size += data_size;
 }
 
@@ -220,6 +224,11 @@ static int serialize_buf_enc(const void *buf, size_t data_size, void *ext_ptr)
 {
 	netc_t *netc;
 	netc = (netc_t *)ext_ptr;
+
+	if (netc->buf_enc_data_size + data_size > netc->buf_enc_size) {
+		netc->buf_enc_size = (netc->buf_enc_size + data_size) * 2;
+		netc->buf_enc = realloc(netc->buf_enc, netc->buf_enc_size);
+	}
 
 	memmove(netc->buf_enc + netc->buf_enc_data_size, buf, data_size);
 	netc->buf_enc_data_size += data_size;
@@ -477,7 +486,7 @@ int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 {
 	asn_enc_rval_t ec;
 	size_t nbyte;
-	int ret;
+	int ret = 0;
 
 	ec = der_encode(&asn_DEF_DNDSMessage, msg, serialize_buf_enc, netc);
 	if (ec.encoded == -1) {
@@ -497,16 +506,17 @@ int net_send_msg(netc_t *netc, DNDSMessage_t *msg)
 		&& netc->kconn->status == KRYPT_SECURE) {
 
 		do {
+
 			ret = krypt_encrypt_buf(netc->kconn, netc->buf_enc, netc->buf_enc_data_size);
 			net_queue_out(netc, netc->kconn->buf_encrypt, netc->kconn->buf_encrypt_data_size);
-		} while (ret == -1); /* SSL BIO buffer is full ! flush it, and write again */
-		netc->kconn->buf_encrypt_data_size = 0;
+			netc->kconn->buf_encrypt_data_size = 0;
+			if (ret == -2) { netc->buf_enc_data_size = 0; }
+		} while (ret < 0); /* SSL BIO buffer is full ! flush it, and write again */
 
 	}
 	else {
 		net_queue_out(netc, netc->buf_enc, netc->buf_enc_data_size);
 	}
-
 	netc->buf_enc_data_size = 0; // mark buffer as empty
 	nbyte = net_flush_queue_out(netc);
 

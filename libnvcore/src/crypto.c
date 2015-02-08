@@ -282,30 +282,38 @@ int krypt_encrypt_buf(krypt_t *kconn, uint8_t *buf, size_t buf_data_size)
 	int pbyte = 0;
 	int error = 0;
 	int status = 0;
-	nbyte = SSL_write(kconn->ssl, buf, buf_data_size);
 
-	if (nbyte <= 0) {
-		error = SSL_get_error(kconn->ssl, nbyte);
-		switch (error) {
+	if (buf_data_size > 0) {
+		nbyte = SSL_write(kconn->ssl, buf, buf_data_size);
 
-		case SSL_ERROR_WANT_READ:
-			break;
-		case SSL_ERROR_WANT_WRITE:
-			status = -1;
-			break;
-		default:
-			ssl_error_stack();
-			return -1;
+		if (nbyte <= 0) {
+			error = SSL_get_error(kconn->ssl, nbyte);
+			switch (error) {
+
+			case SSL_ERROR_WANT_READ:
+				break;
+			case SSL_ERROR_WANT_WRITE:
+				status = -1;
+				break;
+			default:
+				ssl_error_stack();
+				return -1;
+			}
 		}
+	}
+
+
+	kconn->buf_encrypt_data_size = 0;
+	nbyte = BIO_read(kconn->network_bio, kconn->buf_encrypt, kconn->buf_encrypt_size);
+
+	if (nbyte > 0) {
+		kconn->buf_encrypt_data_size = nbyte;
 	}
 
 	pbyte = BIO_ctrl_pending(kconn->network_bio);
 
-	kconn->buf_encrypt_data_size = 0;
-	nbyte = BIO_read(kconn->network_bio, kconn->buf_encrypt, pbyte);
-
-	if (nbyte > 0) {
-		kconn->buf_encrypt_data_size = nbyte;
+	if (status != -1 && pbyte > 0) {
+		return -2;
 	}
 
 	return status;
