@@ -24,12 +24,12 @@ typedef struct linkinfo {
 	time_t timestamp;
 } linkinfo_t;
 
-typedef struct linkst {
+struct linkst {
 	linkinfo_t **adjacency_matrix;
 	uint32_t matrix_size;
 	uint32_t upper_limit;
 	uint16_t timeout_sec;
-} linkst_t;
+};
 
 static void
 linkst_resize(linkst_t *linkst, uint32_t resize_size)
