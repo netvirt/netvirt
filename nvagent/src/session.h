@@ -21,8 +21,8 @@
 #include <pki.h>
 #include <tapcfg.h>
 
-#define SESSION_PROV    0x4 /* Provisioning mode */
-#define SESSION_AUTH	0x3 /* Secured and Authenticated */
+#define SESSION_AUTH	0x4 /* Secured and Authenticated */
+#define SESSION_PROV    0x3 /* Provisioning mode */
 #define SESSION_CNTG	0x2 /* Connecting */
 #define SESSION_DOWN	0x1 /* Down */
 
