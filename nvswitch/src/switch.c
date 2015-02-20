@@ -276,17 +276,22 @@ static void on_disconnect(netc_t *netc)
 		return;
 	}
 
-	linkst_disjoin(session->context->linkst, session->id);
-	while (session->mac_list != NULL) {
-		mac_itr = session->mac_list;
-		session->mac_list = mac_itr->next;
-		ftable_erase(session->context->ftable, mac_itr->mac_addr);
-		free(mac_itr);
+	/* If the context is still valid, update the node in it. */
+	if (session->context != NULL) {
+
+		linkst_disjoin(session->context->linkst, session->id);
+
+		while (session->mac_list != NULL) {
+			mac_itr = session->mac_list;
+			session->mac_list = mac_itr->next;
+			ftable_erase(session->context->ftable, mac_itr->mac_addr);
+			free(mac_itr);
+		}
+
+		ctable_erase(session->context->ctable, session->node_info->uuid);
+		context_del_session(session->context, session);
 	}
 
-	ctable_erase(session->context->ctable, session->node_info->uuid);
-
-	context_del_session(session->context, session);
 	transmit_node_connectinfo(ConnectState_disconnected,
 				session->ip, session->cert_name);
 	session_free(session);

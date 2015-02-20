@@ -190,6 +190,7 @@ static void DelRequest_context(DNDSMessage_t *msg)
 	session_list = context->session_list;
 	while (session_list != NULL) {
 		session_list->state = SESSION_STATE_PURGE;
+		session_list->context = NULL;
 		session_list = session_list->next;
 	}
 
