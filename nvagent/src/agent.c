@@ -508,7 +508,7 @@ void *agent_init(void *cfg)
 			agent_cfg->certificate, agent_cfg->privatekey, agent_cfg->trusted_cert);
 
 	if (session->passport == NULL && agent_cfg->prov_code == NULL) {
-		jlog(L_ERROR, "Must provide a provisioning code: ./nvagent -p ...");
+		jlog(L_ERROR, "You must provide a provisioning key: netvirt-agent -k KEY");
 		free(session);
 		return NULL;
 	}
