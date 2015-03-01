@@ -7,7 +7,7 @@ release_dir="$1"
 openssl_dir="/data/netvirt/openssl"
 openssl_root="$openssl_dir/mingw32"
 wine_dir="/data/netvirt/wine"
-qt_root="$wine_dir/drive_c/Qt/4.8.5"
+qt_root="$wine_dir/drive_c/Qt/4.8.4"
 pthreads_dir="/data/netvirt/pthreads"
 
 function install_openssl () {
@@ -21,7 +21,7 @@ function install_openssl () {
 
 function install_qt () {
     qt_installer="/tmp/qt-win32-installer"
-    qt_url="http://download.qt-project.org/official_releases/qt/4.8/4.8.5/qt-win-opensource-4.8.5-mingw.exe"
+    qt_url="http://download.qt-project.org/official_releases/qt/4.8/4.8.4/qt-win-opensource-4.8.4-mingw.exe"
     [ -r "$qt_installer" ] || wget "$qt_url" -O "$qt_installer"
     mkdir -p "$wine_dir"
     WINEPREFIX="$wine_dir" wine "$qt_installer" /S
