@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
 
 	jlog(L_NOTICE, "connecting...");
 
-	if (agent_init(agent_cfg) == NULL) {
+	if (agent_init(agent_cfg)) {
 		jlog(L_ERROR, "agent_init failed");
 		exit(EXIT_FAILURE);
 	}
