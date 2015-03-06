@@ -30,6 +30,7 @@ DNDSResult ::= ENUMERATED {
 		busy				(5),
 		secureStepUp			(6),
 		insufficientAccessRights	(7),
+		moreData			(8),
 		...
 }
 
