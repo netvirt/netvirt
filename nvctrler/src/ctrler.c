@@ -26,7 +26,6 @@
 #include "tcp.h"
 
 static netc_t *ctrler_netc = NULL;
-static netc_t *ctrler2_netc = NULL;
 static passport_t *ctrler_passport = NULL;
 static struct ctrler_cfg *ctrler_cfg = NULL;
 
@@ -150,7 +149,6 @@ static void *ctrler_loop(void *nil)
 
 	while (ctrler_cfg->ctrler_running) {
 		tcpbus_ion_poke();
-		udtbus_poke_queue();
 	}
 
 	return NULL;
@@ -168,22 +166,13 @@ int ctrler_init(struct ctrler_cfg *cfg)
 		return -1;
 	}
 
-	ctrler_netc = net_server(ctrler_cfg->listen_ip, ctrler_cfg->listen_port, NET_PROTO_UDT, NET_SECURE_RSA, ctrler_passport,
+	ctrler_netc = net_server(ctrler_cfg->listen_ip, ctrler_cfg->listen_port, NET_PROTO_TCP, NET_SECURE_RSA, ctrler_passport,
 			on_connect, on_disconnect, on_input, on_secure);
 
 	if (ctrler_netc == NULL) {
 		jlog(L_ERROR, "net_server failed");
 		return -1;
 	}
-
-	ctrler2_netc = net_server(ctrler_cfg->listen_ip, ctrler_cfg->listen_port, NET_PROTO_TCP, NET_SECURE_RSA, ctrler_passport,
-			on_connect, on_disconnect, on_input, on_secure);
-
-	if (ctrler2_netc == NULL) {
-		jlog(L_ERROR, "net_server failed");
-		return -1;
-	}
-
 
 	pthread_t thread_loop;
 	pthread_attr_t attr;
@@ -200,5 +189,4 @@ void ctrler_fini()
 {
 	pki_passport_destroy(ctrler_passport);
 	net_disconnect(ctrler_netc);
-	net_disconnect(ctrler2_netc);
 }
