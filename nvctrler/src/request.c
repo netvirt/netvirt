@@ -35,7 +35,6 @@ int CB_searchRequest_context_by_client_id(void *msg,
 						char *serverPrivkey,
 						char *trustedCert)
 {
-	DNDSMessage_printf(msg);
 	DNDSObject_t *objContext;
 	DNDSObject_new(&objContext);
 	DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
@@ -98,13 +97,8 @@ void AddRequest_client(DNDSMessage_t *msg)
 {
 	jlog(L_DEBUG, "Add Request client");
 
-	DNDSMessage_printf(msg);
-	DSMessage_printf(msg);
-	AddRequest_printf(msg);
-
 	DNDSObject_t *obj;
 	AddRequest_get_object(msg, &obj);
-	DNDSObject_printf(obj);
 
 	int ret = 0;
 	size_t length = 0;
@@ -127,7 +121,6 @@ void AddRequest_context(DNDSMessage_t *msg)
 {
 	DNDSObject_t *obj;
 	AddRequest_get_object(msg, &obj);
-	DNDSObject_printf(obj);
 
 	size_t length;
 
@@ -271,13 +264,8 @@ void AddRequest_node(DNDSMessage_t *msg)
 {
 	jlog(L_DEBUG, "AddRequest_node");
 
-	DNDSMessage_printf(msg);
-	DSMessage_printf(msg);
-	AddRequest_printf(msg);
-
 	DNDSObject_t *obj;
 	AddRequest_get_object(msg, &obj);
-	DNDSObject_printf(obj);
 
 	int ret = 0;
 	size_t length = 0;
@@ -477,7 +465,6 @@ void searchRequest_client(struct session *session, DNDSMessage_t *req_msg)
 	DNDSObject_t *object;
 
 	SearchRequest_get_object(req_msg, &object);
-	DNDSObject_printf(object);
 
 	size_t length;
 	char *id = NULL;
