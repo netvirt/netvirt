@@ -546,7 +546,7 @@ void searchRequest_context_by_client_id(struct session *session, DNDSMessage_t *
 	DNDSMessage_del(msg);
 }
 
-void CB_searchRequest_context(void *msg,
+void CB_searchRequest_context(void *data, int remaining,
 				char *id,
 				char *description,
 				char *client_id,
@@ -557,6 +557,24 @@ void CB_searchRequest_context(void *msg,
 				char *trustedCert)
 {
 	(void)(client_id);
+	static DNDSMessage_t *msg = NULL;
+	static int count = 0;
+	struct session *session = (struct session *)data;
+
+	count++;
+
+	if (msg == NULL) {
+
+		DNDSMessage_new(&msg);
+		DNDSMessage_set_channel(msg, 0);
+		DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+
+		DSMessage_set_seqNumber(msg, 0);
+		DSMessage_set_ackNumber(msg, 1);
+		DSMessage_set_operation(msg, dsop_PR_searchResponse);
+
+		SearchResponse_set_searchType(msg, SearchType_all);
+	}
 
 	DNDSObject_t *objContext;
 	DNDSObject_new(&objContext);
@@ -571,31 +589,44 @@ void CB_searchRequest_context(void *msg,
 	Context_set_trustedCert(objContext, trustedCert, strlen(trustedCert));
 
 	SearchResponse_add_object(msg, objContext);
+
+	if (count == 10 || remaining == 0) {
+
+		if (remaining == 0) {
+			SearchResponse_set_result(msg, DNDSResult_success);
+		} else {
+			SearchResponse_set_result(msg, DNDSResult_moreData);
+		}
+
+		net_send_msg(session->netc, msg);
+		DNDSMessage_del(msg);
+		msg = NULL;
+
+		count = 0;
+	}
 }
 
 void searchRequest_context(struct session *session)
 {
-        DNDSMessage_t *msg;
-        DNDSMessage_new(&msg);
-        DNDSMessage_set_channel(msg, 0);
-        DNDSMessage_set_pdu(msg, pdu_PR_dsm);
-
-        DSMessage_set_seqNumber(msg, 0);
-        DSMessage_set_ackNumber(msg, 1);
-        DSMessage_set_operation(msg, dsop_PR_searchResponse);
-
-        SearchResponse_set_result(msg, DNDSResult_success);
-
-	dao_fetch_context(msg, CB_searchRequest_context);
-
-	SearchResponse_set_searchType(msg, SearchType_all);
-
-	net_send_msg(session->netc, msg);
-	DNDSMessage_del(msg);
+	dao_fetch_context(session, CB_searchRequest_context);
 }
 
-void CB_searchRequest_node_sequence(void *msg, char *uuid, char *context_id)
+void CB_searchRequest_node_sequence(void *data, int remaining, char *uuid, char *context_id)
 {
+	static DNDSMessage_t *msg = NULL;
+	static int count = 0;
+	struct session *session = (struct session *)data;
+
+	count++;
+
+	if (msg == NULL) {
+
+		DNDSMessage_new(&msg);
+		DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+		DSMessage_set_operation(msg, dsop_PR_searchResponse);
+		SearchResponse_set_searchType(msg, SearchType_sequence);
+	}
+
 	DNDSObject_t *objNode;
 	DNDSObject_new(&objNode);
 	DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
@@ -604,11 +635,26 @@ void CB_searchRequest_node_sequence(void *msg, char *uuid, char *context_id)
 	Node_set_contextId(objNode, atoi(context_id));
 
 	SearchResponse_add_object(msg, objNode);
+
+	if (count == 10 || remaining == 0) {
+
+		if (remaining == 0) {
+			SearchResponse_set_result(msg, DNDSResult_success);
+		} else {
+			SearchResponse_set_result(msg, DNDSResult_moreData);
+		}
+
+		net_send_msg(session->netc, msg);
+		DNDSMessage_del(msg);
+
+		msg = NULL;
+		count = 0;
+	}
 }
 
 void searchRequest_node_sequence(struct session *session, DNDSMessage_t *req_msg)
 {
-	/* extraire la liste de Node ID de req_msg */
+	/* extract the list of node context id from the req_msg */
 	DNDSObject_t *object = NULL;
 	uint32_t count = 0;
 	uint32_t i = 0;
@@ -616,17 +662,9 @@ void searchRequest_node_sequence(struct session *session, DNDSMessage_t *req_msg
 	uint32_t contextId = 0;
 	int ret = 0;
 
-	DNDSMessage_t *msg;
-	DNDSMessage_new(&msg);
-	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
-	DSMessage_set_operation(msg, dsop_PR_searchResponse);
-	SearchResponse_set_searchType(msg, SearchType_sequence);
-	SearchResponse_set_result(msg, DNDSResult_success);
-
 	SearchRequest_get_object_count(req_msg, &count);
 	if (count == 0) {
-		net_send_msg(session->netc, msg);
-		DNDSMessage_del(msg);
+		/* XXX send failed reply */
 		return;
 	}
 
@@ -643,13 +681,10 @@ void searchRequest_node_sequence(struct session *session, DNDSMessage_t *req_msg
 		}
 	}
 
-	/* lancer requete sql pour retourner les Node UUID */
-	dao_fetch_node_sequence(id_list, count, msg, CB_searchRequest_node_sequence);
+	/* sql query that return all the node uuid */
+	dao_fetch_node_sequence(id_list, count, session, CB_searchRequest_node_sequence);
 
 	free(id_list);
-
-	net_send_msg(session->netc, msg);
-	DNDSMessage_del(msg);
 }
 
 int CB_searchRequest_node_by_context_id(void *msg, char *uuid, char *description, char *provcode, char *ipaddress, char *status)

@@ -23,7 +23,6 @@
 #include "context.h"
 #include "control.h"
 #include "session.h"
-#include "tcp.h"
 
 static netc_t *ctrl_netc = NULL;
 static passport_t *switch_passport = NULL;
@@ -329,17 +328,24 @@ static void handle_SearchResponse_Context(DNDSMessage_t *msg)
 static void handle_SearchResponse(DNDSMessage_t *msg)
 {
 	e_SearchType SearchType;
+	e_DNDSResult result;
 
 	SearchResponse_get_searchType(msg, &SearchType);
 
 	if (SearchType == SearchType_all) {
 		handle_SearchResponse_Context(msg);
-		transmit_search_node();
+		SearchResponse_get_result(msg, &result);
+		if (result == DNDSResult_success) {
+			transmit_search_node();
+		}
 	}
 
 	if (SearchType == SearchType_sequence) {
 		handle_SearchResponse_node(msg);
-		switch_cfg->ctrl_initialized = 1;
+		SearchResponse_get_result(msg, &result);
+		if (result == DNDSResult_success) {
+			switch_cfg->ctrl_initialized = 1;
+		}
 	}
 
 	if (SearchType == SearchType_object) {
@@ -408,7 +414,7 @@ static void on_disconnect(netc_t *netc)
 	do {
 		sleep(5);
 		retry_netc = net_client(switch_cfg->ctrler_ip, switch_cfg->ctrler_port,
-		    NET_PROTO_TCP, NET_SECURE_RSA, switch_passport,
+		    NET_PROTO_UDT, NET_SECURE_RSA, switch_passport,
 		    on_disconnect, on_input, on_secure);
 	} while (retry_netc == NULL);
 
@@ -420,7 +426,7 @@ static void *ctrl_loop(void *nil)
 	(void)nil;
 
 	while (switch_cfg->ctrl_running) {
-		tcpbus_ion_poke();
+		udtbus_poke_queue();
 	}
 
 	return NULL;
@@ -439,7 +445,7 @@ int ctrl_init(struct switch_cfg *cfg)
                                 switch_cfg->certificate, switch_cfg->privatekey, switch_cfg->trusted_cert);
                 return -1;
         }
-	ctrl_netc = net_client(switch_cfg->ctrler_ip, switch_cfg->ctrler_port, NET_PROTO_TCP, NET_SECURE_RSA, switch_passport,
+	ctrl_netc = net_client(switch_cfg->ctrler_ip, switch_cfg->ctrler_port, NET_PROTO_UDT, NET_SECURE_RSA, switch_passport,
 				on_disconnect, on_input, on_secure);
 
 	if (ctrl_netc == NULL) {

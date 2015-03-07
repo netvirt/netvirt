@@ -63,6 +63,7 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
+	check_result_status(result);
 	if (result == NULL)
 		goto error;
 	PQclear(result);
@@ -76,6 +77,7 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
+	check_result_status(result);
 	if (result == NULL)
 		goto error;
 	PQclear(result);
@@ -86,6 +88,8 @@ int dao_prepare_statements()
 			"WHERE id = $1;",
 			0,
 			NULL);
+
+	check_result_status(result);
 	if (result == NULL)
 		goto error;
 	PQclear(result);
@@ -100,6 +104,7 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
+	check_result_status(result);
 	if (result == NULL)
 		goto error;
 	PQclear(result);
@@ -112,6 +117,8 @@ int dao_prepare_statements()
 			"AND description = $2;",
 			0,
 			NULL);
+
+	check_result_status(result);
 	if (result == NULL)
 		goto error;
 	PQclear(result);
@@ -124,6 +131,7 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
+	check_result_status(result);
 	if (result == NULL)
 		goto error;
 	PQclear(result);
@@ -134,6 +142,8 @@ int dao_prepare_statements()
 			"WHERE context_id = $1 AND uuid = $2;",
 			0,
 			NULL);
+
+	check_result_status(result);
 	if (result == NULL)
 		goto error;
 	PQclear(result);
@@ -144,6 +154,8 @@ int dao_prepare_statements()
 			"WHERE context_id = $1",
 			0,
 			NULL);
+
+	check_result_status(result);
 	if (result == NULL)
 		goto error;
 	PQclear(result);
@@ -156,6 +168,7 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
+	check_result_status(result);
 	if (result == NULL)
 		goto error;
 	PQclear(result);
@@ -168,6 +181,7 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
+	check_result_status(result);
 	if (result == NULL)
 		goto error;
 	PQclear(result);
@@ -180,6 +194,7 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
+	check_result_status(result);
 	if (result == NULL)
 		goto error;
 	PQclear(result);
@@ -192,6 +207,7 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
+	check_result_status(result);
 	if (result == NULL)
 		goto error;
 	PQclear(result);
@@ -204,6 +220,7 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
+	check_result_status(result);
 	if (result == NULL)
 		goto error;
 	PQclear(result);
@@ -216,6 +233,7 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
+	check_result_status(result);
 	if (result == NULL)
 		goto error;
 	PQclear(result);
@@ -227,6 +245,7 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
+	check_result_status(result);
 	if (result == NULL)
 		goto error;
 	PQclear(result);
@@ -239,6 +258,7 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
+	check_result_status(result);
 	if (result == NULL)
 		goto error;
 	PQclear(result);
@@ -843,7 +863,7 @@ int dao_fetch_embassy(char *context_id,
 	return 0;
 }
 
-int dao_fetch_node_sequence(uint32_t *context_id_list, uint32_t list_size, void *data, void (*cb_data_handler)(void *data,
+int dao_fetch_node_sequence(uint32_t *context_id_list, uint32_t list_size, void *data, void (*cb_data_handler)(void *data, int remaining,
 								char *uuid, char *contextId))
 {
 	PGresult *result;
@@ -876,7 +896,7 @@ int dao_fetch_node_sequence(uint32_t *context_id_list, uint32_t list_size, void 
 
 	int j;
 	for (j = 0; j < tuples; j++) {
-		cb_data_handler(data, PQgetvalue(result, j, 0), PQgetvalue(result, j, 1));
+		cb_data_handler(data, tuples - j - 1, PQgetvalue(result, j, 0), PQgetvalue(result, j, 1));
 	}
 
 	PQclear(result);
@@ -1098,7 +1118,7 @@ int dao_fetch_context_by_client_id_desc(char *client_id, char *description,
 
 	return 0;
 }
-int dao_fetch_context(void *data, void (*cb_data_handler)(void *data,
+int dao_fetch_context(void *data, void (*cb_data_handler)(void *data, int remaining,
 							char *id,
 							char *description,
 							char *client_id,
@@ -1126,7 +1146,7 @@ int dao_fetch_context(void *data, void (*cb_data_handler)(void *data,
 
 	int i;
 	for (i = 0; i < tuples; i++) {
-		cb_data_handler(data,
+		cb_data_handler(data, tuples - i - 1,
 			PQgetvalue(result, i, 0),
 			PQgetvalue(result, i, 1),
 			PQgetvalue(result, i, 2),

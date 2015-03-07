@@ -149,7 +149,6 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	netbus_tcp_init();
 	if (netbus_init()) {
 		jlog(L_ERROR, "netbus_init failed");
 		exit(EXIT_FAILURE);
