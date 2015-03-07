@@ -1,8 +1,8 @@
 !ifndef MINGW_PATH
-	!define MINGW_PATH /usr/lib/gcc/i686-w64-mingw32/4.8/
+	!define MINGW_PATH /usr/lib/gcc/i686-w64-mingw32/4.6
 !endif
 !ifndef PTHREAD_PATH
-	!define PTHREAD_PATH /usr/i686-w64-mingw32/lib/
+	!define PTHREAD_PATH /usr/i686-w64-mingw32/lib
 !endif
 !ifndef OPENSSL_PATH
 	!define OPENSSL_PATH /opt/mingw32/mingw32/bin
@@ -72,7 +72,6 @@ SetCompressor /FINAL /SOLID lzma
 		File ${MINGW_PATH}/libgcc_s_sjlj-1.dll
 		File ${MINGW_PATH}/libstdc++-6.dll
 		File ${MINGW_PATH}/libssp-0.dll
-		File /usr/i686-w64-mingw32/lib/libwinpthread-1.dll
 		File ${PTHREAD_PATH}/pthreadGC2.dll
 		File ${OPENSSL_PATH}/libeay32.dll
 		File ${OPENSSL_PATH}/ssleay32.dll
