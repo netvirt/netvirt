@@ -65,7 +65,7 @@ else()
 	set(cli_sources
 		cli/main.c)
 
-	add_executable(netvirt-agent ${nvagent_sources} ${cli_sources})
+	add_executable(netvirt-agent MACOSX_BUNDLE ${nvagent_sources} ${cli_sources})
 endif()
 
 find_package(OpenSSL REQUIRED)
@@ -112,18 +112,20 @@ install(TARGETS netvirt-agent
     )
 
 if (APPLE)
-    install(CODE "
-        file(WRITE \"\${CMAKE_INSTALL_PREFIX}/${qtconf_dest_dir}/qt.conf\" \"\")
-        " COMPONENT Runtime)
-    install(DIRECTORY ${CMAKE_SOURCE_DIR}/osx/NetVirt-Agent-launcher.app DESTINATION . USE_SOURCE_PERMISSIONS COMPONENT Runtime)
-    install(DIRECTORY ${CMAKE_SOURCE_DIR}/osx/tuntap_20111101.pkg DESTINATION . USE_SOURCE_PERMISSIONS COMPONENT Runtime)
-    set(DIRS ${QT_LIBRARY_DIRS})
     set(APPS "\${CMAKE_INSTALL_PREFIX}/${apple_package}")
-    install(CODE "
-        file(GLOB_RECURSE QTPLUGINS
-          \"\${CMAKE_INSTALL_PREFIX}/${library_dest_dir}/plugins/*${CMAKE_SHARED_LIBRARY_SUFFIX}\")
-        set(BU_CHMOD_BUNDLE_ITEMS 1)
-        include(BundleUtilities)
-        fixup_bundle(\"${APPS}\" \"\${QTPLUGINS}\" \"${DIRS}\")
-        " COMPONENT Runtime)
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/osx/tuntap_20111101.pkg DESTINATION . USE_SOURCE_PERMISSIONS COMPONENT Runtime)
+    if (WITH_GUI)
+        install(CODE "
+            file(WRITE \"\${CMAKE_INSTALL_PREFIX}/${qtconf_dest_dir}/qt.conf\" \"\")
+            " COMPONENT Runtime)
+        install(DIRECTORY ${CMAKE_SOURCE_DIR}/osx/NetVirt-Agent-launcher.app DESTINATION . USE_SOURCE_PERMISSIONS COMPONENT Runtime)
+        set(DIRS ${QT_LIBRARY_DIRS})
+        install(CODE "
+            file(GLOB_RECURSE QTPLUGINS
+              \"\${CMAKE_INSTALL_PREFIX}/${library_dest_dir}/plugins/*${CMAKE_SHARED_LIBRARY_SUFFIX}\")
+            set(BU_CHMOD_BUNDLE_ITEMS 1)
+            include(BundleUtilities)
+            fixup_bundle(\"${APPS}\" \"\${QTPLUGINS}\" \"${DIRS}\")
+            " COMPONENT Runtime)
+    endif()
 endif ()
