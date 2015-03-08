@@ -27,7 +27,6 @@ void session_itemrel(void *item)
 	if (item != NULL) {
 		session = (struct session *)item;
 		session->netc->on_disconnect = NULL;
-		net_disconnect(session->netc);
 		free(session);
 	}
 }
