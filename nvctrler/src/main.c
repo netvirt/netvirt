@@ -234,6 +234,7 @@ int main(int argc, char *argv[])
 
 	ctrler_fini();
 	netbus_fini();
+	dao_disconnect();
 	config_destroy(&cfg);
 	free(ctrler_cfg);
 

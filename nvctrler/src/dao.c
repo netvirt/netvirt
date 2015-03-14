@@ -270,6 +270,11 @@ error:
 	return -1;
 }
 
+void dao_disconnect()
+{
+	PQfinish(dbconn);
+}
+
 int dao_connect(struct ctrler_cfg *ctrler_cfg)
 {
 	char conn_str[128];

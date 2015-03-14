@@ -285,6 +285,9 @@ static void handle_SearchResponse_node(DNDSMessage_t *msg)
 				ctable_insert(context->atable, uuid, context->access_session);
 
 			}
+
+			DNDSObject_del(object);
+			object = NULL;
 		}
 	}
 }

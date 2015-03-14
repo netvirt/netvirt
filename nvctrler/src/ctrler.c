@@ -189,4 +189,5 @@ void ctrler_fini()
 {
 	pki_passport_destroy(ctrler_passport);
 	net_disconnect(ctrler_netc);
+	net_disconnect(g_switch_netc);
 }

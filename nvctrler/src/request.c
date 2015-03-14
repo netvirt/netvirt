@@ -662,6 +662,8 @@ void searchRequest_node_sequence(struct session *session, DNDSMessage_t *req_msg
 		if (ret == DNDS_success && object != NULL) {
 			Node_get_contextId(object, &contextId);
 			id_list[i] = contextId;
+			DNDSObject_del(object);
+			object = NULL;
 		}
 		else {
 			/* XXX send failed reply */
