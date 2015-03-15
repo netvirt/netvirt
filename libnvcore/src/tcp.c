@@ -445,6 +445,9 @@ int tcpbus_ion_poke()
 	for (i = 0; i < nfd; i++) {
 
 		peer = ep_ev[i].data.ptr;
+		if (peer == NULL) {
+			continue;
+		}
 
 		if (ep_ev[i].events & EPOLLRDHUP) {
 			tcpbus_on_disconnect(peer);

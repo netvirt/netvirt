@@ -231,6 +231,7 @@ int main(int argc, char *argv[])
 	while (ctrler_cfg->ctrler_running) {
 		sleep(1);
 	}
+	sleep(1);
 
 	ctrler_fini();
 	netbus_fini();

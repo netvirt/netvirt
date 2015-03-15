@@ -292,10 +292,11 @@ static void handle_SearchResponse_node(DNDSMessage_t *msg)
 	}
 }
 
-static void handle_SearchResponse_Context(DNDSMessage_t *msg)
+static int handle_SearchResponse_Context(DNDSMessage_t *msg)
 {
 	DNDSObject_t *object;
 	uint32_t count;
+	int total;
 	int ret;
 	size_t length;
 	uint32_t id;
@@ -308,6 +309,7 @@ static void handle_SearchResponse_Context(DNDSMessage_t *msg)
 	char *trustedCert;
 
 	SearchResponse_get_object_count(msg, &count);
+	total = count;
 	while (count-- > 0) {
 
 		ret = SearchResponse_get_object(msg, &object);
@@ -327,6 +329,7 @@ static void handle_SearchResponse_Context(DNDSMessage_t *msg)
 			DNDSObject_del(object);
 		}
 	}
+	return total;
 }
 
 static void handle_SearchResponse(DNDSMessage_t *msg)
@@ -337,7 +340,9 @@ static void handle_SearchResponse(DNDSMessage_t *msg)
 	SearchResponse_get_searchType(msg, &SearchType);
 
 	if (SearchType == SearchType_all) {
-		handle_SearchResponse_Context(msg);
+		if (handle_SearchResponse_Context(msg) == 0) {
+			switch_cfg->ctrl_initialized = 1;
+		}
 		SearchResponse_get_result(msg, &result);
 		if (result == DNDSResult_success) {
 			transmit_search_node();

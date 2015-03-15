@@ -595,7 +595,24 @@ void CB_searchRequest_context(void *data, int remaining,
 
 void searchRequest_context(struct session *session)
 {
-	dao_fetch_context(session, CB_searchRequest_context);
+	int ret = 0;
+	static DNDSMessage_t *msg = NULL;
+
+	ret = dao_fetch_context(session, CB_searchRequest_context);
+	if (ret == -1) {
+		DNDSMessage_new(&msg);
+		DNDSMessage_set_channel(msg, 0);
+		DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+
+		DSMessage_set_seqNumber(msg, 0);
+		DSMessage_set_ackNumber(msg, 1);
+		DSMessage_set_operation(msg, dsop_PR_searchResponse);
+
+		SearchResponse_set_searchType(msg, SearchType_all);
+
+		SearchResponse_set_result(msg, DNDSResult_success);
+		net_send_msg(session->netc, msg);
+	}
 }
 
 void CB_searchRequest_node_sequence(void *data, int remaining, char *uuid, char *context_id)
@@ -643,6 +660,7 @@ void searchRequest_node_sequence(struct session *session, DNDSMessage_t *req_msg
 {
 	/* extract the list of node context id from the req_msg */
 	DNDSObject_t *object = NULL;
+	static DNDSMessage_t *msg = NULL;
 	uint32_t count = 0;
 	uint32_t i = 0;
 	uint32_t *id_list = NULL;
@@ -671,7 +689,16 @@ void searchRequest_node_sequence(struct session *session, DNDSMessage_t *req_msg
 	}
 
 	/* sql query that return all the node uuid */
-	dao_fetch_node_sequence(id_list, count, session, CB_searchRequest_node_sequence);
+	ret = dao_fetch_node_sequence(id_list, count, session, CB_searchRequest_node_sequence);
+	if (ret == -1) {
+		DNDSMessage_new(&msg);
+		DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+		DSMessage_set_operation(msg, dsop_PR_searchResponse);
+		SearchResponse_set_searchType(msg, SearchType_sequence);
+
+		SearchResponse_set_result(msg, DNDSResult_success);
+		net_send_msg(session->netc, msg);
+	}
 
 	free(id_list);
 }

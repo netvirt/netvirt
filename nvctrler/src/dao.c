@@ -898,6 +898,11 @@ int dao_fetch_node_sequence(uint32_t *context_id_list, uint32_t list_size, void 
 
 	int tuples;
 	tuples = PQntuples(result);
+	if (tuples == 0) {
+		PQclear(result);
+		free(fetch_req);
+		return -1;
+	}
 
 	int j;
 	for (j = 0; j < tuples; j++) {
@@ -1140,6 +1145,7 @@ int dao_fetch_context(void *data, void (*cb_data_handler)(void *data, int remain
 
 	if (!result) {
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		return -1;
 	}
 
 	if (check_result_status(result) == -1) {
@@ -1148,6 +1154,10 @@ int dao_fetch_context(void *data, void (*cb_data_handler)(void *data, int remain
 	}
 
 	tuples = PQntuples(result);
+	if (tuples == 0) {
+		PQclear(result);
+		return -1;
+	}
 
 	int i;
 	for (i = 0; i < tuples; i++) {
