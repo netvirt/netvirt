@@ -126,6 +126,9 @@ static void on_disconnect(netc_t *netc)
 	struct session *session;
 	session = netc->ext_ptr;
 
+	if (g_switch_netc == netc)
+		g_switch_netc = NULL;
+
 	session_free(session);
 }
 
