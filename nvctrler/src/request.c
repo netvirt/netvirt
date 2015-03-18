@@ -612,6 +612,7 @@ void searchRequest_context(struct session *session)
 
 		SearchResponse_set_result(msg, DNDSResult_success);
 		net_send_msg(session->netc, msg);
+		DNDSMessage_del(msg);
 	}
 }
 
@@ -698,6 +699,7 @@ void searchRequest_node_sequence(struct session *session, DNDSMessage_t *req_msg
 
 		SearchResponse_set_result(msg, DNDSResult_success);
 		net_send_msg(session->netc, msg);
+		DNDSMessage_del(msg);
 	}
 
 	free(id_list);
