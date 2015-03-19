@@ -503,6 +503,8 @@ int dao_del_node(char *context_id, char *uuid)
 		return -1;
 	}
 
+	PQclear(result);
+
 	return 0;
 }
 
@@ -527,6 +529,8 @@ int dao_del_node_by_context_id(char *context_id)
 		PQclear(result);
 		return -1;
 	}
+
+	PQclear(result);
 
 	return 0;
 }
@@ -570,6 +574,8 @@ int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatek
 		return -1;
 	}
 
+	PQclear(result);
+
 	return 0;
 }
 
@@ -594,6 +600,8 @@ int dao_del_context(char *context_id)
 		PQclear(result);
 		return -1;
 	}
+
+	PQclear(result);
 
 	return 0;
 }
@@ -1055,14 +1063,14 @@ int dao_fetch_context_by_client_id(
 	int i;
 	for (i = 0; i < tuples; i++) {
 		cb_data_handler(data,
-			strdup(PQgetvalue(result, i, 0)),
-			strdup(PQgetvalue(result, i, 1)),
-			strdup(PQgetvalue(result, i, 2)),
-			strdup(PQgetvalue(result, i, 3)),
-			strdup(PQgetvalue(result, i, 4)),
-			strdup(PQgetvalue(result, i, 5)),
-			strdup(PQgetvalue(result, i, 6)),
-			strdup(PQgetvalue(result, i, 7)));
+			PQgetvalue(result, i, 0),
+			PQgetvalue(result, i, 1),
+			PQgetvalue(result, i, 2),
+			PQgetvalue(result, i, 3),
+			PQgetvalue(result, i, 4),
+			PQgetvalue(result, i, 5),
+			PQgetvalue(result, i, 6),
+			PQgetvalue(result, i, 7));
 	}
 
 	PQclear(result);
@@ -1114,14 +1122,14 @@ int dao_fetch_context_by_client_id_desc(char *client_id, char *description,
 	for (i = 0; i < tuples; i++) {
 
 		cb_data_handler(data,
-			strdup(PQgetvalue(result, i, 0)),
-			strdup(PQgetvalue(result, i, 1)),
-			strdup(PQgetvalue(result, i, 2)),
-			strdup(PQgetvalue(result, i, 3)),
-			strdup(PQgetvalue(result, i, 4)),
-			strdup(PQgetvalue(result, i, 5)),
-			strdup(PQgetvalue(result, i, 6)),
-			strdup(PQgetvalue(result, i, 7)));
+			PQgetvalue(result, i, 0),
+			PQgetvalue(result, i, 1),
+			PQgetvalue(result, i, 2),
+			PQgetvalue(result, i, 3),
+			PQgetvalue(result, i, 4),
+			PQgetvalue(result, i, 5),
+			PQgetvalue(result, i, 6),
+			PQgetvalue(result, i, 7));
 	}
 
 	PQclear(result);
