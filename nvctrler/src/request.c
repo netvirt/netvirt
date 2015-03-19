@@ -381,7 +381,7 @@ free2:
 
 free1:
 	free(node_passport);
-	free(node_ident);
+	pki_free_digital_id(node_ident);
 
 	free(uuid);
 	free(provcode);

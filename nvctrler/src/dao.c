@@ -960,11 +960,11 @@ int dao_fetch_node_from_context_id(char *context_id, void *data, int (*cb_data_h
 	int i;
 	for (i = 0; i < tuples; i++) {
 		cb_data_handler(data,
-			strdup(PQgetvalue(result, i, 0)),
-			strdup(PQgetvalue(result, i, 1)),
-			strdup(PQgetvalue(result, i, 2)),
-			strdup(PQgetvalue(result, i, 3)),
-			strdup(PQgetvalue(result, i, 4)));
+			PQgetvalue(result, i, 0),
+			PQgetvalue(result, i, 1),
+			PQgetvalue(result, i, 2),
+			PQgetvalue(result, i, 3),
+			PQgetvalue(result, i, 4));
 	}
 
 	PQclear(result);
