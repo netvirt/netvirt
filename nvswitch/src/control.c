@@ -151,6 +151,8 @@ static void DelRequest_node(DNDSMessage_t *msg)
 	char *uuid = NULL;
 	Node_get_uuid(object, &uuid, &length);
 
+	DNDSObject_del(object);
+
 	context_t *context = NULL;
 	context = context_lookup(contextId);
 
@@ -178,6 +180,8 @@ static void DelRequest_context(DNDSMessage_t *msg)
 	struct session *session_list = NULL;
 	uint32_t contextId = 0;
 	Context_get_id(object, &contextId);
+
+	DNDSObject_del(object);
 
 	context_t *context = NULL;
 	context = context_disable(contextId);
@@ -251,6 +255,8 @@ static void handle_SearchResponse_Node(DNDSMessage_t *msg)
 
 		Node_get_ipAddress(object, ipAddress);
 		ProvResponse_set_ipAddress(new_msg, ipAddress);
+
+		DNDSObject_del(object);
 	}
 
 	DSMessage_get_seqNumber(msg, &tracked_id);
