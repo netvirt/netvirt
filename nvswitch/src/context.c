@@ -96,7 +96,7 @@ void context_free(context_t *context)
 {
 	if (context) {
 		pki_passport_destroy(context->passport);
-		free(context->linkst);
+		linkst_free(context->linkst);
 		ftable_delete(context->ftable);
 		ctable_delete(context->ctable);
 		ctable_delete(context->atable);

@@ -141,11 +141,11 @@ void p2pRequest(struct session *session_a, struct session *session_b)
 	}
 
 	if (!strcmp(session_a->netc->peer->host, session_b->netc->peer->host)) {
-		ip_a = strdup(session_a->ip_local);
-		ip_b = strdup(session_b->ip_local);
+		ip_a = session_a->ip_local;
+		ip_b = session_b->ip_local;
 	} else {
-		ip_a = strdup(session_a->netc->peer->host);
-		ip_b = strdup(session_b->netc->peer->host);
+		ip_a = session_a->netc->peer->host;
+		ip_b = session_b->netc->peer->host;
 	}
 
 	 /* basic random port : 49152–65535 */
