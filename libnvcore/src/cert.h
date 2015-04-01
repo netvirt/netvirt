@@ -25,10 +25,10 @@ typedef struct node_info {
 } node_info_t;
 
 typedef struct passport {
-
-        X509 *certificate;
-        EVP_PKEY *keyring;
-        X509_STORE *trusted_authority;
+	X509 *certificate;
+	EVP_PKEY *keyring;
+	X509_STORE *cacert_store;
+	X509 *cacert;
 } passport_t;
 
 void node_info_destroy(node_info_t *node_info);

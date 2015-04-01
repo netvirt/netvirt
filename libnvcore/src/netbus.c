@@ -88,39 +88,37 @@ int net_get_local_ip(char *ip_local, int len)
 
 static void net_connection_free(netc_t *netc)
 {
-	if (netc != NULL) {
+	if (netc == NULL) {
+		return;
+	}
 
-		if (netc->kconn != NULL) {
-/*
-			if (netc->kconn->ctx) {
-				SSL_CTX_free(netc->kconn->ctx);
-			}
+	if (netc->kconn != NULL) {
 
-			if (netc->kconn->ssl) {
-				SSL_free(netc->kconn->ssl);
-			}
-
-			if (netc->kconn->internal_bio) {
-				BIO_free(netc->kconn->internal_bio);
-			}
-
-			if (netc->kconn->network_bio) {
-				BIO_free(netc->kconn->network_bio);
-			}
-*/
-			free(netc->kconn->buf_decrypt);
-			free(netc->kconn->buf_encrypt);
-			free(netc->kconn);
+		if (netc->kconn->ssl) {
+			SSL_set_shutdown(netc->kconn->ssl, SSL_SENT_SHUTDOWN|SSL_RECEIVED_SHUTDOWN);
+			SSL_free(netc->kconn->ssl);
 		}
 
-		DNDSMessage_del(netc->msg_dec);
-		free(netc->buf_in);
-		free(netc->buf_enc);
-		mbuf_free(&netc->queue_msg);
-		mbuf_free(&netc->queue_out);
-		netc->ext_ptr = NULL;
-		free(netc);
+		if (netc->kconn->network_bio) {
+			BIO_free(netc->kconn->network_bio);
+		}
+
+		if (netc->kconn->ctx) {
+			SSL_CTX_free(netc->kconn->ctx);
+		}
+
+		free(netc->kconn->buf_decrypt);
+		free(netc->kconn->buf_encrypt);
+		free(netc->kconn);
 	}
+
+	DNDSMessage_del(netc->msg_dec);
+	free(netc->buf_in);
+	free(netc->buf_enc);
+	mbuf_free(&netc->queue_msg);
+	mbuf_free(&netc->queue_out);
+	netc->ext_ptr = NULL;
+	free(netc);
 }
 
 static netc_t *net_connection_new(uint8_t security_level)

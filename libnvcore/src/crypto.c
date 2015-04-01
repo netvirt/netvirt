@@ -119,13 +119,13 @@ static int verify_callback(int ok, X509_STORE_CTX *store)
 
 static int krypt_set_adh(krypt_t *kconn)
 {
-	SSL_CTX_set_cipher_list(kconn->ctx, "ADH");
+	SSL_set_cipher_list(kconn->ssl, "ADH");
 	DH *dh = get_dh_1024();
-	SSL_CTX_set_tmp_dh(kconn->ctx, dh);
+	SSL_set_tmp_dh(kconn->ssl, dh);
 	DH_free(dh);
 
-	SSL_CTX_set_tmp_dh_callback(kconn->ctx, tmp_dh_callback);
-	SSL_CTX_set_verify(kconn->ctx, SSL_VERIFY_NONE, NULL);
+	SSL_set_tmp_dh_callback(kconn->ssl, tmp_dh_callback);
+	SSL_set_verify(kconn->ssl, SSL_VERIFY_NONE, NULL);
 
 	return 0;
 }
@@ -140,8 +140,8 @@ int krypt_set_rsa(krypt_t *kconn)
 
 	SSL_set_cipher_list(kconn->ssl, "AES256-SHA");
 
-	// Load the trusted certificate store into our SSL_CTX
-	SSL_CTX_set_cert_store(kconn->ctx, kconn->passport->trusted_authority);
+	// Load the trusted certificate store into our SSL object
+	X509_STORE_add_cert(SSL_CTX_get_cert_store(kconn->ctx), kconn->passport->cacert);
 
 	// Force the peer cert verifying + fail if no cert is sent by the peer
 	SSL_set_verify(kconn->ssl, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, verify_callback);
@@ -338,18 +338,15 @@ int krypt_secure_connection(krypt_t *kconn, uint8_t protocol, uint8_t conn_type,
 		return -1;
 	}
 
-	SSL_CTX_set_session_id_context(kconn->ctx,
-		(void*)&s_server_session_id_context,
-		sizeof(s_server_session_id_context));
-
-	if (security_level == KRYPT_ADH)
-		krypt_set_adh(kconn);
-
 	// Create the BIO pair
 	BIO_new_bio_pair(&kconn->internal_bio, 0, &kconn->network_bio, 0);
 
 	// Create the SSL object
 	kconn->ssl = SSL_new(kconn->ctx);
+
+	if (security_level == KRYPT_ADH)
+		krypt_set_adh(kconn);
+
 	SSL_set_bio(kconn->ssl, kconn->internal_bio, kconn->internal_bio);
 	SSL_set_mode(kconn->ssl, SSL_MODE_AUTO_RETRY);
 

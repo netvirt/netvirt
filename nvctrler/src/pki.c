@@ -238,7 +238,8 @@ void pki_passport_free(passport_t *passport)
 {
 	X509_free(passport->certificate);
 	EVP_PKEY_free(passport->keyring);
-	X509_STORE_free(passport->trusted_authority);
+	X509_free(passport->cacert);
+	X509_STORE_free(passport->cacert_store);
 
 	free(passport);
 }
@@ -273,10 +274,10 @@ passport_t *pki_embassy_deliver_passport(embassy_t *embassy, digital_id_t *digit
 	// create the new passport
 	passport->certificate = certificate;
 	passport->keyring = keyring;
-	passport->trusted_authority = X509_STORE_new();
+	passport->cacert_store = X509_STORE_new();
 
 	// add the trusted certificate authority
-	X509_STORE_add_cert(passport->trusted_authority, embassy->certificate);
+	X509_STORE_add_cert(passport->cacert_store, embassy->certificate);
 
 	// deliver the passport
 	return passport;

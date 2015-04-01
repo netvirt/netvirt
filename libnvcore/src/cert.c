@@ -51,7 +51,8 @@ void pki_passport_destroy(passport_t *passport)
 {
 	EVP_PKEY_free(passport->keyring);
 	X509_free(passport->certificate);
-	X509_STORE_free(passport->trusted_authority);
+	X509_free(passport->cacert);
+	X509_STORE_free(passport->cacert_store);
 	free(passport);
 }
 
@@ -59,7 +60,6 @@ passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, c
 {
 	BIO *bio_memory = NULL;
 	passport_t *passport;
-	X509 *trusted_authority_certificate;
 
 	// create an empty passport
 	passport = calloc(1, sizeof(passport_t));
@@ -77,11 +77,10 @@ passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, c
 	// fetch the certificate authority in PEM format convert to X509
 	// and add to the trusted store
 	bio_memory = BIO_new_mem_buf(trusted_authority, strlen(trusted_authority));
-	trusted_authority_certificate = PEM_read_bio_X509(bio_memory, NULL, NULL, NULL);
+	passport->cacert = PEM_read_bio_X509(bio_memory, NULL, NULL, NULL);
 	BIO_free(bio_memory);
-	passport->trusted_authority = X509_STORE_new();
-	X509_STORE_add_cert(passport->trusted_authority, trusted_authority_certificate);
-	X509_free(trusted_authority_certificate);
+	passport->cacert_store = X509_STORE_new();
+	X509_STORE_add_cert(passport->cacert_store, passport->cacert);
 
 	return passport;
 }
@@ -92,7 +91,6 @@ passport_t *pki_passport_load_from_file(const char *certificate_filename,
 {
 	BIO *bio_file = NULL;
 	passport_t *passport = NULL;
-	X509 *trusted_authority_certificate;
 
 	if (!certificate_filename || !privatekey_filename || !trusted_authority_filename) {
 		return NULL;
@@ -126,10 +124,9 @@ passport_t *pki_passport_load_from_file(const char *certificate_filename,
 		free(passport);
 		return NULL;
 	}
-	trusted_authority_certificate = PEM_read_bio_X509(bio_file, NULL, NULL, NULL);
-	passport->trusted_authority = X509_STORE_new();
-	X509_STORE_add_cert(passport->trusted_authority, trusted_authority_certificate);
-	X509_free(trusted_authority_certificate);
+	passport->cacert = PEM_read_bio_X509(bio_file, NULL, NULL, NULL);
+	passport->cacert_store = X509_STORE_new();
+	X509_STORE_add_cert(passport->cacert_store, passport->cacert);
 	BIO_free(bio_file);
 
 	return passport;
