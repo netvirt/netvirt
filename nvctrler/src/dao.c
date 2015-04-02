@@ -85,7 +85,8 @@ int dao_prepare_statements()
 	result = PQprepare(dbconn,
 			"dao_del_context",
 			"DELETE FROM context "
-			"WHERE id = $1;",
+			"WHERE client_id = $1 "
+			"AND id = $2;",
 			0,
 			NULL);
 
@@ -579,27 +580,32 @@ int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatek
 	return 0;
 }
 
-int dao_del_context(char *context_id)
+int dao_del_context(char *client_id, char *context_id)
 {
-	const char *paramValues[1];
-	int paramLengths[1];
+	const char *paramValues[2];
+	int paramLengths[2];
 	PGresult *result;
 
-	if (!context_id) {
+	if (!context_id || !client_id) {
 		jlog(L_WARNING, "invalid parameter");
 		return -1;
 	}
 
-	paramValues[0] = context_id;
-	paramLengths[0] = strlen(context_id);
+	paramValues[0] = client_id;
+	paramLengths[0] = strlen(client_id);
 
-	result = PQexecPrepared(dbconn, "dao_del_context", 1, paramValues, paramLengths, NULL, 0);
+	paramValues[1] = context_id;
+	paramLengths[1] = strlen(context_id);
+
+	result = PQexecPrepared(dbconn, "dao_del_context", 2, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		PQclear(result);
 		return -1;
 	}
+
+	check_result_status(result);
 
 	PQclear(result);
 

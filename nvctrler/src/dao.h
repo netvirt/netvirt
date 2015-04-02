@@ -33,7 +33,7 @@ int dao_add_context(char *client_id,
 			const unsigned char *ippool,
 			size_t pool_size);
 
-int dao_del_context(char *context_id);
+int dao_del_context(char *client_id, char *context_id);
 
 int dao_add_client(char *email, char *password);
 

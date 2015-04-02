@@ -234,9 +234,16 @@ void DelRequest_context(DNDSMessage_t *msg)
 
 	int ret = 0;
 	uint32_t contextId = -1;
+	uint32_t clientId = 0;
+
 	char context_id_str[10] = {0};
+	char client_id_str[10] = {0};
+
 	Context_get_id(object, &contextId);
 	snprintf(context_id_str, 10, "%d", contextId);
+
+	Context_get_clientId(object, &clientId);
+	snprintf(client_id_str, 10, "%d", clientId);
 
 	jlog(L_NOTICE, "deleting nodes belonging to context: %s", context_id_str);
 	ret = dao_del_node_by_context_id(context_id_str);
@@ -246,7 +253,7 @@ void DelRequest_context(DNDSMessage_t *msg)
 	}
 
 	jlog(L_NOTICE, "deleting context: %s", context_id_str);
-	ret = dao_del_context(context_id_str);
+	ret = dao_del_context(client_id_str, context_id_str);
 	if (ret < 0) {
 		/* FIXME: multiple DAO calls should be commited to the DB once
 		 * all calls have succeeded.
