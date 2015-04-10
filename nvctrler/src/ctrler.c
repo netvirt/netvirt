@@ -92,6 +92,7 @@ static void on_secure(netc_t *netc)
 	jlog(L_NOTICE, "%s connection secured", netc->kconn->client_cn);
 	if (strncmp("netvirt-switch", netc->kconn->client_cn, 14) == 0) {
 		g_switch_netc = netc;
+		dao_reset_node_state();
 	}
 }
 

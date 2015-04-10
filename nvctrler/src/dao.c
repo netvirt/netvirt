@@ -882,6 +882,14 @@ int dao_fetch_embassy(char *context_id,
 	return 0;
 }
 
+void dao_reset_node_state()
+{
+	PGresult *result;
+
+	result = PQexec(dbconn, "update node SET status = 0 where node.status = 1;");
+	check_result_status(result);
+}
+
 int dao_fetch_node_sequence(uint32_t *context_id_list, uint32_t list_size, void *data, void (*cb_data_handler)(void *data, int remaining,
 								char *uuid, char *contextId))
 {

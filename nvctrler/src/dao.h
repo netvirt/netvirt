@@ -90,6 +90,7 @@ int dao_fetch_context(void *data, void (*cb_data_handler)(void *data, int remain
 							char *trustedCert));
 
 
+void dao_reset_node_state();
 int dao_fetch_node_sequence(uint32_t *context_id_list, uint32_t list_size, void *data, void (*cb_data_handler)(void *data, int remaining,
 								char *uuid, char *contextId));
 
