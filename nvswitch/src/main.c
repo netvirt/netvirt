@@ -179,6 +179,7 @@ int main(int argc, char *argv[])
 	ctrl_fini();
 	switch_fini();
 	netbus_fini();
+	krypt_fini();
 	config_destroy(&cfg);
 	free(switch_cfg);
 

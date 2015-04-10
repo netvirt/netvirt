@@ -307,6 +307,8 @@ static void *switch_loop(void *nil)
 		udtbus_poke_queue();
 	}
 
+	krypt_fini();
+
 	return NULL;
 }
 

@@ -104,6 +104,8 @@ static long post_handshake_check(krypt_t *krypt)
 	subj_ptr = X509_get_subject_name(cert);
 	X509_NAME_get_text_by_NID(subj_ptr, NID_commonName, krypt->client_cn, 256);
 
+	X509_free(cert);
+
 	jlog(L_NOTICE, "CN=%s", krypt->client_cn);
 
 	return 0;
@@ -380,7 +382,13 @@ int krypt_secure_connection(krypt_t *kconn, uint8_t protocol, uint8_t conn_type,
 
 void krypt_fini()
 {
-
+	CONF_modules_free();
+	ERR_remove_state(0);
+	ENGINE_cleanup();
+	CONF_modules_unload(1);
+	ERR_free_strings();
+	EVP_cleanup();
+	CRYPTO_cleanup_all_ex_data();
 }
 
 int krypt_init()
