@@ -22,14 +22,14 @@
 #include <winsock2.h>
 #endif
 
-#include <openssl/ssl.h>
+#include <openssl/conf.h>
+#include <openssl/engine.h>
 #include <openssl/err.h>
+#include <openssl/ssl.h>
 
 #include "crypto.h"
 #include "logger.h"
 
-
-static int s_server_session_id_context = 1;
 static int s_server_auth_session_id_context = 2;
 
 static DH *get_dh_1024() {
@@ -383,11 +383,14 @@ int krypt_secure_connection(krypt_t *kconn, uint8_t protocol, uint8_t conn_type,
 void krypt_fini()
 {
 	CONF_modules_free();
-	ERR_remove_state(0);
-	ENGINE_cleanup();
+	CONF_modules_finish();
 	CONF_modules_unload(1);
+
+	ERR_remove_state(0);
 	ERR_free_strings();
 	EVP_cleanup();
+
+	ENGINE_cleanup();
 	CRYPTO_cleanup_all_ex_data();
 }
 

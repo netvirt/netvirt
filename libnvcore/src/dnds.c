@@ -3295,36 +3295,34 @@ char *P2pSide_str(e_P2pSide side)
 char *DNDSResult_str(e_DNDSResult result)
 {
 	switch (result) {
-		case DNDSResult_success:
-			return "Success";
-			break;
-
-		case DNDSResult_operationError:
-			return "Operation error";
-			break;
-
-		case DNDSResult_protocolError:
-			return "Protocol error";
-			break;
-
-		case DNDSResult_noSuchObject:
-			return "No such object";
-			break;
-
-		case DNDSResult_busy:
-			return "Busy";
-			break;
-
-		case DNDSResult_secureStepUp:
-			return "Secure step up";
-			break;
-
-		case DNDSResult_insufficientAccessRights:
-			return "Insufficient access rights";
-			break;
+	case DNDSResult_success:
+		return "Success";
+		break;
+	case DNDSResult_operationError:
+		return "Operation error";
+		break;
+	case DNDSResult_protocolError:
+		return "Protocol error";
+		break;
+	case DNDSResult_noSuchObject:
+		return "No such object";
+		break;
+	case DNDSResult_busy:
+		return "Busy";
+		break;
+	case DNDSResult_secureStepUp:
+		return "Secure step up";
+		break;
+	case DNDSResult_insufficientAccessRights:
+		return "Insufficient access rights";
+		break;
+	case DNDSResult_moreData:
+		return "More data expected";
+		break;
 	}
 	return "unknown";
 }
+
 char *DNDS_strerror(DNDS_retcode_t retcode)
 {
 	char *strerror = NULL;

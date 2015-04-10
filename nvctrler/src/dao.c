@@ -44,6 +44,28 @@ char *uuid_v4(void)
 	return str;
 }
 
+int check_result_status(PGresult *result)
+{
+	switch (PQresultStatus(result)) {
+	case PGRES_COMMAND_OK:
+		jlog(L_DEBUG, "command executed ok, %s rows affected", PQcmdTuples(result));
+		break;
+
+	case PGRES_TUPLES_OK:
+		jlog(L_DEBUG, "query may have returned data");
+		break;
+
+	default:
+		jlog(L_WARNING, "command failed with code %s, error message %s",
+			PQresStatus(PQresultStatus(result)),
+			PQresultErrorMessage(result));
+
+		return -1;
+	}
+
+	return 0;
+}
+
 /*
 create or replace function inet_mask(inet,inet) returns inet language sql
 immutable as $f$ select set_masklen($1,i)
@@ -293,28 +315,6 @@ int dao_connect(struct ctrler_cfg *ctrler_cfg)
 	}
 
 	dao_prepare_statements();
-
-	return 0;
-}
-
-int check_result_status(PGresult *result)
-{
-	switch (PQresultStatus(result)) {
-	case PGRES_COMMAND_OK:
-		jlog(L_DEBUG, "command executed ok, %s rows affected", PQcmdTuples(result));
-		break;
-
-	case PGRES_TUPLES_OK:
-		jlog(L_DEBUG, "query may have returned data");
-		break;
-
-	default:
-		jlog(L_WARNING, "command failed with code %s, error message %s",
-			PQresStatus(PQresultStatus(result)),
-			PQresultErrorMessage(result));
-
-		return -1;
-	}
 
 	return 0;
 }
