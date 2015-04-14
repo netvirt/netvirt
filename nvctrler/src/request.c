@@ -404,6 +404,8 @@ free1:
 
 void DelRequest_node(DNDSMessage_t *msg)
 {
+	int ret = 0;
+
 	DNDSObject_t *object;
 	DelRequest_get_object(msg, &object);
 
@@ -416,8 +418,37 @@ void DelRequest_node(DNDSMessage_t *msg)
 	char *uuid = NULL;
 	Node_get_uuid(object, &uuid, &length);
 
+	char *ipaddr = NULL;
+	ret = dao_fetch_node_ip(context_id_str, uuid, &ipaddr);
+	if (ret == -1) {
+		jlog(L_ERROR, "failed to fetch node ip");
+		return;
+	}
+
 	jlog(L_NOTICE, "revoking node: %s", uuid);
 	dao_del_node(context_id_str, uuid);
+
+	unsigned char *ippool_bin = NULL;
+	ret = dao_fetch_context_ippool(context_id_str, &ippool_bin);
+	if (ret == -1) {
+		jlog(L_ERROR, "failed to fetch context ippool");
+		return;
+	}
+
+	/* update ip pool */
+	struct ippool *ippool;
+	int pool_size;
+
+	ippool = ippool_new("44.128.0.0", "255.255.0.0");
+	free(ippool->pool);
+	ippool->pool = (uint8_t*)ippool_bin;
+	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
+	ippool_release_ip(ippool, ipaddr);
+
+	ret = dao_update_context_ippool(context_id_str, ippool->pool, pool_size);
+	if (ret == -1) {
+		jlog(L_ERROR, "failed to update embassy ippool");
+	}
 
 	/* forward the delRequest to nvswitch */
 	if (g_switch_netc)

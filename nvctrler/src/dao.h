@@ -48,6 +48,8 @@ int dao_fetch_context_by_client_id_desc(char *client_id, char *description,
 					char *serverPrivkey,
 					char *trustedCert));
 
+int dao_fetch_context_ippool(char *context_id, unsigned char **ippool);
+
 int dao_fetch_context_embassy(char *context_id,
 			char **certificate,
 			char **privatekey,
@@ -93,6 +95,8 @@ int dao_fetch_context(void *data, void (*cb_data_handler)(void *data, int remain
 void dao_reset_node_state();
 int dao_fetch_node_sequence(uint32_t *context_id_list, uint32_t list_size, void *data, void (*cb_data_handler)(void *data, int remaining,
 								char *uuid, char *contextId));
+
+int dao_fetch_node_ip(char *context_id, char *uuid, char **ipaddress);
 
 int dao_fetch_node_from_context_id(char *context_id, void *data, int (*cb_data_handler)(void *data,
 								char *uuid,

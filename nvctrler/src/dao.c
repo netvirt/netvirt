@@ -133,6 +133,14 @@ int dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
+			"dao_fetch_context_ippool",
+			"SELECT ippool "
+			"FROM CONTEXT "
+			"WHERE id = $1;",
+			0,
+			NULL);
+
+	result = PQprepare(dbconn,
 			"dao_fetch_context_id",
 			"SELECT id "
 			"FROM CONTEXT "
@@ -272,6 +280,15 @@ int dao_prepare_statements()
 	if (result == NULL)
 		goto error;
 	PQclear(result);
+
+	result = PQprepare(dbconn,
+			"dao_fetch_node_ip",
+			"SELECT ipaddress "
+			"FROM node "
+			"WHERE context_id = $1 "
+			"AND uuid = $2;",
+			0,
+			NULL);
 
 	result = PQprepare(dbconn,
 			"dao_fetch_node_from_context_id",
@@ -677,6 +694,52 @@ int dao_add_context(char *client_id,
 	return 0;
 }
 
+int dao_fetch_context_ippool(char *context_id, unsigned char **ippool)
+{
+	const char *paramValues[1];
+	int paramLengths[1];
+	unsigned char *ippool_ptr;
+	size_t ippool_size;
+	PGresult *result;
+
+	if (!context_id) {
+		jlog(L_WARNING, "invalid NULL parameter");
+		return -1;
+	}
+
+	paramValues[0] = context_id;
+	paramLengths[0] = strlen(context_id);
+
+	result = PQexecPrepared(dbconn, "dao_fetch_context_ippool", 1, paramValues, paramLengths, NULL, 0);
+
+	if (!result) {
+		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		return -1;
+	}
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return -1;
+	}
+
+	int tuples, fields;
+	tuples = PQntuples(result);
+	fields = PQnfields(result);
+
+	if (tuples > 0 && fields > 0) {
+		ippool_ptr = (unsigned char *)PQgetvalue(result, 0, 0);
+		ippool_size = PQgetlength(result, 0, 0);
+		*ippool = PQunescapeBytea(ippool_ptr, &ippool_size);
+	} else {
+		PQclear(result);
+		return -1;
+	}
+
+	PQclear(result);
+
+	return 0;
+}
+
 int dao_fetch_context_id(char **context_id, char *client_id, char *description)
 {
 	const char *paramValues[2];
@@ -933,6 +996,50 @@ int dao_fetch_node_sequence(uint32_t *context_id_list, uint32_t list_size, void 
 
 	PQclear(result);
 	free(fetch_req);
+
+	return 0;
+}
+
+int dao_fetch_node_ip(char *context_id, char *uuid, char **ipaddress)
+{
+	const char *paramValues[2];
+	int paramLengths[2];
+	PGresult *result;
+
+	if (!context_id || !uuid) {
+		jlog(L_WARNING, "invalid NULL parameter");
+		return -1;
+	}
+
+	paramValues[0] = context_id;
+	paramLengths[0] = strlen(context_id);
+
+	paramValues[1] = uuid;
+	paramLengths[1] = strlen(uuid);
+
+	result = PQexecPrepared(dbconn, "dao_fetch_node_ip", 2, paramValues, paramLengths, NULL, 0);
+	if (!result) {
+		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		return -1;
+	}
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return -1;
+	}
+
+	int tuples, fields;
+	tuples = PQntuples(result);
+	fields = PQnfields(result);
+
+	if (tuples > 0 && fields > 0) {
+		*ipaddress = PQgetvalue(result, 0, 0);
+	} else {
+		PQclear(result);
+		return -1;
+	}
+
+	PQclear(result);
 
 	return 0;
 }
