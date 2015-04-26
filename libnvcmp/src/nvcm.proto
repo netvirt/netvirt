@@ -1,0 +1,97 @@
+// NetVirt Controller message protocol
+// Nicolas J. Bouliane - 2015
+
+syntax = "proto2";
+
+message NVCMsg {
+	required uint32 version = 1;
+
+	oneof op {
+		AddRequest addRequest = 2;
+		AddResponse addResponse = 3;
+		DelRequest delRequest = 4;
+		DelResponse delResponse = 5;
+		ModifyRequest modifyRequest = 6;
+		ModifyResponse modifyResponse = 7;
+		SearchRequest searchRequest = 8;
+		SearchResponse searchResponse = 9;
+		NodeConnectInfo nodeConnectInfo = 10;
+	}
+}
+
+message AddRequest {
+	required Object object = 1;
+}
+
+message AddResponse {
+
+}
+
+message DelRequest {
+	required Object object = 1;
+}
+
+message DelResponse {
+
+}
+
+message ModifyRequest {
+	required Object object = 1;
+}
+
+message ModifyResponse {
+
+}
+
+enum SearchType {
+	OBJECT = 0;
+	SEQUENCE = 1;
+	ALL = 2;
+}
+
+message SearchRequest {
+	required SearchType searchtype = 1;	
+	required Object object = 2;
+}
+
+message SearchResponse {
+	required SearchType searchtype = 1;	
+	required Object object = 2;
+}
+
+message NodeConnectInfo {
+
+}
+
+message Object {
+
+	oneof object {
+		Client client = 1;
+		Context context = 2;
+		Node node = 3;
+	}
+
+}
+message Client {
+
+	optional string email = 1;
+	optional string pwd = 2;
+	optional string apikey = 3;
+}
+
+message Context {
+
+	optional string clientid = 1;
+	optional uint32 id = 2;
+	optional string description = 3;
+}
+
+message Node {
+
+	optional uint32 contextid = 1;
+	optional string description = 2;
+	optional string uuid = 3;
+	optional string provkey = 4;
+	optional string ipaddr = 5;
+	optional string status = 6;
+}

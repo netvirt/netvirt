@@ -3,6 +3,7 @@ project(netvirt)
 
 SET(CPACK_PACKAGE_VERSION "0.6.1")
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 enable_testing()
 
 # Using Hardening Options
@@ -44,7 +45,17 @@ else()
 	set(library_dest_dir lib)
 endif()
 
-add_subdirectory(libnvcore)
+option (WITH_NVCORE "WITH_NVCORE" ON)
+
+if (WITH_NVCORE)
+	add_subdirectory(libnvcore)
+endif()
+	
+option (WITH_NVCMP "WITH_NVCMP" OFF)
+
+if (WITH_NVCMP)
+	add_subdirectory(libnvcmp)
+endif()
 
 option (WITH_NVAGENT "WITH_NVAGENT" ON)
 
