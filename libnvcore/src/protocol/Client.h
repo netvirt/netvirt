@@ -13,8 +13,8 @@
 
 /* Including external dependencies */
 #include <NativeInteger.h>
-#include <PrintableString.h>
 #include <IA5String.h>
+#include <PrintableString.h>
 #include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
@@ -24,16 +24,9 @@ extern "C" {
 /* Client */
 typedef struct Client {
 	unsigned long	*id	/* OPTIONAL */;
-	PrintableString_t	*firstname	/* OPTIONAL */;
-	PrintableString_t	*lastname	/* OPTIONAL */;
 	IA5String_t	*email	/* OPTIONAL */;
 	PrintableString_t	*password	/* OPTIONAL */;
-	PrintableString_t	*company	/* OPTIONAL */;
-	PrintableString_t	*phone	/* OPTIONAL */;
-	PrintableString_t	*country	/* OPTIONAL */;
-	PrintableString_t	*stateProvince	/* OPTIONAL */;
-	PrintableString_t	*city	/* OPTIONAL */;
-	PrintableString_t	*postalCode	/* OPTIONAL */;
+	PrintableString_t	*apiKey	/* OPTIONAL */;
 	long	*status	/* OPTIONAL */;
 	/*
 	 * This type is extensible,

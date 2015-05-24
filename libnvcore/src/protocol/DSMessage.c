@@ -269,7 +269,7 @@ asn_TYPE_descriptor_t asn_DEF_ackNumber_3 = {
 	&asn_SPC_ackNumber_specs_3	/* Additional specs */
 };
 
-static asn_TYPE_member_t asn_MBR_dsop_4[] = {
+static asn_TYPE_member_t asn_MBR_dsop_5[] = {
 	{ ATF_NOFLAGS, 0, offsetof(struct dsop, choice.addRequest),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		+1,	/* EXPLICIT tag at current level */
@@ -361,7 +361,7 @@ static asn_TYPE_member_t asn_MBR_dsop_4[] = {
 		"terminateRequest"
 		},
 };
-static asn_TYPE_tag2member_t asn_MAP_dsop_tag2el_4[] = {
+static asn_TYPE_tag2member_t asn_MAP_dsop_tag2el_5[] = {
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* addRequest */
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* addResponse */
     { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* delRequest */
@@ -373,18 +373,18 @@ static asn_TYPE_tag2member_t asn_MAP_dsop_tag2el_4[] = {
     { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* searchResponse */
     { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 } /* terminateRequest */
 };
-static asn_CHOICE_specifics_t asn_SPC_dsop_specs_4 = {
+static asn_CHOICE_specifics_t asn_SPC_dsop_specs_5 = {
 	sizeof(struct dsop),
 	offsetof(struct dsop, _asn_ctx),
 	offsetof(struct dsop, present),
 	sizeof(((struct dsop *)0)->present),
-	asn_MAP_dsop_tag2el_4,
+	asn_MAP_dsop_tag2el_5,
 	10,	/* Count of tags in the map */
 	0,
 	10	/* Extensions start */
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_dsop_4 = {
+asn_TYPE_descriptor_t asn_DEF_dsop_5 = {
 	"dsop",
 	"dsop",
 	CHOICE_free,
@@ -401,9 +401,9 @@ asn_TYPE_descriptor_t asn_DEF_dsop_4 = {
 	0,	/* No tags (pointer) */
 	0,	/* No tags (count) */
 	0,	/* No PER visible constraints */
-	asn_MBR_dsop_4,
+	asn_MBR_dsop_5,
 	10,	/* Elements count */
-	&asn_SPC_dsop_specs_4	/* Additional specs */
+	&asn_SPC_dsop_specs_5	/* Additional specs */
 };
 
 static asn_TYPE_member_t asn_MBR_DSMessage_1[] = {
@@ -425,10 +425,19 @@ static asn_TYPE_member_t asn_MBR_DSMessage_1[] = {
 		0,
 		"ackNumber"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct DSMessage, dsop),
+	{ ATF_POINTER, 1, offsetof(struct DSMessage, apiKey),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PrintableString,
+		0,	/* Defer constraints checking to the member type */
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"apiKey"
+		},
+	{ ATF_NOFLAGS, 0, offsetof(struct DSMessage, dsop),
+		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		+1,	/* EXPLICIT tag at current level */
-		&asn_DEF_dsop_4,
+		&asn_DEF_dsop_5,
 		0,	/* Defer constraints checking to the member type */
 		0,	/* PER is not compiled, use -gen-PER */
 		0,
@@ -441,13 +450,14 @@ static ber_tlv_tag_t asn_DEF_DSMessage_tags_1[] = {
 static asn_TYPE_tag2member_t asn_MAP_DSMessage_tag2el_1[] = {
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* seqNumber */
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* ackNumber */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 } /* dsop */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* apiKey */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 } /* dsop */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_DSMessage_specs_1 = {
 	sizeof(struct DSMessage),
 	offsetof(struct DSMessage, _asn_ctx),
 	asn_MAP_DSMessage_tag2el_1,
-	3,	/* Count of tags in the map */
+	4,	/* Count of tags in the map */
 	0, 0, 0,	/* Optional elements (not needed) */
 	-1,	/* Start extensions */
 	-1	/* Stop extensions */
@@ -472,7 +482,7 @@ asn_TYPE_descriptor_t asn_DEF_DSMessage = {
 		/sizeof(asn_DEF_DSMessage_tags_1[0]), /* 1 */
 	0,	/* No PER visible constraints */
 	asn_MBR_DSMessage_1,
-	3,	/* Elements count */
+	4,	/* Elements count */
 	&asn_SPC_DSMessage_specs_1	/* Additional specs */
 };
 
