@@ -164,7 +164,7 @@ asn_TYPE_descriptor_t asn_DEF_id_2 = {
 };
 
 static asn_TYPE_member_t asn_MBR_Client_1[] = {
-	{ ATF_POINTER, 12, offsetof(struct Client, id),
+	{ ATF_POINTER, 5, offsetof(struct Client, id),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_id_2,
@@ -173,26 +173,8 @@ static asn_TYPE_member_t asn_MBR_Client_1[] = {
 		0,
 		"id"
 		},
-	{ ATF_POINTER, 11, offsetof(struct Client, firstname),
+	{ ATF_POINTER, 4, offsetof(struct Client, email),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_PrintableString,
-		0,	/* Defer constraints checking to the member type */
-		0,	/* PER is not compiled, use -gen-PER */
-		0,
-		"firstname"
-		},
-	{ ATF_POINTER, 10, offsetof(struct Client, lastname),
-		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_PrintableString,
-		0,	/* Defer constraints checking to the member type */
-		0,	/* PER is not compiled, use -gen-PER */
-		0,
-		"lastname"
-		},
-	{ ATF_POINTER, 9, offsetof(struct Client, email),
-		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_IA5String,
 		0,	/* Defer constraints checking to the member type */
@@ -200,8 +182,8 @@ static asn_TYPE_member_t asn_MBR_Client_1[] = {
 		0,
 		"email"
 		},
-	{ ATF_POINTER, 8, offsetof(struct Client, password),
-		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
+	{ ATF_POINTER, 3, offsetof(struct Client, password),
+		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
 		0,	/* Defer constraints checking to the member type */
@@ -209,62 +191,17 @@ static asn_TYPE_member_t asn_MBR_Client_1[] = {
 		0,
 		"password"
 		},
-	{ ATF_POINTER, 7, offsetof(struct Client, company),
-		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
+	{ ATF_POINTER, 2, offsetof(struct Client, apiKey),
+		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
 		0,	/* Defer constraints checking to the member type */
 		0,	/* PER is not compiled, use -gen-PER */
 		0,
-		"company"
-		},
-	{ ATF_POINTER, 6, offsetof(struct Client, phone),
-		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_PrintableString,
-		0,	/* Defer constraints checking to the member type */
-		0,	/* PER is not compiled, use -gen-PER */
-		0,
-		"phone"
-		},
-	{ ATF_POINTER, 5, offsetof(struct Client, country),
-		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_PrintableString,
-		0,	/* Defer constraints checking to the member type */
-		0,	/* PER is not compiled, use -gen-PER */
-		0,
-		"country"
-		},
-	{ ATF_POINTER, 4, offsetof(struct Client, stateProvince),
-		(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_PrintableString,
-		0,	/* Defer constraints checking to the member type */
-		0,	/* PER is not compiled, use -gen-PER */
-		0,
-		"stateProvince"
-		},
-	{ ATF_POINTER, 3, offsetof(struct Client, city),
-		(ASN_TAG_CLASS_CONTEXT | (9 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_PrintableString,
-		0,	/* Defer constraints checking to the member type */
-		0,	/* PER is not compiled, use -gen-PER */
-		0,
-		"city"
-		},
-	{ ATF_POINTER, 2, offsetof(struct Client, postalCode),
-		(ASN_TAG_CLASS_CONTEXT | (10 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_PrintableString,
-		0,	/* Defer constraints checking to the member type */
-		0,	/* PER is not compiled, use -gen-PER */
-		0,
-		"postalCode"
+		"apiKey"
 		},
 	{ ATF_POINTER, 1, offsetof(struct Client, status),
-		(ASN_TAG_CLASS_CONTEXT | (11 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_NativeInteger,
 		memb_status_constraint_1,
@@ -278,26 +215,19 @@ static ber_tlv_tag_t asn_DEF_Client_tags_1[] = {
 };
 static asn_TYPE_tag2member_t asn_MAP_Client_tag2el_1[] = {
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* id */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* firstname */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* lastname */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* email */
-    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* password */
-    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* company */
-    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* phone */
-    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* country */
-    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* stateProvince */
-    { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 }, /* city */
-    { (ASN_TAG_CLASS_CONTEXT | (10 << 2)), 10, 0, 0 }, /* postalCode */
-    { (ASN_TAG_CLASS_CONTEXT | (11 << 2)), 11, 0, 0 } /* status */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* email */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* password */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* apiKey */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 } /* status */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_Client_specs_1 = {
 	sizeof(struct Client),
 	offsetof(struct Client, _asn_ctx),
 	asn_MAP_Client_tag2el_1,
-	12,	/* Count of tags in the map */
+	5,	/* Count of tags in the map */
 	0, 0, 0,	/* Optional elements (not needed) */
-	11,	/* Start extensions */
-	13	/* Stop extensions */
+	4,	/* Start extensions */
+	6	/* Stop extensions */
 };
 asn_TYPE_descriptor_t asn_DEF_Client = {
 	"Client",
@@ -319,7 +249,7 @@ asn_TYPE_descriptor_t asn_DEF_Client = {
 		/sizeof(asn_DEF_Client_tags_1[0]), /* 1 */
 	0,	/* No PER visible constraints */
 	asn_MBR_Client_1,
-	12,	/* Elements count */
+	5,	/* Elements count */
 	&asn_SPC_Client_specs_1	/* Additional specs */
 };
 

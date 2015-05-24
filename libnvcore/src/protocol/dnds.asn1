@@ -54,6 +54,7 @@ DNMessage ::= SEQUENCE {
 DSMessage ::= SEQUENCE {
 	seqNumber	INTEGER (0..uint32max),
 	ackNumber	INTEGER (0..uint32max),
+	apiKey		PrintableString OPTIONAL,
 	dsop		CHOICE	{
 		addRequest		AddRequest,
 		addResponse		AddResponse,
@@ -201,16 +202,9 @@ Topology ::= ENUMERATED {
 
 Client ::= SEQUENCE {
 	id		INTEGER (0..uint32max) OPTIONAL,
-	firstname	PrintableString OPTIONAL,
-	lastname	PrintableString OPTIONAL,
 	email		IA5String OPTIONAL,
 	password	PrintableString OPTIONAL,
-	company		PrintableString OPTIONAL,
-	phone		PrintableString OPTIONAL,
-	country		PrintableString OPTIONAL,
-	stateProvince	PrintableString OPTIONAL,
-	city 		PrintableString OPTIONAL,
-	postalCode	PrintableString OPTIONAL,
+	apiKey		PrintableString OPTIONAL,
 	status		INTEGER (0..127) OPTIONAL,
 	...
 }

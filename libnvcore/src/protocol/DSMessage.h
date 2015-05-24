@@ -13,6 +13,7 @@
 
 /* Including external dependencies */
 #include <NativeInteger.h>
+#include <PrintableString.h>
 #include "AddRequest.h"
 #include "AddResponse.h"
 #include "DelRequest.h"
@@ -51,6 +52,7 @@ typedef enum dsop_PR {
 typedef struct DSMessage {
 	unsigned long	 seqNumber;
 	unsigned long	 ackNumber;
+	PrintableString_t	*apiKey	/* OPTIONAL */;
 	struct dsop {
 		dsop_PR present;
 		union DSMessage__dsop_u {
