@@ -80,8 +80,8 @@ int dao_prepare_statements()
 	result = PQprepare(dbconn,
 			"dao_add_client",
 			"INSERT INTO client "
-			"(email, password) "
-			"VALUES ($1, crypt($2, gen_salt('bf')));",
+			"(email, password, apikey) "
+			"VALUES ($1, crypt($2, gen_salt('bf')), $3);",
 			0,
 			NULL);
 
@@ -414,14 +414,14 @@ int dao_update_node_status(char *context_id, char *uuid, char *status, char *ips
 	return 0;
 }
 
-int dao_add_client(char *email, char *password)
+int dao_add_client(char *email, char *password, char *apikey)
 {
 
-	const char *paramValues[2];
-	int paramLengths[2];
+	const char *paramValues[3];
+	int paramLengths[3];
 	PGresult *result = NULL;
 
-	if (!email || !password) {
+	if (!email || !password || !apikey) {
 
 		jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
@@ -429,11 +429,13 @@ int dao_add_client(char *email, char *password)
 
 	paramValues[0] = email;
 	paramValues[1] = password;
+	paramValues[2] = apikey;
 
 	paramLengths[0] = strlen(email);
 	paramLengths[1] = strlen(password);
+	paramLengths[2] = strlen(apikey);
 
-	result = PQexecPrepared(dbconn, "dao_add_client", 2, paramValues, paramLengths, NULL, 1);
+	result = PQexecPrepared(dbconn, "dao_add_client", 3, paramValues, paramLengths, NULL, 1);
 
 	if (!result) {
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));

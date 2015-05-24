@@ -106,10 +106,15 @@ void AddRequest_client(DNDSMessage_t *msg)
 	char *email = NULL;
 	char *password = NULL;
 
+	char *apikey = NULL;
+
         Client_get_password(obj, &password, &length);
         Client_get_email(obj, &email, &length);
 
-	ret = dao_add_client(email, password);
+
+	apikey = pki_gen_api_key();
+
+	ret = dao_add_client(email, password, apikey);
 
 	if (ret == -1) {
 		jlog(L_ERROR, "failed to add client");
