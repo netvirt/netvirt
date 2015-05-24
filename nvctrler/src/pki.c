@@ -15,9 +15,11 @@
 
 #include <openssl/ssl.h>
 #include <openssl/bio.h>
+#include <openssl/buffer.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
+#include <openssl/rand.h>
 #include <openssl/x509v3.h>
 
 #include "logger.h"
@@ -153,6 +155,43 @@ static void pki_sign_certificate(EVP_PKEY *keyring, X509 *certificate)
 	jlog(L_NOTICE, "pki_sign_certificate");
 
 	X509_sign(certificate, keyring, EVP_sha1());
+}
+
+static void b64enc(const uint8_t *buf, size_t length, char **b64buf)
+{
+	BIO *bio = NULL;
+	BIO *b64 = NULL;
+	BUF_MEM *memptr = NULL;
+
+	b64 = BIO_new(BIO_f_base64());
+	bio = BIO_new(BIO_s_mem());
+	bio = BIO_push(b64, bio);
+
+	BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
+	BIO_write(bio, buf, length);
+	BIO_flush(bio);
+
+	BIO_get_mem_ptr(bio, &memptr);
+	BIO_set_close(bio, BIO_NOCLOSE);
+	BIO_free_all(bio);
+
+	*b64buf = calloc(1, memptr->length+1);
+	strncpy(*b64buf, memptr->data, memptr->length);
+
+	*(*b64buf + (memptr->length)) = '\0';
+
+	BUF_MEM_free(memptr);
+}
+
+char *pki_gen_api_key()
+{
+	uint8_t key[18];
+	char *b64key;
+
+	RAND_bytes(key, 18);
+	b64enc(key, 18, &b64key);
+
+	return b64key;
 }
 
 void pki_free_digital_id(digital_id_t *digital_id)

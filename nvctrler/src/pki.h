@@ -53,6 +53,8 @@ digital_id_t *pki_digital_id(char *commonName,
 void pki_write_certificate_in_mem(X509 *certificate, char **certificate_ptr, long *size);
 void pki_write_privatekey_in_mem(EVP_PKEY *privatekey, char **privatekey_ptr, long *size);
 
+char *pki_gen_api_key();
+
 void pki_free_digital_id(digital_id_t *digital_id);
 
 void pki_embassy_free(embassy_t *embassy);
