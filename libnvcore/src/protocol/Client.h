@@ -26,7 +26,7 @@ typedef struct Client {
 	unsigned long	*id	/* OPTIONAL */;
 	IA5String_t	*email	/* OPTIONAL */;
 	PrintableString_t	*password	/* OPTIONAL */;
-	PrintableString_t	*apiKey	/* OPTIONAL */;
+	PrintableString_t	*apikey	/* OPTIONAL */;
 	long	*status	/* OPTIONAL */;
 	/*
 	 * This type is extensible,

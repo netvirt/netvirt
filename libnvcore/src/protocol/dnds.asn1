@@ -54,7 +54,7 @@ DNMessage ::= SEQUENCE {
 DSMessage ::= SEQUENCE {
 	seqNumber	INTEGER (0..uint32max),
 	ackNumber	INTEGER (0..uint32max),
-	apiKey		PrintableString OPTIONAL,
+	apikey		PrintableString OPTIONAL,
 	dsop		CHOICE	{
 		addRequest		AddRequest,
 		addResponse		AddResponse,
@@ -204,7 +204,7 @@ Client ::= SEQUENCE {
 	id		INTEGER (0..uint32max) OPTIONAL,
 	email		IA5String OPTIONAL,
 	password	PrintableString OPTIONAL,
-	apiKey		PrintableString OPTIONAL,
+	apikey		PrintableString OPTIONAL,
 	status		INTEGER (0..127) OPTIONAL,
 	...
 }

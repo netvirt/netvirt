@@ -191,14 +191,14 @@ static asn_TYPE_member_t asn_MBR_Client_1[] = {
 		0,
 		"password"
 		},
-	{ ATF_POINTER, 2, offsetof(struct Client, apiKey),
+	{ ATF_POINTER, 2, offsetof(struct Client, apikey),
 		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
 		0,	/* Defer constraints checking to the member type */
 		0,	/* PER is not compiled, use -gen-PER */
 		0,
-		"apiKey"
+		"apikey"
 		},
 	{ ATF_POINTER, 1, offsetof(struct Client, status),
 		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
@@ -217,7 +217,7 @@ static asn_TYPE_tag2member_t asn_MAP_Client_tag2el_1[] = {
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* id */
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* email */
     { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* password */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* apiKey */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* apikey */
     { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 } /* status */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_Client_specs_1 = {

@@ -52,7 +52,7 @@ typedef enum dsop_PR {
 typedef struct DSMessage {
 	unsigned long	 seqNumber;
 	unsigned long	 ackNumber;
-	PrintableString_t	*apiKey	/* OPTIONAL */;
+	PrintableString_t	*apikey	/* OPTIONAL */;
 	struct dsop {
 		dsop_PR present;
 		union DSMessage__dsop_u {
