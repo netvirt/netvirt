@@ -425,14 +425,14 @@ static asn_TYPE_member_t asn_MBR_DSMessage_1[] = {
 		0,
 		"ackNumber"
 		},
-	{ ATF_POINTER, 1, offsetof(struct DSMessage, apiKey),
+	{ ATF_POINTER, 1, offsetof(struct DSMessage, apikey),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
 		0,	/* Defer constraints checking to the member type */
 		0,	/* PER is not compiled, use -gen-PER */
 		0,
-		"apiKey"
+		"apikey"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct DSMessage, dsop),
 		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
@@ -450,7 +450,7 @@ static ber_tlv_tag_t asn_DEF_DSMessage_tags_1[] = {
 static asn_TYPE_tag2member_t asn_MAP_DSMessage_tag2el_1[] = {
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* seqNumber */
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* ackNumber */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* apiKey */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* apikey */
     { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 } /* dsop */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_DSMessage_specs_1 = {
