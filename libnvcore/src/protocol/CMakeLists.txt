@@ -23,8 +23,8 @@ ADD_LIBRARY(dnds_protocol STATIC
 	DelResponse.c
 	ModifyRequest.c
 	ModifyResponse.c
-	ConnectState.c
-	NodeConnectInfo.c
+	ConnState.c
+	NodeConnInfo.c
 	SearchType.c
 	SearchRequest.c
 	SearchResponse.c

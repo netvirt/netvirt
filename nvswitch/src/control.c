@@ -67,7 +67,7 @@ int transmit_provisioning(struct session *session, char *provCode, uint32_t leng
 	return 0;
 }
 
-int transmit_node_connectinfo(e_ConnectState state, char *ipAddress, char *certName)
+int transmit_node_connectinfo(e_ConnState state, char *ipAddress, char *certName)
 {
 	DNDSMessage_t *msg;
 
@@ -77,11 +77,11 @@ int transmit_node_connectinfo(e_ConnectState state, char *ipAddress, char *certN
 
         DSMessage_set_seqNumber(msg, 0);
         DSMessage_set_ackNumber(msg, 0);
-        DSMessage_set_operation(msg, dsop_PR_nodeConnectInfo);
+        DSMessage_set_operation(msg, dsop_PR_nodeConnInfo);
 
-        NodeConnectInfo_set_certName(msg, certName, strlen(certName));
-        NodeConnectInfo_set_ipAddr(msg, ipAddress);
-        NodeConnectInfo_set_state(msg, state);
+        NodeConnInfo_set_certName(msg, certName, strlen(certName));
+        NodeConnInfo_set_ipAddr(msg, ipAddress);
+        NodeConnInfo_set_state(msg, state);
 
 	net_send_msg(ctrl_netc, msg);
 	DNDSMessage_del(msg);
@@ -302,7 +302,6 @@ static int handle_SearchResponse_Context(DNDSMessage_t *msg)
 	int ret;
 	size_t length;
 	uint32_t id;
-	e_Topology topology;
 	char *desc;
 	char network[INET_ADDRSTRLEN];
 	char netmask[INET_ADDRSTRLEN];
@@ -318,7 +317,6 @@ static int handle_SearchResponse_Context(DNDSMessage_t *msg)
 		if (ret == DNDS_success && object != NULL) {
 
 			Context_get_id(object, &id);
-			Context_get_topology(object, &topology);
 			Context_get_description(object, &desc, &length);
 			Context_get_network(object, network);
 			Context_get_netmask(object, netmask);

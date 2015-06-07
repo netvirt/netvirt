@@ -40,12 +40,14 @@ struct ctrler_cfg {
 	int ctrler_running;
 };
 
+#define SESSION_FROM_SWITCH	1
 netc_t *g_switch_netc;
 struct session {
 
 	netc_t *netc;
 	uint32_t timeout_id;
 	uint8_t state;
+	uint8_t type;
 };
 
 int ctrler_init(struct ctrler_cfg *cfg);

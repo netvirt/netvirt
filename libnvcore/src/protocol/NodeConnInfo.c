@@ -5,7 +5,7 @@
  * 	`asn1c -fnative-types`
  */
 
-#include "NodeConnectInfo.h"
+#include "NodeConnInfo.h"
 
 static int check_permitted_alphabet_2(const void *sptr) {
 	/* The underlying type is IA5String */
@@ -73,8 +73,8 @@ memb_ipAddr_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 	}
 }
 
-static asn_TYPE_member_t asn_MBR_NodeConnectInfo_1[] = {
-	{ ATF_NOFLAGS, 0, offsetof(struct NodeConnectInfo, certName),
+static asn_TYPE_member_t asn_MBR_NodeConnInfo_1[] = {
+	{ ATF_NOFLAGS, 0, offsetof(struct NodeConnInfo, certName),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_IA5String,
@@ -83,7 +83,7 @@ static asn_TYPE_member_t asn_MBR_NodeConnectInfo_1[] = {
 		0,
 		"certName"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct NodeConnectInfo, ipAddr),
+	{ ATF_NOFLAGS, 0, offsetof(struct NodeConnInfo, ipAddr),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_OCTET_STRING,
@@ -92,36 +92,36 @@ static asn_TYPE_member_t asn_MBR_NodeConnectInfo_1[] = {
 		0,
 		"ipAddr"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct NodeConnectInfo, state),
+	{ ATF_NOFLAGS, 0, offsetof(struct NodeConnInfo, state),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_ConnectState,
+		&asn_DEF_ConnState,
 		0,	/* Defer constraints checking to the member type */
 		0,	/* PER is not compiled, use -gen-PER */
 		0,
 		"state"
 		},
 };
-static ber_tlv_tag_t asn_DEF_NodeConnectInfo_tags_1[] = {
+static ber_tlv_tag_t asn_DEF_NodeConnInfo_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
-static asn_TYPE_tag2member_t asn_MAP_NodeConnectInfo_tag2el_1[] = {
+static asn_TYPE_tag2member_t asn_MAP_NodeConnInfo_tag2el_1[] = {
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* certName */
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* ipAddr */
     { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 } /* state */
 };
-static asn_SEQUENCE_specifics_t asn_SPC_NodeConnectInfo_specs_1 = {
-	sizeof(struct NodeConnectInfo),
-	offsetof(struct NodeConnectInfo, _asn_ctx),
-	asn_MAP_NodeConnectInfo_tag2el_1,
+static asn_SEQUENCE_specifics_t asn_SPC_NodeConnInfo_specs_1 = {
+	sizeof(struct NodeConnInfo),
+	offsetof(struct NodeConnInfo, _asn_ctx),
+	asn_MAP_NodeConnInfo_tag2el_1,
 	3,	/* Count of tags in the map */
 	0, 0, 0,	/* Optional elements (not needed) */
 	2,	/* Start extensions */
 	4	/* Stop extensions */
 };
-asn_TYPE_descriptor_t asn_DEF_NodeConnectInfo = {
-	"NodeConnectInfo",
-	"NodeConnectInfo",
+asn_TYPE_descriptor_t asn_DEF_NodeConnInfo = {
+	"NodeConnInfo",
+	"NodeConnInfo",
 	SEQUENCE_free,
 	SEQUENCE_print,
 	SEQUENCE_constraint,
@@ -131,15 +131,15 @@ asn_TYPE_descriptor_t asn_DEF_NodeConnectInfo = {
 	SEQUENCE_encode_xer,
 	0, 0,	/* No PER support, use "-gen-PER" to enable */
 	0,	/* Use generic outmost tag fetcher */
-	asn_DEF_NodeConnectInfo_tags_1,
-	sizeof(asn_DEF_NodeConnectInfo_tags_1)
-		/sizeof(asn_DEF_NodeConnectInfo_tags_1[0]), /* 1 */
-	asn_DEF_NodeConnectInfo_tags_1,	/* Same as above */
-	sizeof(asn_DEF_NodeConnectInfo_tags_1)
-		/sizeof(asn_DEF_NodeConnectInfo_tags_1[0]), /* 1 */
+	asn_DEF_NodeConnInfo_tags_1,
+	sizeof(asn_DEF_NodeConnInfo_tags_1)
+		/sizeof(asn_DEF_NodeConnInfo_tags_1[0]), /* 1 */
+	asn_DEF_NodeConnInfo_tags_1,	/* Same as above */
+	sizeof(asn_DEF_NodeConnInfo_tags_1)
+		/sizeof(asn_DEF_NodeConnInfo_tags_1[0]), /* 1 */
 	0,	/* No PER visible constraints */
-	asn_MBR_NodeConnectInfo_1,
+	asn_MBR_NodeConnInfo_1,
 	3,	/* Elements count */
-	&asn_SPC_NodeConnectInfo_specs_1	/* Additional specs */
+	&asn_SPC_NodeConnInfo_specs_1	/* Additional specs */
 };
 

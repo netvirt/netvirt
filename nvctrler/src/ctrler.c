@@ -54,7 +54,7 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 	DSMessage_get_operation(msg, &operation);
 
 	switch (operation) {
-	case dsop_PR_nodeConnectInfo:
+	case dsop_PR_nodeConnInfo:
 		nodeConnectInfo(session, msg);
 		break;
 
@@ -89,8 +89,12 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 
 static void on_secure(netc_t *netc)
 {
+	struct session *session;
+	session = netc->ext_ptr;
+
 	jlog(L_NOTICE, "%s connection secured", netc->kconn->client_cn);
 	if (strncmp("netvirt-switch", netc->kconn->client_cn, 14) == 0) {
+		session->type = SESSION_FROM_SWITCH;
 		g_switch_netc = netc;
 		dao_reset_node_state();
 	}
