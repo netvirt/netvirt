@@ -351,8 +351,8 @@ int DNDSObject_get_objectType(DNDSObject_t *object, DNDSObject_PR *objType)
 	return DNDS_success;
 }
 
-// NodeConnectInfo
-int NodeConnectInfo_set_certName(DNDSMessage_t *msg, char *name, size_t length)
+// NodeConnInfo
+int NodeConnInfo_set_certName(DNDSMessage_t *msg, char *name, size_t length)
 {
 	if (msg == NULL || name == NULL) {
 		return DNDS_invalid_param;
@@ -362,17 +362,17 @@ int NodeConnectInfo_set_certName(DNDSMessage_t *msg, char *name, size_t length)
 		return DNDS_invalid_pdu;
 	}
 
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_nodeConnectInfo) {
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_nodeConnInfo) {
 		return DNDS_invalid_op;
 	}
 
-	msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.certName.buf = (uint8_t *)strdup(name);
-	msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.certName.size = length;
+	msg->pdu.choice.dsm.dsop.choice.nodeConnInfo.certName.buf = (uint8_t *)strdup(name);
+	msg->pdu.choice.dsm.dsop.choice.nodeConnInfo.certName.size = length;
 
 	return DNDS_success;
 }
 
-int NodeConnectInfo_get_certName(DNDSMessage_t *msg, char **name, size_t *length)
+int NodeConnInfo_get_certName(DNDSMessage_t *msg, char **name, size_t *length)
 {
 	if (msg == NULL || name == NULL || length == NULL) {
 		return DNDS_invalid_param;
@@ -382,17 +382,17 @@ int NodeConnectInfo_get_certName(DNDSMessage_t *msg, char **name, size_t *length
 		return DNDS_invalid_pdu;
 	}
 
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_nodeConnectInfo) {
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_nodeConnInfo) {
 		return DNDS_invalid_op;
 	}
 
-	*name = (char *)msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.certName.buf;
-	*length = msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.certName.size;
+	*name = (char *)msg->pdu.choice.dsm.dsop.choice.nodeConnInfo.certName.buf;
+	*length = msg->pdu.choice.dsm.dsop.choice.nodeConnInfo.certName.size;
 
 	return DNDS_success;
 }
 
-int NodeConnectInfo_set_ipAddr(DNDSMessage_t *msg, char *ipAddress)
+int NodeConnInfo_set_ipAddr(DNDSMessage_t *msg, char *ipAddress)
 {
 	if (msg == NULL || ipAddress == NULL) {
 		return DNDS_invalid_param;
@@ -402,27 +402,27 @@ int NodeConnectInfo_set_ipAddr(DNDSMessage_t *msg, char *ipAddress)
 		return DNDS_invalid_pdu;
 	}
 
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_nodeConnectInfo) {
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_nodeConnInfo) {
 		return DNDS_invalid_op;
 	}
 
-	msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.ipAddr.buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
-	if (msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.ipAddr.buf == NULL) {
+	msg->pdu.choice.dsm.dsop.choice.nodeConnInfo.ipAddr.buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
+	if (msg->pdu.choice.dsm.dsop.choice.nodeConnInfo.ipAddr.buf == NULL) {
 		return DNDS_alloc_failed;
 	}
 
 	int ret;
-	ret = inet_pton(AF_INET, ipAddress, msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.ipAddr.buf);
+	ret = inet_pton(AF_INET, ipAddress, msg->pdu.choice.dsm.dsop.choice.nodeConnInfo.ipAddr.buf);
 	if (ret != 1) {
 		return DNDS_conversion_failed;
 	}
 
-	msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.ipAddr.size = sizeof(struct in_addr);
+	msg->pdu.choice.dsm.dsop.choice.nodeConnInfo.ipAddr.size = sizeof(struct in_addr);
 
 	return DNDS_success;
 }
 
-int NodeConnectInfo_get_ipAddr(DNDSMessage_t *msg, char *ipAddress)
+int NodeConnInfo_get_ipAddr(DNDSMessage_t *msg, char *ipAddress)
 {
 	if (msg == NULL || ipAddress == NULL) {
 		return DNDS_invalid_param;
@@ -432,12 +432,12 @@ int NodeConnectInfo_get_ipAddr(DNDSMessage_t *msg, char *ipAddress)
 		return DNDS_invalid_pdu;
 	}
 
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_nodeConnectInfo) {
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_nodeConnInfo) {
 		return DNDS_invalid_op;
 	}
 
 	const char *ret;
-	ret = inet_ntop(AF_INET, msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.ipAddr.buf, ipAddress, INET_ADDRSTRLEN);
+	ret = inet_ntop(AF_INET, msg->pdu.choice.dsm.dsop.choice.nodeConnInfo.ipAddr.buf, ipAddress, INET_ADDRSTRLEN);
 	if (ret == NULL) {
 		return DNDS_conversion_failed;
 	}
@@ -445,7 +445,7 @@ int NodeConnectInfo_get_ipAddr(DNDSMessage_t *msg, char *ipAddress)
 	return DNDS_success;
 }
 
-int NodeConnectInfo_set_state(DNDSMessage_t *msg, e_ConnectState state)
+int NodeConnInfo_set_state(DNDSMessage_t *msg, e_ConnState state)
 {
 	if (msg == NULL) {
 		return DNDS_invalid_param;
@@ -455,16 +455,16 @@ int NodeConnectInfo_set_state(DNDSMessage_t *msg, e_ConnectState state)
 		return DNDS_invalid_pdu;
 	}
 
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_nodeConnectInfo) {
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_nodeConnInfo) {
 		return DNDS_invalid_op;
 	}
 
-	msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.state = state;
+	msg->pdu.choice.dsm.dsop.choice.nodeConnInfo.state = state;
 
 	return DNDS_success;
 }
 
-int NodeConnectInfo_get_state(DNDSMessage_t *msg, e_ConnectState *state)
+int NodeConnInfo_get_state(DNDSMessage_t *msg, e_ConnState *state)
 {
 	if (msg == NULL || state == NULL) {
 		return DNDS_invalid_param;
@@ -474,11 +474,11 @@ int NodeConnectInfo_get_state(DNDSMessage_t *msg, e_ConnectState *state)
 		return DNDS_invalid_pdu;
 	}
 
-	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_nodeConnectInfo) {
+	if (msg->pdu.choice.dsm.dsop.present != dsop_PR_nodeConnInfo) {
 		return DNDS_invalid_op;
 	}
 
-	*state = msg->pdu.choice.dsm.dsop.choice.nodeConnectInfo.state;
+	*state = msg->pdu.choice.dsm.dsop.choice.nodeConnInfo.state;
 
 	return DNDS_success;
 }
@@ -2067,36 +2067,6 @@ int Context_get_clientId(DNDSObject_t *object, uint32_t *clientId)
 	return DNDS_success;
 }
 
-int Context_set_topology(DNDSObject_t *object, e_Topology topology)
-{
-	if (object == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_context) {
-		return DNDS_invalid_object_type;
-	}
-
-	object->choice.context.topology = topology;
-
-	return DNDS_success;
-}
-
-int Context_get_topology(DNDSObject_t *object, e_Topology *topology)
-{
-	if (object == NULL || topology == NULL) {
-		return DNDS_invalid_param;
-	}
-
-	if (object->present != DNDSObject_PR_context) {
-		return DNDS_invalid_object_type;
-	}
-
-	*topology = object->choice.context.topology;
-
-	return DNDS_success;
-}
-
 int Context_set_description(DNDSObject_t *object, char *description, size_t length)
 {
 	if (object == NULL || description == NULL) {
@@ -2928,25 +2898,12 @@ char *SearchType_str(e_SearchType searchtype)
 	return "Unknown";
 }
 
-char *Topology_str(e_Topology topology)
-{
-	switch (topology) {
-	case Topology_mesh:
-		return "Mesh";
-	case Topology_hubspoke:
-		return "Hub and Spoke";
-	case Topology_gateway:
-		return "Gateway";
-	}
-	return "Unknown";
-}
-
-char *ConnectState_str(e_ConnectState state)
+char *ConnectState_str(e_ConnState state)
 {
 	switch (state) {
-	case ConnectState_connected:
+	case ConnState_connected:
 		return "Connected";
-	case ConnectState_disconnected:
+	case ConnState_disconnected:
 		return "Disconnected";
 	}
 	return "Unknown";
@@ -3101,23 +3058,23 @@ void AddResponse_printf(DNDSMessage_t *msg)
 	printf("AddResponse> result: %i :: %s\n", result, DNDSResult_str(result));
 }
 
-void NodeConnectInfo_printf(DNDSMessage_t *msg)
+void NodeConnInfo_printf(DNDSMessage_t *msg)
 {
 	int ret = 0;
 
 	size_t length;
 	char *certName;
 
-	ret = NodeConnectInfo_get_certName(msg, &certName, &length);
-	printf("NodeConnectInfo> certName(%i): %s\n", ret, certName);
+	ret = NodeConnInfo_get_certName(msg, &certName, &length);
+	printf("NodeConnInfo> certName(%i): %s\n", ret, certName);
 
 	char ipAddress[INET_ADDRSTRLEN];
-	ret = NodeConnectInfo_get_ipAddr(msg, ipAddress);
-	printf("NodeConnectInfo> ipAddr(%i): %s\n", ret, ipAddress);
+	ret = NodeConnInfo_get_ipAddr(msg, ipAddress);
+	printf("NodeConnInfo> ipAddr(%i): %s\n", ret, ipAddress);
 
-	e_ConnectState state;
-	ret = NodeConnectInfo_get_state(msg, &state);
-	printf("NodeConnectInfo> state(%i): %i :: %s\n", ret, state, ConnectState_str(state));
+	e_ConnState state;
+	ret = NodeConnInfo_get_state(msg, &state);
+	printf("NodeConnInfo> state(%i): %i :: %s\n", ret, state, ConnectState_str(state));
 }
 
 void P2pRequest_printf(DNDSMessage_t *msg)
@@ -3258,10 +3215,6 @@ void Context_printf(DNDSObject_t *object)
 	uint32_t id = 0;
 	ret = Context_get_id(object, &id);
 	printf("Context> id(%i): %i\n", ret, id);
-
-	e_Topology topology;
-        ret = Context_get_topology(object, &topology);
-	printf("Context> topology(%i): %s\n", ret, Topology_str(topology));
 
 	char *desc = NULL;
         ret = Context_get_description(object, &desc, &length);

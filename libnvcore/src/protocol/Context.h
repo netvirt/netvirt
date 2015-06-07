@@ -13,7 +13,6 @@
 
 /* Including external dependencies */
 #include <NativeInteger.h>
-#include "Topology.h"
 #include <PrintableString.h>
 #include <OCTET_STRING.h>
 #include <constr_SEQUENCE.h>
@@ -26,7 +25,6 @@ extern "C" {
 typedef struct Context {
 	unsigned long	*id	/* OPTIONAL */;
 	unsigned long	 clientId;
-	Topology_t	 topology;
 	PrintableString_t	*description	/* OPTIONAL */;
 	OCTET_STRING_t	 network;
 	OCTET_STRING_t	 netmask;

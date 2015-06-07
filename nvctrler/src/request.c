@@ -61,14 +61,14 @@ void nodeConnectInfo(struct session *session, DNDSMessage_t *req_msg)
 	size_t length;
 	char *certName;
 	char ipAddress[INET_ADDRSTRLEN];
-	e_ConnectState state;
+	e_ConnState state;
 	char *uuid = NULL;
 	char *context_id = NULL;
 	char *ptr = NULL;
 
-	NodeConnectInfo_get_certName(req_msg, &certName, &length);
-	NodeConnectInfo_get_ipAddr(req_msg, ipAddress);
-	NodeConnectInfo_get_state(req_msg, &state);
+	NodeConnInfo_get_certName(req_msg, &certName, &length);
+	NodeConnInfo_get_ipAddr(req_msg, ipAddress);
+	NodeConnInfo_get_state(req_msg, &state);
 
 	uuid = strdup(certName+4);
 	ptr = strchr(uuid, '@');
@@ -76,10 +76,10 @@ void nodeConnectInfo(struct session *session, DNDSMessage_t *req_msg)
 	context_id = strdup(ptr+1);
 
 	switch(state) {
-	case ConnectState_connected:
+	case ConnState_connected:
 		dao_update_node_status(context_id, uuid, "1", ipAddress);
 		break;
-	case ConnectState_disconnected:
+	case ConnState_disconnected:
 		dao_update_node_status(context_id, uuid, "0", ipAddress);
 		break;
 	default:

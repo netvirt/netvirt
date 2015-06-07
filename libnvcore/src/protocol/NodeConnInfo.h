@@ -5,8 +5,8 @@
  * 	`asn1c -fnative-types`
  */
 
-#ifndef	_NodeConnectInfo_H_
-#define	_NodeConnectInfo_H_
+#ifndef	_NodeConnInfo_H_
+#define	_NodeConnInfo_H_
 
 
 #include <asn_application.h>
@@ -14,18 +14,18 @@
 /* Including external dependencies */
 #include <IA5String.h>
 #include <OCTET_STRING.h>
-#include "ConnectState.h"
+#include "ConnState.h"
 #include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* NodeConnectInfo */
-typedef struct NodeConnectInfo {
+/* NodeConnInfo */
+typedef struct NodeConnInfo {
 	IA5String_t	 certName;
 	OCTET_STRING_t	 ipAddr;
-	ConnectState_t	 state;
+	ConnState_t	 state;
 	/*
 	 * This type is extensible,
 	 * possible extensions are below.
@@ -33,14 +33,14 @@ typedef struct NodeConnectInfo {
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
-} NodeConnectInfo_t;
+} NodeConnInfo_t;
 
 /* Implementation */
-extern asn_TYPE_descriptor_t asn_DEF_NodeConnectInfo;
+extern asn_TYPE_descriptor_t asn_DEF_NodeConnInfo;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* _NodeConnectInfo_H_ */
+#endif	/* _NodeConnInfo_H_ */
 #include <asn_internal.h>

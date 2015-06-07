@@ -172,6 +172,80 @@ ackNumber_3_encode_xer(asn_TYPE_descriptor_t *td, void *structure,
 }
 
 static int
+action_5_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
+			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
+	/* Replace with underlying type checker */
+	td->check_constraints = asn_DEF_NativeEnumerated.check_constraints;
+	return td->check_constraints(td, sptr, ctfailcb, app_key);
+}
+
+/*
+ * This type is implemented using NativeEnumerated,
+ * so here we adjust the DEF accordingly.
+ */
+static void
+action_5_inherit_TYPE_descriptor(asn_TYPE_descriptor_t *td) {
+	td->free_struct    = asn_DEF_NativeEnumerated.free_struct;
+	td->print_struct   = asn_DEF_NativeEnumerated.print_struct;
+	td->check_constraints = asn_DEF_NativeEnumerated.check_constraints;
+	td->ber_decoder    = asn_DEF_NativeEnumerated.ber_decoder;
+	td->der_encoder    = asn_DEF_NativeEnumerated.der_encoder;
+	td->xer_decoder    = asn_DEF_NativeEnumerated.xer_decoder;
+	td->xer_encoder    = asn_DEF_NativeEnumerated.xer_encoder;
+	td->uper_decoder   = asn_DEF_NativeEnumerated.uper_decoder;
+	td->uper_encoder   = asn_DEF_NativeEnumerated.uper_encoder;
+	if(!td->per_constraints)
+		td->per_constraints = asn_DEF_NativeEnumerated.per_constraints;
+	td->elements       = asn_DEF_NativeEnumerated.elements;
+	td->elements_count = asn_DEF_NativeEnumerated.elements_count;
+     /* td->specifics      = asn_DEF_NativeEnumerated.specifics;	// Defined explicitly */
+}
+
+static void
+action_5_free(asn_TYPE_descriptor_t *td,
+		void *struct_ptr, int contents_only) {
+	action_5_inherit_TYPE_descriptor(td);
+	td->free_struct(td, struct_ptr, contents_only);
+}
+
+static int
+action_5_print(asn_TYPE_descriptor_t *td, const void *struct_ptr,
+		int ilevel, asn_app_consume_bytes_f *cb, void *app_key) {
+	action_5_inherit_TYPE_descriptor(td);
+	return td->print_struct(td, struct_ptr, ilevel, cb, app_key);
+}
+
+static asn_dec_rval_t
+action_5_decode_ber(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
+		void **structure, const void *bufptr, size_t size, int tag_mode) {
+	action_5_inherit_TYPE_descriptor(td);
+	return td->ber_decoder(opt_codec_ctx, td, structure, bufptr, size, tag_mode);
+}
+
+static asn_enc_rval_t
+action_5_encode_der(asn_TYPE_descriptor_t *td,
+		void *structure, int tag_mode, ber_tlv_tag_t tag,
+		asn_app_consume_bytes_f *cb, void *app_key) {
+	action_5_inherit_TYPE_descriptor(td);
+	return td->der_encoder(td, structure, tag_mode, tag, cb, app_key);
+}
+
+static asn_dec_rval_t
+action_5_decode_xer(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
+		void **structure, const char *opt_mname, const void *bufptr, size_t size) {
+	action_5_inherit_TYPE_descriptor(td);
+	return td->xer_decoder(opt_codec_ctx, td, structure, opt_mname, bufptr, size);
+}
+
+static asn_enc_rval_t
+action_5_encode_xer(asn_TYPE_descriptor_t *td, void *structure,
+		int ilevel, enum xer_encoder_flags_e flags,
+		asn_app_consume_bytes_f *cb, void *app_key) {
+	action_5_inherit_TYPE_descriptor(td);
+	return td->xer_encoder(td, structure, ilevel, flags, cb, app_key);
+}
+
+static int
 memb_seqNumber_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
 	
@@ -269,7 +343,78 @@ asn_TYPE_descriptor_t asn_DEF_ackNumber_3 = {
 	&asn_SPC_ackNumber_specs_3	/* Additional specs */
 };
 
-static asn_TYPE_member_t asn_MBR_dsop_5[] = {
+static asn_INTEGER_enum_map_t asn_MAP_action_value2enum_5[] = {
+	{ 1,	9,	"addClient" },
+	{ 2,	9,	"delClient" },
+	{ 3,	15,	"getClientApiKey" },
+	{ 4,	14,	"activateClient" },
+	{ 5,	10,	"addNetwork" },
+	{ 6,	10,	"delNetwork" },
+	{ 7,	11,	"listNetwork" },
+	{ 8,	17,	"updateNetworkName" },
+	{ 9,	7,	"addNode" },
+	{ 10,	7,	"delNode" },
+	{ 11,	8,	"listNode" },
+	{ 12,	14,	"updateNodeName" },
+	{ 13,	19,	"updateNodeConnState" },
+	{ 14,	17,	"provisionningNode" }
+	/* This list is extensible */
+};
+static unsigned int asn_MAP_action_enum2value_5[] = {
+	3,	/* activateClient(4) */
+	0,	/* addClient(1) */
+	4,	/* addNetwork(5) */
+	8,	/* addNode(9) */
+	1,	/* delClient(2) */
+	5,	/* delNetwork(6) */
+	9,	/* delNode(10) */
+	2,	/* getClientApiKey(3) */
+	6,	/* listNetwork(7) */
+	10,	/* listNode(11) */
+	13,	/* provisionningNode(14) */
+	7,	/* updateNetworkName(8) */
+	12,	/* updateNodeConnState(13) */
+	11	/* updateNodeName(12) */
+	/* This list is extensible */
+};
+static asn_INTEGER_specifics_t asn_SPC_action_specs_5 = {
+	asn_MAP_action_value2enum_5,	/* "tag" => N; sorted by tag */
+	asn_MAP_action_enum2value_5,	/* N => "tag"; sorted by N */
+	14,	/* Number of elements in the maps */
+	15,	/* Extensions before this member */
+	1,	/* Strict enumeration */
+	0,	/* Native long size */
+	0
+};
+static ber_tlv_tag_t asn_DEF_action_tags_5[] = {
+	(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
+	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
+};
+static /* Use -fall-defs-global to expose */
+asn_TYPE_descriptor_t asn_DEF_action_5 = {
+	"action",
+	"action",
+	action_5_free,
+	action_5_print,
+	action_5_constraint,
+	action_5_decode_ber,
+	action_5_encode_der,
+	action_5_decode_xer,
+	action_5_encode_xer,
+	0, 0,	/* No PER support, use "-gen-PER" to enable */
+	0,	/* Use generic outmost tag fetcher */
+	asn_DEF_action_tags_5,
+	sizeof(asn_DEF_action_tags_5)
+		/sizeof(asn_DEF_action_tags_5[0]) - 1, /* 1 */
+	asn_DEF_action_tags_5,	/* Same as above */
+	sizeof(asn_DEF_action_tags_5)
+		/sizeof(asn_DEF_action_tags_5[0]), /* 2 */
+	0,	/* No PER visible constraints */
+	0, 0,	/* Defined elsewhere */
+	&asn_SPC_action_specs_5	/* Additional specs */
+};
+
+static asn_TYPE_member_t asn_MBR_dsop_21[] = {
 	{ ATF_NOFLAGS, 0, offsetof(struct dsop, choice.addRequest),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		+1,	/* EXPLICIT tag at current level */
@@ -324,14 +469,14 @@ static asn_TYPE_member_t asn_MBR_dsop_5[] = {
 		0,
 		"modifyResponse"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct dsop, choice.nodeConnectInfo),
+	{ ATF_NOFLAGS, 0, offsetof(struct dsop, choice.nodeConnInfo),
 		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_NodeConnectInfo,
+		&asn_DEF_NodeConnInfo,
 		0,	/* Defer constraints checking to the member type */
 		0,	/* PER is not compiled, use -gen-PER */
 		0,
-		"nodeConnectInfo"
+		"nodeConnInfo"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct dsop, choice.searchRequest),
 		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
@@ -361,30 +506,30 @@ static asn_TYPE_member_t asn_MBR_dsop_5[] = {
 		"terminateRequest"
 		},
 };
-static asn_TYPE_tag2member_t asn_MAP_dsop_tag2el_5[] = {
+static asn_TYPE_tag2member_t asn_MAP_dsop_tag2el_21[] = {
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* addRequest */
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* addResponse */
     { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* delRequest */
     { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* delResponse */
     { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* modifyRequest */
     { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* modifyResponse */
-    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* nodeConnectInfo */
+    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* nodeConnInfo */
     { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* searchRequest */
     { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* searchResponse */
     { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 } /* terminateRequest */
 };
-static asn_CHOICE_specifics_t asn_SPC_dsop_specs_5 = {
+static asn_CHOICE_specifics_t asn_SPC_dsop_specs_21 = {
 	sizeof(struct dsop),
 	offsetof(struct dsop, _asn_ctx),
 	offsetof(struct dsop, present),
 	sizeof(((struct dsop *)0)->present),
-	asn_MAP_dsop_tag2el_5,
+	asn_MAP_dsop_tag2el_21,
 	10,	/* Count of tags in the map */
 	0,
 	10	/* Extensions start */
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_dsop_5 = {
+asn_TYPE_descriptor_t asn_DEF_dsop_21 = {
 	"dsop",
 	"dsop",
 	CHOICE_free,
@@ -401,9 +546,9 @@ asn_TYPE_descriptor_t asn_DEF_dsop_5 = {
 	0,	/* No tags (pointer) */
 	0,	/* No tags (count) */
 	0,	/* No PER visible constraints */
-	asn_MBR_dsop_5,
+	asn_MBR_dsop_21,
 	10,	/* Elements count */
-	&asn_SPC_dsop_specs_5	/* Additional specs */
+	&asn_SPC_dsop_specs_21	/* Additional specs */
 };
 
 static asn_TYPE_member_t asn_MBR_DSMessage_1[] = {
@@ -434,10 +579,19 @@ static asn_TYPE_member_t asn_MBR_DSMessage_1[] = {
 		0,
 		"apikey"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct DSMessage, dsop),
+	{ ATF_NOFLAGS, 0, offsetof(struct DSMessage, action),
 		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_action_5,
+		0,	/* Defer constraints checking to the member type */
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"action"
+		},
+	{ ATF_NOFLAGS, 0, offsetof(struct DSMessage, dsop),
+		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		+1,	/* EXPLICIT tag at current level */
-		&asn_DEF_dsop_5,
+		&asn_DEF_dsop_21,
 		0,	/* Defer constraints checking to the member type */
 		0,	/* PER is not compiled, use -gen-PER */
 		0,
@@ -451,13 +605,14 @@ static asn_TYPE_tag2member_t asn_MAP_DSMessage_tag2el_1[] = {
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* seqNumber */
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* ackNumber */
     { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* apikey */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 } /* dsop */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* action */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 } /* dsop */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_DSMessage_specs_1 = {
 	sizeof(struct DSMessage),
 	offsetof(struct DSMessage, _asn_ctx),
 	asn_MAP_DSMessage_tag2el_1,
-	4,	/* Count of tags in the map */
+	5,	/* Count of tags in the map */
 	0, 0, 0,	/* Optional elements (not needed) */
 	-1,	/* Start extensions */
 	-1	/* Stop extensions */
@@ -482,7 +637,7 @@ asn_TYPE_descriptor_t asn_DEF_DSMessage = {
 		/sizeof(asn_DEF_DSMessage_tags_1[0]), /* 1 */
 	0,	/* No PER visible constraints */
 	asn_MBR_DSMessage_1,
-	4,	/* Elements count */
+	5,	/* Elements count */
 	&asn_SPC_DSMessage_specs_1	/* Additional specs */
 };
 

@@ -51,10 +51,31 @@ DNMessage ::= SEQUENCE {
 	}
 }
 
+
 DSMessage ::= SEQUENCE {
 	seqNumber	INTEGER (0..uint32max),
 	ackNumber	INTEGER (0..uint32max),
 	apikey		PrintableString OPTIONAL,
+	action		ENUMERATED {
+		addClient		(1),
+		delClient		(2),
+		getClientApiKey		(3),
+		activateClient		(4),
+
+		addNetwork		(5),
+		delNetwork		(6),
+		listNetwork		(7),
+		updateNetworkName	(8),
+
+		addNode			(9),
+		delNode			(10),
+		listNode		(11),
+		updateNodeName		(12),
+
+		updateNodeConnState	(13),
+		provisionningNode	(14),
+		...
+	},
 	dsop		CHOICE	{
 		addRequest		AddRequest,
 		addResponse		AddResponse,
@@ -62,7 +83,7 @@ DSMessage ::= SEQUENCE {
 		delResponse		DelResponse,
 		modifyRequest		ModifyRequest,
 		modifyResponse		ModifyResponse,
-		nodeConnectInfo		NodeConnectInfo,
+		nodeConnInfo		NodeConnInfo,
 		searchRequest		SearchRequest,
 		searchResponse		SearchResponse,
 		terminateRequest	TerminateRequest,
@@ -156,16 +177,16 @@ DelResponse ::= DNDSResult
 ModifyRequest ::= DNDSObject
 ModifyResponse ::= DNDSResult
 
-ConnectState ::= ENUMERATED {
+ConnState ::= ENUMERATED {
 	connected	(1),
 	disconnected	(2),
 	...
 }
 
-NodeConnectInfo ::= SEQUENCE {
+NodeConnInfo ::= SEQUENCE {
 	certName	IA5String (SIZE(1..256)),
 	ipAddr		OCTET STRING (SIZE(4..16)),
-	state		ConnectState,
+	state		ConnState,
 	...
 }
 
@@ -193,13 +214,6 @@ SearchResponse ::= SEQUENCE {
 
 TerminateRequest ::= NULL
 
-Topology ::= ENUMERATED {
-	mesh		(1),
-	hubspoke	(2),
-	gateway		(3),
-	...
-}
-
 Client ::= SEQUENCE {
 	id		INTEGER (0..uint32max) OPTIONAL,
 	email		IA5String OPTIONAL,
@@ -212,7 +226,6 @@ Client ::= SEQUENCE {
 Context ::= SEQUENCE {
 	id		INTEGER (0..uint32max) OPTIONAL,
 	clientId	INTEGER (0..uint32max),
-	topology	Topology,
 	description	PrintableString SIZE((1..256)) OPTIONAL,
 	network         OCTET STRING SIZE((4..16)),
 	netmask         OCTET STRING SIZE((4..16)),

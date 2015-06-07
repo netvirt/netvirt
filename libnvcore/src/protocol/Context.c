@@ -366,17 +366,8 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		0,
 		"clientId"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct Context, topology),
-		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_Topology,
-		0,	/* Defer constraints checking to the member type */
-		0,	/* PER is not compiled, use -gen-PER */
-		0,
-		"topology"
-		},
 	{ ATF_POINTER, 1, offsetof(struct Context, description),
-		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
 		memb_description_constraint_1,
@@ -385,7 +376,7 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		"description"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct Context, network),
-		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_OCTET_STRING,
 		memb_network_constraint_1,
@@ -394,7 +385,7 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		"network"
 		},
 	{ ATF_NOFLAGS, 0, offsetof(struct Context, netmask),
-		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_OCTET_STRING,
 		memb_netmask_constraint_1,
@@ -403,7 +394,7 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		"netmask"
 		},
 	{ ATF_POINTER, 3, offsetof(struct Context, serverCert),
-		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
 		0,	/* Defer constraints checking to the member type */
@@ -412,7 +403,7 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		"serverCert"
 		},
 	{ ATF_POINTER, 2, offsetof(struct Context, serverPrivkey),
-		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
 		0,	/* Defer constraints checking to the member type */
@@ -421,7 +412,7 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		"serverPrivkey"
 		},
 	{ ATF_POINTER, 1, offsetof(struct Context, trustedCert),
-		(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
 		0,	/* Defer constraints checking to the member type */
@@ -436,22 +427,21 @@ static ber_tlv_tag_t asn_DEF_Context_tags_1[] = {
 static asn_TYPE_tag2member_t asn_MAP_Context_tag2el_1[] = {
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* id */
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* clientId */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* topology */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* description */
-    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* network */
-    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* netmask */
-    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* serverCert */
-    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* serverPrivkey */
-    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 } /* trustedCert */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* description */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* network */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* netmask */
+    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* serverCert */
+    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* serverPrivkey */
+    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 } /* trustedCert */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_Context_specs_1 = {
 	sizeof(struct Context),
 	offsetof(struct Context, _asn_ctx),
 	asn_MAP_Context_tag2el_1,
-	9,	/* Count of tags in the map */
+	8,	/* Count of tags in the map */
 	0, 0, 0,	/* Optional elements (not needed) */
-	8,	/* Start extensions */
-	10	/* Stop extensions */
+	7,	/* Start extensions */
+	9	/* Stop extensions */
 };
 asn_TYPE_descriptor_t asn_DEF_Context = {
 	"Context",
@@ -473,7 +463,7 @@ asn_TYPE_descriptor_t asn_DEF_Context = {
 		/sizeof(asn_DEF_Context_tags_1[0]), /* 1 */
 	0,	/* No PER visible constraints */
 	asn_MBR_Context_1,
-	9,	/* Elements count */
+	8,	/* Elements count */
 	&asn_SPC_Context_specs_1	/* Additional specs */
 };
 

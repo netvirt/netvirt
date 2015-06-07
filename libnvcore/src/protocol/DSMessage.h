@@ -14,13 +14,14 @@
 /* Including external dependencies */
 #include <NativeInteger.h>
 #include <PrintableString.h>
+#include <NativeEnumerated.h>
 #include "AddRequest.h"
 #include "AddResponse.h"
 #include "DelRequest.h"
 #include "DelResponse.h"
 #include "ModifyRequest.h"
 #include "ModifyResponse.h"
-#include "NodeConnectInfo.h"
+#include "NodeConnInfo.h"
 #include "SearchRequest.h"
 #include "SearchResponse.h"
 #include "TerminateRequest.h"
@@ -32,6 +33,25 @@ extern "C" {
 #endif
 
 /* Dependencies */
+typedef enum action {
+	action_addClient	= 1,
+	action_delClient	= 2,
+	action_getClientApiKey	= 3,
+	action_activateClient	= 4,
+	action_addNetwork	= 5,
+	action_delNetwork	= 6,
+	action_listNetwork	= 7,
+	action_updateNetworkName	= 8,
+	action_addNode	= 9,
+	action_delNode	= 10,
+	action_listNode	= 11,
+	action_updateNodeName	= 12,
+	action_updateNodeConnState	= 13,
+	action_provisionningNode	= 14
+	/*
+	 * Enumeration is extensible
+	 */
+} e_action;
 typedef enum dsop_PR {
 	dsop_PR_NOTHING,	/* No components present */
 	dsop_PR_addRequest,
@@ -40,7 +60,7 @@ typedef enum dsop_PR {
 	dsop_PR_delResponse,
 	dsop_PR_modifyRequest,
 	dsop_PR_modifyResponse,
-	dsop_PR_nodeConnectInfo,
+	dsop_PR_nodeConnInfo,
 	dsop_PR_searchRequest,
 	dsop_PR_searchResponse,
 	dsop_PR_terminateRequest,
@@ -53,6 +73,7 @@ typedef struct DSMessage {
 	unsigned long	 seqNumber;
 	unsigned long	 ackNumber;
 	PrintableString_t	*apikey	/* OPTIONAL */;
+	long	 action;
 	struct dsop {
 		dsop_PR present;
 		union DSMessage__dsop_u {
@@ -62,7 +83,7 @@ typedef struct DSMessage {
 			DelResponse_t	 delResponse;
 			ModifyRequest_t	 modifyRequest;
 			ModifyResponse_t	 modifyResponse;
-			NodeConnectInfo_t	 nodeConnectInfo;
+			NodeConnInfo_t	 nodeConnInfo;
 			SearchRequest_t	 searchRequest;
 			SearchResponse_t	 searchResponse;
 			TerminateRequest_t	 terminateRequest;
@@ -83,6 +104,7 @@ typedef struct DSMessage {
 /* Implementation */
 /* extern asn_TYPE_descriptor_t asn_DEF_seqNumber_2;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_ackNumber_3;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_action_5;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_DSMessage;
 
 #ifdef __cplusplus

@@ -76,19 +76,17 @@ int DSMessage_get_operation(DNDSMessage_t *msg, dsop_PR *operation);
 int DNDSObject_set_objectType(DNDSObject_t *object, DNDSObject_PR type);
 int DNDSObject_get_objectType(DNDSObject_t *object, DNDSObject_PR *type);
 
-// NodeConnectInfo
-int NodeConnectInfo_set_certName(DNDSMessage_t *msg, char *name, size_t length);
-int NodeConnectInfo_get_certName(DNDSMessage_t *msg, char **name, size_t *length);
-int NodeConnectInfo_set_ipAddr(DNDSMessage_t *msg, char *ipAddress);
-int NodeConnectInfo_get_ipAddr(DNDSMessage_t *msg, char *ipAddress);
-int NodeConnectInfo_set_state(DNDSMessage_t *msg, e_ConnectState state);
-int NodeConnectInfo_get_state(DNDSMessage_t *msg, e_ConnectState *state);
+// NodeConnInfo
+int NodeConnInfo_set_certName(DNDSMessage_t *msg, char *name, size_t length);
+int NodeConnInfo_get_certName(DNDSMessage_t *msg, char **name, size_t *length);
+int NodeConnInfo_set_ipAddr(DNDSMessage_t *msg, char *ipAddress);
+int NodeConnInfo_get_ipAddr(DNDSMessage_t *msg, char *ipAddress);
+int NodeConnInfo_set_state(DNDSMessage_t *msg, e_ConnState state);
+int NodeConnInfo_get_state(DNDSMessage_t *msg, e_ConnState *state);
 
 // ContextInfo
 int ContextInfo_set_id(DNDSMessage_t *msg, uint32_t id);
 int ContextInfo_get_id(DNDSMessage_t *msg, uint32_t *id);
-int ContextInfo_set_topology(DNDSMessage_t *msg, e_Topology topology);
-int ContextInfo_get_topology(DNDSMessage_t *msg, e_Topology *topology);
 int ContextInfo_set_description(DNDSMessage_t *msg, const char *description, size_t length);
 int ContextInfo_get_description(DNDSMessage_t *msg, char **description, size_t *length);
 int ContextInfo_set_network(DNDSMessage_t *msg, char *network);
@@ -107,8 +105,8 @@ int PeerConnectInfo_set_certName(DNDSMessage_t *msg, char *name, size_t length);
 int PeerConnectInfo_get_certName(DNDSMessage_t *msg, char **name, size_t *length);
 int PeerConnectInfo_set_ipAddr(DNDSMessage_t *msg, char *ipAddress);
 int PeerConnectInfo_get_ipAddr(DNDSMessage_t *msg, char *ipAddress);
-int PeerConnectInfo_set_state(DNDSMessage_t *msg, e_ConnectState state);
-int PeerConnectInfo_get_state(DNDSMessage_t *msg, e_ConnectState *state);
+int PeerConnectInfo_set_state(DNDSMessage_t *msg, e_ConnState state);
+int PeerConnectInfo_get_state(DNDSMessage_t *msg, e_ConnState *state);
 
 // AddRequest
 int AddRequest_set_objectType(DNDSMessage_t *msg, DNDSObject_PR objType, DNDSObject_t **object);
@@ -225,8 +223,6 @@ int Context_set_id(DNDSObject_t *object, uint32_t id);
 int Context_get_id(DNDSObject_t *object, uint32_t *id);
 int Context_set_clientId(DNDSObject_t *object, uint32_t clientId);
 int Context_get_clientId(DNDSObject_t *object, uint32_t *clientId);
-int Context_set_topology(DNDSObject_t *object, e_Topology topology);
-int Context_get_topology(DNDSObject_t *object, e_Topology *topology);
 int Context_set_description(DNDSObject_t *object, char *description, size_t length);
 int Context_get_description(DNDSObject_t *object, char **description, size_t *length);
 int Context_set_network(DNDSObject_t *object, char *network);
@@ -294,7 +290,7 @@ void DNMessage_printf(DNDSMessage_t *msg);
 void PeerConnectInfo_printf(DNDSMessage_t *msg);
 void AddRequest_printf(DNDSMessage_t *msg);
 void AddResponse_printf(DNDSMessage_t *msg);
-void NodeConnectInfo_printf(DNDSMessage_t *msg);
+void NodeConnInfo_printf(DNDSMessage_t *msg);
 void P2pRequest_printf(DNDSMessage_t *msg);
 void P2pResponse_printf(DNDSMessage_t *msg);
 void AuthRequest_printf(DNDSMessage_t *msg);
