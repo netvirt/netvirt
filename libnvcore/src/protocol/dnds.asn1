@@ -62,10 +62,10 @@ DSMessage ::= SEQUENCE {
 		getClientApiKey		(3),
 		activateClient		(4),
 
-		addNetwork		(5),
-		delNetwork		(6),
-		listNetwork		(7),
-		updateNetworkName	(8),
+		addContext		(5),
+		delContext		(6),
+		listContext		(7),
+		updateContextName	(8),
 
 		addNode			(9),
 		delNode			(10),

@@ -348,10 +348,10 @@ static asn_INTEGER_enum_map_t asn_MAP_action_value2enum_5[] = {
 	{ 2,	9,	"delClient" },
 	{ 3,	15,	"getClientApiKey" },
 	{ 4,	14,	"activateClient" },
-	{ 5,	10,	"addNetwork" },
-	{ 6,	10,	"delNetwork" },
-	{ 7,	11,	"listNetwork" },
-	{ 8,	17,	"updateNetworkName" },
+	{ 5,	10,	"addContext" },
+	{ 6,	10,	"delContext" },
+	{ 7,	11,	"listContext" },
+	{ 8,	17,	"updateContextName" },
 	{ 9,	7,	"addNode" },
 	{ 10,	7,	"delNode" },
 	{ 11,	8,	"listNode" },
@@ -363,16 +363,16 @@ static asn_INTEGER_enum_map_t asn_MAP_action_value2enum_5[] = {
 static unsigned int asn_MAP_action_enum2value_5[] = {
 	3,	/* activateClient(4) */
 	0,	/* addClient(1) */
-	4,	/* addNetwork(5) */
+	4,	/* addContext(5) */
 	8,	/* addNode(9) */
 	1,	/* delClient(2) */
-	5,	/* delNetwork(6) */
+	5,	/* delContext(6) */
 	9,	/* delNode(10) */
 	2,	/* getClientApiKey(3) */
-	6,	/* listNetwork(7) */
+	6,	/* listContext(7) */
 	10,	/* listNode(11) */
 	13,	/* provisionningNode(14) */
-	7,	/* updateNetworkName(8) */
+	7,	/* updateContextName(8) */
 	12,	/* updateNodeConnState(13) */
 	11	/* updateNodeName(12) */
 	/* This list is extensible */
