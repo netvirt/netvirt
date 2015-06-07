@@ -46,7 +46,7 @@ typedef enum action {
 	action_delNode	= 10,
 	action_listNode	= 11,
 	action_updateNodeName	= 12,
-	action_updateNodeConnState	= 13,
+	action_updateNodeConnInfo	= 13,
 	action_provisionningNode	= 14
 	/*
 	 * Enumeration is extensible
