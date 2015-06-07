@@ -61,6 +61,8 @@ int DNMessage_set_seqNumber(DNDSMessage_t *msg, uint32_t seqNumber);
 int DNMessage_get_seqNumber(DNDSMessage_t *msg, uint32_t *seqNumber);
 int DNMessage_set_ackNumber(DNDSMessage_t *msg, uint32_t ackNumber);
 int DNMessage_get_ackNumber(DNDSMessage_t *msg, uint32_t *ackNumber);
+int DSMessage_set_action(DNDSMessage_t *msg, e_action action);
+int DSMessage_get_action(DNDSMessage_t *msg, e_action *action);
 int DNMessage_set_operation(DNDSMessage_t *msg, dnop_PR operation);
 int DNMessage_get_operation(DNDSMessage_t *msg, dnop_PR *operation);
 
