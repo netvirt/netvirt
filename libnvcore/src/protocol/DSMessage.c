@@ -356,7 +356,7 @@ static asn_INTEGER_enum_map_t asn_MAP_action_value2enum_5[] = {
 	{ 10,	7,	"delNode" },
 	{ 11,	8,	"listNode" },
 	{ 12,	14,	"updateNodeName" },
-	{ 13,	19,	"updateNodeConnState" },
+	{ 13,	18,	"updateNodeConnInfo" },
 	{ 14,	17,	"provisionningNode" }
 	/* This list is extensible */
 };
@@ -373,7 +373,7 @@ static unsigned int asn_MAP_action_enum2value_5[] = {
 	10,	/* listNode(11) */
 	13,	/* provisionningNode(14) */
 	7,	/* updateContextName(8) */
-	12,	/* updateNodeConnState(13) */
+	12,	/* updateNodeConnInfo(13) */
 	11	/* updateNodeName(12) */
 	/* This list is extensible */
 };

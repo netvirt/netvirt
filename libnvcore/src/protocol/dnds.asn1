@@ -72,7 +72,7 @@ DSMessage ::= SEQUENCE {
 		listNode		(11),
 		updateNodeName		(12),
 
-		updateNodeConnState	(13),
+		updateNodeConnInfo	(13),
 		provisionningNode	(14),
 		...
 	},
