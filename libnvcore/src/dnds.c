@@ -298,6 +298,36 @@ int DSMessage_get_ackNumber(DNDSMessage_t *msg, uint32_t *ackNumber)
 	return DNDS_success;
 }
 
+int DSMessage_set_action(DNDSMessage_t *msg, e_action action)
+{
+	if (msg == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	msg->pdu.choice.dsm.action = action;
+
+	return DNDS_success;
+}
+
+int DSMessage_get_action(DNDSMessage_t *msg, e_action *action)
+{
+	if (msg == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	*action = msg->pdu.choice.dsm.action;
+
+	return DNDS_success;
+}
+
 int DSMessage_set_operation(DNDSMessage_t *msg, dsop_PR operation)
 {
 	if (msg == NULL) {

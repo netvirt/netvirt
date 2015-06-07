@@ -45,6 +45,7 @@ int transmit_provisioning(struct session *session, char *provCode, uint32_t leng
 	/* XXX should have it's own tracking number field  ? */
 	DSMessage_set_seqNumber(msg, tracking_id);
 	DSMessage_set_ackNumber(msg, 0);
+	DSMessage_set_action(msg, action_provisionningNode);
 	DSMessage_set_operation(msg, dsop_PR_searchRequest);
 
 	SearchRequest_set_searchType(msg, SearchType_object);
@@ -77,6 +78,7 @@ int transmit_node_connectinfo(e_ConnState state, char *ipAddress, char *certName
 
         DSMessage_set_seqNumber(msg, 0);
         DSMessage_set_ackNumber(msg, 0);
+	DSMessage_set_action(msg, action_updateNodeConnInfo);
         DSMessage_set_operation(msg, dsop_PR_nodeConnInfo);
 
         NodeConnInfo_set_certName(msg, certName, strlen(certName));
@@ -99,6 +101,7 @@ int transmit_search_node()
 	DNDSMessage_t *msg;
 	DNDSMessage_new(&msg);
 	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+	DSMessage_set_action(msg, action_listNode);
 	DSMessage_set_operation(msg, dsop_PR_searchRequest);
 	SearchRequest_set_searchType(msg, SearchType_sequence);
 
@@ -130,6 +133,7 @@ static void on_secure(netc_t *netc)
 
 	DSMessage_set_seqNumber(msg, 0);
 	DSMessage_set_ackNumber(msg, 0);
+	DSMessage_set_action(msg, action_listContext);
 	DSMessage_set_operation(msg, dsop_PR_searchRequest);
 
 	SearchRequest_set_searchType(msg, SearchType_all);

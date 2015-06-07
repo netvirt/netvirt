@@ -218,6 +218,7 @@ void AddRequest_context(DNDSMessage_t *msg)
 
 	DSMessage_set_seqNumber(msg_up, 0);
 	DSMessage_set_ackNumber(msg_up, 1);
+	DSMessage_set_action(msg_up, action_addContext);
 	DSMessage_set_operation(msg_up, dsop_PR_searchResponse);
 
 	dao_fetch_context_by_client_id_desc(client_id_str, description, msg_up,
@@ -370,6 +371,7 @@ void AddRequest_node(DNDSMessage_t *msg)
 	DNDSMessage_t *msg_up;
 	DNDSMessage_new(&msg_up);
 	DNDSMessage_set_pdu(msg_up, pdu_PR_dsm);
+	DSMessage_set_action(msg_up, action_addNode);
 	DSMessage_set_operation(msg_up, dsop_PR_searchResponse);
 	SearchResponse_set_searchType(msg_up, SearchType_sequence);
 	SearchResponse_set_result(msg_up, DNDSResult_success);
@@ -529,6 +531,7 @@ void searchRequest_client(struct session *session, DNDSMessage_t *req_msg)
 
 	DSMessage_set_seqNumber(msg, 0);
 	DSMessage_set_ackNumber(msg, 1);
+	DSMessage_set_action(msg, action_getClientApiKey);
 	DSMessage_set_operation(msg, dsop_PR_searchResponse);
 
 	SearchResponse_set_searchType(msg, SearchType_object);
@@ -564,6 +567,7 @@ void searchRequest_context_by_client_id(struct session *session, DNDSMessage_t *
 
 	DSMessage_set_seqNumber(msg, 0);
 	DSMessage_set_ackNumber(msg, 1);
+	DSMessage_set_action(msg, action_listContext);
 	DSMessage_set_operation(msg, dsop_PR_searchResponse);
 
 	dao_fetch_context_by_client_id(str_client_id, msg,
@@ -601,6 +605,7 @@ void CB_searchRequest_context(void *data, int remaining,
 
 		DSMessage_set_seqNumber(msg, 0);
 		DSMessage_set_ackNumber(msg, 1);
+		DSMessage_set_action(msg, action_listContext);
 		DSMessage_set_operation(msg, dsop_PR_searchResponse);
 
 		SearchResponse_set_searchType(msg, SearchType_all);
@@ -649,8 +654,10 @@ void searchRequest_context(struct session *session)
 
 		DSMessage_set_seqNumber(msg, 0);
 		DSMessage_set_ackNumber(msg, 1);
+		DSMessage_set_action(msg, action_listContext);
 		DSMessage_set_operation(msg, dsop_PR_searchResponse);
 
+		// XXX should fail
 		SearchResponse_set_searchType(msg, SearchType_all);
 
 		SearchResponse_set_result(msg, DNDSResult_success);
@@ -671,6 +678,7 @@ void CB_searchRequest_node_sequence(void *data, int remaining, char *uuid, char 
 
 		DNDSMessage_new(&msg);
 		DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+		DSMessage_set_action(msg, action_listNode);
 		DSMessage_set_operation(msg, dsop_PR_searchResponse);
 		SearchResponse_set_searchType(msg, SearchType_sequence);
 	}
@@ -737,6 +745,7 @@ void searchRequest_node_sequence(struct session *session, DNDSMessage_t *req_msg
 	if (ret == -1) {
 		DNDSMessage_new(&msg);
 		DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+		DSMessage_set_action(msg, action_listNode);
 		DSMessage_set_operation(msg, dsop_PR_searchResponse);
 		SearchResponse_set_searchType(msg, SearchType_sequence);
 
@@ -791,6 +800,7 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 
 	DSMessage_set_seqNumber(msg, tracked_id);
 	DSMessage_set_ackNumber(msg, 0);
+	DSMessage_set_action(msg, action_listNode);
 	DSMessage_set_operation(msg, dsop_PR_searchResponse);
 
 	if (contextid > 0) { /* searching by context ID */
