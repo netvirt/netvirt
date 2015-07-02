@@ -133,7 +133,7 @@ static void on_secure(netc_t *netc)
 
 	DSMessage_set_seqNumber(msg, 0);
 	DSMessage_set_ackNumber(msg, 0);
-	DSMessage_set_action(msg, action_listContext);
+	DSMessage_set_action(msg, action_listNetwork);
 	DSMessage_set_operation(msg, dsop_PR_searchRequest);
 
 	SearchRequest_set_searchType(msg, SearchType_all);

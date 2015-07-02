@@ -344,14 +344,14 @@ asn_TYPE_descriptor_t asn_DEF_ackNumber_3 = {
 };
 
 static asn_INTEGER_enum_map_t asn_MAP_action_value2enum_5[] = {
-	{ 1,	9,	"addClient" },
-	{ 2,	9,	"delClient" },
-	{ 3,	15,	"getClientApiKey" },
-	{ 4,	14,	"activateClient" },
-	{ 5,	10,	"addContext" },
-	{ 6,	10,	"delContext" },
-	{ 7,	11,	"listContext" },
-	{ 8,	17,	"updateContextName" },
+	{ 1,	10,	"addAccount" },
+	{ 2,	10,	"delAccount" },
+	{ 3,	16,	"getAccountApiKey" },
+	{ 4,	15,	"activateAccount" },
+	{ 5,	10,	"addNetwork" },
+	{ 6,	10,	"delNetwork" },
+	{ 7,	11,	"listNetwork" },
+	{ 8,	17,	"updateNetworkName" },
 	{ 9,	7,	"addNode" },
 	{ 10,	7,	"delNode" },
 	{ 11,	8,	"listNode" },
@@ -361,18 +361,18 @@ static asn_INTEGER_enum_map_t asn_MAP_action_value2enum_5[] = {
 	/* This list is extensible */
 };
 static unsigned int asn_MAP_action_enum2value_5[] = {
-	3,	/* activateClient(4) */
-	0,	/* addClient(1) */
-	4,	/* addContext(5) */
+	3,	/* activateAccount(4) */
+	0,	/* addAccount(1) */
+	4,	/* addNetwork(5) */
 	8,	/* addNode(9) */
-	1,	/* delClient(2) */
-	5,	/* delContext(6) */
+	1,	/* delAccount(2) */
+	5,	/* delNetwork(6) */
 	9,	/* delNode(10) */
-	2,	/* getClientApiKey(3) */
-	6,	/* listContext(7) */
+	2,	/* getAccountApiKey(3) */
+	6,	/* listNetwork(7) */
 	10,	/* listNode(11) */
 	13,	/* provisionningNode(14) */
-	7,	/* updateContextName(8) */
+	7,	/* updateNetworkName(8) */
 	12,	/* updateNodeConnInfo(13) */
 	11	/* updateNodeName(12) */
 	/* This list is extensible */

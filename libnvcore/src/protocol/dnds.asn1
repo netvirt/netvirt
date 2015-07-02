@@ -57,15 +57,15 @@ DSMessage ::= SEQUENCE {
 	ackNumber	INTEGER (0..uint32max),
 	apikey		PrintableString OPTIONAL,
 	action		ENUMERATED {
-		addClient		(1),
-		delClient		(2),
-		getClientApiKey		(3),
-		activateClient		(4),
+		addAccount		(1),
+		delAccount		(2),
+		getAccountApiKey	(3),
+		activateAccount		(4),
 
-		addContext		(5),
-		delContext		(6),
-		listContext		(7),
-		updateContextName	(8),
+		addNetwork		(5),
+		delNetwork		(6),
+		listNetwork		(7),
+		updateNetworkName	(8),
 
 		addNode			(9),
 		delNode			(10),

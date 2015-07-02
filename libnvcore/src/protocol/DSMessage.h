@@ -34,14 +34,14 @@ extern "C" {
 
 /* Dependencies */
 typedef enum action {
-	action_addClient	= 1,
-	action_delClient	= 2,
-	action_getClientApiKey	= 3,
-	action_activateClient	= 4,
-	action_addContext	= 5,
-	action_delContext	= 6,
-	action_listContext	= 7,
-	action_updateContextName	= 8,
+	action_addAccount	= 1,
+	action_delAccount	= 2,
+	action_getAccountApiKey	= 3,
+	action_activateAccount	= 4,
+	action_addNetwork	= 5,
+	action_delNetwork	= 6,
+	action_listNetwork	= 7,
+	action_updateNetworkName	= 8,
 	action_addNode	= 9,
 	action_delNode	= 10,
 	action_listNode	= 11,
