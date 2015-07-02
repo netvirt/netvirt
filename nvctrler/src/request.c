@@ -218,7 +218,7 @@ void AddRequest_context(DNDSMessage_t *msg)
 
 	DSMessage_set_seqNumber(msg_up, 0);
 	DSMessage_set_ackNumber(msg_up, 1);
-	DSMessage_set_action(msg_up, action_addContext);
+	DSMessage_set_action(msg_up, action_addAccount);
 	DSMessage_set_operation(msg_up, dsop_PR_searchResponse);
 
 	dao_fetch_context_by_client_id_desc(client_id_str, description, msg_up,
@@ -531,7 +531,7 @@ void searchRequest_client(struct session *session, DNDSMessage_t *req_msg)
 
 	DSMessage_set_seqNumber(msg, 0);
 	DSMessage_set_ackNumber(msg, 1);
-	DSMessage_set_action(msg, action_getClientApiKey);
+	DSMessage_set_action(msg, action_getAccountApiKey);
 	DSMessage_set_operation(msg, dsop_PR_searchResponse);
 
 	SearchResponse_set_searchType(msg, SearchType_object);
@@ -567,7 +567,7 @@ void searchRequest_context_by_client_id(struct session *session, DNDSMessage_t *
 
 	DSMessage_set_seqNumber(msg, 0);
 	DSMessage_set_ackNumber(msg, 1);
-	DSMessage_set_action(msg, action_listContext);
+	DSMessage_set_action(msg, action_listNetwork);
 	DSMessage_set_operation(msg, dsop_PR_searchResponse);
 
 	dao_fetch_context_by_client_id(str_client_id, msg,
@@ -605,7 +605,7 @@ void CB_searchRequest_context(void *data, int remaining,
 
 		DSMessage_set_seqNumber(msg, 0);
 		DSMessage_set_ackNumber(msg, 1);
-		DSMessage_set_action(msg, action_listContext);
+		DSMessage_set_action(msg, action_listNetwork);
 		DSMessage_set_operation(msg, dsop_PR_searchResponse);
 
 		SearchResponse_set_searchType(msg, SearchType_all);
@@ -654,7 +654,7 @@ void searchRequest_context(struct session *session)
 
 		DSMessage_set_seqNumber(msg, 0);
 		DSMessage_set_ackNumber(msg, 1);
-		DSMessage_set_action(msg, action_listContext);
+		DSMessage_set_action(msg, action_listNetwork);
 		DSMessage_set_operation(msg, dsop_PR_searchResponse);
 
 		// XXX should fail

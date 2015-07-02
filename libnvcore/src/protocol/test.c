@@ -24,12 +24,57 @@
  * gcc ../dnds.o *.o -o test
  */
 
+void hexDump (char *desc, void *addr, int len) {
+    int i;
+    unsigned char buff[17];
+    unsigned char *pc = (unsigned char*)addr;
+
+    // Output description if given.
+    if (desc != NULL)
+        printf ("%s:\n", desc);
+
+    // Process every byte in the data.
+    for (i = 0; i < len; i++) {
+        // Multiple of 16 means new line (with line offset).
+
+        if ((i % 16) == 0) {
+            // Just don't print ASCII for the zeroth line.
+            if (i != 0)
+                printf ("  %s\n", buff);
+
+            // Output the offset.
+            printf ("  %04x ", i);
+        }
+
+        // Now the hex code for the specific character.
+        printf (" %02x", pc[i]);
+
+        // And store a printable ASCII character for later.
+        if ((pc[i] < 0x20) || (pc[i] > 0x7e))
+            buff[i % 16] = '.';
+        else
+            buff[i % 16] = pc[i];
+        buff[(i % 16) + 1] = '\0';
+    }
+
+    // Pad out last line if not exactly 16 characters.
+    while ((i % 16) != 0) {
+        printf ("   ");
+        i++;
+    }
+
+    // And print the final ASCII bit.
+    printf ("  %s\n", buff);
+}
+
+
 #define ETH_ALEN 6
 static int write_out(const void *buffer, size_t size, void *app_key)
 {
 	FILE *out_fp = app_key;
 	size_t wrote;
 
+	hexDump("", buffer, size);
 	wrote = fwrite(buffer, 1, size, out_fp);
 
 	return (wrote == size) ? 0 : -1;
@@ -127,27 +172,21 @@ void test_AddRequest()
 	DNDSObject_t *objClient;	// a DS Object
 
 	DNDSMessage_new(&msg);
+//	DNDSMessage_set_version(msg, 1);
 	DNDSMessage_set_channel(msg, 0);
 	DNDSMessage_set_pdu(msg, pdu_PR_dsm);	// Directory Service Message
 
-	DSMessage_set_seqNumber(msg, 4034);
-	DSMessage_set_ackNumber(msg, 0);	// seq XOR ack
+	DSMessage_set_seqNumber(msg, 1);
+	DSMessage_set_ackNumber(msg, 1);	// seq XOR ack
 	DSMessage_set_operation(msg, dsop_PR_addRequest);
+	DSMessage_set_action(msg, action_addClient);
 
 	AddRequest_set_objectType(msg, DNDSObject_PR_client, &objClient);
 
-	Client_set_id(objClient, 987);
-	Client_set_firstname(objClient, "firstname", 9);
-	Client_set_lastname(objClient, "lastname", 8);
-	Client_set_email(objClient, "mail@example.com", 15);
-	Client_set_password(objClient, "password", 8);
-	Client_set_company(objClient, "mycompany", 9);
-	Client_set_phone(objClient, "thephone", 8);
-	Client_set_country(objClient, "mycountry", 9);
-	Client_set_stateProvince(objClient, "stateProvince", 13);
-	Client_set_city(objClient, "mycity", 6);
-	Client_set_postalCode(objClient, "postalCode", 10);
-	Client_set_status(objClient, 0);
+//	Client_set_id(objClient, 987);
+	Client_set_email(objClient, "test@test", 9);
+	Client_set_password(objClient, "test", 4);
+//	Client_set_status(objClient, 0);
 
 	/// Encoding part
 
@@ -157,6 +196,9 @@ void test_AddRequest()
 	fclose(fp);
 
 	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
+
+	asn_fprint(stdout, &asn_DEF_DNDSMessage, msg);
+
 
 	DNDSMessage_del(msg);
 }
@@ -243,7 +285,6 @@ void test_SearchResponse_context()
 	DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
 
 	Context_set_id(objContext, 10);
-	Context_set_topology(objContext, Topology_mesh);
 	Context_set_description(objContext, "home network", 12);
 	Context_set_network(objContext, "44.128.0.0");
 	Context_set_netmask(objContext, "255.255.0.0");
@@ -348,7 +389,6 @@ test_AddRequest_context()
 	AddRequest_set_objectType(msg, DNDSObject_PR_context, &obj);
 
 	Context_set_clientId(obj, 100);
-	Context_set_topology(obj, Topology_mesh);
 	Context_set_description(obj, "home network1", 13);
 	Context_set_network(obj, "44.128.0.0");
 	Context_set_netmask(obj, "255.255.255.0");
@@ -413,7 +453,7 @@ void show_NodeConnectInfo()
 	msg = decode();
 	DNDSMessage_printf(msg);
 	DSMessage_printf(msg);
-	NodeConnectInfo_printf(msg);
+	//NodeConnectInfo_printf(msg);
 }
 
 void test_NodeConnectInfo()
@@ -429,11 +469,11 @@ void test_NodeConnectInfo()
 
 	DSMessage_set_seqNumber(msg, 800);
 	DSMessage_set_ackNumber(msg, 0);
-	DSMessage_set_operation(msg, dsop_PR_nodeConnectInfo);
+	//DSMessage_set_operation(msg, dsop_PR_nodeConnectInfo);
 
-	NodeConnectInfo_set_certName(msg, "unique_name@context", 19);
-	NodeConnectInfo_set_ipAddr(msg, "44.128.0.1");
-	NodeConnectInfo_set_state(msg, ConnectState_connected);
+	//NodeConnectInfo_set_certName(msg, "unique_name@context", 19);
+	//NodeConnectInfo_set_ipAddr(msg, "44.128.0.1");
+	//NodeConnectInfo_set_state(msg, ConnectState_connected);
 
 	/// Encoding part
 
@@ -1148,10 +1188,10 @@ int main()
 	test_DNDS_ethernet();
 	show_DNDS_ethernet();
 
-
+*/
 	test_AddRequest();
 	show_AddRequest();
-
+/*
 	//test_AddResponse();
 	//show_AddResponse();
 
@@ -1192,11 +1232,11 @@ int main()
 	show_NetinfoResponse();
 
 	test_TerminateRequest();
-*/
+
 
 	test_SearchRequest();
 	show_SearchRequest();
-/*
+
 	test_SearchResponse();
 	show_SearchResponse();
 */
