@@ -53,6 +53,16 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 	dsop_PR operation;
 	DSMessage_get_operation(msg, &operation);
 
+	e_action action;
+	DSMessage_get_action(msg, &action);
+
+	switch (action) {
+	case action_getAccountApiKey:
+		getAccountApiKey(session, msg);
+		return;// break;
+	}
+
+
 	switch (operation) {
 	case dsop_PR_nodeConnInfo:
 		nodeConnectInfo(session, msg);
