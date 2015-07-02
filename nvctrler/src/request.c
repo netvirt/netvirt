@@ -855,6 +855,45 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 	DNDSMessage_del(msg);
 }
 
+void getAccountApiKey(struct session *session, DNDSMessage_t *req_msg)
+{
+	size_t length = 0;
+	char *email = NULL;
+	char *password = NULL;
+	char *apikey = NULL;
+
+	DNDSObject_t *object;
+	SearchRequest_get_object(req_msg, &object);
+
+	Client_get_email(object, &email, &length);
+	Client_get_password(object, &password, &length);
+
+	dao_fetch_account_apikey(&apikey, email, password);
+
+	DNDSMessage_t *msg;
+
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+
+	DSMessage_set_seqNumber(msg, 0);
+	DSMessage_set_ackNumber(msg, 0);
+	DSMessage_set_action(msg, action_getAccountApiKey);
+	DSMessage_set_operation(msg, dsop_PR_searchResponse);
+
+	DNDSObject_t *objClient;
+	DNDSObject_new(&objClient);
+	DNDSObject_set_objectType(objClient, DNDSObject_PR_client);
+
+	Client_set_apikey(objClient, apikey, strlen(apikey));
+
+	SearchResponse_set_result(msg, DNDSResult_success);
+	SearchResponse_add_object(msg, objClient);
+	SearchResponse_set_searchType(msg, SearchType_object);
+	net_send_msg(session->netc, msg);
+	DNDSMessage_del(msg);
+}
+
 void searchRequest(struct session *session, DNDSMessage_t *req_msg)
 {
 	e_SearchType SearchType;
