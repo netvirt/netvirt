@@ -2802,6 +2802,47 @@ int Client_set_password(DNDSObject_t *object, char *password, size_t length)
 	return DNDS_success;
 }
 
+int Client_get_apikey(DNDSObject_t *object, char **apikey, size_t *length)
+{
+	if (object == NULL || apikey == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_client) {
+		return DNDS_invalid_object_type;
+	}
+
+	if (object->choice.client.apikey == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*apikey = (char *)object->choice.client.apikey->buf;
+	*length = object->choice.client.apikey->size;
+
+	return DNDS_success;
+}
+
+int Client_set_apikey(DNDSObject_t *object, char *apikey, size_t length)
+{
+        if (object == NULL || apikey == NULL) {
+                return DNDS_invalid_param;
+        }
+
+        if (object->present != DNDSObject_PR_client) {
+                return DNDS_invalid_object_type;
+        }
+
+        object->choice.client.apikey = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+        if (object->choice.client.apikey == NULL) {
+                return DNDS_alloc_failed;
+        }
+
+        object->choice.client.apikey->buf = (uint8_t *)strdup(apikey);
+        object->choice.client.apikey->size = length;
+
+        return DNDS_success;
+}
+
 int Client_get_password(DNDSObject_t *object, char **password, size_t *length)
 {
 	if (object == NULL || password == NULL || length == NULL) {
