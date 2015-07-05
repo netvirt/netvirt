@@ -73,6 +73,7 @@ int DSMessage_set_ackNumber(DNDSMessage_t *msg, uint32_t ackNumber);
 int DSMessage_get_ackNumber(DNDSMessage_t *msg, uint32_t *ackNumber);
 int DSMessage_set_operation(DNDSMessage_t *msg, dsop_PR operation);
 int DSMessage_get_operation(DNDSMessage_t *msg, dsop_PR *operation);
+int DSMessage_get_apikey(DNDSMessage_t *msg, char **apikey, size_t *length);
 
 // DNDSObject
 int DNDSObject_set_objectType(DNDSObject_t *object, DNDSObject_PR type);
@@ -263,24 +264,10 @@ int Client_set_id(DNDSObject_t *object, uint32_t id);
 int Client_get_id(DNDSObject_t *object, uint32_t *id);
 int Client_set_password(DNDSObject_t *object, char *password, size_t length);
 int Client_get_password(DNDSObject_t *object, char **password, size_t *length);
-int Client_set_firstname(DNDSObject_t *object, char *firstname, size_t length);
-int Client_get_firstname(DNDSObject_t *object, char **firstname, size_t *length);
-int Client_set_lastname(DNDSObject_t *object, char *lastname, size_t length);
-int Client_get_lastname(DNDSObject_t *object, char **lastname, size_t *length);
+int Client_set_apikey(DNDSObject_t *object, char *apikey, size_t length);
+int Client_get_apikey(DNDSObject_t *object, char **apikey, size_t *length);
 int Client_set_email(DNDSObject_t *object, char *email, size_t length);
 int Client_get_email(DNDSObject_t *object, char **email, size_t *length);
-int Client_set_company(DNDSObject_t *object, char *company, size_t length);
-int Client_get_company(DNDSObject_t *object, char **company, size_t *length);
-int Client_set_phone(DNDSObject_t *object, char *phone, size_t length);
-int Client_get_phone(DNDSObject_t *object, char **phone, size_t *length);
-int Client_set_country(DNDSObject_t *object, char *country, size_t length);
-int Client_get_country(DNDSObject_t *object, char **country, size_t *length);
-int Client_set_stateProvince(DNDSObject_t *object, char *stateProvince, size_t length);
-int Client_get_stateProvince(DNDSObject_t *object, char **stateProvince, size_t *length);
-int Client_set_city(DNDSObject_t *object, char *city, size_t length);
-int Client_get_city(DNDSObject_t *object, char **city, size_t *length);
-int Client_set_postalCode(DNDSObject_t *object, char *postalCode, size_t length);
-int Client_get_postalCode(DNDSObject_t *object, char **postalCode, size_t *length);
 int Client_set_status(DNDSObject_t *object, uint8_t status);
 int Client_get_status(DNDSObject_t *object, uint8_t *status);
 

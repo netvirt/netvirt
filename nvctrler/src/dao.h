@@ -36,6 +36,8 @@ int dao_add_context(char *client_id,
 int dao_del_context(char *client_id, char *context_id);
 
 int dao_add_client(char *email, char *password, char *apikey);
+int dao_fetch_account_apikey(char **apikey, char *email, char *password);
+int dao_fetch_client_id_by_apikey(char **client_id, char *apikey);
 
 int dao_fetch_context_by_client_id_desc(char *client_id, char *description,
 					void *data, int (*cb_data_handler)(void *data,

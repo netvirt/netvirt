@@ -124,113 +124,7 @@ void AddRequest_client(DNDSMessage_t *msg)
 
 void AddRequest_context(DNDSMessage_t *msg)
 {
-	DNDSObject_t *obj;
-	AddRequest_get_object(msg, &obj);
-
-	size_t length;
-
-	uint32_t client_id;
-	Context_get_clientId(obj, &client_id);
-
-	char client_id_str[10];
-	snprintf(client_id_str, 10, "%d", client_id);
-
-	char *description = NULL;
-	Context_get_description(obj, &description, &length);
-
-	char network[INET_ADDRSTRLEN];
-	Context_get_network(obj, network);
-
-	char netmask[INET_ADDRSTRLEN];
-	Context_get_netmask(obj, netmask);
-
-	pki_init();
-
-	/* 3.1- Initialise embassy */
-	int exp_delay;
-	exp_delay = pki_expiration_delay(10);
-
-	digital_id_t *embassy_id;
-	embassy_id = pki_digital_id("embassy", "CA", "Quebec", "", "admin@netvirt.org", "NetVirt");
-
-	embassy_t *emb;
-	emb = pki_embassy_new(embassy_id, exp_delay);
-	pki_free_digital_id(embassy_id);
-
-	char *emb_cert_ptr; long size;
-	char *emb_pvkey_ptr;
-
-	pki_write_certificate_in_mem(emb->certificate, &emb_cert_ptr, &size);
-	pki_write_privatekey_in_mem(emb->keyring, &emb_pvkey_ptr, &size);
-
-	/* 3.2- Initialize server passport */
-
-	digital_id_t *server_id;
-	server_id = pki_digital_id("nvswitch", "CA", "Quebec", "", "admin@netvirt.org", "NetVirt");
-
-	passport_t *nvswitch_passport;
-	nvswitch_passport = pki_embassy_deliver_passport(emb, server_id, exp_delay);
-	pki_free_digital_id(server_id);
-
-	char *serv_cert_ptr;
-	char *serv_pvkey_ptr;
-
-	pki_write_certificate_in_mem(nvswitch_passport->certificate, &serv_cert_ptr, &size);
-	pki_write_privatekey_in_mem(nvswitch_passport->keyring, &serv_pvkey_ptr, &size);
-	free(nvswitch_passport);
-
-	char emb_serial[10];
-	snprintf(emb_serial, sizeof(emb_serial), "%d", emb->serial);
-	free(emb);
-
-	/* Create an IP pool */
-	struct ippool *ippool;
-	size_t pool_size;
-
-	ippool = ippool_new("44.128.0.0", "255.255.0.0");
-	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
-
-	dao_add_context(client_id_str,
-				description,
-				"44.128.0.0/16",
-				emb_cert_ptr,
-				emb_pvkey_ptr,
-				emb_serial,
-				serv_cert_ptr,
-				serv_pvkey_ptr,
-				ippool->pool,
-				pool_size);
-
-	ippool_free(ippool);
-
-	free(serv_cert_ptr);
-	free(serv_pvkey_ptr);
-
-	free(emb_cert_ptr);
-	free(emb_pvkey_ptr);
-
-	/* send context update to nvswitch */
-
-	DNDSMessage_t *msg_up;
-	DNDSMessage_new(&msg_up);
-	DNDSMessage_set_channel(msg_up, 0);
-	DNDSMessage_set_pdu(msg_up, pdu_PR_dsm);
-
-	DSMessage_set_seqNumber(msg_up, 0);
-	DSMessage_set_ackNumber(msg_up, 1);
-	DSMessage_set_action(msg_up, action_addAccount);
-	DSMessage_set_operation(msg_up, dsop_PR_searchResponse);
-
-	dao_fetch_context_by_client_id_desc(client_id_str, description, msg_up,
-		CB_searchRequest_context_by_client_id);
-
-	SearchResponse_set_searchType(msg_up, SearchType_all);
-	SearchResponse_set_result(msg_up, DNDSResult_success);
-
-	if (g_switch_netc)
-		net_send_msg(g_switch_netc, msg_up);
-
-	DNDSMessage_del(msg_up);
+	(void)msg;
 }
 
 void DelRequest_context(DNDSMessage_t *msg)
@@ -854,6 +748,127 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 	net_send_msg(session->netc, msg);
 	DNDSMessage_del(msg);
 }
+
+void addNetwork(struct session *session, DNDSMessage_t *req_msg)
+{
+	DNDSObject_t *obj;
+	AddRequest_get_object(req_msg, &obj);
+
+	(void)session;
+
+	char *client_id = 0;
+	size_t length;
+
+	char *apikey;
+	DSMessage_get_apikey(req_msg, &apikey, &length);
+
+	char *description = NULL;
+	Context_get_description(obj, &description, &length);
+
+	char network[INET_ADDRSTRLEN];
+	Context_get_network(obj, network);
+
+	char netmask[INET_ADDRSTRLEN];
+	Context_get_netmask(obj, netmask);
+
+	pki_init();
+
+	dao_fetch_client_id_by_apikey(&client_id, apikey);
+
+	printf("cientid: %s\n", client_id);
+	printf("apikey: %s\n", apikey);
+
+
+	/* 3.1- Initialise embassy */
+	int exp_delay;
+	exp_delay = pki_expiration_delay(10);
+
+	digital_id_t *embassy_id;
+	embassy_id = pki_digital_id("embassy", "CA", "Quebec", "", "admin@netvirt.org", "NetVirt");
+
+	embassy_t *emb;
+	emb = pki_embassy_new(embassy_id, exp_delay);
+	pki_free_digital_id(embassy_id);
+
+	char *emb_cert_ptr; long size;
+	char *emb_pvkey_ptr;
+
+	pki_write_certificate_in_mem(emb->certificate, &emb_cert_ptr, &size);
+	pki_write_privatekey_in_mem(emb->keyring, &emb_pvkey_ptr, &size);
+
+	/* 3.2- Initialize server passport */
+
+	digital_id_t *server_id;
+	server_id = pki_digital_id("nvswitch", "CA", "Quebec", "", "admin@netvirt.org", "NetVirt");
+
+	passport_t *nvswitch_passport;
+	nvswitch_passport = pki_embassy_deliver_passport(emb, server_id, exp_delay);
+	pki_free_digital_id(server_id);
+
+	char *serv_cert_ptr;
+	char *serv_pvkey_ptr;
+
+	pki_write_certificate_in_mem(nvswitch_passport->certificate, &serv_cert_ptr, &size);
+	pki_write_privatekey_in_mem(nvswitch_passport->keyring, &serv_pvkey_ptr, &size);
+	free(nvswitch_passport);
+
+	char emb_serial[10];
+	snprintf(emb_serial, sizeof(emb_serial), "%d", emb->serial);
+	free(emb);
+
+	/* Create an IP pool */
+	struct ippool *ippool;
+	size_t pool_size;
+
+	ippool = ippool_new("44.128.0.0", "255.255.0.0");
+	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
+
+	dao_add_context(client_id,
+				description,
+				"44.128.0.0/16",
+				emb_cert_ptr,
+				emb_pvkey_ptr,
+				emb_serial,
+				serv_cert_ptr,
+				serv_pvkey_ptr,
+				ippool->pool,
+				pool_size);
+
+	ippool_free(ippool);
+
+	free(serv_cert_ptr);
+	free(serv_pvkey_ptr);
+
+	free(emb_cert_ptr);
+	free(emb_pvkey_ptr);
+
+	/* send context update to nvswitch */
+
+	DNDSMessage_t *msg_up;
+	DNDSMessage_new(&msg_up);
+	DNDSMessage_set_channel(msg_up, 0);
+	DNDSMessage_set_pdu(msg_up, pdu_PR_dsm);
+
+	DSMessage_set_seqNumber(msg_up, 0);
+	DSMessage_set_ackNumber(msg_up, 1);
+	DSMessage_set_action(msg_up, action_addAccount);
+	DSMessage_set_operation(msg_up, dsop_PR_searchResponse);
+
+	dao_fetch_context_by_client_id_desc(client_id, description, msg_up,
+		CB_searchRequest_context_by_client_id);
+
+	SearchResponse_set_searchType(msg_up, SearchType_all);
+	SearchResponse_set_result(msg_up, DNDSResult_success);
+
+	if (g_switch_netc)
+		net_send_msg(g_switch_netc, msg_up);
+
+	free(client_id);
+
+	DNDSMessage_del(msg_up);
+
+}
+
 
 void getAccountApiKey(struct session *session, DNDSMessage_t *req_msg)
 {

@@ -105,6 +105,19 @@ int dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
+			"dao_fetch_client_id_by_apikey",
+			"SELECT id "
+			"FROM CLIENT "
+			"WHERE apikey = $1;",
+			0,
+			NULL);
+
+	check_result_status(result);
+	if (result == NULL)
+		goto error;
+	PQclear(result);
+
+	result = PQprepare(dbconn,
 			"dao_fetch_client_id",
 			"SELECT id "
 			"FROM CLIENT "
@@ -510,7 +523,42 @@ int dao_fetch_account_apikey(char **apikey, char *email, char *password)
 
 	PQclear(result);
 
+	return 0;
+}
 
+int dao_fetch_client_id_by_apikey(char **client_id, char *apikey)
+{
+	const char *paramValues[1];
+	int paramLengths[1];
+	int tuples;
+	int fields;
+	PGresult *result = NULL;
+
+	if (!client_id || !apikey) {
+		jlog(L_WARNING, "invalid NULL parameter");
+		return -1;
+	}
+
+	paramValues[0] = apikey;
+	paramLengths[0] = strlen(apikey);
+
+	result = PQexecPrepared(dbconn, "dao_fetch_client_id_by_apikey", 1, paramValues, paramLengths, NULL, 0);
+
+	if (!result) {
+		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		return -1;
+	}
+
+	tuples = PQntuples(result);
+	fields = PQnfields(result);
+
+	if (tuples > 0 && fields > 0) {
+		*client_id = strdup(PQgetvalue(result, 0, 0));
+	}
+
+	PQclear(result);
+
+	return 0;
 }
 
 int dao_fetch_client_id(char **client_id, char *email, char *password)

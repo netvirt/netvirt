@@ -60,6 +60,24 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 	case action_getAccountApiKey:
 		getAccountApiKey(session, msg);
 		return;// break;
+
+	case action_addNetwork:
+		addNetwork(session, msg);
+		return; // break
+
+	case action_addAccount:
+	case action_delAccount:
+	case action_activateAccount:
+	case action_delNetwork:
+	case action_listNetwork:
+	case action_updateNetworkName:
+	case action_addNode:
+	case action_delNode:
+	case action_listNode:
+	case action_updateNodeName:
+	case action_updateNodeConnInfo:
+	case action_provisionningNode:
+		return; //break
 	}
 
 

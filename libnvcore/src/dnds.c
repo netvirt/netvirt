@@ -358,6 +358,22 @@ int DSMessage_get_operation(DNDSMessage_t *msg, dsop_PR *operation)
 	return DNDS_success;
 }
 
+int DSMessage_get_apikey(DNDSMessage_t *msg, char **apikey, size_t *length)
+{
+	if (msg == NULL || apikey == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (msg->pdu.present != pdu_PR_dsm) {
+		return DNDS_invalid_pdu;
+	}
+
+	*apikey = (char *)msg->pdu.choice.dsm.apikey->buf;
+	*length = msg->pdu.choice.dsm.apikey->size;
+
+	return DNDS_success;
+}
+
 // DNDSObject
 int DNDSObject_set_objectType(DNDSObject_t *object, DNDSObject_PR type)
 {
