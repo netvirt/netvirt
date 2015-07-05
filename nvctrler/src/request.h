@@ -27,5 +27,9 @@ void searchRequest(struct session *session, DNDSMessage_t *msg);
 void peerConnectInfo(struct session *session, DNDSMessage_t *req_msg);
 void nodeConnectInfo(struct session *session, DNDSMessage_t *req_msg);
 
+
+void getAccountApiKey(struct session *session, DNDSMessage_t *req_msg);
+void addNetwork(struct session *session, DNDSMessage_t *req_msg);
+
 #endif
 
