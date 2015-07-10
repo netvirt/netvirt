@@ -57,6 +57,10 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 	DSMessage_get_action(msg, &action);
 
 	switch (action) {
+	case action_addAccount:
+		addAccount(session, msg);
+		return; // break;
+
 	case action_getAccountApiKey:
 		getAccountApiKey(session, msg);
 		return;// break;
@@ -65,7 +69,6 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 		addNetwork(session, msg);
 		return; // break
 
-	case action_addAccount:
 	case action_delAccount:
 	case action_activateAccount:
 	case action_delNetwork:

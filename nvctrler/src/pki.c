@@ -185,10 +185,16 @@ static void b64enc(const uint8_t *buf, size_t length, char **b64buf)
 
 char *pki_gen_api_key()
 {
-	uint8_t key[18];
-	char *b64key;
+	int ret = 0;
 
-	RAND_bytes(key, 18);
+	char *b64key = NULL;
+	uint8_t key[18];
+
+	ret = RAND_bytes(key, 18);
+	if (ret != 1) {
+		return NULL;
+	}
+
 	b64enc(key, 18, &b64key);
 
 	return b64key;
