@@ -93,35 +93,6 @@ void nodeConnectInfo(struct session *session, DNDSMessage_t *req_msg)
 	return;
 }
 
-void AddRequest_client(DNDSMessage_t *msg)
-{
-	jlog(L_DEBUG, "Add Request client");
-
-	DNDSObject_t *obj;
-	AddRequest_get_object(msg, &obj);
-
-	int ret = 0;
-	size_t length = 0;
-
-	char *email = NULL;
-	char *password = NULL;
-
-	char *apikey = NULL;
-
-        Client_get_password(obj, &password, &length);
-        Client_get_email(obj, &email, &length);
-
-
-	apikey = pki_gen_api_key();
-
-	ret = dao_add_client(email, password, apikey);
-
-	if (ret == -1) {
-		jlog(L_ERROR, "failed to add client");
-		return;
-	}
-}
-
 void AddRequest_context(DNDSMessage_t *msg)
 {
 	(void)msg;
@@ -360,10 +331,6 @@ void addRequest(DNDSMessage_t *msg)
 {
 	DNDSObject_PR objType;
 	AddRequest_get_objectType(msg, &objType);
-
-	if (objType == DNDSObject_PR_client) {
-		AddRequest_client(msg);
-	}
 
 	if (objType == DNDSObject_PR_context) {
 		AddRequest_context(msg);
@@ -749,6 +716,51 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 	DNDSMessage_del(msg);
 }
 
+void addAccount(struct session *session, DNDSMessage_t *req_msg)
+{
+	jlog(L_DEBUG, "Add new account");
+
+	DNDSMessage_t *resp_msg;
+	DNDSObject_t *obj;
+	AddRequest_get_object(req_msg, &obj);
+
+	int ret = 0;
+	size_t length = 0;
+	char *email = NULL;
+	char *password = NULL;
+	char *apikey = NULL;
+
+	/* Prepare response */
+	DNDSMessage_new(&resp_msg);
+	DNDSMessage_set_pdu(resp_msg, pdu_PR_dsm);
+
+	DSMessage_set_action(resp_msg, action_addAccount);
+	DSMessage_set_operation(resp_msg, dsop_PR_addResponse);
+
+	Client_get_password(obj, &password, &length);
+	Client_get_email(obj, &email, &length);
+
+	apikey = pki_gen_api_key();
+	if (apikey == NULL) {
+		AddResponse_set_result(resp_msg, DNDSResult_operationError);
+		goto fail;
+	}
+
+	ret = dao_add_client(email, password, apikey);
+	if (ret == -1) {
+		AddResponse_set_result(resp_msg, DNDSResult_busy);
+		goto fail;
+	}
+
+
+	AddResponse_set_result(resp_msg, DNDSResult_success);
+fail:
+	net_send_msg(session->netc, resp_msg);
+	DNDSMessage_del(resp_msg);
+
+	return;
+}
+
 void addNetwork(struct session *session, DNDSMessage_t *req_msg)
 {
 	DNDSObject_t *obj;
@@ -851,7 +863,7 @@ void addNetwork(struct session *session, DNDSMessage_t *req_msg)
 
 	DSMessage_set_seqNumber(msg_up, 0);
 	DSMessage_set_ackNumber(msg_up, 1);
-	DSMessage_set_action(msg_up, action_addAccount);
+	DSMessage_set_action(msg_up, action_addNetwork);
 	DSMessage_set_operation(msg_up, dsop_PR_searchResponse);
 
 	dao_fetch_context_by_client_id_desc(client_id, description, msg_up,
