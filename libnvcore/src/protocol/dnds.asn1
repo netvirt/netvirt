@@ -27,9 +27,9 @@ DNDSResult ::= ENUMERATED {
 		operationError			(2),
 		protocolError			(3),
 		noSuchObject			(4),
-		busy				(5),
+		duplicate			(5),
 		secureStepUp			(6),
-		insufficientAccessRights	(7),
+		noRight				(7),
 		moreData			(8),
 		...
 }
