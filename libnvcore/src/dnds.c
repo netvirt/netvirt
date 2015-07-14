@@ -3023,13 +3023,13 @@ char *DNDSResult_str(e_DNDSResult result)
 	case DNDSResult_noSuchObject:
 		return "No such object";
 		break;
-	case DNDSResult_busy:
-		return "Busy";
+	case DNDSResult_duplicate:
+		return "Duplicate";
 		break;
 	case DNDSResult_secureStepUp:
 		return "Secure step up";
 		break;
-	case DNDSResult_insufficientAccessRights:
+	case DNDSResult_noRight:
 		return "Insufficient access rights";
 		break;
 	case DNDSResult_moreData:

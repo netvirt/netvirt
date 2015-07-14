@@ -797,7 +797,7 @@ int dao_add_context(char *client_id,
 
 	if (check_result_status(result) == -1) {
 		PQclear(result);
-		return -1;
+		return -2;
 	}
 
 	PQclear(result);

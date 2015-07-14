@@ -748,7 +748,7 @@ void addAccount(struct session *session, DNDSMessage_t *req_msg)
 
 	ret = dao_add_client(email, password, apikey);
 	if (ret == -1) {
-		AddResponse_set_result(resp_msg, DNDSResult_busy);
+		AddResponse_set_result(resp_msg, DNDSResult_duplicate);
 		goto fail;
 	}
 
@@ -763,33 +763,41 @@ fail:
 
 void addNetwork(struct session *session, DNDSMessage_t *req_msg)
 {
-	DNDSObject_t *obj;
-	AddRequest_get_object(req_msg, &obj);
-
 	(void)session;
 
+	int ret = 0;
 	char *client_id = 0;
 	size_t length;
 
-	char *apikey;
-	DSMessage_get_apikey(req_msg, &apikey, &length);
-
+	DNDSObject_t *obj;
+	char *apikey = NULL;
 	char *description = NULL;
-	Context_get_description(obj, &description, &length);
-
 	char network[INET_ADDRSTRLEN];
-	Context_get_network(obj, network);
-
 	char netmask[INET_ADDRSTRLEN];
+
+	/* Prepare response */
+	DNDSMessage_t *resp_msg = NULL;
+	DNDSMessage_new(&resp_msg);
+	DNDSMessage_set_pdu(resp_msg, pdu_PR_dsm);
+	DSMessage_set_action(resp_msg, action_addNetwork);
+	DSMessage_set_operation(resp_msg, dsop_PR_addResponse);
+	/* */
+
+	AddRequest_get_object(req_msg, &obj);
+	DSMessage_get_apikey(req_msg, &apikey, &length);
+	Context_get_description(obj, &description, &length);
+	Context_get_network(obj, network);
 	Context_get_netmask(obj, netmask);
 
-	pki_init();
-
-	dao_fetch_client_id_by_apikey(&client_id, apikey);
-
-	printf("cientid: %s\n", client_id);
-	printf("apikey: %s\n", apikey);
-
+	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
+	if (ret == -1) {
+		AddResponse_set_result(resp_msg, DNDSResult_operationError);
+		goto fail;
+	}
+	if (client_id == NULL) {
+		AddResponse_set_result(resp_msg, DNDSResult_noRight);
+		goto fail;
+	}
 
 	/* 3.1- Initialise embassy */
 	int exp_delay;
@@ -835,7 +843,7 @@ void addNetwork(struct session *session, DNDSMessage_t *req_msg)
 	ippool = ippool_new("44.128.0.0", "255.255.0.0");
 	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
 
-	dao_add_context(client_id,
+	ret = dao_add_context(client_id,
 				description,
 				"44.128.0.0/16",
 				emb_cert_ptr,
@@ -846,6 +854,16 @@ void addNetwork(struct session *session, DNDSMessage_t *req_msg)
 				ippool->pool,
 				pool_size);
 
+	if (ret == -1) {
+		AddResponse_set_result(resp_msg, DNDSResult_operationError);
+		goto fail;
+	}
+
+	if (ret == -2) {
+		AddResponse_set_result(resp_msg, DNDSResult_duplicate);
+		goto fail;
+	}
+
 	ippool_free(ippool);
 
 	free(serv_cert_ptr);
@@ -855,7 +873,6 @@ void addNetwork(struct session *session, DNDSMessage_t *req_msg)
 	free(emb_pvkey_ptr);
 
 	/* send context update to nvswitch */
-
 	DNDSMessage_t *msg_up;
 	DNDSMessage_new(&msg_up);
 	DNDSMessage_set_channel(msg_up, 0);
@@ -872,18 +889,23 @@ void addNetwork(struct session *session, DNDSMessage_t *req_msg)
 	SearchResponse_set_searchType(msg_up, SearchType_all);
 	SearchResponse_set_result(msg_up, DNDSResult_success);
 
-	if (g_switch_netc)
+	if (g_switch_netc) {
 		net_send_msg(g_switch_netc, msg_up);
+	}
+	DNDSMessage_del(msg_up);
+	/* */
 
 	free(client_id);
 
-	DNDSMessage_del(msg_up);
-
+	AddResponse_set_result(resp_msg, DNDSResult_success);
+fail:
+	net_send_msg(session->netc, resp_msg);
+	DNDSMessage_del(resp_msg);
 }
-
 
 void getAccountApiKey(struct session *session, DNDSMessage_t *req_msg)
 {
+	int ret = 0;
 	size_t length = 0;
 	char *email = NULL;
 	char *password = NULL;
@@ -895,7 +917,7 @@ void getAccountApiKey(struct session *session, DNDSMessage_t *req_msg)
 	Client_get_email(object, &email, &length);
 	Client_get_password(object, &password, &length);
 
-	dao_fetch_account_apikey(&apikey, email, password);
+	ret = dao_fetch_account_apikey(&apikey, email, password);
 
 	DNDSMessage_t *msg;
 
