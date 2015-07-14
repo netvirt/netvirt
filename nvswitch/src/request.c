@@ -76,7 +76,7 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 	session->context = context_lookup(context_id);
 
 	if (session->context == NULL) {
-		AuthResponse_set_result(msg, DNDSResult_insufficientAccessRights);
+		AuthResponse_set_result(msg, DNDSResult_noRight);
 		net_send_msg(session->netc, msg);
 		DNDSMessage_del(msg);
 		return -1;
@@ -84,7 +84,7 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 
 	/* check if the node's uuid is known */
 	if (ctable_find(session->context->atable, session->node_info->uuid) == NULL) {
-		AuthResponse_set_result(msg, DNDSResult_insufficientAccessRights);
+		AuthResponse_set_result(msg, DNDSResult_noRight);
 		net_send_msg(session->netc, msg);
 		DNDSMessage_del(msg);
 		jlog(L_ERROR, "authentication failed, invalid certificate");
