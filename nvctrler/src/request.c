@@ -905,7 +905,6 @@ fail:
 
 void getAccountApiKey(struct session *session, DNDSMessage_t *req_msg)
 {
-	int ret = 0;
 	size_t length = 0;
 	char *email = NULL;
 	char *password = NULL;
@@ -917,7 +916,7 @@ void getAccountApiKey(struct session *session, DNDSMessage_t *req_msg)
 	Client_get_email(object, &email, &length);
 	Client_get_password(object, &password, &length);
 
-	ret = dao_fetch_account_apikey(&apikey, email, password);
+	dao_fetch_account_apikey(&apikey, email, password);
 
 	DNDSMessage_t *msg;
 
