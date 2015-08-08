@@ -63,7 +63,7 @@ char *agent_config_get_fullname(const char *profile, const char *file)
 	snprintf(fullname, sizeof(fullname), "%s%s%s%s%s", getenv("AppData"), "\\netvirt\\", profile, "\\", file);
 	return strdup(fullname);
 #elif __APPLE__
-	snprintf(fullname, sizeof(fullname), "%s%s%s", agent_cfg->profile, "/", file);
+	snprintf(fullname, sizeof(fullname), "%s%s%s", profile, "/", file);
 	return strdup(file);
 #else
 	snprintf(fullname, sizeof(fullname), "%s%s%s%s%s", getenv("HOME"), "/.netvirt/", profile, "/", file);
