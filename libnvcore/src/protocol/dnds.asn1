@@ -225,10 +225,10 @@ Client ::= SEQUENCE {
 
 Context ::= SEQUENCE {
 	id		INTEGER (0..uint32max) OPTIONAL,
-	clientId	INTEGER (0..uint32max),
+	clientId	INTEGER (0..uint32max) OPTIONAL,
 	description	PrintableString SIZE((1..256)) OPTIONAL,
-	network         OCTET STRING SIZE((4..16)),
-	netmask         OCTET STRING SIZE((4..16)),
+	network         OCTET STRING SIZE((4..16)) OPTIONAL,
+	netmask         OCTET STRING SIZE((4..16)) OPTIONAL,
 	serverCert      PrintableString OPTIONAL,
 	serverPrivkey   PrintableString OPTIONAL,
 	trustedCert     PrintableString OPTIONAL,
