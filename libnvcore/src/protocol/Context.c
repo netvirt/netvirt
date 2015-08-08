@@ -348,7 +348,7 @@ asn_TYPE_descriptor_t asn_DEF_clientId_3 = {
 };
 
 static asn_TYPE_member_t asn_MBR_Context_1[] = {
-	{ ATF_POINTER, 1, offsetof(struct Context, id),
+	{ ATF_POINTER, 8, offsetof(struct Context, id),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_id_2,
@@ -357,7 +357,7 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		0,
 		"id"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct Context, clientId),
+	{ ATF_POINTER, 7, offsetof(struct Context, clientId),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_clientId_3,
@@ -366,7 +366,7 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		0,
 		"clientId"
 		},
-	{ ATF_POINTER, 1, offsetof(struct Context, description),
+	{ ATF_POINTER, 6, offsetof(struct Context, description),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
@@ -375,7 +375,7 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		0,
 		"description"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct Context, network),
+	{ ATF_POINTER, 5, offsetof(struct Context, network),
 		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_OCTET_STRING,
@@ -384,7 +384,7 @@ static asn_TYPE_member_t asn_MBR_Context_1[] = {
 		0,
 		"network"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct Context, netmask),
+	{ ATF_POINTER, 4, offsetof(struct Context, netmask),
 		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_OCTET_STRING,

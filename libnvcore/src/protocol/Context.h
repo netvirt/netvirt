@@ -24,10 +24,10 @@ extern "C" {
 /* Context */
 typedef struct Context {
 	unsigned long	*id	/* OPTIONAL */;
-	unsigned long	 clientId;
+	unsigned long	*clientId	/* OPTIONAL */;
 	PrintableString_t	*description	/* OPTIONAL */;
-	OCTET_STRING_t	 network;
-	OCTET_STRING_t	 netmask;
+	OCTET_STRING_t	*network	/* OPTIONAL */;
+	OCTET_STRING_t	*netmask	/* OPTIONAL */;
 	PrintableString_t	*serverCert	/* OPTIONAL */;
 	PrintableString_t	*serverPrivkey	/* OPTIONAL */;
 	PrintableString_t	*trustedCert	/* OPTIONAL */;

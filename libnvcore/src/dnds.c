@@ -368,6 +368,10 @@ int DSMessage_get_apikey(DNDSMessage_t *msg, char **apikey, size_t *length)
 		return DNDS_invalid_pdu;
 	}
 
+	if (msg->pdu.choice.dsm.apikey == NULL) {
+		return DNDS_value_not_present;
+	}
+
 	*apikey = (char *)msg->pdu.choice.dsm.apikey->buf;
 	*length = msg->pdu.choice.dsm.apikey->size;
 
@@ -2097,7 +2101,12 @@ int Context_set_clientId(DNDSObject_t *object, uint32_t clientId)
 		return DNDS_alloc_failed;
 	}
 
-	object->choice.context.clientId = clientId;
+	object->choice.context.clientId = calloc(1, sizeof(uint32_t));
+	if (object->choice.context.clientId == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	*object->choice.context.clientId = clientId;
 
 	return DNDS_success;
 }
@@ -2108,7 +2117,15 @@ int Context_get_clientId(DNDSObject_t *object, uint32_t *clientId)
 		return DNDS_invalid_param;
 	}
 
-	*clientId = (uint32_t)object->choice.context.clientId;
+	if (object->present != DNDSObject_PR_context) {
+		return DNDS_invalid_object_type;
+	}
+
+	if (object->choice.context.clientId == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*clientId = (uint32_t)*object->choice.context.clientId;
 
 	return DNDS_success;
 }
@@ -2164,18 +2181,23 @@ int Context_set_network(DNDSObject_t *object, char *network)
 		return DNDS_invalid_object_type;
 	}
 
-	object->choice.context.network.buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
-	if (object->choice.context.network.buf == NULL) {
+	object->choice.context.network = (OCTET_STRING_t *)calloc(1, sizeof(OCTET_STRING_t));
+	if (object->choice.context.network == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.context.network->buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
+	if (object->choice.context.network->buf == NULL) {
 		return DNDS_alloc_failed;
 	}
 
 	int ret;
-	ret = inet_pton(AF_INET, network, object->choice.context.network.buf);
+	ret = inet_pton(AF_INET, network, object->choice.context.network->buf);
 	if (ret != 1) {
 		return DNDS_conversion_failed;
 	}
 
-	object->choice.context.network.size = sizeof(struct in_addr);
+	object->choice.context.network->size = sizeof(struct in_addr);
 
 	return DNDS_success;
 }
@@ -2190,8 +2212,13 @@ int Context_get_network(DNDSObject_t *object, char *network)
 		return DNDS_invalid_object_type;
 	}
 
+	if (object->choice.context.network == NULL ||
+		object->choice.context.network->buf == NULL) {
+		return DNDS_value_not_present;
+	}
+
 	const char *ret;
-	ret = inet_ntop(AF_INET, object->choice.context.network.buf, network, INET_ADDRSTRLEN);
+	ret = inet_ntop(AF_INET, object->choice.context.network->buf, network, INET_ADDRSTRLEN);
 	if (ret == NULL) {
 		return DNDS_conversion_failed;
 	}
@@ -2209,18 +2236,23 @@ int Context_set_netmask(DNDSObject_t *object, char *netmask)
 		return DNDS_invalid_object_type;
 	}
 
-	object->choice.context.netmask.buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
-	if (object->choice.context.netmask.buf == NULL) {
+	object->choice.context.netmask = (OCTET_STRING_t *)calloc(1, sizeof(OCTET_STRING_t));
+	if (object->choice.context.netmask == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.context.netmask->buf = (uint8_t *)calloc(1, sizeof(struct in_addr));
+	if (object->choice.context.netmask->buf == NULL) {
 		return DNDS_alloc_failed;
 	}
 
 	int ret;
-	ret = inet_pton(AF_INET, netmask, object->choice.context.netmask.buf);
+	ret = inet_pton(AF_INET, netmask, object->choice.context.netmask->buf);
 	if (ret != 1) {
 		return DNDS_conversion_failed;
 	}
 
-	object->choice.context.netmask.size = sizeof(struct in_addr);
+	object->choice.context.netmask->size = sizeof(struct in_addr);
 
 	return DNDS_success;
 }
@@ -2235,8 +2267,13 @@ int Context_get_netmask(DNDSObject_t *object, char *netmask)
 		return DNDS_invalid_object_type;
 	}
 
+	if (object->choice.context.netmask == NULL ||
+		object->choice.context.netmask->buf == NULL) {
+		return DNDS_value_not_present;
+	}
+
 	const char *ret;
-	ret = inet_ntop(AF_INET, object->choice.context.netmask.buf, netmask, INET_ADDRSTRLEN);
+	ret = inet_ntop(AF_INET, object->choice.context.netmask->buf, netmask, INET_ADDRSTRLEN);
 	if (ret == NULL) {
 		return DNDS_conversion_failed;
 	}
