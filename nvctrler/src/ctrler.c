@@ -72,7 +72,12 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 	case action_delAccount:
 	case action_activateAccount:
 	case action_delNetwork:
+		return;
+
 	case action_listNetwork:
+		listNetwork(session, msg);
+		return; // break
+
 	case action_updateNetworkName:
 	case action_addNode:
 	case action_delNode:

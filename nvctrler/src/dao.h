@@ -39,7 +39,7 @@ int dao_add_client(char *email, char *password, char *apikey);
 int dao_fetch_account_apikey(char **apikey, char *email, char *password);
 int dao_fetch_client_id_by_apikey(char **client_id, char *apikey);
 
-int dao_fetch_context_by_client_id_desc(char *client_id, char *description,
+int dao_fetch_network_by_client_id_desc(char *client_id, char *description,
 					void *data, int (*cb_data_handler)(void *data,
 					char *id,
 					char *description,
@@ -70,18 +70,11 @@ int dao_update_context_ippool(char *context_id, unsigned char *ippool, int pool_
 
 int dao_fetch_client_id(char **client_id, char *email, char *password);
 
-int dao_fetch_context_by_client_id(
+int dao_fetch_networks_by_client_id(
 	char *client_id,
 	void *data,
 	int (*cb_data_handler)(void *data,
-		char *id,
-		char *description,
-		char *client_id,
-		char *network,
-		char *netmask,
-		char *serverCert,
-		char *serverPrivkey,
-		char *trustedCert));
+		char *description));
 
 int dao_fetch_context(void *data, void (*cb_data_handler)(void *data, int remaining,
 							char *id,

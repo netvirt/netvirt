@@ -271,8 +271,8 @@ int dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
-			"dao_fetch_context_by_client_id",
-			"SELECT id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
+			"dao_fetch_networks_by_client_id",
+			"SELECT description "
 			"FROM context "
 			"WHERE client_id = $1;",
 			0,
@@ -284,7 +284,7 @@ int dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
-			"dao_fetch_context_by_client_id_desc",
+			"dao_fetch_network_by_client_id_desc",
 			"SELECT id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
 			"FROM context "
 			"WHERE client_id = $1 and description = $2;",
@@ -1252,19 +1252,11 @@ int dao_fetch_node_from_provcode(char *provcode,
 	return 0;
 }
 
-int dao_fetch_context_by_client_id(
+int dao_fetch_networks_by_client_id(
 	char *client_id,
 	void *data,
 	int (*cb_data_handler)(void *data,
-		char *id,
-		char *description,
-		char *client_id,
-		char *network,
-		char *netmask,
-		char *serverCert,
-		char *serverPrivkey,
-		char *trustedCert))
-
+		char *description))
 {
 	const char *paramValues[1];
 	int paramLengths[1];
@@ -1272,14 +1264,14 @@ int dao_fetch_context_by_client_id(
 	PGresult *result;
 
 	if (!client_id) {
-		jlog(L_WARNING, "invalid NULL parameter");
+		jlog(L_WARNING, "invalid parameter");
 		return -1;
 	}
 
 	paramValues[0] = client_id;
 	paramLengths[0] = strlen(client_id);
 
-	result = PQexecPrepared(dbconn, "dao_fetch_context_by_client_id", 1, paramValues, paramLengths, NULL, 0);
+	result = PQexecPrepared(dbconn, "dao_fetch_networks_by_client_id", 1, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
@@ -1295,14 +1287,7 @@ int dao_fetch_context_by_client_id(
 	int i;
 	for (i = 0; i < tuples; i++) {
 		cb_data_handler(data,
-			PQgetvalue(result, i, 0),
-			PQgetvalue(result, i, 1),
-			PQgetvalue(result, i, 2),
-			PQgetvalue(result, i, 3),
-			PQgetvalue(result, i, 4),
-			PQgetvalue(result, i, 5),
-			PQgetvalue(result, i, 6),
-			PQgetvalue(result, i, 7));
+			PQgetvalue(result, i, 0));
 	}
 
 	PQclear(result);
@@ -1310,7 +1295,7 @@ int dao_fetch_context_by_client_id(
 	return 0;
 }
 
-int dao_fetch_context_by_client_id_desc(char *client_id, char *description,
+int dao_fetch_network_by_client_id_desc(char *client_id, char *description,
 					void *data, int (*cb_data_handler)(void *data,
 					char *id,
 					char *description,
@@ -1337,7 +1322,7 @@ int dao_fetch_context_by_client_id_desc(char *client_id, char *description,
 	paramLengths[0] = strlen(client_id);
 	paramLengths[1] = strlen(description);
 
-	result = PQexecPrepared(dbconn, "dao_fetch_context_by_client_id_desc", 2, paramValues, paramLengths, NULL, 0);
+	result = PQexecPrepared(dbconn, "dao_fetch_network_by_client_id_desc", 2, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
