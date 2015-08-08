@@ -25,35 +25,6 @@
 #include "pki.h"
 #include "request.h"
 
-int CB_searchRequest_context_by_client_id(void *msg,
-						char *id,
-						char *description,
-						char *client_id,
-						char *network,
-						char *netmask,
-						char *serverCert,
-						char *serverPrivkey,
-						char *trustedCert)
-{
-	DNDSObject_t *objContext;
-	DNDSObject_new(&objContext);
-	DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
-
-	Context_set_id(objContext, atoi(id));
-	Context_set_clientId(objContext, atoi(client_id));
-	Context_set_description(objContext, description, strlen(description));
-	Context_set_network(objContext, network);
-	Context_set_netmask(objContext, netmask);
-
-	Context_set_serverCert(objContext, serverCert, strlen(serverCert));
-	Context_set_serverPrivkey(objContext, serverPrivkey, strlen(serverPrivkey));
-	Context_set_trustedCert(objContext, trustedCert, strlen(trustedCert));
-
-	SearchResponse_add_object(msg, objContext);
-
-	return 0;
-}
-
 void nodeConnectInfo(struct session *session, DNDSMessage_t *req_msg)
 {
 	(void)(session);
@@ -410,37 +381,6 @@ void searchRequest_client(struct session *session, DNDSMessage_t *req_msg)
 	free(id);
 }
 
-void searchRequest_context_by_client_id(struct session *session, DNDSMessage_t *req_msg)
-{
-	uint32_t client_id = 0;
-	char str_client_id[20];
-
-	DNDSObject_t *obj = NULL;
-	SearchRequest_get_object(req_msg, &obj);
-
-	Context_get_clientId(obj, &client_id);
-	snprintf(str_client_id, sizeof(str_client_id), "%d", client_id);
-
-	DNDSMessage_t *msg;
-	DNDSMessage_new(&msg);
-	DNDSMessage_set_channel(msg, 0);
-	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
-
-	DSMessage_set_seqNumber(msg, 0);
-	DSMessage_set_ackNumber(msg, 1);
-	DSMessage_set_action(msg, action_listNetwork);
-	DSMessage_set_operation(msg, dsop_PR_searchResponse);
-
-	dao_fetch_context_by_client_id(str_client_id, msg,
-		CB_searchRequest_context_by_client_id);
-
-	SearchResponse_set_searchType(msg, SearchType_object);
-	SearchResponse_set_result(msg, DNDSResult_success);
-
-	net_send_msg(session->netc, msg);
-	DNDSMessage_del(msg);
-}
-
 void CB_searchRequest_context(void *data, int remaining,
 				char *id,
 				char *description,
@@ -761,12 +701,100 @@ fail:
 	return;
 }
 
+int CB_listNetwork(void *msg, char *description)
+{
+	DNDSObject_t *objContext;
+	DNDSObject_new(&objContext);
+	DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
+
+	Context_set_description(objContext, description, strlen(description));
+
+	SearchResponse_add_object(msg, objContext);
+
+	return 0;
+}
+
+void listNetwork(struct session *session, DNDSMessage_t *req_msg)
+{
+	int ret = 0;
+	char *client_id = NULL;
+	size_t length = 0;
+	char *apikey = NULL;
+
+	/* Prepare response */
+	DNDSMessage_t *resp_msg = NULL;
+	DNDSMessage_new(&resp_msg);
+	DNDSMessage_set_channel(resp_msg, 0);
+	DNDSMessage_set_pdu(resp_msg, pdu_PR_dsm);
+
+	DSMessage_set_seqNumber(resp_msg, 0);
+	DSMessage_set_ackNumber(resp_msg, 1);
+	DSMessage_set_action(resp_msg, action_listNetwork);
+	DSMessage_set_operation(resp_msg, dsop_PR_searchResponse);
+
+	SearchResponse_set_searchType(resp_msg, SearchType_object);
+	/* */
+
+	ret = DSMessage_get_apikey(req_msg, &apikey, &length);
+	if (ret != DNDS_success) {
+		SearchResponse_set_result(resp_msg, DNDSResult_noRight);
+		goto out;
+	}
+
+	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
+	if (ret == -1) {
+		SearchResponse_set_result(resp_msg, DNDSResult_operationError);
+		goto out;
+	}
+	if (client_id == NULL) {
+		SearchResponse_set_result(resp_msg, DNDSResult_noRight);
+		goto out;
+	}
+
+	ret = dao_fetch_networks_by_client_id(client_id, resp_msg, CB_listNetwork);
+	SearchResponse_set_result(resp_msg, DNDSResult_success);
+out:
+
+	net_send_msg(session->netc, resp_msg);
+	DNDSMessage_del(resp_msg);
+
+	return;
+
+}
+
+int CB_fetch_network_by_client_id_desc(void *msg,
+					char *id,
+					char *description,
+					char *client_id,
+					char *network,
+					char *netmask,
+					char *serverCert,
+					char *serverPrivkey,
+					char *trustedCert)
+{
+	DNDSObject_t *objContext;
+	DNDSObject_new(&objContext);
+	DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
+
+	Context_set_id(objContext, atoi(id));
+	Context_set_clientId(objContext, atoi(client_id));
+	Context_set_description(objContext, description, strlen(description));
+	Context_set_network(objContext, network);
+	Context_set_netmask(objContext, netmask);
+
+	Context_set_serverCert(objContext, serverCert, strlen(serverCert));
+	Context_set_serverPrivkey(objContext, serverPrivkey, strlen(serverPrivkey));
+	Context_set_trustedCert(objContext, trustedCert, strlen(trustedCert));
+
+	SearchResponse_add_object(msg, objContext);
+
+	return 0;
+}
+
 void addNetwork(struct session *session, DNDSMessage_t *req_msg)
 {
-	(void)session;
-
 	int ret = 0;
-	char *client_id = 0;
+	char *client_id = NULL;
 	size_t length;
 
 	DNDSObject_t *obj;
@@ -792,11 +820,11 @@ void addNetwork(struct session *session, DNDSMessage_t *req_msg)
 	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
 	if (ret == -1) {
 		AddResponse_set_result(resp_msg, DNDSResult_operationError);
-		goto fail;
+		goto out;
 	}
 	if (client_id == NULL) {
 		AddResponse_set_result(resp_msg, DNDSResult_noRight);
-		goto fail;
+		goto out;
 	}
 
 	/* 3.1- Initialise embassy */
@@ -856,12 +884,12 @@ void addNetwork(struct session *session, DNDSMessage_t *req_msg)
 
 	if (ret == -1) {
 		AddResponse_set_result(resp_msg, DNDSResult_operationError);
-		goto fail;
+		goto out;
 	}
 
 	if (ret == -2) {
 		AddResponse_set_result(resp_msg, DNDSResult_duplicate);
-		goto fail;
+		goto out;
 	}
 
 	ippool_free(ippool);
@@ -883,8 +911,8 @@ void addNetwork(struct session *session, DNDSMessage_t *req_msg)
 	DSMessage_set_action(msg_up, action_addNetwork);
 	DSMessage_set_operation(msg_up, dsop_PR_searchResponse);
 
-	dao_fetch_context_by_client_id_desc(client_id, description, msg_up,
-		CB_searchRequest_context_by_client_id);
+	dao_fetch_network_by_client_id_desc(client_id, description, msg_up,
+		CB_fetch_network_by_client_id_desc);
 
 	SearchResponse_set_searchType(msg_up, SearchType_all);
 	SearchResponse_set_result(msg_up, DNDSResult_success);
@@ -898,17 +926,31 @@ void addNetwork(struct session *session, DNDSMessage_t *req_msg)
 	free(client_id);
 
 	AddResponse_set_result(resp_msg, DNDSResult_success);
-fail:
+out:
 	net_send_msg(session->netc, resp_msg);
 	DNDSMessage_del(resp_msg);
 }
 
 void getAccountApiKey(struct session *session, DNDSMessage_t *req_msg)
 {
+	int ret = 0;
 	size_t length = 0;
 	char *email = NULL;
 	char *password = NULL;
 	char *apikey = NULL;
+
+	/* Prepare response */
+	DNDSMessage_t *resp_msg;
+
+	DNDSMessage_new(&resp_msg);
+	DNDSMessage_set_channel(resp_msg, 0);
+	DNDSMessage_set_pdu(resp_msg, pdu_PR_dsm);
+
+	DSMessage_set_seqNumber(resp_msg, 0);
+	DSMessage_set_ackNumber(resp_msg, 0);
+	DSMessage_set_action(resp_msg, action_getAccountApiKey);
+	DSMessage_set_operation(resp_msg, dsop_PR_searchResponse);
+	/* */
 
 	DNDSObject_t *object;
 	SearchRequest_get_object(req_msg, &object);
@@ -916,18 +958,18 @@ void getAccountApiKey(struct session *session, DNDSMessage_t *req_msg)
 	Client_get_email(object, &email, &length);
 	Client_get_password(object, &password, &length);
 
-	dao_fetch_account_apikey(&apikey, email, password);
+	ret = dao_fetch_account_apikey(&apikey, email, password);
+	if (ret == -1) {
+		SearchResponse_set_result(resp_msg, DNDSResult_operationError);
+		jlog(L_DEBUG, "dao_fetch_account_apikey failed");
+		goto out;
+	}
 
-	DNDSMessage_t *msg;
-
-	DNDSMessage_new(&msg);
-	DNDSMessage_set_channel(msg, 0);
-	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
-
-	DSMessage_set_seqNumber(msg, 0);
-	DSMessage_set_ackNumber(msg, 0);
-	DSMessage_set_action(msg, action_getAccountApiKey);
-	DSMessage_set_operation(msg, dsop_PR_searchResponse);
+	if (apikey == NULL) {
+		SearchResponse_set_result(resp_msg, DNDSResult_noRight);
+		jlog(L_DEBUG, "apikey is NULL");
+		goto out;
+	}
 
 	DNDSObject_t *objClient;
 	DNDSObject_new(&objClient);
@@ -935,11 +977,13 @@ void getAccountApiKey(struct session *session, DNDSMessage_t *req_msg)
 
 	Client_set_apikey(objClient, apikey, strlen(apikey));
 
-	SearchResponse_set_result(msg, DNDSResult_success);
-	SearchResponse_add_object(msg, objClient);
-	SearchResponse_set_searchType(msg, SearchType_object);
-	net_send_msg(session->netc, msg);
-	DNDSMessage_del(msg);
+	SearchResponse_set_result(resp_msg, DNDSResult_success);
+	SearchResponse_add_object(resp_msg, objClient);
+	SearchResponse_set_searchType(resp_msg, SearchType_object);
+
+out:
+	net_send_msg(session->netc, resp_msg);
+	DNDSMessage_del(resp_msg);
 }
 
 void searchRequest(struct session *session, DNDSMessage_t *req_msg)
@@ -971,8 +1015,10 @@ void searchRequest(struct session *session, DNDSMessage_t *req_msg)
 			searchRequest_node(session, req_msg);
 			break;
 		case DNDSObject_PR_context:
+#if 0
 			searchRequest_context_by_client_id(session, req_msg);
 			break;
+#endif
 		case DNDSObject_PR_NOTHING:
 			break;
 		}
