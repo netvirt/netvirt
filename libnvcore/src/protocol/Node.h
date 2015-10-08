@@ -24,7 +24,8 @@ extern "C" {
 
 /* Node */
 typedef struct Node {
-	unsigned long	 contextId;
+	unsigned long	*contextId	/* OPTIONAL */;
+	PrintableString_t	*contextName	/* OPTIONAL */;
 	PrintableString_t	*description	/* OPTIONAL */;
 	PrintableString_t	*uuid	/* OPTIONAL */;
 	PrintableString_t	*provCode	/* OPTIONAL */;

@@ -28,6 +28,7 @@ void peerConnectInfo(struct session *session, DNDSMessage_t *req_msg);
 void nodeConnectInfo(struct session *session, DNDSMessage_t *req_msg);
 
 
+void addNode(struct session *session, DNDSMessage_t *req_msg);
 void addAccount(struct session *session, DNDSMessage_t *req_msg);
 void getAccountApiKey(struct session *session, DNDSMessage_t *req_msg);
 void addNetwork(struct session *session, DNDSMessage_t *req_msg);

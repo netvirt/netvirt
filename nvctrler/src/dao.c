@@ -168,7 +168,7 @@ int dao_prepare_statements()
 			NULL);
 
 	result = PQprepare(dbconn,
-			"dao_fetch_context_id",
+			"dao_fetch_network_id",
 			"SELECT id "
 			"FROM CONTEXT "
 			"WHERE client_id = $1 "
@@ -554,6 +554,9 @@ int dao_fetch_client_id_by_apikey(char **client_id, char *apikey)
 
 	if (tuples > 0 && fields > 0) {
 		*client_id = strdup(PQgetvalue(result, 0, 0));
+	} else {
+		PQclear(result);
+		return -1;
 	}
 
 	PQclear(result);
@@ -851,7 +854,7 @@ int dao_fetch_context_ippool(char *context_id, unsigned char **ippool)
 	return 0;
 }
 
-int dao_fetch_context_id(char **context_id, char *client_id, char *description)
+int dao_fetch_network_id(char **context_id, char *client_id, char *description)
 {
 	const char *paramValues[2];
 	int paramLengths[2];
@@ -868,7 +871,7 @@ int dao_fetch_context_id(char **context_id, char *client_id, char *description)
 	paramLengths[0] = strlen(client_id);
 	paramLengths[0] = strlen(description);
 
-	result = PQexecPrepared(dbconn, "dao_fetch_context_id", 2, paramValues, paramLengths, NULL, 0);
+	result = PQexecPrepared(dbconn, "dao_fetch_network_id", 2, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
@@ -885,7 +888,10 @@ int dao_fetch_context_id(char **context_id, char *client_id, char *description)
 	fields = PQnfields(result);
 
 	if (tuples > 0 && fields > 0) {
-		*context_id = PQgetvalue(result, 0, 0);
+		*context_id = strdup(PQgetvalue(result, 0, 0));
+	} else {
+		PQclear(result);
+		return -1;
 	}
 
 	PQclear(result);

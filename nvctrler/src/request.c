@@ -109,18 +109,19 @@ void DelRequest_context(DNDSMessage_t *msg)
 		net_send_msg(g_switch_netc, msg);
 }
 
-void AddRequest_node(DNDSMessage_t *msg)
+void addNode(struct session *session, DNDSMessage_t *req_msg)
 {
-	jlog(L_DEBUG, "AddRequest_node");
+	(void)session;
 
 	DNDSObject_t *obj;
-	AddRequest_get_object(msg, &obj);
+	AddRequest_get_object(req_msg, &obj);
 
 	int ret = 0;
 	size_t length = 0;
 
-	uint32_t context_id = 0;
-	char context_id_str[10] = {0};
+	char *context_id = NULL;
+	char *client_id = NULL;
+	char *context_name = NULL;
 	char *description = NULL;
 
 	int exp_delay;
@@ -131,6 +132,7 @@ void AddRequest_node(DNDSMessage_t *msg)
 	unsigned char *ippool_bin = NULL;
 	long size;
 
+	char *apikey = NULL;
 	char *uuid = NULL;
 	char *provcode = NULL;
 	char common_name[256] = {0};
@@ -138,25 +140,55 @@ void AddRequest_node(DNDSMessage_t *msg)
 	char *node_pvkey_ptr = NULL;
 	char emb_serial[10];
 
-	Node_get_contextId(obj, &context_id);
+	DNDSMessage_t *resp_msg;
+
+	/* Prepare response */
+	DNDSMessage_new(&resp_msg);
+	DNDSMessage_set_pdu(resp_msg, pdu_PR_dsm);
+
+	DSMessage_set_action(resp_msg, action_addNode);
+	DSMessage_set_operation(resp_msg, dsop_PR_addResponse);
+	/* */
+
+	Node_get_contextName(obj, &context_name, &length);
 	Node_get_description(obj, &description, &length);
 
-	snprintf(context_id_str, 10, "%d", context_id);
+	ret = DSMessage_get_apikey(req_msg, &apikey, &length);
+	if (ret != DNDS_success) {
+		AddResponse_set_result(resp_msg, DNDSResult_noRight);
+		goto out;
+	}
+
+	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
+	printf("client id: %s\n", client_id);
+	if (ret != 0) {
+		AddResponse_set_result(resp_msg, DNDSResult_noRight);
+		goto out;
+	}
+
+	ret = dao_fetch_network_id(&context_id, client_id, context_name);
+	printf("context id: %s\n", context_id);
+	if (ret != 0) {
+		AddResponse_set_result(resp_msg, DNDSResult_noSuchObject);
+		goto out;
+	}
 
 	exp_delay = pki_expiration_delay(10);
-	ret = dao_fetch_context_embassy(context_id_str, &emb_cert_ptr, &emb_pvkey_ptr, &serial, &ippool_bin);
-	if (ret == -1) {
-		jlog(L_ERROR, "failed to fetch context embassy");
-		return;
-	}
+	ret = dao_fetch_context_embassy(context_id, &emb_cert_ptr, &emb_pvkey_ptr, &serial, &ippool_bin);
 	jlog(L_DEBUG, "serial: %s", serial);
+	if (ret != 0) {
+		jlog(L_ERROR, "failed to fetch context embassy");
+		AddResponse_set_result(resp_msg, DNDSResult_operationError);
+		goto out;
+	}
 
 	emb = pki_embassy_load_from_memory(emb_cert_ptr, emb_pvkey_ptr, atoi(serial));
 
 	uuid = uuid_v4();
 	provcode = uuid_v4();
 
-	snprintf(common_name, sizeof(common_name), "nva-%s@%s", uuid, context_id_str);
+	printf("context id: %s\n", context_id);
+	snprintf(common_name, sizeof(common_name), "nva-%s@%s", uuid, context_id);
 	jlog(L_DEBUG, "common_name: %s", common_name);
 
 	digital_id_t *node_ident = NULL;
@@ -171,12 +203,12 @@ void AddRequest_node(DNDSMessage_t *msg)
 
 	snprintf(emb_serial, sizeof(emb_serial), "%d", emb->serial);
 
-	ret = dao_update_embassy_serial(context_id_str, emb_serial);
+	ret = dao_update_embassy_serial(context_id, emb_serial);
 	if (ret == -1) {
 		jlog(L_ERROR, "failed to update embassy serial");
+		AddResponse_set_result(resp_msg, DNDSResult_operationError);
 		goto free1;
 	}
-	jlog(L_DEBUG, "dao_update_embassy_serial: %d", ret);
 
 	/* handle ip pool */
 	struct ippool *ippool;
@@ -189,15 +221,17 @@ void AddRequest_node(DNDSMessage_t *msg)
 	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
 	ip = ippool_get_ip(ippool);
 
-	ret = dao_add_node(context_id_str, uuid, node_cert_ptr, node_pvkey_ptr, provcode, description, ip);
+	ret = dao_add_node(context_id, uuid, node_cert_ptr, node_pvkey_ptr, provcode, description, ip);
 	if (ret == -1) {
 		jlog(L_ERROR, "failed to add node");
+		AddResponse_set_result(resp_msg, DNDSResult_operationError);
 		goto free2;
 	}
 
-	ret = dao_update_context_ippool(context_id_str, ippool->pool, pool_size);
+	ret = dao_update_context_ippool(context_id, ippool->pool, pool_size);
 	if (ret == -1) {
 		jlog(L_ERROR, "failed to update embassy ippool");
+		AddResponse_set_result(resp_msg, DNDSResult_operationError);
 		goto free2;
 	}
 
@@ -217,7 +251,7 @@ void AddRequest_node(DNDSMessage_t *msg)
 	DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
 
 	Node_set_uuid(objNode, uuid, strlen(uuid));
-	Node_set_contextId(objNode, context_id);
+	Node_set_contextId(objNode, atoi(context_id));
 
 	SearchResponse_add_object(msg_up, objNode);
 
@@ -225,6 +259,8 @@ void AddRequest_node(DNDSMessage_t *msg)
 		net_send_msg(g_switch_netc, msg_up);
 
 	DNDSMessage_del(msg_up);
+
+	AddResponse_set_result(resp_msg, DNDSResult_success);
 
 free2:
 	ippool_free(ippool);
@@ -243,6 +279,10 @@ free1:
 	free(emb);
 	free(emb_cert_ptr);
 	free(emb_pvkey_ptr);
+
+out:
+	net_send_msg(session->netc, resp_msg);
+	DNDSMessage_del(resp_msg);
 }
 
 void DelRequest_node(DNDSMessage_t *msg)
@@ -298,6 +338,7 @@ void DelRequest_node(DNDSMessage_t *msg)
 		net_send_msg(g_switch_netc, msg);
 }
 
+#if 0
 void addRequest(DNDSMessage_t *msg)
 {
 	DNDSObject_PR objType;
@@ -311,6 +352,7 @@ void addRequest(DNDSMessage_t *msg)
 		AddRequest_node(msg);
 	}
 }
+#endif
 
 void delRequest(struct session *session, DNDSMessage_t *msg)
 {
@@ -676,6 +718,7 @@ void addAccount(struct session *session, DNDSMessage_t *req_msg)
 
 	DSMessage_set_action(resp_msg, action_addAccount);
 	DSMessage_set_operation(resp_msg, dsop_PR_addResponse);
+	/* */
 
 	Client_get_password(obj, &password, &length);
 	Client_get_email(obj, &email, &length);

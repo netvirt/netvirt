@@ -7,31 +7,6 @@
 
 #include "Node.h"
 
-static int permitted_alphabet_table_3[256] = {
- 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/*                  */
- 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/*                  */
- 1, 0, 0, 0, 0, 0, 0, 2, 3, 4, 0, 5, 6, 7, 8, 9,	/* .      '() +,-./ */
-10,11,12,13,14,15,16,17,18,19,20, 0, 0,21, 0,22,	/* 0123456789:  = ? */
- 0,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,	/*  ABCDEFGHIJKLMNO */
-38,39,40,41,42,43,44,45,46,47,48, 0, 0, 0, 0, 0,	/* PQRSTUVWXYZ      */
- 0,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,	/*  abcdefghijklmno */
-64,65,66,67,68,69,70,71,72,73,74, 0, 0, 0, 0, 0,	/* pqrstuvwxyz      */
-};
-
-static int check_permitted_alphabet_3(const void *sptr) {
-	int *table = permitted_alphabet_table_3;
-	/* The underlying type is PrintableString */
-	const PrintableString_t *st = (const PrintableString_t *)sptr;
-	const uint8_t *ch = st->buf;
-	const uint8_t *end = ch + st->size;
-	
-	for(; ch < end; ch++) {
-		uint8_t cv = *ch;
-		if(!table[cv]) return -1;
-	}
-	return 0;
-}
-
 static int
 contextId_2_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
@@ -131,6 +106,32 @@ memb_contextId_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 }
 
 static int
+memb_contextName_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
+			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
+	const PrintableString_t *st = (const PrintableString_t *)sptr;
+	size_t size;
+	
+	if(!sptr) {
+		_ASN_CTFAIL(app_key, td, sptr,
+			"%s: value not given (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+	
+	size = st->size;
+	
+	if((size >= 1 && size <= 256)) {
+		/* Constraint check succeeded */
+		return 0;
+	} else {
+		_ASN_CTFAIL(app_key, td, sptr,
+			"%s: constraint failed (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+}
+
+static int
 memb_description_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
 	const PrintableString_t *st = (const PrintableString_t *)sptr;
@@ -145,8 +146,7 @@ memb_description_constraint_1(asn_TYPE_descriptor_t *td, const void *sptr,
 	
 	size = st->size;
 	
-	if((size >= 1 && size <= 256)
-		 && !check_permitted_alphabet_3(st)) {
+	if((size >= 1 && size <= 256)) {
 		/* Constraint check succeeded */
 		return 0;
 	} else {
@@ -242,7 +242,7 @@ asn_TYPE_descriptor_t asn_DEF_contextId_2 = {
 };
 
 static asn_TYPE_member_t asn_MBR_Node_1[] = {
-	{ ATF_NOFLAGS, 0, offsetof(struct Node, contextId),
+	{ ATF_POINTER, 10, offsetof(struct Node, contextId),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_contextId_2,
@@ -251,8 +251,17 @@ static asn_TYPE_member_t asn_MBR_Node_1[] = {
 		0,
 		"contextId"
 		},
-	{ ATF_POINTER, 8, offsetof(struct Node, description),
+	{ ATF_POINTER, 9, offsetof(struct Node, contextName),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PrintableString,
+		memb_contextName_constraint_1,
+		0,	/* PER is not compiled, use -gen-PER */
+		0,
+		"contextName"
+		},
+	{ ATF_POINTER, 8, offsetof(struct Node, description),
+		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
 		memb_description_constraint_1,
@@ -261,7 +270,7 @@ static asn_TYPE_member_t asn_MBR_Node_1[] = {
 		"description"
 		},
 	{ ATF_POINTER, 7, offsetof(struct Node, uuid),
-		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
 		0,	/* Defer constraints checking to the member type */
@@ -270,7 +279,7 @@ static asn_TYPE_member_t asn_MBR_Node_1[] = {
 		"uuid"
 		},
 	{ ATF_POINTER, 6, offsetof(struct Node, provCode),
-		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
 		0,	/* Defer constraints checking to the member type */
@@ -279,7 +288,7 @@ static asn_TYPE_member_t asn_MBR_Node_1[] = {
 		"provCode"
 		},
 	{ ATF_POINTER, 5, offsetof(struct Node, certificate),
-		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
 		0,	/* Defer constraints checking to the member type */
@@ -288,7 +297,7 @@ static asn_TYPE_member_t asn_MBR_Node_1[] = {
 		"certificate"
 		},
 	{ ATF_POINTER, 4, offsetof(struct Node, certificateKey),
-		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_BIT_STRING,
 		0,	/* Defer constraints checking to the member type */
@@ -297,7 +306,7 @@ static asn_TYPE_member_t asn_MBR_Node_1[] = {
 		"certificateKey"
 		},
 	{ ATF_POINTER, 3, offsetof(struct Node, trustedCert),
-		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PrintableString,
 		0,	/* Defer constraints checking to the member type */
@@ -306,7 +315,7 @@ static asn_TYPE_member_t asn_MBR_Node_1[] = {
 		"trustedCert"
 		},
 	{ ATF_POINTER, 2, offsetof(struct Node, ipAddress),
-		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_OCTET_STRING,
 		memb_ipAddress_constraint_1,
@@ -315,7 +324,7 @@ static asn_TYPE_member_t asn_MBR_Node_1[] = {
 		"ipAddress"
 		},
 	{ ATF_POINTER, 1, offsetof(struct Node, status),
-		(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
+		(ASN_TAG_CLASS_CONTEXT | (9 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_NativeInteger,
 		memb_status_constraint_1,
@@ -329,23 +338,24 @@ static ber_tlv_tag_t asn_DEF_Node_tags_1[] = {
 };
 static asn_TYPE_tag2member_t asn_MAP_Node_tag2el_1[] = {
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* contextId */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* description */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* uuid */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* provCode */
-    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* certificate */
-    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* certificateKey */
-    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* trustedCert */
-    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* ipAddress */
-    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 } /* status */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* contextName */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* description */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* uuid */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* provCode */
+    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* certificate */
+    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* certificateKey */
+    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* trustedCert */
+    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* ipAddress */
+    { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 } /* status */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_Node_specs_1 = {
 	sizeof(struct Node),
 	offsetof(struct Node, _asn_ctx),
 	asn_MAP_Node_tag2el_1,
-	9,	/* Count of tags in the map */
+	10,	/* Count of tags in the map */
 	0, 0, 0,	/* Optional elements (not needed) */
-	8,	/* Start extensions */
-	10	/* Stop extensions */
+	9,	/* Start extensions */
+	11	/* Stop extensions */
 };
 asn_TYPE_descriptor_t asn_DEF_Node = {
 	"Node",
@@ -367,7 +377,7 @@ asn_TYPE_descriptor_t asn_DEF_Node = {
 		/sizeof(asn_DEF_Node_tags_1[0]), /* 1 */
 	0,	/* No PER visible constraints */
 	asn_MBR_Node_1,
-	9,	/* Elements count */
+	10,	/* Elements count */
 	&asn_SPC_Node_specs_1	/* Additional specs */
 };
 

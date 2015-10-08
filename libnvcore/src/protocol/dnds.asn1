@@ -236,8 +236,9 @@ Context ::= SEQUENCE {
 }
 
 Node ::= SEQUENCE {
-	contextId	INTEGER (0..uint32max),
-	description	PrintableString (SIZE(1..256)) OPTIONAL,
+	contextId	INTEGER (0..uint32max) OPTIONAL,
+	contextName	PrintableString SIZE((1..256)) OPTIONAL,
+	description	PrintableString SIZE((1..256)) OPTIONAL,
 	uuid		PrintableString OPTIONAL,
 	provCode	PrintableString OPTIONAL,
 	certificate	PrintableString OPTIONAL,
