@@ -51,7 +51,7 @@ int dao_fetch_network_by_client_id_desc(char *client_id, char *description,
 					char *trustedCert));
 
 int dao_fetch_context_ippool(char *context_id, unsigned char **ippool);
-
+int dao_fetch_network_id(char **context_id, char *client_id, char *description);
 int dao_fetch_context_embassy(char *context_id,
 			char **certificate,
 			char **privatekey,

@@ -242,6 +242,8 @@ int Context_get_trustedCert(DNDSObject_t *object, char **trustedCert, size_t *le
 // Node
 int Node_set_contextId(DNDSObject_t *object, uint32_t contextId);
 int Node_get_contextId(DNDSObject_t *object, uint32_t *contextId);
+int Node_set_contextName(DNDSObject_t *object, char *contextName, size_t length);
+int Node_get_contextName(DNDSObject_t *object, char **contextName, size_t *length);
 int Node_set_description(DNDSObject_t *object, char *description, size_t length);
 int Node_get_description(DNDSObject_t *object, char **description, size_t *length);
 int Node_set_uuid(DNDSObject_t *object, char *uuid, size_t length);

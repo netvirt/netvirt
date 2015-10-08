@@ -80,6 +80,8 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 
 	case action_updateNetworkName:
 	case action_addNode:
+		addNode(session, msg);
+		return; // break
 	case action_delNode:
 	case action_listNode:
 	case action_updateNodeName:
@@ -95,7 +97,7 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 		break;
 
 	case dsop_PR_addRequest:
-		addRequest(msg);
+		//addRequest(msg);
 		break;
 
 	case dsop_PR_delRequest:

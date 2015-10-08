@@ -2423,7 +2423,12 @@ int Node_set_contextId(DNDSObject_t *object, uint32_t contextId)
 		return DNDS_invalid_object_type;
 	}
 
-	object->choice.node.contextId = contextId;
+	object->choice.node.contextId = calloc(1, sizeof(uint32_t));
+	if (object->choice.node.contextId == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	*object->choice.node.contextId = contextId;
 
 	return DNDS_success;
 }
@@ -2438,7 +2443,52 @@ int Node_get_contextId(DNDSObject_t *object, uint32_t *contextId)
 		return DNDS_invalid_object_type;
 	}
 
-	*contextId = object->choice.node.contextId;
+	if (object->choice.node.contextId == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*contextId = *object->choice.node.contextId;
+
+	return DNDS_success;
+}
+
+int Node_set_contextName(DNDSObject_t *object, char *contextName, size_t length)
+{
+	if (object == NULL || contextName == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_node) {
+		return DNDS_invalid_object_type;
+	}
+
+	object->choice.node.contextName = (PrintableString_t *)calloc(1, sizeof(PrintableString_t));
+	if (object->choice.node.contextName == NULL) {
+		return DNDS_alloc_failed;
+	}
+
+	object->choice.node.contextName->buf = (uint8_t *)strdup(contextName);
+	object->choice.node.contextName->size = length;
+
+	return DNDS_success;
+}
+
+int Node_get_contextName(DNDSObject_t *object, char **contextName, size_t *length)
+{
+	if (object == NULL || contextName == NULL || length == NULL) {
+		return DNDS_invalid_param;
+	}
+
+	if (object->present != DNDSObject_PR_node) {
+		return DNDS_invalid_object_type;
+	}
+
+	if (object->choice.node.contextName == NULL) {
+		return DNDS_value_not_present;
+	}
+
+	*contextName = (char *)object->choice.node.contextName->buf;
+	*length = object->choice.node.contextName->size;
 
 	return DNDS_success;
 }
