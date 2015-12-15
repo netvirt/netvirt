@@ -32,6 +32,7 @@ void addNode(struct session *session, DNDSMessage_t *req_msg);
 void addAccount(struct session *session, DNDSMessage_t *req_msg);
 void getAccountApiKey(struct session *session, DNDSMessage_t *req_msg);
 void addNetwork(struct session *session, DNDSMessage_t *req_msg);
+void listNode(struct session *session, DNDSMessage_t *req_msg);
 void listNetwork(struct session *session, DNDSMessage_t *req_msg);
 
 #endif
