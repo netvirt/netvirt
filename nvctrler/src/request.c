@@ -600,29 +600,13 @@ void searchRequest_node_sequence(struct session *session, DNDSMessage_t *req_msg
 	free(id_list);
 }
 
-int CB_searchRequest_node_by_context_id(void *msg, char *uuid, char *description, char *provcode, char *ipaddress, char *status)
-{
-	DNDSObject_t *objNode;
-	DNDSObject_new(&objNode);
-	DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
-
-	Node_set_description(objNode, description, strlen(description));
-	Node_set_uuid(objNode, uuid, strlen(uuid));
-	Node_set_provCode(objNode, provcode, strlen(provcode));
-	Node_set_ipAddress(objNode, ipaddress);
-	Node_set_status(objNode, atoi(status));
-
-	SearchResponse_set_searchType(msg, SearchType_object);
-	SearchResponse_add_object(msg, objNode);
-
-	return 0;
-}
-
 void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 {
 	char *provcode = NULL;
 	uint32_t contextid = 0;
+#if 0
 	char str_contextid[20];
+#endif
 	size_t length;
 	int ret = 0;
 
@@ -646,6 +630,7 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 	DSMessage_set_action(msg, action_listNode);
 	DSMessage_set_operation(msg, dsop_PR_searchResponse);
 
+#if 0
 	if (contextid > 0) { /* searching by context ID */
 
 		jlog(L_DEBUG, "context ID to search: %d", contextid);
@@ -660,7 +645,10 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 
 		/* the fields are set via the callback */
 
-	} else if (provcode != NULL) { /* searching by provcode */
+	} else
+#endif
+
+	if (provcode != NULL) { /* searching by provcode */
 
 		jlog(L_DEBUG, "searchRequest node for provisioning");
 
@@ -743,6 +731,76 @@ fail:
 
 	return;
 }
+
+
+int CB_listNode(void *msg, char *uuid, char *description, char *provcode, char *ipaddress, char *status)
+{
+	DNDSObject_t *objNode;
+	DNDSObject_new(&objNode);
+	DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
+
+	Node_set_contextId(objNode,99);
+	Node_set_description(objNode, description, strlen(description));
+//	printf("uuid: %s\n", uuid);
+//	Node_set_uuid(objNode, "uuid", strlen("uuid"));
+//	Node_set_provCode(objNode, provcode, strlen(provcode));
+//	Node_set_ipAddress(objNode, ipaddress);
+	Node_set_status(objNode, atoi(status));
+
+	SearchResponse_add_object(msg, objNode);
+
+	return 0;
+}
+
+
+void listNode(struct session *session, DNDSMessage_t *req_msg)
+{
+	int ret = 0;
+	char *client_id = NULL;
+	char *context_id = NULL;
+	size_t length = 0;
+	char *apikey = NULL;
+
+	printf("listNode !\n");
+
+
+	ret = DSMessage_get_apikey(req_msg, &apikey, &length);
+	printf("apikey: %s\n", apikey);
+
+
+	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
+	printf("client id: %s\n", client_id);
+
+	ret = dao_fetch_network_id(&context_id, client_id, "myNetwork");
+	printf("context id: %s\n", context_id);
+
+	DNDSMessage_t *msg;
+
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+
+	DSMessage_set_seqNumber(msg, 0);
+	DSMessage_set_ackNumber(msg, 1);
+	DSMessage_set_action(msg, action_listNode);
+	DSMessage_set_operation(msg, dsop_PR_searchResponse);
+
+	SearchResponse_set_result(msg, DNDSResult_success);
+	SearchResponse_set_searchType(msg, SearchType_object);
+
+	ret = dao_fetch_node_from_context_id(context_id, msg, CB_listNode);
+	if (ret != 0) {
+		jlog(L_WARNING, "dao fetch node from context id failed: %s", context_id);
+		return; /* FIXME send negative response */
+	}
+
+
+///	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
+
+	net_send_msg(session->netc, msg);
+	DNDSMessage_del(msg);
+}
+
 
 int CB_listNetwork(void *msg, char *description)
 {

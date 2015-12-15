@@ -84,6 +84,9 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 		return; // break
 	case action_delNode:
 	case action_listNode:
+		listNode(session, msg);
+		return; //break
+
 	case action_updateNodeName:
 	case action_updateNodeConnInfo:
 	case action_provisionningNode:
