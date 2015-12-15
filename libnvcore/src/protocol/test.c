@@ -179,7 +179,7 @@ void test_AddRequest()
 	DSMessage_set_seqNumber(msg, 1);
 	DSMessage_set_ackNumber(msg, 1);	// seq XOR ack
 	DSMessage_set_operation(msg, dsop_PR_addRequest);
-	DSMessage_set_action(msg, action_addClient);
+//	DSMessage_set_action(msg, action_addClient);
 
 	AddRequest_set_objectType(msg, DNDSObject_PR_client, &objClient);
 
@@ -1059,6 +1059,9 @@ void show_SearchResponse()
 
 void test_SearchResponse()
 {
+
+	printf("TEST SEARCH RESPONSE\n");
+
 	/// Building a SearchResponse
 
 	DNDSMessage_t *msg;	// A DNDS Message
@@ -1068,11 +1071,13 @@ void test_SearchResponse()
 	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
 
 	DSMessage_set_seqNumber(msg, 0);
-	DSMessage_set_ackNumber(msg, 400);
+	DSMessage_set_ackNumber(msg, 1);
+	DSMessage_set_action(msg, action_listNode);
 	DSMessage_set_operation(msg, dsop_PR_searchResponse);
 
 	SearchResponse_set_result(msg, DNDSResult_success);
-
+	SearchResponse_set_searchType(msg, SearchType_object);
+/*
 /// objContext
 	DNDSObject_t *objContext;
 	DNDSObject_new(&objContext);
@@ -1080,53 +1085,22 @@ void test_SearchResponse()
 
 	Context_set_id(objContext, 40);
 	SearchResponse_add_object(msg, objContext);
-
+*/
 /// Node
 	DNDSObject_t *objNode;
 	DNDSObject_new(&objNode);
 	DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
 
-	Node_set_contextId(objNode, 10);
+//	Node_set_contextId(objNode, 10);
+	Node_set_description(objNode, "yo", strlen("yo"));
+	Node_set_uuid(objNode, "abc", strlen("abc"));
 	Node_set_certificate(objNode, "certificate", 11);
 	Node_set_certificateKey(objNode, "key", 3);
 	Node_set_status(objNode, 2);
 
 	SearchResponse_add_object(msg, objNode);
-/*
-/// User1
-	DNDSObject_t *objUser1;	// A User Object
-	DNDSObject_new(&objUser1);
-	DNDSObject_set_objectType(objUser1, DNDSObject_PR_user);
 
-	User_set_id(objUser1, 1);
-	User_set_contextId(objUser1, 1);
-	User_set_name(objUser1, "1icboul", 7);
-	User_set_password(objUser1, "1wd1wd", 6);
-	User_set_firstname(objUser1, "1icolas", 7);
-	User_set_lastname(objUser1, "1ouliane", 8);
-	User_set_email(objUser1, "1icboul@gmail.com", 15);
-	User_set_role(objUser1, 0);
-	User_set_status(objUser1, 0);
 
-	SearchResponse_add_object(msg, objUser1);
-
-/// User2
-	DNDSObject_t *objUser2;	// A User Object
-	DNDSObject_new(&objUser2);
-	DNDSObject_set_objectType(objUser2, DNDSObject_PR_user);
-
-	User_set_id(objUser2, 2);
-	User_set_contextId(objUser2, 2);
-	User_set_name(objUser2, "2icboul", 6);
-	User_set_password(objUser2, "2wd2wd", 6);
-	User_set_firstname(objUser2, "2icolas", 7);
-	User_set_lastname(objUser2, "2ouliane", 8);
-	User_set_email(objUser2, "2icboul@gmail.com", 15);
-	User_set_role(objUser2, 0);
-	User_set_status(objUser2, 0);
-
-	SearchResponse_add_object(msg, objUser2);
-*/
 	/// Encoding part
 
 	asn_enc_rval_t ec;	// Encoder return value
@@ -1188,10 +1162,10 @@ int main()
 	test_DNDS_ethernet();
 	show_DNDS_ethernet();
 
-*/
+
 	test_AddRequest();
 	show_AddRequest();
-/*
+
 	//test_AddResponse();
 	//show_AddResponse();
 
@@ -1234,11 +1208,14 @@ int main()
 	test_TerminateRequest();
 
 
+
 	test_SearchRequest();
 	show_SearchRequest();
-
+*/
 	test_SearchResponse();
 	show_SearchResponse();
+/*
+
 */
 
 }
