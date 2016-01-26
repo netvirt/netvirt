@@ -218,28 +218,36 @@ int main(int argc, char *argv[])
 		jlog(L_ERROR, "netbus_init failed");
 		exit(EXIT_FAILURE);
 	}
-
+/*
 	if (ctrler_init(ctrler_cfg)) {
 		jlog(L_NOTICE, "ctrler_init failed");
 		exit(EXIT_FAILURE);
 	}
+*/
 
 	if (daemon) {
 		daemonize();
 	}
 
+	ctrler2_init();
+/*
 	while (ctrler_cfg->ctrler_running) {
 		sleep(1);
 	}
 	sleep(1);
+*/
 
-	ctrler_fini();
+//	ctrler_fini();
+
+	printf("we are here !\n");
+
+
+	ctrler2_fini();
 	netbus_fini();
 	dao_disconnect();
+	krypt_fini();
 	config_destroy(&cfg);
 	free(ctrler_cfg);
-
-	sleep(1);
 
 	return 0;
 }
