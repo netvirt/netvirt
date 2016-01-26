@@ -167,6 +167,11 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
+	check_result_status(result);
+	if (result == NULL)
+		goto error;
+	PQclear(result);
+
 	result = PQprepare(dbconn,
 			"dao_fetch_network_id",
 			"SELECT id "
@@ -317,6 +322,11 @@ int dao_prepare_statements()
 			0,
 			NULL);
 
+	check_result_status(result);
+	if (result == NULL)
+		goto error;
+	PQclear(result);
+
 	result = PQprepare(dbconn,
 			"dao_fetch_node_from_context_id",
 			"SELECT uuid, description, provcode, ipaddress, status "
@@ -340,6 +350,7 @@ error:
 void dao_disconnect()
 {
 	PQfinish(dbconn);
+	dbconn = NULL;
 }
 
 int dao_connect(struct ctrler_cfg *ctrler_cfg)
