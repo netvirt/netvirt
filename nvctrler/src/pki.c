@@ -267,6 +267,7 @@ embassy_t *pki_embassy_new(digital_id_t *digital_id, uint32_t expiration_delay)
 
 	// create the certificate from the certificate request and keyring
 	certificate = pki_certificate(issuer, keyring, cert_req, true, serial++, expiration_delay);
+	X509_REQ_free(cert_req);
 
 	// self-sign the certificate with our own keyring
 	pki_sign_certificate(keyring, certificate);
@@ -312,6 +313,7 @@ passport_t *pki_embassy_deliver_passport(embassy_t *embassy, digital_id_t *digit
 
 	// create the certificate from the certificate request and keyring
 	certificate = pki_certificate(issuer, keyring, cert_req, false, embassy->serial++, expiration_delay);
+	X509_REQ_free(cert_req);
 
 	// sign the certificate with the certificate authority
 	pki_sign_certificate(embassy->keyring, certificate);
@@ -363,29 +365,37 @@ embassy_t *pki_embassy_load_from_memory(char *certificate, char *privatekey, uin
 
 void pki_write_certificate_in_mem(X509 *certificate, char **certificate_ptr, long *size)
 {
+	char *pp = NULL;
 	BIO *bio_mem = NULL;
+	*certificate_ptr = NULL;
 
 	bio_mem = BIO_new(BIO_s_mem());
 	PEM_write_bio_X509(bio_mem, certificate);
 
-	*size = BIO_get_mem_data(bio_mem, certificate_ptr);
-	*(*certificate_ptr + *size) = '\0';
+	*size = BIO_get_mem_data(bio_mem, &pp);
+	if (pp != NULL) {
+		*(pp + *size) = '\0';
+		*certificate_ptr = strdup(pp);
+	}
 
-	(void)BIO_set_close(bio_mem, BIO_NOCLOSE);
 	BIO_free(bio_mem);
 }
 
 void pki_write_privatekey_in_mem(EVP_PKEY *privatekey, char **privatekey_ptr, long *size)
 {
+	char *pp = NULL;
 	BIO *bio_mem = NULL;
+	*privatekey_ptr = NULL;
 
 	bio_mem = BIO_new(BIO_s_mem());
 	PEM_write_bio_PrivateKey(bio_mem, privatekey, NULL, NULL, 0, 0, NULL);
 
-	*size = BIO_get_mem_data(bio_mem, privatekey_ptr);
-	*(*privatekey_ptr + *size) = '\0';
+	*size = BIO_get_mem_data(bio_mem, &pp);
+	if (pp != NULL) {
+		*(pp + *size) = '\0';
+		*privatekey_ptr = strdup(pp);
+	}
 
-	(void)BIO_set_close(bio_mem, BIO_NOCLOSE);
 	BIO_free(bio_mem);
 }
 
