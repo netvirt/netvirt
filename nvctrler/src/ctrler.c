@@ -48,86 +48,6 @@ static void terminate(struct session *session)
 	session_free(session);
 }
 
-static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
-{
-	dsop_PR operation;
-	DSMessage_get_operation(msg, &operation);
-
-	e_action action;
-	DSMessage_get_action(msg, &action);
-
-	switch (action) {
-	case action_addAccount:
-		addAccount(session, msg);
-		return; // break;
-
-	case action_getAccountApiKey:
-		getAccountApiKey(session, msg);
-		return;// break;
-
-	case action_addNetwork:
-		addNetwork(session, msg);
-		return; // break
-
-	case action_delAccount:
-	case action_activateAccount:
-	case action_delNetwork:
-		return;
-
-	case action_listNetwork:
-		listNetwork(session, msg);
-		return; // break
-
-	case action_updateNetworkName:
-	case action_addNode:
-		addNode(session, msg);
-		return; // break
-	case action_delNode:
-	case action_listNode:
-		listNode(session, msg);
-		return; //break
-
-	case action_updateNodeName:
-	case action_updateNodeConnInfo:
-	case action_provisionningNode:
-		return; //break
-	}
-
-
-	switch (operation) {
-	case dsop_PR_nodeConnInfo:
-		nodeConnectInfo(session, msg);
-		break;
-
-	case dsop_PR_addRequest:
-		//addRequest(msg);
-		break;
-
-	case dsop_PR_delRequest:
-		delRequest(session, msg);
-		break;
-
-	case dsop_PR_modifyRequest:
-		modifyRequest(session, msg);
-		break;
-
-	case dsop_PR_searchRequest:
-		searchRequest(session, msg);
-		break;
-
-	/* terminateRequest is a special case since
-	 * it has no Response message associated with it.
-	 * simply disconnect the client;
-	 */
-	case dsop_PR_NOTHING:
-	default:
-		jlog(L_WARNING, "not a valid DSM operation");
-	case dsop_PR_terminateRequest:
-		terminate(session);
-		break;
-	}
-}
-
 static void on_secure(netc_t *netc)
 {
 	struct session *session;
@@ -157,7 +77,6 @@ static void on_input(netc_t *netc)
 
 		switch (pdu) {
 		case pdu_PR_dsm:
-			dispatch_operation(session, msg);
 			break;
 		default:
 			terminate(session);
