@@ -17,6 +17,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <jansson.h>
+#include <event2/bufferevent.h>
+
 #include <dnds.h>
 #include <logger.h>
 
@@ -109,67 +112,61 @@ void DelRequest_context(DNDSMessage_t *msg)
 		net_send_msg(g_switch_netc, msg);
 }
 
-void addNode(struct session *session, DNDSMessage_t *req_msg)
+void
+addNode(struct session_info *sinfo, json_t *jmsg)
 {
-	(void)session;
+	jlog(L_DEBUG, "add node");
 
-	DNDSObject_t *obj;
-	AddRequest_get_object(req_msg, &obj);
+	int		 ret = 0;
+	char		*context_id = NULL;
+	char		*client_id = NULL;
+	char		*context_name = NULL;
+	char		*description = NULL;
 
-	int ret = 0;
-	size_t length = 0;
+	int		 exp_delay;
+	embassy_t	*emb = NULL;
+	char		*emb_cert_ptr = NULL;
+	char		*emb_pvkey_ptr = NULL;
+	char		*serial = NULL;
+	unsigned char	*ippool_bin = NULL;
+	long		 size;
 
-	char *context_id = NULL;
-	char *client_id = NULL;
-	char *context_name = NULL;
-	char *description = NULL;
+	char		*apikey = NULL;
+	char		*uuid = NULL;
+	char		*provcode = NULL;
+	char		 common_name[256] = {0};
+	char		*node_cert_ptr = NULL;
+	char		*node_pvkey_ptr = NULL;
+	char		 emb_serial[10];
 
-	int exp_delay;
-	embassy_t *emb = NULL;
-	char *emb_cert_ptr = NULL;
-	char *emb_pvkey_ptr = NULL;
-	char *serial = NULL;
-	unsigned char *ippool_bin = NULL;
-	long size;
+	char		*resp_str = NULL;
+	json_t		*resp = NULL;
+	json_t		*js_node = NULL;
 
-	char *apikey = NULL;
-	char *uuid = NULL;
-	char *provcode = NULL;
-	char common_name[256] = {0};
-	char *node_cert_ptr = NULL;
-	char *node_pvkey_ptr = NULL;
-	char emb_serial[10];
+	struct ippool	*ippool = NULL;
+	char		*ip = NULL;
+	int		pool_size;
 
-	DNDSMessage_t *resp_msg;
+	if ((js_node = json_object_get(jmsg, "node")) == NULL)
+		return;
 
-	/* Prepare response */
-	DNDSMessage_new(&resp_msg);
-	DNDSMessage_set_pdu(resp_msg, pdu_PR_dsm);
+	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
+	json_unpack(js_node, "{s:s}", "networkname", &context_name);
+	json_unpack(js_node, "{s:s}", "description", &description);
 
-	DSMessage_set_action(resp_msg, action_addNode);
-	DSMessage_set_operation(resp_msg, dsop_PR_addResponse);
-	/* */
-
-	Node_get_contextName(obj, &context_name, &length);
-	Node_get_description(obj, &description, &length);
-
-	ret = DSMessage_get_apikey(req_msg, &apikey, &length);
-	if (ret != DNDS_success) {
-		AddResponse_set_result(resp_msg, DNDSResult_noRight);
-		goto out;
-	}
+	resp = json_object();
+	json_object_set_new(resp, "tid", json_string("tid"));
+	json_object_set_new(resp, "action", json_string("response"));
 
 	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
-	printf("client id: %s\n", client_id);
 	if (ret != 0) {
-		AddResponse_set_result(resp_msg, DNDSResult_noRight);
+		json_object_set_new(resp, "response", json_string("denied"));
 		goto out;
 	}
 
 	ret = dao_fetch_network_id(&context_id, client_id, context_name);
-	printf("context id: %s\n", context_id);
 	if (ret != 0) {
-		AddResponse_set_result(resp_msg, DNDSResult_noSuchObject);
+		json_object_set_new(resp, "response", json_string("no-such-object"));
 		goto out;
 	}
 
@@ -178,7 +175,7 @@ void addNode(struct session *session, DNDSMessage_t *req_msg)
 	jlog(L_DEBUG, "serial: %s", serial);
 	if (ret != 0) {
 		jlog(L_ERROR, "failed to fetch context embassy");
-		AddResponse_set_result(resp_msg, DNDSResult_operationError);
+		json_object_set_new(resp, "response", json_string("error"));
 		goto out;
 	}
 
@@ -187,7 +184,6 @@ void addNode(struct session *session, DNDSMessage_t *req_msg)
 	uuid = uuid_v4();
 	provcode = uuid_v4();
 
-	printf("context id: %s\n", context_id);
 	snprintf(common_name, sizeof(common_name), "nva-%s@%s", uuid, context_id);
 	jlog(L_DEBUG, "common_name: %s", common_name);
 
@@ -206,15 +202,11 @@ void addNode(struct session *session, DNDSMessage_t *req_msg)
 	ret = dao_update_embassy_serial(context_id, emb_serial);
 	if (ret == -1) {
 		jlog(L_ERROR, "failed to update embassy serial");
-		AddResponse_set_result(resp_msg, DNDSResult_operationError);
+		json_object_set_new(resp, "response", json_string("error"));
 		goto free1;
 	}
 
 	/* handle ip pool */
-	struct ippool *ippool;
-	char *ip;
-	int pool_size;
-
 	ippool = ippool_new("44.128.0.0", "255.255.0.0");
 	free(ippool->pool);
 	ippool->pool = (uint8_t*)ippool_bin;
@@ -224,14 +216,14 @@ void addNode(struct session *session, DNDSMessage_t *req_msg)
 	ret = dao_add_node(context_id, uuid, node_cert_ptr, node_pvkey_ptr, provcode, description, ip);
 	if (ret == -1) {
 		jlog(L_ERROR, "failed to add node");
-		AddResponse_set_result(resp_msg, DNDSResult_operationError);
+		json_object_set_new(resp, "response", json_string("error"));
 		goto free2;
 	}
 
 	ret = dao_update_context_ippool(context_id, ippool->pool, pool_size);
 	if (ret == -1) {
 		jlog(L_ERROR, "failed to update embassy ippool");
-		AddResponse_set_result(resp_msg, DNDSResult_operationError);
+		json_object_set_new(resp, "response", json_string("error"));
 		goto free2;
 	}
 
@@ -259,30 +251,37 @@ void addNode(struct session *session, DNDSMessage_t *req_msg)
 		net_send_msg(g_switch_netc, msg_up);
 
 	DNDSMessage_del(msg_up);
+	/* */
 
-	AddResponse_set_result(resp_msg, DNDSResult_success);
+	json_object_set_new(resp, "response", json_string("success"));
 
 free2:
 	ippool_free(ippool);
 
 free1:
-	free(node_passport);
+	pki_passport_free(node_passport);
+	pki_embassy_free(emb);
 	pki_free_digital_id(node_ident);
 
+	free(client_id);
+	free(context_id);
 	free(uuid);
 	free(provcode);
-
 	free(node_cert_ptr);
 	free(node_pvkey_ptr);
-
 	free(serial);
-	free(emb);
 	free(emb_cert_ptr);
 	free(emb_pvkey_ptr);
 
 out:
-	net_send_msg(session->netc, resp_msg);
-	DNDSMessage_del(resp_msg);
+
+	resp_str = json_dumps(resp, 0);
+
+	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+
+	json_decref(resp);
+	free(resp_str);
 }
 
 void DelRequest_node(DNDSMessage_t *msg)
@@ -337,22 +336,6 @@ void DelRequest_node(DNDSMessage_t *msg)
 	if (g_switch_netc)
 		net_send_msg(g_switch_netc, msg);
 }
-
-#if 0
-void addRequest(DNDSMessage_t *msg)
-{
-	DNDSObject_PR objType;
-	AddRequest_get_objectType(msg, &objType);
-
-	if (objType == DNDSObject_PR_context) {
-		AddRequest_context(msg);
-	}
-
-	if (objType == DNDSObject_PR_node) {
-		AddRequest_node(msg);
-	}
-}
-#endif
 
 void delRequest(struct session *session, DNDSMessage_t *msg)
 {
@@ -686,184 +669,113 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 	DNDSMessage_del(msg);
 }
 
-void addAccount(struct session *session, DNDSMessage_t *req_msg)
+void
+addAccount(struct session_info *sinfo, json_t *jmsg)
 {
 	jlog(L_DEBUG, "Add new account");
 
-	DNDSMessage_t *resp_msg;
-	DNDSObject_t *obj;
-	AddRequest_get_object(req_msg, &obj);
+	int	 ret = 0;
+	char	*email = NULL;
+	char	*password = NULL;
+	char	*apikey = NULL;
+	char 	*resp_str = NULL;
+	json_t	*resp = NULL;
+	json_t	*js_account = NULL;
 
-	int ret = 0;
-	size_t length = 0;
-	char *email = NULL;
-	char *password = NULL;
-	char *apikey = NULL;
+	if ((js_account = json_object_get(jmsg, "account")) == NULL)
+		return;
 
-	/* Prepare response */
-	DNDSMessage_new(&resp_msg);
-	DNDSMessage_set_pdu(resp_msg, pdu_PR_dsm);
+	json_unpack(js_account, "{s:s}", "email", &email);
+	json_unpack(js_account, "{s:s}", "password", &password);
 
-	DSMessage_set_action(resp_msg, action_addAccount);
-	DSMessage_set_operation(resp_msg, dsop_PR_addResponse);
-	/* */
+	if (email == NULL || password == NULL) {
+		jlog(L_ERROR, "Invalid message\n");
+		return;
+	}
 
-	Client_get_password(obj, &password, &length);
-	Client_get_email(obj, &email, &length);
+	resp = json_object();
+	json_object_set_new(resp, "tid", json_string("tid"));
+	json_object_set_new(resp, "action", json_string("response"));
 
 	apikey = pki_gen_api_key();
 	if (apikey == NULL) {
-		AddResponse_set_result(resp_msg, DNDSResult_operationError);
+		json_object_set_new(resp, "response", json_string("error"));
 		goto fail;
 	}
 
 	ret = dao_add_client(email, password, apikey);
 	if (ret == -1) {
-		AddResponse_set_result(resp_msg, DNDSResult_duplicate);
+		json_object_set_new(resp, "response", json_string("duplicate"));
 		goto fail;
 	}
 
-
-	AddResponse_set_result(resp_msg, DNDSResult_success);
+	json_object_set_new(resp, "response", json_string("success"));
 fail:
-	net_send_msg(session->netc, resp_msg);
-	DNDSMessage_del(resp_msg);
+	resp_str = json_dumps(resp, 0);
 
+	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+
+	json_decref(resp);
+	free(resp_str);
+	free(apikey);
 	return;
 }
 
-
-int CB_listNode(void *msg, char *uuid, char *description, char *provcode, char *ipaddress, char *status)
+void
+getAccountApiKey(struct session_info *sinfo, json_t *jmsg)
 {
-	DNDSObject_t *objNode;
-	DNDSObject_new(&objNode);
-	DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
+	jlog(L_DEBUG, "get account api key");
 
-	Node_set_contextId(objNode,99);
-	Node_set_description(objNode, description, strlen(description));
-//	printf("uuid: %s\n", uuid);
-//	Node_set_uuid(objNode, "uuid", strlen("uuid"));
-//	Node_set_provCode(objNode, provcode, strlen(provcode));
-//	Node_set_ipAddress(objNode, ipaddress);
-	Node_set_status(objNode, atoi(status));
+	int	 ret = 0;
+	char	*email = NULL;
+	char	*password = NULL;
+	char	*apikey = NULL;
+	char	*resp_str = NULL;
+	json_t	*resp = NULL;
+	json_t	*js_account = NULL;
 
-	SearchResponse_add_object(msg, objNode);
+	if ((js_account = json_object_get(jmsg, "account")) == NULL)
+		return;
 
-	return 0;
-}
+	json_unpack(js_account, "{s:s}", "email", &email);
+	json_unpack(js_account, "{s:s}", "password", &password);
 
+	resp = json_object();
+	json_object_set_new(resp, "tid", json_string("tid"));
+	json_object_set_new(resp, "action", json_string("response"));
 
-void listNode(struct session *session, DNDSMessage_t *req_msg)
-{
-	int ret = 0;
-	char *client_id = NULL;
-	char *context_id = NULL;
-	size_t length = 0;
-	char *apikey = NULL;
-
-	printf("listNode !\n");
-
-
-	ret = DSMessage_get_apikey(req_msg, &apikey, &length);
-	printf("apikey: %s\n", apikey);
-
-
-	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
-	printf("client id: %s\n", client_id);
-
-	ret = dao_fetch_network_id(&context_id, client_id, "myNetwork");
-	printf("context id: %s\n", context_id);
-
-	DNDSMessage_t *msg;
-
-	DNDSMessage_new(&msg);
-	DNDSMessage_set_channel(msg, 0);
-	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
-
-	DSMessage_set_seqNumber(msg, 0);
-	DSMessage_set_ackNumber(msg, 1);
-	DSMessage_set_action(msg, action_listNode);
-	DSMessage_set_operation(msg, dsop_PR_searchResponse);
-
-	SearchResponse_set_result(msg, DNDSResult_success);
-	SearchResponse_set_searchType(msg, SearchType_object);
-
-	ret = dao_fetch_node_from_context_id(context_id, msg, CB_listNode);
-	if (ret != 0) {
-		jlog(L_WARNING, "dao fetch node from context id failed: %s", context_id);
-		return; /* FIXME send negative response */
-	}
-
-
-///	xer_fprint(stdout, &asn_DEF_DNDSMessage, msg);
-
-	net_send_msg(session->netc, msg);
-	DNDSMessage_del(msg);
-}
-
-
-int CB_listNetwork(void *msg, char *description)
-{
-	DNDSObject_t *objContext;
-	DNDSObject_new(&objContext);
-	DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
-
-	Context_set_description(objContext, description, strlen(description));
-
-	SearchResponse_add_object(msg, objContext);
-
-	return 0;
-}
-
-void listNetwork(struct session *session, DNDSMessage_t *req_msg)
-{
-	int ret = 0;
-	char *client_id = NULL;
-	size_t length = 0;
-	char *apikey = NULL;
-
-	/* Prepare response */
-	DNDSMessage_t *resp_msg = NULL;
-	DNDSMessage_new(&resp_msg);
-	DNDSMessage_set_channel(resp_msg, 0);
-	DNDSMessage_set_pdu(resp_msg, pdu_PR_dsm);
-
-	DSMessage_set_seqNumber(resp_msg, 0);
-	DSMessage_set_ackNumber(resp_msg, 1);
-	DSMessage_set_action(resp_msg, action_listNetwork);
-	DSMessage_set_operation(resp_msg, dsop_PR_searchResponse);
-
-	SearchResponse_set_searchType(resp_msg, SearchType_object);
-	/* */
-
-	ret = DSMessage_get_apikey(req_msg, &apikey, &length);
-	if (ret != DNDS_success) {
-		SearchResponse_set_result(resp_msg, DNDSResult_noRight);
-		goto out;
-	}
-
-	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
+	ret = dao_fetch_account_apikey(&apikey, email, password);
 	if (ret == -1) {
-		SearchResponse_set_result(resp_msg, DNDSResult_operationError);
-		goto out;
-	}
-	if (client_id == NULL) {
-		SearchResponse_set_result(resp_msg, DNDSResult_noRight);
+		json_object_set_new(resp, "response", json_string("error"));
+		jlog(L_DEBUG, "dao_fetch_account_apikey failed");
 		goto out;
 	}
 
-	ret = dao_fetch_networks_by_client_id(client_id, resp_msg, CB_listNetwork);
-	SearchResponse_set_result(resp_msg, DNDSResult_success);
+	if (apikey == NULL) {
+		json_object_set_new(resp, "response", json_string("denied"));
+		jlog(L_DEBUG, "apikey is NULL");
+		goto out;
+	}
+
+	json_object_set_new(resp, "response", json_string("success"));
+	json_object_set_new(resp, "apikey", json_string(apikey));
+
 out:
+	resp_str = json_dumps(resp, 0);
 
-	net_send_msg(session->netc, resp_msg);
-	DNDSMessage_del(resp_msg);
+	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+
+	json_decref(resp);
+	free(resp_str);
+	free(apikey);
 
 	return;
-
 }
 
-int CB_fetch_network_by_client_id_desc(void *msg,
+int
+CB_fetch_network_by_client_id_desc(void *msg,
 					char *id,
 					char *description,
 					char *client_id,
@@ -892,88 +804,81 @@ int CB_fetch_network_by_client_id_desc(void *msg,
 	return 0;
 }
 
-void addNetwork(struct session *session, DNDSMessage_t *req_msg)
+void
+addNetwork(struct session_info *sinfo, json_t *jmsg)
 {
-	int ret = 0;
-	char *client_id = NULL;
-	size_t length;
+	jlog(L_DEBUG, "add network");
 
-	DNDSObject_t *obj;
-	char *apikey = NULL;
-	char *description = NULL;
-	char network[INET_ADDRSTRLEN];
-	char netmask[INET_ADDRSTRLEN];
+	int	 ret = 0;
+	char	*client_id = NULL;
+	char	*apikey = NULL;
+	char	*name = NULL;
+	char	*resp_str = NULL;
+	json_t	*resp = NULL;
+	json_t	*js_network = NULL;
 
-	/* Prepare response */
-	DNDSMessage_t *resp_msg = NULL;
-	DNDSMessage_new(&resp_msg);
-	DNDSMessage_set_pdu(resp_msg, pdu_PR_dsm);
-	DSMessage_set_action(resp_msg, action_addNetwork);
-	DSMessage_set_operation(resp_msg, dsop_PR_addResponse);
-	/* */
+	int exp_delay;
+	char *emb_cert_ptr = NULL; long size;
+	char *emb_pvkey_ptr = NULL;
+	char *serv_cert_ptr;
+	char *serv_pvkey_ptr;
+	char emb_serial[10];
+	struct ippool *ippool = NULL;
+	size_t pool_size;
+	passport_t *nvswitch_passport = NULL;
+	digital_id_t *server_id = NULL;
+	embassy_t *emb = NULL;
+	digital_id_t *embassy_id = NULL;
 
-	AddRequest_get_object(req_msg, &obj);
-	DSMessage_get_apikey(req_msg, &apikey, &length);
-	Context_get_description(obj, &description, &length);
-	Context_get_network(obj, network);
-	Context_get_netmask(obj, netmask);
+	if ((js_network = json_object_get(jmsg, "network")) == NULL)
+		return;
+
+	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
+	json_unpack(js_network, "{s:s}", "name", &name);
+
+	/* check apikey and name... */
+
+	resp = json_object();
+	json_object_set_new(resp, "tid", json_string("tid"));
+	json_object_set_new(resp, "action", json_string("response"));
 
 	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
 	if (ret == -1) {
-		AddResponse_set_result(resp_msg, DNDSResult_operationError);
+		json_object_set_new(resp, "response", json_string("error"));
 		goto out;
 	}
 	if (client_id == NULL) {
-		AddResponse_set_result(resp_msg, DNDSResult_noRight);
+		json_object_set_new(resp, "response", json_string("denied"));
 		goto out;
 	}
 
 	/* 3.1- Initialise embassy */
-	int exp_delay;
 	exp_delay = pki_expiration_delay(10);
 
-	digital_id_t *embassy_id;
 	embassy_id = pki_digital_id("embassy", "CA", "Quebec", "", "admin@netvirt.org", "NetVirt");
 
-	embassy_t *emb;
 	emb = pki_embassy_new(embassy_id, exp_delay);
-	pki_free_digital_id(embassy_id);
-
-	char *emb_cert_ptr; long size;
-	char *emb_pvkey_ptr;
 
 	pki_write_certificate_in_mem(emb->certificate, &emb_cert_ptr, &size);
 	pki_write_privatekey_in_mem(emb->keyring, &emb_pvkey_ptr, &size);
 
 	/* 3.2- Initialize server passport */
 
-	digital_id_t *server_id;
 	server_id = pki_digital_id("nvswitch", "CA", "Quebec", "", "admin@netvirt.org", "NetVirt");
 
-	passport_t *nvswitch_passport;
 	nvswitch_passport = pki_embassy_deliver_passport(emb, server_id, exp_delay);
-	pki_free_digital_id(server_id);
-
-	char *serv_cert_ptr;
-	char *serv_pvkey_ptr;
 
 	pki_write_certificate_in_mem(nvswitch_passport->certificate, &serv_cert_ptr, &size);
 	pki_write_privatekey_in_mem(nvswitch_passport->keyring, &serv_pvkey_ptr, &size);
-	free(nvswitch_passport);
 
-	char emb_serial[10];
 	snprintf(emb_serial, sizeof(emb_serial), "%d", emb->serial);
-	free(emb);
 
 	/* Create an IP pool */
-	struct ippool *ippool;
-	size_t pool_size;
-
 	ippool = ippool_new("44.128.0.0", "255.255.0.0");
 	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
 
 	ret = dao_add_context(client_id,
-				description,
+				name,
 				"44.128.0.0/16",
 				emb_cert_ptr,
 				emb_pvkey_ptr,
@@ -984,22 +889,14 @@ void addNetwork(struct session *session, DNDSMessage_t *req_msg)
 				pool_size);
 
 	if (ret == -1) {
-		AddResponse_set_result(resp_msg, DNDSResult_operationError);
+		json_object_set_new(resp, "response", json_string("error"));
 		goto out;
 	}
 
 	if (ret == -2) {
-		AddResponse_set_result(resp_msg, DNDSResult_duplicate);
+		json_object_set_new(resp, "response", json_string("duplicate"));
 		goto out;
 	}
-
-	ippool_free(ippool);
-
-	free(serv_cert_ptr);
-	free(serv_pvkey_ptr);
-
-	free(emb_cert_ptr);
-	free(emb_pvkey_ptr);
 
 	/* send context update to nvswitch */
 	DNDSMessage_t *msg_up;
@@ -1012,7 +909,7 @@ void addNetwork(struct session *session, DNDSMessage_t *req_msg)
 	DSMessage_set_action(msg_up, action_addNetwork);
 	DSMessage_set_operation(msg_up, dsop_PR_searchResponse);
 
-	dao_fetch_network_by_client_id_desc(client_id, description, msg_up,
+	dao_fetch_network_by_client_id_desc(client_id, name, msg_up,
 		CB_fetch_network_by_client_id_desc);
 
 	SearchResponse_set_searchType(msg_up, SearchType_all);
@@ -1024,68 +921,174 @@ void addNetwork(struct session *session, DNDSMessage_t *req_msg)
 	DNDSMessage_del(msg_up);
 	/* */
 
+	json_object_set_new(resp, "response", json_string("success"));
+out:
+	resp_str = json_dumps(resp, 0);
+
+	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+
+	pki_free_digital_id(embassy_id);
+	pki_free_digital_id(server_id);
+	pki_passport_free(nvswitch_passport);
+	pki_embassy_free(emb);
+	ippool_free(ippool);
+
+	free(serv_cert_ptr);
+	free(serv_pvkey_ptr);
+	free(emb_cert_ptr);
+	free(emb_pvkey_ptr);
+	free(client_id);
+	free(resp_str);
+
+	json_decref(resp);
+}
+
+int
+CB_listNetwork(void *ptr, char *name)
+{
+	json_t	*array;
+	json_t	*network;
+
+	array = (json_t*)ptr;
+	network = json_object();
+
+	json_object_set_new(network, "name", json_string(name));
+	json_array_append_new(array, network);
+
+	return 0;
+}
+
+void
+listNetwork(struct session_info *sinfo, json_t *jmsg)
+{
+	jlog(L_DEBUG, "list network");
+
+	int	 ret = 0;
+	char	*client_id = NULL;
+	char	*apikey = NULL;
+	char	*resp_str = NULL;
+	json_t	*array;
+	json_t	*resp = NULL;
+
+	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
+
+	/* XXX check apikey ... */
+
+	resp = json_object();
+	json_object_set_new(resp, "tid", json_string("tid"));
+	json_object_set_new(resp, "action", json_string("response"));
+
+	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
+	if (ret == -1) {
+		json_object_set_new(resp, "reponse", json_string("error"));
+		goto out;
+	}
+	if (client_id == NULL) {
+		json_object_set_new(resp, "reponse", json_string("denied"));
+		goto out;
+	}
+
+	array = json_array();
+	ret = dao_fetch_networks_by_client_id(client_id, array, CB_listNetwork);
+	json_object_set_new(resp, "networks", array);
+	json_object_set_new(resp, "response", json_string("success"));
+out:
+
+	resp_str = json_dumps(resp, 0);
+
+	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+
+	json_decref(resp);
+	free(resp_str);
 	free(client_id);
 
-	AddResponse_set_result(resp_msg, DNDSResult_success);
-out:
-	net_send_msg(session->netc, resp_msg);
-	DNDSMessage_del(resp_msg);
+	return;
 }
 
-void getAccountApiKey(struct session *session, DNDSMessage_t *req_msg)
+int
+CB_listNode(void *ptr, char *uuid, char *description, char *provcode, char *ipaddress, char *status)
 {
-	int ret = 0;
-	size_t length = 0;
-	char *email = NULL;
-	char *password = NULL;
-	char *apikey = NULL;
+	json_t	*array;
+	json_t	*node;
 
-	/* Prepare response */
-	DNDSMessage_t *resp_msg;
+	array = (json_t*)ptr;
+	node = json_object();
 
-	DNDSMessage_new(&resp_msg);
-	DNDSMessage_set_channel(resp_msg, 0);
-	DNDSMessage_set_pdu(resp_msg, pdu_PR_dsm);
+	json_object_set_new(node, "status", json_string(status));
+	json_object_set_new(node, "ipaddress", json_string(ipaddress));
+	json_object_set_new(node, "provcode", json_string(provcode));
+	json_object_set_new(node, "description", json_string(description));
+	json_object_set_new(node, "uuid", json_string(uuid));
 
-	DSMessage_set_seqNumber(resp_msg, 0);
-	DSMessage_set_ackNumber(resp_msg, 0);
-	DSMessage_set_action(resp_msg, action_getAccountApiKey);
-	DSMessage_set_operation(resp_msg, dsop_PR_searchResponse);
-	/* */
+	json_array_append_new(array, node);
 
-	DNDSObject_t *object;
-	SearchRequest_get_object(req_msg, &object);
+	return 0;
+}
 
-	Client_get_email(object, &email, &length);
-	Client_get_password(object, &password, &length);
+void
+listNode(struct session_info *sinfo, json_t *jmsg)
+{
+	jlog(L_DEBUG, "list node");
 
-	ret = dao_fetch_account_apikey(&apikey, email, password);
-	if (ret == -1) {
-		SearchResponse_set_result(resp_msg, DNDSResult_operationError);
-		jlog(L_DEBUG, "dao_fetch_account_apikey failed");
+	int	 ret = 0;
+	char	*client_id = NULL;
+	char	*context_id = NULL;
+	char	*apikey = NULL;
+	char	*context_name = NULL;
+	char	*resp_str = NULL;
+	json_t	*js_network = NULL;
+	json_t	*array = NULL;
+	json_t	*resp = NULL;
+
+	if ((js_network = json_object_get(jmsg, "network")) == NULL)
+		return;
+
+	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
+	json_unpack(js_network, "{s:s}", "name", &context_name);
+
+	resp = json_object();
+	json_object_set_new(resp, "tid", json_string("tid"));
+	json_object_set_new(resp, "action", json_string("response"));
+
+	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
+	if (client_id == NULL) {
+		json_object_set_new(resp, "response", json_string("denied"));
 		goto out;
 	}
 
-	if (apikey == NULL) {
-		SearchResponse_set_result(resp_msg, DNDSResult_noRight);
-		jlog(L_DEBUG, "apikey is NULL");
+	ret = dao_fetch_network_id(&context_id, client_id, context_name);
+	if (context_id == NULL) {
+		json_object_set_new(resp, "response", json_string("no-such-object"));
 		goto out;
 	}
 
-	DNDSObject_t *objClient;
-	DNDSObject_new(&objClient);
-	DNDSObject_set_objectType(objClient, DNDSObject_PR_client);
-
-	Client_set_apikey(objClient, apikey, strlen(apikey));
-
-	SearchResponse_set_result(resp_msg, DNDSResult_success);
-	SearchResponse_add_object(resp_msg, objClient);
-	SearchResponse_set_searchType(resp_msg, SearchType_object);
+	array = json_array();
+	ret = dao_fetch_node_from_context_id(context_id, array, CB_listNode);
+	if (ret != 0) {
+		jlog(L_WARNING, "dao fetch node from context id failed: %s", context_id);
+		json_object_set_new(resp, "response", json_string("denied"));
+		goto out;
+	}
+	json_object_set_new(resp, "nodes", array);
+	json_object_set_new(resp, "response", json_string("success"));
 
 out:
-	net_send_msg(session->netc, resp_msg);
-	DNDSMessage_del(resp_msg);
+
+	resp_str = json_dumps(resp, 0);
+
+	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+
+	json_decref(resp);
+	free(resp_str);
+	free(client_id);
+	free(context_id);
+
+	return;
 }
+
 
 void searchRequest(struct session *session, DNDSMessage_t *req_msg)
 {

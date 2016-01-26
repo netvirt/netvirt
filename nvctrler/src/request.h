@@ -16,8 +16,10 @@
 #ifndef REQUEST_H
 #define REQUEST_H
 
+#include <jansson.h>
 #include <dnds.h>
 #include "ctrler.h"
+#include "ctrler2.h"
 
 void authRequest(struct session *session, DNDSMessage_t *msg);
 void addRequest(DNDSMessage_t *msg);
@@ -28,12 +30,12 @@ void peerConnectInfo(struct session *session, DNDSMessage_t *req_msg);
 void nodeConnectInfo(struct session *session, DNDSMessage_t *req_msg);
 
 
-void addNode(struct session *session, DNDSMessage_t *req_msg);
-void addAccount(struct session *session, DNDSMessage_t *req_msg);
-void getAccountApiKey(struct session *session, DNDSMessage_t *req_msg);
-void addNetwork(struct session *session, DNDSMessage_t *req_msg);
-void listNode(struct session *session, DNDSMessage_t *req_msg);
-void listNetwork(struct session *session, DNDSMessage_t *req_msg);
+void addNode(struct session_info *, json_t *);
+void addAccount(struct session_info *, json_t *);
+void getAccountApiKey(struct session_info *, json_t *);
+void addNetwork(struct session_info *, json_t *);
+void listNetwork(struct session_info *, json_t *);
+void listNode(struct session_info *, json_t *);
 
 #endif
 
