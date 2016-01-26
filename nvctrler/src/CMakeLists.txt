@@ -3,13 +3,14 @@ else (PostgreSQL_TYPE_INCLUDE_DIR)
 	set (PostgreSQL_TYPE_INCLUDE_DIR ${PostgreSQL_INCLUDE_DIR})
 endif (PostgreSQL_TYPE_INCLUDE_DIR)
 
-set(CMAKE_C_FLAGS "-g -W -Wall -DNVCTRLER_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
+set(CMAKE_C_FLAGS "-g -W -Wall -Wno-unused-parameter -DNVCTRLER_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
 set(CMAKE_CXX_FLAGS "-g -W -Wall -DNVCTRLER_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
 
 add_subdirectory(tests)
 
 add_executable(netvirt-ctrler
 	ctrler.c
+	ctrler2.c
 	dao.c
 	ippool.c
 	main.c
@@ -29,6 +30,8 @@ target_link_libraries(netvirt-ctrler
 	pq
 	crypto
 	pthread
+	jansson
+	event
 )
 
 install(TARGETS netvirt-ctrler
