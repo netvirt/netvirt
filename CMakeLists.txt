@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 project(netvirt)
 
-SET(CPACK_PACKAGE_VERSION "0.6.1")
+SET(CPACK_PACKAGE_VERSION "0.6.2")
 
 enable_testing()
 

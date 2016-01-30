@@ -209,6 +209,8 @@ void MainDialog::trayIconClicked(QSystemTrayIcon::ActivationReason reason)
 	else {
 		centerWidget(this);
 		this->show();
+		this->raise();
+		this->activateWindow();
 	}
 }
 
