@@ -162,6 +162,9 @@ ippool_new(char *address, char *netmask)
 void
 ippool_free(struct ippool *ippool)
 {
+	if (ippool == NULL)
+		return;
+
 	free(ippool->pool);
 	free(ippool);
 }
