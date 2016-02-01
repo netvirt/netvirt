@@ -76,10 +76,14 @@ dispatch_operation(struct session_info *sinfo, json_t *jmsg)
 		getAccountApiKey(sinfo, jmsg);
 	} else if (strcmp(action, "add-network") == 0) {
 		addNetwork(sinfo, jmsg);
+	} else if (strcmp(action, "del-network") == 0) {
+		delNetwork(sinfo, jmsg);
 	} else if (strcmp(action, "list-network") == 0) {
 		listNetwork(sinfo, jmsg);
 	} else if (strcmp(action, "add-node") == 0) {
 		addNode(sinfo, jmsg);
+	} else if (strcmp(action, "del-node") == 0) {
+		delNode(sinfo, jmsg);
 	} else if (strcmp(action, "list-node") == 0) {
 		listNode(sinfo, jmsg);
 	}
