@@ -72,33 +72,62 @@ void AddRequest_context(DNDSMessage_t *msg)
 	(void)msg;
 }
 
-void DelRequest_context(DNDSMessage_t *msg)
+void
+delNetwork(struct session_info *sinfo, json_t *jmsg)
 {
-	DNDSObject_t *object;
-	DelRequest_get_object(msg, &object);
+	jlog(L_DEBUG, "del network");
 
-	int ret = 0;
-	uint32_t contextId = -1;
-	uint32_t clientId = 0;
+	int		ret = 0;
+	char		*client_id = NULL;
+	char		*network_id = NULL;
 
-	char context_id_str[10] = {0};
-	char client_id_str[10] = {0};
+	char		*apikey = NULL;
+	char		*network_name = NULL;
+	char		*resp_str = NULL;
+	json_t		*resp = NULL;
+	json_t		*js_network = NULL;
 
-	Context_get_id(object, &contextId);
-	snprintf(context_id_str, 10, "%d", contextId);
+	if ((js_network = json_object_get(jmsg, "network")) == NULL)
+		return;
 
-	Context_get_clientId(object, &clientId);
-	snprintf(client_id_str, 10, "%d", clientId);
+	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
+	json_unpack(js_network, "{s:s}", "name", &network_name);
 
-	jlog(L_NOTICE, "deleting nodes belonging to context: %s", context_id_str);
-	ret = dao_del_node_by_context_id(context_id_str);
+	/* check apikey and name... */
+
+	resp = json_object();
+	json_object_set_new(resp, "tid", json_string("tid"));
+	json_object_set_new(resp, "action", json_string("response"));
+
+	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
+	if (client_id == NULL) {
+		json_object_set_new(resp, "response", json_string("denied"));
+		goto out;
+	}
+	if (ret == -1) {
+		json_object_set_new(resp, "response", json_string("error"));
+		goto out;
+	}
+
+	ret = dao_fetch_network_id(&network_id, client_id, network_name);
+	if (ret == -1) {
+		json_object_set_new(resp, "response", json_string("error"));
+		goto out;
+	}
+	if (network_id == NULL) {
+		json_object_set_new(resp, "response", json_string("no-such-object"));
+		goto out;
+	}
+
+	jlog(L_NOTICE, "deleting nodes belonging to context: %s", network_id);
+	ret = dao_del_node_by_context_id(network_id);
 	if (ret < 0) {
 		jlog(L_NOTICE, "deleting nodes failed!");
 		return;
 	}
 
-	jlog(L_NOTICE, "deleting context: %s", context_id_str);
-	ret = dao_del_context(client_id_str, context_id_str);
+	jlog(L_NOTICE, "deleting context: %s", network_id);
+	ret = dao_del_context(client_id, network_id);
 	if (ret < 0) {
 		/* FIXME: multiple DAO calls should be commited to the DB once
 		 * all calls have succeeded.
@@ -107,9 +136,21 @@ void DelRequest_context(DNDSMessage_t *msg)
 		return;
 	}
 
-	/* forward the delRequest to nvswitch */
-	if (g_switch_netc)
-		net_send_msg(g_switch_netc, msg);
+	/* XXX forward the delRequest to nvswitch */
+	if (g_switch_netc) { };
+		//net_send_msg(g_switch_netc, msg);
+
+out:
+
+	resp_str = json_dumps(resp, 0);
+
+	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+
+	json_decref(resp);
+	free(resp_str);
+	free(client_id);
+	free(network_id);
 }
 
 void
@@ -284,57 +325,97 @@ out:
 	free(resp_str);
 }
 
-void DelRequest_node(DNDSMessage_t *msg)
+void
+delNode(struct session_info *sinfo, json_t *jmsg)
 {
-	int ret = 0;
+	jlog(L_DEBUG, "del node");
 
-	DNDSObject_t *object;
-	DelRequest_get_object(msg, &object);
+	int		ret = 0;
+	char		*client_id = NULL;
+	char		*network_id = NULL;
+	char		*node_uuid = NULL;
+	char		*apikey = NULL;
+	char		*network_name = NULL;
+	char		*resp_str = NULL;
+	char		*ipaddr = NULL;
+	json_t		*js_node = NULL;
+	json_t		*resp = NULL;
+	struct		ippool *ippool = NULL;
+	int		pool_size;
 
-	size_t length = 0;
-	uint32_t contextId = -1;
-	char context_id_str[10] = {0};
-	Node_get_contextId(object, &contextId);
-	snprintf(context_id_str, 10, "%d", contextId);
 
-	char *uuid = NULL;
-	Node_get_uuid(object, &uuid, &length);
-
-	char *ipaddr = NULL;
-	ret = dao_fetch_node_ip(context_id_str, uuid, &ipaddr);
-	if (ret == -1) {
-		jlog(L_ERROR, "failed to fetch node ip");
+	if ((js_node = json_object_get(jmsg, "node")) == NULL)
 		return;
+
+	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
+	json_unpack(js_node, "{s:s}", "networkname", &network_name);
+	json_unpack(js_node, "{s:s}", "uuid", &node_uuid);
+
+	/* check network_name and node_uuid */
+	resp = json_object();
+	json_object_set_new(resp, "tid", json_string("tid"));
+	json_object_set_new(resp, "action", json_string("response"));
+
+
+	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
+	if (ret != 0) {
+		json_object_set_new(resp, "response", json_string("denied"));
+		goto out;
 	}
 
-	jlog(L_NOTICE, "revoking node: %s", uuid);
-	dao_del_node(context_id_str, uuid);
+	ret = dao_fetch_network_id(&network_id, client_id, network_name);
+	if (ret != 0) {
+		json_object_set_new(resp, "response", json_string("no-such-object"));
+		goto out;
+	}
+
+	ret = dao_fetch_node_ip(network_id, node_uuid, &ipaddr);
+	if (ret != 0) {
+		jlog(L_ERROR, "failed to fetch node ip");
+		json_object_set_new(resp, "response", json_string("no-such-object"));
+		goto out;
+	}
+
+	jlog(L_NOTICE, "revoking node: %s, ip:%s, network:%s", node_uuid, ipaddr, network_id);
+	dao_del_node(network_id, node_uuid);
 
 	unsigned char *ippool_bin = NULL;
-	ret = dao_fetch_context_ippool(context_id_str, &ippool_bin);
+	ret = dao_fetch_context_ippool(network_id, &ippool_bin);
 	if (ret == -1) {
 		jlog(L_ERROR, "failed to fetch context ippool");
 		return;
 	}
 
 	/* update ip pool */
-	struct ippool *ippool;
-	int pool_size;
-
 	ippool = ippool_new("44.128.0.0", "255.255.0.0");
 	free(ippool->pool);
 	ippool->pool = (uint8_t*)ippool_bin;
 	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
 	ippool_release_ip(ippool, ipaddr);
 
-	ret = dao_update_context_ippool(context_id_str, ippool->pool, pool_size);
+	ret = dao_update_context_ippool(network_id, ippool->pool, pool_size);
 	if (ret == -1) {
 		jlog(L_ERROR, "failed to update embassy ippool");
 	}
 
 	/* forward the delRequest to nvswitch */
-	if (g_switch_netc)
-		net_send_msg(g_switch_netc, msg);
+	//if (g_switch_netc)
+		//net_send_msg(g_switch_netc, msg);
+
+out:
+
+	resp_str = json_dumps(resp, 0);
+
+	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+
+	json_decref(resp);
+	free(resp_str);
+	free(client_id);
+	free(network_id);
+	free(ipaddr);
+	ippool_free(ippool);
+
 }
 
 void delRequest(struct session *session, DNDSMessage_t *msg)
@@ -345,14 +426,6 @@ void delRequest(struct session *session, DNDSMessage_t *msg)
 
 	if (objType == DNDSObject_PR_client) {
 		/* FIXME : DelRequest_client(msg); */
-	}
-
-	if (objType == DNDSObject_PR_context) {
-		DelRequest_context(msg);
-	}
-
-	if (objType == DNDSObject_PR_node) {
-		DelRequest_node(msg);
 	}
 }
 
@@ -809,26 +882,27 @@ addNetwork(struct session_info *sinfo, json_t *jmsg)
 {
 	jlog(L_DEBUG, "add network");
 
-	int	 ret = 0;
-	char	*client_id = NULL;
-	char	*apikey = NULL;
-	char	*name = NULL;
-	char	*resp_str = NULL;
-	json_t	*resp = NULL;
-	json_t	*js_network = NULL;
+	int		 ret = 0;
+	char		*client_id = NULL;
+	char		*apikey = NULL;
+	char		*name = NULL;
+	char		*resp_str = NULL;
+	json_t		*resp = NULL;
+	json_t		*js_network = NULL;
 
-	int exp_delay;
-	char *emb_cert_ptr = NULL; long size;
-	char *emb_pvkey_ptr = NULL;
-	char *serv_cert_ptr;
-	char *serv_pvkey_ptr;
-	char emb_serial[10];
-	struct ippool *ippool = NULL;
-	size_t pool_size;
-	passport_t *nvswitch_passport = NULL;
-	digital_id_t *server_id = NULL;
-	embassy_t *emb = NULL;
-	digital_id_t *embassy_id = NULL;
+	int		exp_delay;
+	char		*emb_cert_ptr = NULL;
+	long		size;
+	char		*emb_pvkey_ptr = NULL;
+	char		*serv_cert_ptr;
+	char		*serv_pvkey_ptr;
+	char		emb_serial[10];
+	struct		ippool *ippool = NULL;
+	size_t		pool_size;
+	passport_t	*nvswitch_passport = NULL;
+	digital_id_t	*server_id = NULL;
+	embassy_t	*emb = NULL;
+	digital_id_t	*embassy_id = NULL;
 
 	if ((js_network = json_object_get(jmsg, "network")) == NULL)
 		return;
@@ -980,12 +1054,12 @@ listNetwork(struct session_info *sinfo, json_t *jmsg)
 	json_object_set_new(resp, "action", json_string("response"));
 
 	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
-	if (ret == -1) {
-		json_object_set_new(resp, "reponse", json_string("error"));
+	if (client_id == NULL) {
+		json_object_set_new(resp, "response", json_string("denied"));
 		goto out;
 	}
-	if (client_id == NULL) {
-		json_object_set_new(resp, "reponse", json_string("denied"));
+	if (ret == -1) {
+		json_object_set_new(resp, "response", json_string("error"));
 		goto out;
 	}
 
