@@ -1161,7 +1161,7 @@ int dao_fetch_node_ip(char *context_id, char *uuid, char **ipaddress)
 	fields = PQnfields(result);
 
 	if (tuples > 0 && fields > 0) {
-		*ipaddress = PQgetvalue(result, 0, 0);
+		*ipaddress = strdup(PQgetvalue(result, 0, 0));
 	} else {
 		PQclear(result);
 		return -1;
