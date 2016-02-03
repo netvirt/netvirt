@@ -229,7 +229,7 @@ int main(int argc, char *argv[])
 		daemonize();
 	}
 
-	ctrler2_init();
+	ctrler2_init(ctrler_cfg);
 /*
 	while (ctrler_cfg->ctrler_running) {
 		sleep(1);
