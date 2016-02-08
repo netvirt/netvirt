@@ -743,6 +743,62 @@ void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
 }
 
 void
+activateAccount(struct session_info *sinfo, json_t *jmsg)
+{
+	jlog(L_DEBUG, "activate account");
+
+	int	ret = 0;
+	char	*email = NULL;
+	char	*apikey = NULL;
+	char	*new_apikey = NULL;
+	char	*resp_str = NULL;
+	json_t	*resp = NULL;
+	json_t	*js_account = NULL;
+
+	if ((js_account = json_object_get(jmsg, "account")) == NULL)
+		return;
+
+	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
+	json_unpack(js_account, "{s:s}", "email", &email);
+
+	resp = json_object();
+	json_object_set_new(resp, "tid", json_string("tid"));
+	json_object_set_new(resp, "action", json_string("response"));
+
+	if (email == NULL) {
+		jlog(L_ERROR, "Invalid message\n");
+		return;
+	}
+
+	new_apikey = pki_gen_apikey();
+	if (apikey == NULL) {
+		json_object_set_new(resp, "response", json_string("error"));
+		goto out;
+	}
+
+	ret = dao_activate_client(email, apikey);
+	if (ret == -1) {
+		json_object_set_new(resp, "response", json_string("denied"));
+		goto out;
+	}
+
+	dao_update_client_apikey(email, apikey, new_apikey);
+
+	json_object_set_new(resp, "response", json_string("success"));
+
+out:
+	resp_str = json_dumps(resp, 0);
+
+	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+
+	json_decref(resp);
+	free(resp_str);
+	free(new_apikey);
+	return;
+}
+
+void
 addAccount(struct session_info *sinfo, json_t *jmsg)
 {
 	jlog(L_DEBUG, "Add new account");
@@ -770,7 +826,7 @@ addAccount(struct session_info *sinfo, json_t *jmsg)
 	json_object_set_new(resp, "tid", json_string("tid"));
 	json_object_set_new(resp, "action", json_string("response"));
 
-	apikey = pki_gen_api_key();
+	apikey = pki_gen_apikey();
 	if (apikey == NULL) {
 		json_object_set_new(resp, "response", json_string("error"));
 		goto fail;
@@ -783,6 +839,7 @@ addAccount(struct session_info *sinfo, json_t *jmsg)
 	}
 
 	json_object_set_new(resp, "response", json_string("success"));
+	json_object_set_new(resp, "apikey", json_string(apikey));
 fail:
 	resp_str = json_dumps(resp, 0);
 

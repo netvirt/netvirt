@@ -183,7 +183,7 @@ static void b64enc(const uint8_t *buf, size_t length, char **b64buf)
 	BUF_MEM_free(memptr);
 }
 
-char *pki_gen_api_key()
+char *pki_gen_apikey()
 {
 	int ret = 0;
 

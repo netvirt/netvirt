@@ -91,11 +91,38 @@ int dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
+			"dao_activate_client",
+			"UPDATE client "
+			"SET status = 1 "
+			"WHERE email = $1 "
+			"AND apikey = $2;",
+			0,
+			NULL);
+	check_result_status(result);
+	if (result == NULL)
+		goto error;
+	PQclear(result);
+
+	result = PQprepare(dbconn,
+			"dao_update_client_apikey",
+			"UPDATE client "
+			"set apikey = $3 "
+			"WHERE email = $1 "
+			"AND apikey = $2;",
+			0,
+			NULL);
+	check_result_status(result);
+	if (result == NULL)
+		goto error;
+	PQclear(result);
+
+	result = PQprepare(dbconn,
 			"dao_fetch_account_apikey",
 			"SELECT apikey "
 			"FROM CLIENT "
 			"WHERE email = $1 "
-			"AND password = crypt($2, password);",
+			"AND password = crypt($2, password) "
+			"AND status = 1;",
 			0,
 			NULL);
 
@@ -108,7 +135,8 @@ int dao_prepare_statements()
 			"dao_fetch_client_id_by_apikey",
 			"SELECT id "
 			"FROM CLIENT "
-			"WHERE apikey = $1;",
+			"WHERE apikey = $1 "
+			"AND status = 1;",
 			0,
 			NULL);
 
@@ -436,6 +464,74 @@ int dao_update_node_status(char *context_id, char *uuid, char *status, char *ips
 	paramLengths[3] = strlen(ipsrc);
 
 	result = PQexecPrepared(dbconn, "dao_update_node_status", 4, paramValues, paramLengths, NULL, 1);
+
+	if (!result) {
+		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		return -1;
+	}
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return -1;
+	}
+
+	PQclear(result);
+
+	return 0;
+}
+int dao_update_client_apikey(char *email, char *apikey, char *new_apikey)
+{
+	const char *paramValues[3];
+	int paramLengths[3];
+	PGresult *result = NULL;
+
+	if (!email || !apikey || !new_apikey) {
+		jlog(L_WARNING, "invalid NULL parameter");
+		return -1;
+	}
+
+	paramValues[0] = email;
+	paramValues[1] = apikey;
+	paramValues[2] = new_apikey;
+
+	paramLengths[0] = strlen(email);
+	paramLengths[1] = strlen(apikey);
+	paramLengths[2] = strlen(new_apikey);
+
+	result = PQexecPrepared(dbconn, "dao_update_client_apikey", 3, paramValues, paramLengths, NULL, 1);
+	if (!result) {
+		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		return -1;
+	}
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return -1;
+	}
+
+	PQclear(result);
+
+	return 0;
+}
+
+int dao_activate_client(char *email, char *apikey)
+{
+	const char *paramValues[2];
+	int paramLengths[2];
+	PGresult *result = NULL;
+
+	if (!email || !apikey) {
+		jlog(L_WARNING, "invalid NULL parameter");
+		return -1;
+	}
+
+	paramValues[0] = email;
+	paramValues[1] = apikey;
+
+	paramLengths[0] = strlen(email);
+	paramLengths[1] = strlen(apikey);
+
+	result = PQexecPrepared(dbconn, "dao_activate_client", 2, paramValues, paramLengths, NULL, 1);
 
 	if (!result) {
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
