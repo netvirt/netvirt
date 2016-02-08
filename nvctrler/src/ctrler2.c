@@ -63,7 +63,12 @@ response()
 static void
 dispatch_operation(struct session_info *sinfo, json_t *jmsg)
 {
+	char	*dump;
 	char	*action;
+
+	dump = json_dumps(jmsg, 0);
+	printf("dump: %s\n", dump);
+	free(dump);
 	
 	if (json_unpack(jmsg, "{s:s}", "action", &action) == -1) {
 		/* XXX disconnect */
@@ -72,6 +77,8 @@ dispatch_operation(struct session_info *sinfo, json_t *jmsg)
 
 	if (strcmp(action, "add-account") == 0) {
 		addAccount(sinfo, jmsg);
+	} else if (strcmp(action, "activate-account") == 0) {
+		activateAccount(sinfo, jmsg);
 	} else if (strcmp(action, "get-account-apikey") == 0) {
 		getAccountApiKey(sinfo, jmsg);
 	} else if (strcmp(action, "add-network") == 0) {
