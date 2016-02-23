@@ -32,6 +32,7 @@ target_link_libraries(netvirt-ctrler
 	pthread
 	jansson
 	event
+	event_openssl
 )
 
 install(TARGETS netvirt-ctrler

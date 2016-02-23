@@ -25,6 +25,8 @@ target_link_libraries(netvirt-switch
 	ssl
 	crypto
 	pthread
+	jansson
+	event
 )
 
 install(TARGETS netvirt-switch
