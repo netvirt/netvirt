@@ -36,6 +36,9 @@ void getAccountApiKey(struct session_info *, json_t *);
 void addNetwork(struct session_info *, json_t *);
 void listNetwork(struct session_info *, json_t *);
 void listNode(struct session_info *, json_t *);
+void activateAccount(struct session_info *, json_t *);
+void delNetwork(struct session_info *, json_t *);
+void delNode(struct session_info *sinfo, json_t *jmsg);
 
 #endif
 

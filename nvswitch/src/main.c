@@ -13,7 +13,6 @@
  * GNU Affero General Public License for more details
  */
 
-#include <signal.h>
 #include <unistd.h>
 
 #include <libconfig.h>
@@ -94,24 +93,12 @@ int config_parse(config_t *cfg, struct switch_cfg *switch_cfg)
 	return 0;
 }
 
-void int_handler(int sig)
-{
-	(void)sig;
-
-	if (switch_cfg->ctrl_running && switch_cfg->switch_running) {
-		switch_cfg->ctrl_running = 0;
-		switch_cfg->switch_running = 0;
-	}
-}
-
 int main(int argc, char *argv[])
 {
 	int opt;
 	uint8_t quiet = 0;
 	config_t cfg;
 	switch_cfg = calloc(1, sizeof(struct switch_cfg));
-
-	signal(SIGINT, int_handler);
 
 	while ((opt = getopt(argc, argv, "qvh")) != -1) {
 		switch (opt) {
@@ -159,6 +146,8 @@ int main(int argc, char *argv[])
 		jlog(L_ERROR, "ctrl_init failed");
 		exit(EXIT_FAILURE);
 	}
+
+	printf("after ctrl_init");
 
 	/* make sure control is properly initialized before
 		accepting connection */

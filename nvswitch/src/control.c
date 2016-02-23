@@ -13,8 +13,18 @@
  * GNU Affero General Public License for more details
  */
 
-#include <pthread.h>
+#include <errno.h>
+#include <signal.h>
 #include <unistd.h>
+
+#include <netinet/tcp.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+
+#include <event2/listener.h>
+#include <event2/bufferevent.h>
+#include <event2/buffer.h>
+#include <jansson.h>
 
 #include <dnds.h>
 #include <logger.h>
@@ -445,36 +455,130 @@ static void *ctrl_loop(void *nil)
 	return NULL;
 }
 
-int ctrl_init(struct switch_cfg *cfg)
+static struct event_base	*base;
+struct bufferevent		*bufev_sock = NULL;
+
+void
+query_list_network()
 {
+	jlog(L_DEBUG, "list network");
+
+	json_t	*query = NULL;
+	char	*query_str = NULL;
+
+	query = json_object();
+	json_object_set_new(query, "tid", json_string("tid"));
+	json_object_set_new(query, "action", json_string("list-network"));
+
+	query_str = json_dumps(query, 0);
+
+	bufferevent_write(bufev_sock, query_str, strlen(query_str));
+	bufferevent_write(bufev_sock, "\n", strlen("\n"));
+
+	json_decref(query);
+	free(query_str);
+
+	return;
+}
+
+void
+sighandler(evutil_socket_t sk, short t, void *ptr)
+{
+	struct event_base	*ev_base;
+	printf("sighandler!");
+
+	ev_base = (struct event_base *)ptr;
+	event_base_loopbreak(ev_base);
+}
+
+void
+bufev_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
+{
+	if (events & BEV_EVENT_CONNECTED) {
+		jlog(L_DEBUG, "connected");
+//		query_list_network();
+	} else if (events & (BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
+		jlog(L_DEBUG, "disconnected");
+		bufferevent_free(bufev_sock);
+	}
+}
+
+static void
+on_read_cb(struct bufferevent *bev, void *session)
+{
+	printf("here...\n");
+}
+int
+ctrl_init(struct switch_cfg *cfg)
+{
+	int			 fd = -1;
+	int			 flag = 1;
+	struct sockaddr_in	 sin;
+	static struct event	*ev_int;
+
 	switch_cfg = cfg;
 	switch_cfg->ctrl_running = 1;
 
-	jlog(L_NOTICE, "control initializing...");
+	jlog(L_NOTICE, "Control initializing...");
 
-	switch_passport = pki_passport_load_from_file(switch_cfg->certificate, switch_cfg->privatekey, switch_cfg->trusted_cert);
-        if (switch_passport == NULL) {
-                jlog(L_ERROR, "failed to load passport, make sure those files exist:\n\t%s\n\t%s\n\t%s",
-                                switch_cfg->certificate, switch_cfg->privatekey, switch_cfg->trusted_cert);
-                return -1;
-        }
-	ctrl_netc = net_client(switch_cfg->ctrler_ip, switch_cfg->ctrler_port, NET_PROTO_TCP, NET_SECURE_RSA, switch_passport,
-				on_disconnect, on_input, on_secure);
-
-	if (ctrl_netc == NULL) {
-		jlog(L_NOTICE, "failed to connect to the Directory Service");
-		return -1;
+	base = event_base_new();
+	if (base == NULL) {
+		jlog(L_ERROR, "event_base_new failed");
+		goto out;
 	}
 
-	pthread_t thread_loop;
-	pthread_attr_t attr;
+	if ((ev_int = evsignal_new(base, SIGHUP, sighandler, NULL)) < 0) {
+		jlog(L_ERROR, "evsignal_new failed");
+		goto out;
+	}
 
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	if (event_add(ev_int, NULL) < 0) {
+		jlog(L_ERROR, "event_add failed");
+		goto out;
+	}
 
-	pthread_create(&thread_loop, &attr, ctrl_loop, NULL);
+	memset(&sin, 0, sizeof(sin));
+	sin.sin_family = AF_INET;
+	sin.sin_addr.s_addr = htonl(0);
+	sin.sin_port = htons(9093);
+
+	if ((fd = socket(sin.sin_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+		jlog(L_ERROR, "socket failed");
+		goto out;
+	}
+
+	if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(flag)) < 0 ||
+	    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
+		jlog(L_ERROR, "setsockopt failed");
+		goto out;
+	}
+
+	if (evutil_make_socket_nonblocking(fd) < 0) {
+		jlog(L_ERROR, "evutil_make_socket_nonblocking failed");
+		goto out;
+	}	
+
+	if ((bufev_sock = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE)) == NULL) {
+		jlog(L_ERROR, "bufferevent_socket_new failed");
+		goto out;
+	}
+
+	bufferevent_enable(bufev_sock, EV_READ|EV_WRITE);
+	bufferevent_setcb(bufev_sock, on_read_cb, NULL, bufev_event_cb, NULL);
+
+	if (bufferevent_socket_connect(bufev_sock,
+	    (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+		jlog(L_ERROR, "bufferevent_socket_connected failed");
+		goto out;
+	}
+
+	event_base_dispatch(base);
 
 	return 0;
+out:
+
+	bufferevent_free(bufev_sock);
+	return -1;
 }
 
 void ctrl_fini()

@@ -16,19 +16,23 @@
 #include <errno.h>
 #include <signal.h>
 
-#include <event2/listener.h>
-#include <event2/bufferevent.h>
+#include <openssl/ssl.h>
+#include <openssl/rand.h>
+
 #include <event2/buffer.h>
+#include <event2/bufferevent.h>
+#include <event2/bufferevent_ssl.h>
+#include <event2/listener.h>
+
 #include <jansson.h>
 
 #include <logger.h>
-
 #include "ctrler2.h"
 #include "dao.h"
 #include "pki.h"
 #include "request.h"
 
-static struct ctrler_cfg *ctrler_cfg = NULL;
+static struct ctrler_cfg *cfg = NULL;
 
 static void
 sinfo_free(struct session_info *sinfo)
@@ -105,6 +109,7 @@ on_read_cb(struct bufferevent *bev, void *session)
 	json_t			*jmsg = NULL;
 	struct session_info	*sinfo;
 
+	jlog(L_NOTICE, "on_read_cb");
 	sinfo = (struct session_info*)session;
 
 	while ((n = bufferevent_read(bev, buf, sizeof(buf))) > 0) {
@@ -121,36 +126,60 @@ on_read_cb(struct bufferevent *bev, void *session)
 static void
 on_event_cb(struct bufferevent *bev, short events, void *ptr)
 {
+	printf("events: %x\n", events);
 	struct session_info	*sinfo = ptr;
-
 	if (events & BEV_EVENT_ERROR) {
-		jlog(L_ERROR, "error from bufferevent\n");
-	}
-	if (events & (BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
-		jlog(L_NOTICE, "disconnected\n");
+		jlog(L_ERROR, "error from bufferevent");
+	} else if (events & (BEV_EVENT_TIMEOUT|BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
+		jlog(L_NOTICE, "disconnected");
 		bufferevent_free(bev);
 		sinfo_free(sinfo);
 	}
 }
 
 static void
+on_timeout_cb(evutil_socket_t fd, short what, void *arg)
+{
+	struct bufferevent *bev = (struct bufferevent *)arg;
+	printf("timeout!\n");
+	bufferevent_free(bev);
+}
+
+static void
 accept_conn_cb(struct evconnlistener *listener,
 	evutil_socket_t fd, struct sockaddr *address, int socklen,
-	void *ptr)
+	void *arg)
 {
+	struct timeval		 tv = {1, 0};
 	struct event_base	*base;
 	struct bufferevent	*bev;
 	struct session_info	*sinfo;
+	struct event		*ev;
+	SSL_CTX			*server_ctx;
+	SSL			*client_ctx;
 
+	server_ctx = (SSL_CTX *)arg;
+	client_ctx = SSL_new(server_ctx);
 	base = evconnlistener_get_base(listener);
-	bev = bufferevent_socket_new(
-		base, fd, BEV_OPT_CLOSE_ON_FREE);
+
+	if ((bev = bufferevent_openssl_socket_new(base, fd, client_ctx,
+					BUFFEREVENT_SSL_ACCEPTING,
+					BEV_OPT_CLOSE_ON_FREE)) == NULL) {
+		jlog(L_ERROR, "bufferevent_openssl_socket_new failed");
+		return;
+	}
+
+	jlog(L_NOTICE, "new connection");
 
 	sinfo = sinfo_new();
 	sinfo->bev = bev;
 
-	bufferevent_setcb(bev, on_read_cb, NULL, on_event_cb, sinfo);
 	bufferevent_enable(bev, EV_READ|EV_WRITE);
+	bufferevent_setcb(bev, on_read_cb, NULL, on_event_cb, sinfo);
+
+	/* Disconnect stalled session */
+	ev = event_new(base, -1, EV_TIMEOUT, on_timeout_cb, bev);
+	event_add(ev, &tv);
 }
 
 static void
@@ -176,17 +205,88 @@ sighandler(evutil_socket_t sk, short t, void *ptr)
 	event_base_loopbreak(ev_base);
 }
 
-	static struct event		*ev_int;
-	static struct event_base	*base;
-	static struct evconnlistener	*listener;
+static DH *
+get_dh_1024() {
+
+	DH *dh = NULL;
+	static unsigned char dh1024_p[]={
+		0xDE,0xD3,0x80,0xD7,0xE1,0x8E,0x1B,0x5D,0x5C,0x76,0x61,0x79,
+		0xCA,0x8E,0xCD,0xAD,0x83,0x49,0x9E,0x0B,0xC0,0x2E,0x67,0x33,
+	        0x5F,0x58,0x30,0x9C,0x13,0xE2,0x56,0x54,0x1F,0x65,0x16,0x27,
+	        0xD6,0xF0,0xFD,0x0C,0x62,0xC4,0x4F,0x5E,0xF8,0x76,0x93,0x02,
+	        0xA3,0x4F,0xDC,0x2F,0x90,0x5D,0x77,0x7E,0xC6,0x22,0xD5,0x60,
+	        0x48,0xF5,0xFB,0x5D,0x46,0x5D,0xF5,0x97,0x20,0x35,0xA6,0xEE,
+	        0xC0,0xA0,0x89,0xEE,0xAB,0x22,0x68,0x96,0x8B,0x64,0x69,0xC7,
+	        0xEB,0x41,0xDF,0x74,0xDF,0x80,0x76,0xCF,0x9B,0x50,0x2F,0x08,
+	        0x13,0x16,0x0D,0x2E,0x94,0x0F,0xEE,0x29,0xAC,0x92,0x7F,0xA6,
+	        0x62,0x49,0x41,0x0F,0x54,0x39,0xAD,0x91,0x9A,0x23,0x31,0x7B,
+	        0xB3,0xC9,0x34,0x13,0xF8,0x36,0x77,0xF3,
+	};
+
+	static unsigned char dh1024_g[]={
+		0x02,
+	};
+
+	dh = DH_new();
+	if (dh == NULL) {
+		return NULL;
+	}
+
+	dh->p = BN_bin2bn(dh1024_p, sizeof(dh1024_p), NULL);
+	dh->g = BN_bin2bn(dh1024_g, sizeof(dh1024_g), NULL);
+
+	if (dh->p == NULL || dh->g == NULL) {
+		DH_free(dh);
+		return NULL;
+	}
+
+	return dh;
+}
+
+static SSL_CTX *
+evssl_init()
+{
+	passport_t	*passport;
+	SSL_CTX		*server_ctx = NULL;
+
+	SSL_load_error_strings();
+	SSL_library_init();
+
+	if (!RAND_poll())
+		return NULL;
+
+	passport = pki_passport_load_from_file(cfg->certificate, cfg->privatekey, cfg->trusted_cert);
+
+
+	server_ctx = SSL_CTX_new(TLSv1_2_server_method());
+	SSL_CTX_set_tmp_dh(server_ctx, get_dh_1024());
+
+	SSL_CTX_set_cipher_list(server_ctx, "DHE-RSA-AES256-GCM-SHA384");
+	SSL_CTX_set_cert_store(server_ctx, passport->cacert_store);
+
+	SSL_CTX_use_certificate(server_ctx, passport->certificate);
+	SSL_CTX_use_PrivateKey(server_ctx, passport->keyring);
+
+	return server_ctx;
+}
+
+static struct event		*ev_int;
+static struct event_base	*base;
+static struct evconnlistener	*listener;
 
 int
-ctrler2_init(struct ctrler_cfg *cfg)
+ctrler2_init(struct ctrler_cfg *_cfg)
 {
-	ctrler_cfg = cfg;
-	ctrler_cfg->ctrler_running = 1;
-
+	SSL_CTX			*ctx;
 	struct sockaddr_in	 sin;
+
+	cfg = _cfg;
+	cfg->ctrler_running = 1;
+
+	if ((ctx = evssl_init()) == NULL) {
+		jlog(L_ERROR, "evssl_init failed");
+		return -1;
+	}
 
 	base = event_base_new();
 	if (base == NULL) {
@@ -199,11 +299,11 @@ ctrler2_init(struct ctrler_cfg *cfg)
 	sin.sin_addr.s_addr = htonl(0);
 	sin.sin_port = htons(9093);
 
-	listener = evconnlistener_new_bind(base, accept_conn_cb, NULL,
+	listener = evconnlistener_new_bind(base, accept_conn_cb, ctx,
 		LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1,
 		(struct sockaddr*)&sin, sizeof(sin));
 	if (listener == NULL) {
-		jlog(L_ERROR, "Coundn't create listener");
+		jlog(L_ERROR, "Couldn't create listener");
 		return -1;
 	}
 

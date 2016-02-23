@@ -829,18 +829,19 @@ addAccount(struct session_info *sinfo, json_t *jmsg)
 	apikey = pki_gen_apikey();
 	if (apikey == NULL) {
 		json_object_set_new(resp, "response", json_string("error"));
-		goto fail;
+		goto out;
 	}
 
 	ret = dao_add_client(email, password, apikey);
 	if (ret == -1) {
 		json_object_set_new(resp, "response", json_string("duplicate"));
-		goto fail;
+		goto out;
 	}
 
 	json_object_set_new(resp, "response", json_string("success"));
 	json_object_set_new(resp, "apikey", json_string(apikey));
-fail:
+
+out:
 	resp_str = json_dumps(resp, 0);
 
 	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
@@ -1124,8 +1125,8 @@ listNetwork(struct session_info *sinfo, json_t *jmsg)
 	ret = dao_fetch_networks_by_client_id(client_id, array, CB_listNetwork);
 	json_object_set_new(resp, "networks", array);
 	json_object_set_new(resp, "response", json_string("success"));
-out:
 
+out:
 	resp_str = json_dumps(resp, 0);
 
 	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
@@ -1206,7 +1207,6 @@ listNode(struct session_info *sinfo, json_t *jmsg)
 	json_object_set_new(resp, "response", json_string("success"));
 
 out:
-
 	resp_str = json_dumps(resp, 0);
 
 	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
