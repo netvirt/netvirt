@@ -22,9 +22,14 @@
 #define SESSION_AUTH		0x1
 #define SESSION_NOT_AUTH	0x2
 
+#define NVSWITCH		0x1
+#define NVAPI			0x2
+
 struct session_info {
-	struct bufferevent	*bev;
+	char			 cert_name[256];
+	uint8_t			 type;
 	uint8_t			 state;
+	struct bufferevent	*bev;
 };
 
 int ctrler2_init(struct ctrler_cfg *);

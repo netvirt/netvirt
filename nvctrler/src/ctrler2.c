@@ -65,13 +65,33 @@ response()
 }
 
 static void
-dispatch_operation(struct session_info *sinfo, json_t *jmsg)
+dispatch_nvswitch(struct session_info *sinfo, json_t *jmsg)
+{
+	char	*dump;
+	char 	*action;
+
+	dump = json_dumps(jmsg, 0);
+	jlog(L_DEBUG, "jmsg: %s", dump);
+	free(dump);
+
+	if (json_unpack(jmsg, "{s:s}", "action", &action) == -1) {
+		/* XXX disconnect */
+		return;
+	}
+
+	if (strcmp(action, "listall-network") == 0) {
+		listallNetwork(sinfo, jmsg);
+	}
+}
+
+static void
+dispatch_nvapi(struct session_info *sinfo, json_t *jmsg)
 {
 	char	*dump;
 	char	*action;
 
 	dump = json_dumps(jmsg, 0);
-	printf("dump: %s\n", dump);
+	jlog(L_DEBUG, "jmsg: %s", dump);
 	free(dump);
 	
 	if (json_unpack(jmsg, "{s:s}", "action", &action) == -1) {
@@ -103,37 +123,77 @@ dispatch_operation(struct session_info *sinfo, json_t *jmsg)
 static void
 on_read_cb(struct bufferevent *bev, void *session)
 {
-	char			 buf[1024];
+	char			*str;
+	size_t			 n_read_out;
 	int			 n;
 	json_error_t		 error;
 	json_t			*jmsg = NULL;
 	struct session_info	*sinfo;
 
-	jlog(L_NOTICE, "on_read_cb");
+	jlog(L_DEBUG, "on_read_cb");
 	sinfo = (struct session_info*)session;
 
-	while ((n = bufferevent_read(bev, buf, sizeof(buf))) > 0) {
-		jmsg = json_loadb(buf, n, 0, &error);
-		if (jmsg == NULL) {
-			printf("error: %s\n", error.text);
-		} else {
-			dispatch_operation(sinfo, jmsg);
-			json_decref(jmsg);
-		}
+	str = evbuffer_readln(bufferevent_get_input(bev),
+			&n_read_out,
+			EVBUFFER_EOL_LF);
+
+	if (str == NULL)
+		return;
+
+	jmsg = json_loadb(str, n_read_out, 0, &error);
+	if (jmsg == NULL) {
+		jlog(L_ERROR, "json_loadb: %s", error.text);
+		/* FIXME DISCONNECT */
+		return;
 	}
+
+	if (sinfo->type == NVSWITCH)
+		dispatch_nvswitch(sinfo, jmsg);
+	else if (sinfo->type == NVAPI)
+		dispatch_nvapi(sinfo, jmsg);
+	else {
+		bufferevent_free(bev);
+		sinfo_free(sinfo);
+	}
+	json_decref(jmsg);
 }
 
 static void
-on_event_cb(struct bufferevent *bev, short events, void *ptr)
+on_connect_cb(struct bufferevent *bev, void *arg)
 {
-	printf("events: %x\n", events);
-	struct session_info	*sinfo = ptr;
-	if (events & BEV_EVENT_ERROR) {
-		jlog(L_ERROR, "error from bufferevent");
-	} else if (events & (BEV_EVENT_TIMEOUT|BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
+	SSL			*client_ssl;
+	X509			*cert;
+	X509_NAME		*subj_ptr;
+	struct session_info	*sinfo = arg;
+
+	client_ssl = bufferevent_openssl_get_ssl(bev);
+	cert = SSL_get_peer_certificate(client_ssl);
+	if (cert == NULL)
+		return;
+
+	subj_ptr = X509_get_subject_name(cert);
+	X509_NAME_get_text_by_NID(subj_ptr, NID_commonName,
+		sinfo->cert_name, sizeof(sinfo->cert_name));
+	X509_free(cert);
+
+	if (strncmp("netvirt-switch", sinfo->cert_name, strlen("netvirt-switch")) == 0)
+		sinfo->type = NVSWITCH;
+	else
+		sinfo->type = NVAPI;
+	jlog(L_DEBUG, "cert: %s", sinfo->cert_name);
+}
+
+static void
+on_event_cb(struct bufferevent *bev, short events, void *arg)
+{
+	struct session_info	*sinfo = arg;
+
+	if (events & (BEV_EVENT_TIMEOUT|BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
 		jlog(L_NOTICE, "disconnected");
 		bufferevent_free(bev);
 		sinfo_free(sinfo);
+	} else if (events & BEV_EVENT_CONNECTED) {
+		on_connect_cb(bev, arg);
 	}
 }
 
@@ -156,13 +216,13 @@ accept_conn_cb(struct evconnlistener *listener,
 	struct session_info	*sinfo;
 	struct event		*ev;
 	SSL_CTX			*server_ctx;
-	SSL			*client_ctx;
+	SSL			*client_ssl;
 
 	server_ctx = (SSL_CTX *)arg;
-	client_ctx = SSL_new(server_ctx);
+	client_ssl = SSL_new(server_ctx);
 	base = evconnlistener_get_base(listener);
 
-	if ((bev = bufferevent_openssl_socket_new(base, fd, client_ctx,
+	if ((bev = bufferevent_openssl_socket_new(base, fd, client_ssl,
 					BUFFEREVENT_SSL_ACCEPTING,
 					BEV_OPT_CLOSE_ON_FREE)) == NULL) {
 		jlog(L_ERROR, "bufferevent_openssl_socket_new failed");
@@ -178,8 +238,9 @@ accept_conn_cb(struct evconnlistener *listener,
 	bufferevent_setcb(bev, on_read_cb, NULL, on_event_cb, sinfo);
 
 	/* Disconnect stalled session */
-	ev = event_new(base, -1, EV_TIMEOUT, on_timeout_cb, bev);
-	event_add(ev, &tv);
+//	ev = event_new(base, -1, EV_TIMEOUT, on_timeout_cb, bev);
+//	event_add(ev, &tv);
+
 }
 
 static void
@@ -261,11 +322,14 @@ evssl_init()
 	server_ctx = SSL_CTX_new(TLSv1_2_server_method());
 	SSL_CTX_set_tmp_dh(server_ctx, get_dh_1024());
 
-	SSL_CTX_set_cipher_list(server_ctx, "DHE-RSA-AES256-GCM-SHA384");
-	SSL_CTX_set_cert_store(server_ctx, passport->cacert_store);
+	SSL_CTX_set_cipher_list(server_ctx, "AES256-GCM-SHA384");
+	//SSL_CTX_set_cipher_list(server_ctx, "ECDHE-ECDSA-AES256-GCM-SHA384");
 
+	SSL_CTX_set_cert_store(server_ctx, passport->cacert_store);
 	SSL_CTX_use_certificate(server_ctx, passport->certificate);
 	SSL_CTX_use_PrivateKey(server_ctx, passport->keyring);
+
+	SSL_CTX_set_verify(server_ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
 
 	return server_ctx;
 }
@@ -303,7 +367,7 @@ ctrler2_init(struct ctrler_cfg *_cfg)
 		LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1,
 		(struct sockaddr*)&sin, sizeof(sin));
 	if (listener == NULL) {
-		jlog(L_ERROR, "Couldn't create listener");
+		jlog(L_ERROR, "couldn't create listener");
 		return -1;
 	}
 
