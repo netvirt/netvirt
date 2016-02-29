@@ -27,6 +27,7 @@ target_link_libraries(netvirt-switch
 	pthread
 	jansson
 	event
+	event_openssl
 )
 
 install(TARGETS netvirt-switch
