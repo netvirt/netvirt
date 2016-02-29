@@ -21,9 +21,12 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#include <event2/listener.h>
-#include <event2/bufferevent.h>
 #include <event2/buffer.h>
+#include <event2/bufferevent.h>
+#include <event2/bufferevent_ssl.h>
+#include <event2/listener.h>
+#include <event2/util.h>
+
 #include <jansson.h>
 
 #include <dnds.h>
@@ -37,7 +40,7 @@
 
 static netc_t *ctrl_netc = NULL;
 static passport_t *switch_passport = NULL;
-static struct switch_cfg *switch_cfg = NULL;
+static struct switch_cfg *cfg = NULL;
 
 /* TODO extend this tracking table into a subsystem in it's own */
 #define MAX_SESSION 1024
@@ -86,14 +89,14 @@ int transmit_node_connectinfo(e_ConnState state, char *ipAddress, char *certName
 	DNDSMessage_set_channel(msg, 0);
 	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
 
-        DSMessage_set_seqNumber(msg, 0);
-        DSMessage_set_ackNumber(msg, 0);
+	DSMessage_set_seqNumber(msg, 0);
+	DSMessage_set_ackNumber(msg, 0);
 	DSMessage_set_action(msg, action_updateNodeConnInfo);
-        DSMessage_set_operation(msg, dsop_PR_nodeConnInfo);
+	DSMessage_set_operation(msg, dsop_PR_nodeConnInfo);
 
-        NodeConnInfo_set_certName(msg, certName, strlen(certName));
-        NodeConnInfo_set_ipAddr(msg, ipAddress);
-        NodeConnInfo_set_state(msg, state);
+	NodeConnInfo_set_certName(msg, certName, strlen(certName));
+	NodeConnInfo_set_ipAddr(msg, ipAddress);
+	NodeConnInfo_set_state(msg, state);
 
 	net_send_msg(ctrl_netc, msg);
 	DNDSMessage_del(msg);
@@ -240,7 +243,7 @@ static void handle_SearchResponse_Node(DNDSMessage_t *msg)
 	char *certificate = NULL;
 	uint8_t *certificateKey = NULL;
 	uint8_t *trustedCert = NULL;
-        char ipAddress[INET_ADDRSTRLEN];
+	char ipAddress[INET_ADDRSTRLEN];
 
 	SearchResponse_get_object_count(msg, &count);
 
@@ -355,7 +358,7 @@ static void handle_SearchResponse(DNDSMessage_t *msg)
 
 	if (SearchType == SearchType_all) {
 		if (handle_SearchResponse_Context(msg) == 0) {
-			switch_cfg->ctrl_initialized = 1;
+			cfg->ctrl_initialized = 1;
 		}
 		SearchResponse_get_result(msg, &result);
 		if (result == DNDSResult_success) {
@@ -367,7 +370,7 @@ static void handle_SearchResponse(DNDSMessage_t *msg)
 		handle_SearchResponse_node(msg);
 		SearchResponse_get_result(msg, &result);
 		if (result == DNDSResult_success) {
-			switch_cfg->ctrl_initialized = 1;
+			cfg->ctrl_initialized = 1;
 		}
 	}
 
@@ -426,7 +429,7 @@ static void on_disconnect(netc_t *netc)
 {
 	(void)(netc);
 
-	if (switch_cfg->ctrl_running == 0) {
+	if (cfg->ctrl_running == 0) {
 		return;
 	}
 
@@ -436,7 +439,7 @@ static void on_disconnect(netc_t *netc)
 	jlog(L_NOTICE, "connection retry in 5sec...");
 	do {
 		sleep(5);
-		retry_netc = net_client(switch_cfg->ctrler_ip, switch_cfg->ctrler_port,
+		retry_netc = net_client(cfg->ctrler_ip, cfg->ctrler_port,
 		    NET_PROTO_TCP, NET_SECURE_RSA, switch_passport,
 		    on_disconnect, on_input, on_secure);
 	} while (retry_netc == NULL);
@@ -448,7 +451,7 @@ static void *ctrl_loop(void *nil)
 {
 	(void)nil;
 
-	while (switch_cfg->ctrl_running) {
+	while (cfg->ctrl_running) {
 		tcpbus_ion_poke();
 	}
 
@@ -468,7 +471,7 @@ query_list_network()
 
 	query = json_object();
 	json_object_set_new(query, "tid", json_string("tid"));
-	json_object_set_new(query, "action", json_string("list-network"));
+	json_object_set_new(query, "action", json_string("listall-network"));
 
 	query_str = json_dumps(query, 0);
 
@@ -485,7 +488,7 @@ void
 sighandler(evutil_socket_t sk, short t, void *ptr)
 {
 	struct event_base	*ev_base;
-	printf("sighandler!");
+	jlog(L_DEBUG, "sighandler!");
 
 	ev_base = (struct event_base *)ptr;
 	event_base_loopbreak(ev_base);
@@ -496,7 +499,7 @@ bufev_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
 {
 	if (events & BEV_EVENT_CONNECTED) {
 		jlog(L_DEBUG, "connected");
-//		query_list_network();
+		query_list_network();
 	} else if (events & (BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
 		jlog(L_DEBUG, "disconnected");
 		bufferevent_free(bufev_sock);
@@ -506,18 +509,109 @@ bufev_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
 static void
 on_read_cb(struct bufferevent *bev, void *session)
 {
-	printf("here...\n");
+	char			*str = NULL;
+	size_t			n_read_out;
+	int			n;
+	json_error_t		error;
+	json_t			*jmsg = NULL;
+	struct session_info	*sinfo;
+
+	jlog(L_DEBUG, "on_read_cb");
+	sinfo = (struct session_info*)session;
+
+	str = evbuffer_readln(bufferevent_get_input(bev),
+			&n_read_out,
+			EVBUFFER_EOL_LF);
+
+	if (str != NULL) {
+		jlog(L_DEBUG, "str> %s", str);
+		jmsg = json_loadb(str, n_read_out, 0, &error);
+		if (jmsg = NULL) {
+			jlog(L_DEBUG, "error: %s\n", error.text);
+		} else {
+			json_decref(jmsg);
+		}
+	}
 }
+
+static DH *
+get_dh_1024() {
+
+	DH *dh = NULL;
+	static unsigned char dh1024_p[]={
+		0xDE,0xD3,0x80,0xD7,0xE1,0x8E,0x1B,0x5D,0x5C,0x76,0x61,0x79,
+		0xCA,0x8E,0xCD,0xAD,0x83,0x49,0x9E,0x0B,0xC0,0x2E,0x67,0x33,
+		0x5F,0x58,0x30,0x9C,0x13,0xE2,0x56,0x54,0x1F,0x65,0x16,0x27,
+		0xD6,0xF0,0xFD,0x0C,0x62,0xC4,0x4F,0x5E,0xF8,0x76,0x93,0x02,
+		0xA3,0x4F,0xDC,0x2F,0x90,0x5D,0x77,0x7E,0xC6,0x22,0xD5,0x60,
+		0x48,0xF5,0xFB,0x5D,0x46,0x5D,0xF5,0x97,0x20,0x35,0xA6,0xEE,
+		0xC0,0xA0,0x89,0xEE,0xAB,0x22,0x68,0x96,0x8B,0x64,0x69,0xC7,
+		0xEB,0x41,0xDF,0x74,0xDF,0x80,0x76,0xCF,0x9B,0x50,0x2F,0x08,
+		0x13,0x16,0x0D,0x2E,0x94,0x0F,0xEE,0x29,0xAC,0x92,0x7F,0xA6,
+		0x62,0x49,0x41,0x0F,0x54,0x39,0xAD,0x91,0x9A,0x23,0x31,0x7B,
+		0xB3,0xC9,0x34,0x13,0xF8,0x36,0x77,0xF3,
+	};
+
+	static unsigned char dh1024_g[]={
+		0x02,
+	};
+
+	dh = DH_new();
+	if (dh == NULL) {
+		return NULL;
+	}
+
+	dh->p = BN_bin2bn(dh1024_p, sizeof(dh1024_p), NULL);
+	dh->g = BN_bin2bn(dh1024_g, sizeof(dh1024_g), NULL);
+
+	if (dh->p == NULL || dh->g == NULL) {
+		DH_free(dh);
+		return NULL;
+	}
+
+	return dh;
+}
+
+static SSL_CTX *
+evssl_init()
+{
+	passport_t	*passport;
+	SSL_CTX		*server_ctx = NULL;
+
+	SSL_load_error_strings();
+	SSL_library_init();
+
+	if (!RAND_poll())
+		return NULL;
+
+	passport = pki_passport_load_from_file(cfg->certificate, cfg->privatekey, cfg->trusted_cert);
+
+
+	server_ctx = SSL_CTX_new(TLSv1_2_client_method());
+	SSL_CTX_set_tmp_dh(server_ctx, get_dh_1024());
+
+	SSL_CTX_set_cipher_list(server_ctx, "AES256-GCM-SHA384");
+	//SSL_CTX_set_cipher_list(server_ctx, "ECDHE-ECDSA-AES256-GCM-SHA384");
+
+	SSL_CTX_set_cert_store(server_ctx, passport->cacert_store);
+	SSL_CTX_use_certificate(server_ctx, passport->certificate);
+	SSL_CTX_use_PrivateKey(server_ctx, passport->keyring);
+
+	return server_ctx;
+}
+
 int
-ctrl_init(struct switch_cfg *cfg)
+ctrl_init(struct switch_cfg *_cfg)
 {
 	int			 fd = -1;
 	int			 flag = 1;
 	struct sockaddr_in	 sin;
 	static struct event	*ev_int;
+	SSL_CTX			*ctx;
+	SSL			*ssl;
 
-	switch_cfg = cfg;
-	switch_cfg->ctrl_running = 1;
+	cfg = _cfg;
+	cfg->ctrl_running = 1;
 
 	jlog(L_NOTICE, "Control initializing...");
 
@@ -527,7 +621,7 @@ ctrl_init(struct switch_cfg *cfg)
 		goto out;
 	}
 
-	if ((ev_int = evsignal_new(base, SIGHUP, sighandler, NULL)) < 0) {
+	if ((ev_int = evsignal_new(base, SIGHUP, sighandler, NULL)) == NULL) {
 		jlog(L_ERROR, "evsignal_new failed");
 		goto out;
 	}
@@ -558,7 +652,12 @@ ctrl_init(struct switch_cfg *cfg)
 		goto out;
 	}	
 
-	if ((bufev_sock = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE)) == NULL) {
+	ctx = evssl_init();
+	ssl = SSL_new(ctx);
+
+	if ((bufev_sock = bufferevent_openssl_socket_new(base, fd, ssl,
+						BUFFEREVENT_SSL_CONNECTING,
+						BEV_OPT_CLOSE_ON_FREE)) == NULL) {
 		jlog(L_ERROR, "bufferevent_socket_new failed");
 		goto out;
 	}
