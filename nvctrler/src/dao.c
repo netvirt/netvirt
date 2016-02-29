@@ -1494,7 +1494,7 @@ int dao_fetch_context(void *data, void (*cb_data_handler)(void *data, int remain
 	tuples = PQntuples(result);
 	if (tuples == 0) {
 		PQclear(result);
-		return -1;
+		return 0;
 	}
 
 	int i;

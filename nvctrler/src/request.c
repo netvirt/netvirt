@@ -479,90 +479,66 @@ void searchRequest_client(struct session *session, DNDSMessage_t *req_msg)
 	free(id);
 }
 
-void CB_searchRequest_context(void *data, int remaining,
+void CB_listallNetwork(void *arg, int remaining,
 				char *id,
 				char *description,
 				char *client_id,
-				char *network,
+				char *subnet,
 				char *netmask,
-				char *serverCert,
-				char *serverPrivkey,
-				char *trustedCert)
+				char *cert,
+				char *pkey,
+				char *tcert)
 {
-	(void)(client_id);
-	static DNDSMessage_t *msg = NULL;
-	static int count = 0;
-	struct session *session = (struct session *)data;
+	json_t	*array;
+	json_t	*network;
 
-	count++;
+	array = (json_t*)arg;
+	network = json_object();
 
-	if (msg == NULL) {
+	printf("uuid: %s\n", id);
 
-		DNDSMessage_new(&msg);
-		DNDSMessage_set_channel(msg, 0);
-		DNDSMessage_set_pdu(msg, pdu_PR_dsm);
+	json_object_set_new(network, "uuid", json_string(id));
+	json_object_set_new(network, "network", json_string(subnet));
+	json_object_set_new(network, "netmask", json_string(netmask));
+	json_object_set_new(network, "cert", json_string(cert));
+	json_object_set_new(network, "pkey", json_string(pkey));
+	json_object_set_new(network, "tcert", json_string(tcert));
 
-		DSMessage_set_seqNumber(msg, 0);
-		DSMessage_set_ackNumber(msg, 1);
-		DSMessage_set_action(msg, action_listNetwork);
-		DSMessage_set_operation(msg, dsop_PR_searchResponse);
-
-		SearchResponse_set_searchType(msg, SearchType_all);
-	}
-
-	DNDSObject_t *objContext;
-	DNDSObject_new(&objContext);
-	DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
-
-	Context_set_id(objContext, atoi(id));
-	Context_set_description(objContext, description, strlen(description));
-	Context_set_network(objContext, network);
-	Context_set_netmask(objContext, netmask);
-	Context_set_serverCert(objContext, serverCert, strlen(serverCert));
-	Context_set_serverPrivkey(objContext, serverPrivkey, strlen(serverPrivkey));
-	Context_set_trustedCert(objContext, trustedCert, strlen(trustedCert));
-
-	SearchResponse_add_object(msg, objContext);
-
-	if (count == 10 || remaining == 0) {
-
-		if (remaining == 0) {
-			SearchResponse_set_result(msg, DNDSResult_success);
-		} else {
-			SearchResponse_set_result(msg, DNDSResult_moreData);
-		}
-
-		net_send_msg(session->netc, msg);
-		DNDSMessage_del(msg);
-		msg = NULL;
-
-		count = 0;
-	}
+	json_array_append_new(array, network);
 }
 
-void searchRequest_context(struct session *session)
+void listallNetwork(struct session_info *sinfo, json_t *jmsg)
 {
-	int ret = 0;
-	static DNDSMessage_t *msg = NULL;
+	jlog(L_DEBUG, "listallNetwork");
 
-	ret = dao_fetch_context(session, CB_searchRequest_context);
+	char	*resp_str = NULL;
+	int	 ret;
+	json_t	*array;
+	json_t	*resp = NULL;
+
+	resp = json_object();
+	json_object_set_new(resp, "tid", json_string("tid"));
+	json_object_set_new(resp, "action", json_string("response"));
+
+	array = json_array();
+	ret = dao_fetch_context(array, CB_listallNetwork);
 	if (ret == -1) {
-		DNDSMessage_new(&msg);
-		DNDSMessage_set_channel(msg, 0);
-		DNDSMessage_set_pdu(msg, pdu_PR_dsm);
-
-		DSMessage_set_seqNumber(msg, 0);
-		DSMessage_set_ackNumber(msg, 1);
-		DSMessage_set_action(msg, action_listNetwork);
-		DSMessage_set_operation(msg, dsop_PR_searchResponse);
-
-		// XXX should fail
-		SearchResponse_set_searchType(msg, SearchType_all);
-
-		SearchResponse_set_result(msg, DNDSResult_success);
-		net_send_msg(session->netc, msg);
-		DNDSMessage_del(msg);
+		json_object_set_new(resp, "response", json_string("error"));
+		goto out;
 	}
+
+	json_object_set_new(resp, "networks", array);
+	json_object_set_new(resp, "response", json_string("success"));
+out:
+	resp_str = json_dumps(resp, 0);
+
+	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+
+	json_decref(resp);
+	free(resp_str);
+
+	return;
 }
 
 void CB_searchRequest_node_sequence(void *data, int remaining, char *uuid, char *context_id)
@@ -1077,12 +1053,12 @@ out:
 }
 
 int
-CB_listNetwork(void *ptr, char *name)
+CB_listNetwork(void *arg, char *name)
 {
 	json_t	*array;
 	json_t	*network;
 
-	array = (json_t*)ptr;
+	array = (json_t*)arg;
 	network = json_object();
 
 	json_object_set_new(network, "name", json_string(name));
@@ -1123,6 +1099,11 @@ listNetwork(struct session_info *sinfo, json_t *jmsg)
 
 	array = json_array();
 	ret = dao_fetch_networks_by_client_id(client_id, array, CB_listNetwork);
+	if (ret == -1) {
+		json_object_set_new(resp, "response", json_string("error"));
+		goto out;
+	}
+
 	json_object_set_new(resp, "networks", array);
 	json_object_set_new(resp, "response", json_string("success"));
 
@@ -1232,9 +1213,6 @@ void searchRequest(struct session *session, DNDSMessage_t *req_msg)
 	SearchRequest_get_object(req_msg, &object);
 	DNDSObject_get_objectType(object, &objType);
 
-	if (SearchType == SearchType_all) {
-		searchRequest_context(session);
-	}
 
 	if (SearchType == SearchType_sequence) {
 		searchRequest_node_sequence(session, req_msg);
