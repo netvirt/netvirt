@@ -1,6 +1,6 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2014
+ * Copyright (C) 2009-2016
  * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -13,13 +13,16 @@
  * GNU Affero General Public License for more details
  */
 
-#ifndef CTRLER_H
-#define CTRLER_H
+#ifndef CTRLER2_H
+#define CTRLER2_H
 
-#include <netbus.h>
+#include <event2/buffer.h>
 
-#define SESSION_STATE_AUTHED           0x1
-#define SESSION_STATE_NOT_AUTHED       0x2
+#define SESSION_AUTH		0x1
+#define SESSION_NOT_AUTH	0x2
+
+#define NVSWITCH		0x1
+#define NVAPI			0x2
 
 struct ctrler_cfg {
 
@@ -40,17 +43,13 @@ struct ctrler_cfg {
 	int ctrler_running;
 };
 
-#define SESSION_FROM_SWITCH	1
-netc_t *g_switch_netc;
-struct session {
-
-	netc_t *netc;
-	uint32_t timeout_id;
-	uint8_t state;
-	uint8_t type;
+struct session_info {
+	char			 cert_name[256];
+	uint8_t			 type;
+	uint8_t			 state;
+	struct bufferevent	*bev;
 };
 
-int ctrler_init(struct ctrler_cfg *cfg);
-void ctrler_fini();
+int ctrler2_init(struct ctrler_cfg *);
 
 #endif
