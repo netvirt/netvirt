@@ -393,11 +393,7 @@ bufev_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
 void
 dispatch(struct session_info *sinfo, json_t *jmsg)
 {
-	char	*dump;
 	char	*action;
-
-	dump = json_dumps(jmsg, 0);
-	free(dump);
 
 	if (json_unpack(jmsg, "{s:s}", "action", &action) == -1) {
 		/* XXX disconnect */
@@ -406,9 +402,12 @@ dispatch(struct session_info *sinfo, json_t *jmsg)
 
 	if (strcmp(action, "listall-network") == 0) {
 		if (listall_network(sinfo, jmsg) == 0) {
-			/* All network are fetched */
-			cfg->ctrl_initialized = 1;
-			query_list_node(sinfo, jmsg);
+			/* all network are now fetched */
+			if (cfg->ctrl_initialized == 0) {
+				/* if not yet initialized... */
+				cfg->ctrl_initialized = 1;
+				query_list_node(sinfo, jmsg);
+			}
 		}
 	} else if (strcmp(action, "listall-node") == 0) {
 		listall_node(sinfo, jmsg);
