@@ -19,7 +19,6 @@
 #include <jansson.h>
 #include <dnds.h>
 #include "ctrler.h"
-#include "ctrler2.h"
 
 void addNode(struct session_info *, json_t *);
 void addAccount(struct session_info *, json_t *);

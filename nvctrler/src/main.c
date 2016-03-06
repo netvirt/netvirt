@@ -239,8 +239,7 @@ int main(int argc, char *argv[])
 
 //	ctrler_fini();
 
-	printf("we are here !\n");
-
+	jlog(L_NOTICE, "good bye\n");
 
 	ctrler2_fini();
 	netbus_fini();
