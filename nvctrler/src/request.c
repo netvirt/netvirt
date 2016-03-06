@@ -138,6 +138,7 @@ delNetwork(struct session_info *sinfo, json_t *jmsg)
 	bufferevent_write(switch_sinfo->bev, fwd_str, strlen(fwd_str));
 	bufferevent_write(switch_sinfo->bev, "\n", strlen("\n"));
 	free(fwd_str);
+	/* * */
 out:
 
 	resp_str = json_dumps(resp, 0);
@@ -266,31 +267,35 @@ addNode(struct session_info *sinfo, json_t *jmsg)
 		goto free2;
 	}
 
+	/* forward new node to nvswitch */
+	char	*fwd_resp_str = NULL;
+	json_t	*array = NULL;
+	json_t	*node = NULL;
+	json_t	*fwd_resp = NULL;
 
-	/* FIXME send node update to nvswitch */
+	if (switch_sinfo != NULL) {
+		fwd_resp = json_object();
+		node = json_object();
+		array = json_array();
 
-	DNDSMessage_t *msg_up;
-	DNDSMessage_new(&msg_up);
-	DNDSMessage_set_pdu(msg_up, pdu_PR_dsm);
-	DSMessage_set_action(msg_up, action_addNode);
-	DSMessage_set_operation(msg_up, dsop_PR_searchResponse);
-	SearchResponse_set_searchType(msg_up, SearchType_sequence);
-	SearchResponse_set_result(msg_up, DNDSResult_success);
+		json_object_set_new(fwd_resp, "action", json_string("listall-node"));
+		json_object_set_new(fwd_resp, "response", json_string("success"));
 
-	DNDSObject_t *objNode;
-	DNDSObject_new(&objNode);
-	DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
+		json_object_set_new(node, "netid", json_string(context_id));
+		json_object_set_new(node, "uuid", json_string(uuid));
 
-	Node_set_uuid(objNode, uuid, strlen(uuid));
-	Node_set_contextId(objNode, atoi(context_id));
+		json_array_append_new(array, node);
+		json_object_set_new(fwd_resp, "nodes", array);
 
-	SearchResponse_add_object(msg_up, objNode);
+		fwd_resp_str = json_dumps(fwd_resp, 0);
 
-	if (g_switch_netc)
-		net_send_msg(g_switch_netc, msg_up);
+		bufferevent_write(switch_sinfo->bev, fwd_resp_str, strlen(fwd_resp_str));
+		bufferevent_write(switch_sinfo->bev, "\n", strlen("\n"));
 
-	DNDSMessage_del(msg_up);
-	/* */
+		json_decref(fwd_resp);
+		free(fwd_resp_str);
+	}
+	/* * */
 
 	json_object_set_new(resp, "response", json_string("success"));
 
@@ -405,6 +410,7 @@ delNode(struct session_info *sinfo, json_t *jmsg)
 	bufferevent_write(switch_sinfo->bev, fwd_str, strlen(fwd_str));
 	bufferevent_write(switch_sinfo->bev, "\n", strlen("\n"));
 	free(fwd_str);
+	/* * */
 
 out:
 
@@ -420,61 +426,6 @@ out:
 	free(ipaddr);
 	ippool_free(ippool);
 
-}
-
-void delRequest(struct session *session, DNDSMessage_t *msg)
-{
-	(void)session;
-	DNDSObject_PR objType;
-	DelRequest_get_objectType(msg, &objType);
-
-	if (objType == DNDSObject_PR_client) {
-		/* FIXME : DelRequest_client(msg); */
-	}
-}
-
-void searchRequest_client(struct session *session, DNDSMessage_t *req_msg)
-{
-	DNDSObject_t *object;
-
-	SearchRequest_get_object(req_msg, &object);
-
-	size_t length;
-	char *id = NULL;
-
-	char *email;
-	char *password;
-
-	Client_get_email(object, &email, &length);
-	Client_get_password(object, &password, &length);
-
-	dao_fetch_client_id(&id, email, password);
-	jlog(L_DEBUG, "client id: %s", id);
-
-	DNDSMessage_t *msg;
-
-	DNDSMessage_new(&msg);
-	DNDSMessage_set_channel(msg, 0);
-	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
-
-	DSMessage_set_seqNumber(msg, 0);
-	DSMessage_set_ackNumber(msg, 1);
-	DSMessage_set_action(msg, action_getAccountApiKey);
-	DSMessage_set_operation(msg, dsop_PR_searchResponse);
-
-	SearchResponse_set_searchType(msg, SearchType_object);
-	SearchResponse_set_result(msg, DNDSResult_success);
-
-	DNDSObject_t *objClient;
-	DNDSObject_new(&objClient);
-	DNDSObject_set_objectType(objClient, DNDSObject_PR_client);
-
-	Client_set_id(objClient, id ? atoi(id): 0); /* FIXME set the result to failed if id == NULL */
-
-	SearchResponse_add_object(msg, objClient);
-	net_send_msg(session->netc, msg);
-	DNDSMessage_del(msg);
-	free(id);
 }
 
 void
@@ -546,8 +497,6 @@ CB_listallNetwork(void *arg, int remaining,
 	network = json_object();
 	array = json_array();
 	resp = json_object();
-
-	printf("uuid: %s\n", id);
 
 	json_object_set_new(resp, "tid", json_string("tid"));
 	json_object_set_new(resp, "action", json_string("listall-network"));
@@ -655,97 +604,6 @@ listallNode(struct session_info *sinfo, json_t *jmsg)
 	json_t	*resp = NULL;
 
 	dao_fetch_node_uuid_netid(sinfo, CB_listallNode);
-}
-
-void CB_searchRequest_node_sequence(void *data, int remaining, char *uuid, char *context_id)
-{
-	static DNDSMessage_t *msg = NULL;
-	static int count = 0;
-	struct session *session = (struct session *)data;
-
-	count++;
-
-	if (msg == NULL) {
-
-		DNDSMessage_new(&msg);
-		DNDSMessage_set_pdu(msg, pdu_PR_dsm);
-		DSMessage_set_action(msg, action_listNode);
-		DSMessage_set_operation(msg, dsop_PR_searchResponse);
-		SearchResponse_set_searchType(msg, SearchType_sequence);
-	}
-
-	DNDSObject_t *objNode;
-	DNDSObject_new(&objNode);
-	DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
-
-	Node_set_uuid(objNode, uuid, strlen(uuid));
-	Node_set_contextId(objNode, atoi(context_id));
-
-	SearchResponse_add_object(msg, objNode);
-
-	if (count == 10 || remaining == 0) {
-
-		if (remaining == 0) {
-			SearchResponse_set_result(msg, DNDSResult_success);
-		} else {
-			SearchResponse_set_result(msg, DNDSResult_moreData);
-		}
-
-		net_send_msg(session->netc, msg);
-		DNDSMessage_del(msg);
-
-		msg = NULL;
-		count = 0;
-	}
-}
-
-void searchRequest_node_sequence(struct session *session, DNDSMessage_t *req_msg)
-{
-	/* extract the list of node context id from the req_msg */
-	DNDSObject_t *object = NULL;
-	static DNDSMessage_t *msg = NULL;
-	uint32_t count = 0;
-	uint32_t i = 0;
-	uint32_t *id_list = NULL;
-	uint32_t contextId = 0;
-	int ret = 0;
-
-	SearchRequest_get_object_count(req_msg, &count);
-	if (count == 0) {
-		/* XXX send failed reply */
-		return;
-	}
-
-	id_list = calloc(count, sizeof(uint32_t));
-	for (i = 0; i < count; i++) {
-
-		ret = SearchRequest_get_from_objects(req_msg, &object);
-		if (ret == DNDS_success && object != NULL) {
-			Node_get_contextId(object, &contextId);
-			id_list[i] = contextId;
-			DNDSObject_del(object);
-			object = NULL;
-		}
-		else {
-			/* XXX send failed reply */
-		}
-	}
-
-	/* sql query that return all the node uuid */
-	ret = dao_fetch_node_sequence(id_list, count, session, CB_searchRequest_node_sequence);
-	if (ret == -1) {
-		DNDSMessage_new(&msg);
-		DNDSMessage_set_pdu(msg, pdu_PR_dsm);
-		DSMessage_set_action(msg, action_listNode);
-		DSMessage_set_operation(msg, dsop_PR_searchResponse);
-		SearchResponse_set_searchType(msg, SearchType_sequence);
-
-		SearchResponse_set_result(msg, DNDSResult_success);
-		net_send_msg(session->netc, msg);
-		DNDSMessage_del(msg);
-	}
-
-	free(id_list);
 }
 
 void
@@ -911,36 +769,6 @@ out:
 	return;
 }
 
-int
-CB_fetch_network_by_client_id_desc(void *msg,
-					char *id,
-					char *description,
-					char *client_id,
-					char *network,
-					char *netmask,
-					char *serverCert,
-					char *serverPrivkey,
-					char *trustedCert)
-{
-	DNDSObject_t *objContext;
-	DNDSObject_new(&objContext);
-	DNDSObject_set_objectType(objContext, DNDSObject_PR_context);
-
-	Context_set_id(objContext, atoi(id));
-	Context_set_clientId(objContext, atoi(client_id));
-	Context_set_description(objContext, description, strlen(description));
-	Context_set_network(objContext, network);
-	Context_set_netmask(objContext, netmask);
-
-	Context_set_serverCert(objContext, serverCert, strlen(serverCert));
-	Context_set_serverPrivkey(objContext, serverPrivkey, strlen(serverPrivkey));
-	Context_set_trustedCert(objContext, trustedCert, strlen(trustedCert));
-
-	SearchResponse_add_object(msg, objContext);
-
-	return 0;
-}
-
 void
 addNetwork(struct session_info *sinfo, json_t *jmsg)
 {
@@ -1036,28 +864,42 @@ addNetwork(struct session_info *sinfo, json_t *jmsg)
 		goto out;
 	}
 
-	/* send context update to nvswitch */
-	DNDSMessage_t *msg_up;
-	DNDSMessage_new(&msg_up);
-	DNDSMessage_set_channel(msg_up, 0);
-	DNDSMessage_set_pdu(msg_up, pdu_PR_dsm);
+	/* forward new network to nvswitch */
+	char	*netid;
+	char	*fwd_resp_str = NULL;
+	json_t	*array;
+	json_t	*network;
+	json_t	*fwd_resp = NULL;
 
-	DSMessage_set_seqNumber(msg_up, 0);
-	DSMessage_set_ackNumber(msg_up, 1);
-	DSMessage_set_action(msg_up, action_addNetwork);
-	DSMessage_set_operation(msg_up, dsop_PR_searchResponse);
+	if (switch_sinfo != NULL) {
+		dao_fetch_network_id(&netid, client_id, name);
 
-	dao_fetch_network_by_client_id_desc(client_id, name, msg_up,
-		CB_fetch_network_by_client_id_desc);
+		network = json_object();
+		array = json_array();
+		fwd_resp = json_object();
 
-	SearchResponse_set_searchType(msg_up, SearchType_all);
-	SearchResponse_set_result(msg_up, DNDSResult_success);
+		json_object_set_new(fwd_resp, "action", json_string("listall-network"));
+		json_object_set_new(fwd_resp, "response", json_string("success"));
 
-	if (g_switch_netc) {
-		net_send_msg(g_switch_netc, msg_up);
+		json_object_set_new(network, "uuid", json_string(netid));
+		json_object_set_new(network, "network", json_string("44.128.0.0"));
+		json_object_set_new(network, "netmask", json_string("255.255.0.0"));
+		json_object_set_new(network, "cert", json_string(serv_cert_ptr));
+		json_object_set_new(network, "pkey", json_string(serv_pvkey_ptr));
+		json_object_set_new(network, "tcert", json_string(emb_cert_ptr));
+
+		json_array_append_new(array, network);
+		json_object_set_new(fwd_resp, "networks", array);
+
+		fwd_resp_str = json_dumps(fwd_resp, 0);
+
+		bufferevent_write(switch_sinfo->bev, fwd_resp_str, strlen(fwd_resp_str));
+		bufferevent_write(switch_sinfo->bev, "\n", strlen("\n"));
+
+		json_decref(fwd_resp);
+		free(fwd_resp_str);
 	}
-	DNDSMessage_del(msg_up);
-	/* */
+	/* * */
 
 	json_object_set_new(resp, "response", json_string("success"));
 out:
