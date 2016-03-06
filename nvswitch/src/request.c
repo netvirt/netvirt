@@ -30,7 +30,7 @@ void provRequest(struct session *session, DNDSMessage_t *req_msg)
 	ProvRequest_get_provCode(req_msg, &provcode, &length);
 	jlog(L_DEBUG, "provisioning code: %s", provcode);
 
-	transmit_provisioning(session, provcode, length);
+	query_provisioning(session, provcode);
 }
 
 /* Authentication Request from the node */

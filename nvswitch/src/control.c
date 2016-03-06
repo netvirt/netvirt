@@ -38,6 +38,9 @@
 #include "session.h"
 #include "tcp.h"
 
+static struct event_base	*base;
+struct bufferevent		*bufev_sock = NULL;
+
 static netc_t *ctrl_netc = NULL;
 static passport_t *switch_passport = NULL;
 static struct switch_cfg *cfg = NULL;
@@ -47,131 +50,19 @@ static struct switch_cfg *cfg = NULL;
 struct session *session_tracking_table[MAX_SESSION];
 static uint32_t tracking_id = 0;
 
-int transmit_provisioning(struct session *session, char *provCode, uint32_t length)
+void
+del_node(struct session_info *sinfo, json_t *jmsg)
 {
-	DNDSMessage_t *msg;
+	char	*netid;
+	char	*uuid;
+	json_t	*node;
 
-	DNDSMessage_new(&msg);
-	DNDSMessage_set_channel(msg, 0);
-	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
-
-	/* XXX should have it's own tracking number field  ? */
-	DSMessage_set_seqNumber(msg, tracking_id);
-	DSMessage_set_ackNumber(msg, 0);
-	DSMessage_set_action(msg, action_provisionningNode);
-	DSMessage_set_operation(msg, dsop_PR_searchRequest);
-
-	SearchRequest_set_searchType(msg, SearchType_object);
-
-	DNDSObject_t *objNode;
-	DNDSObject_new(&objNode);
-	DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
-
-	Node_set_contextId(objNode, 0);
-	Node_set_provCode(objNode, provCode, length);
-
-	SearchRequest_set_object(msg, objNode);
-
-	net_send_msg(ctrl_netc, msg);
-	DNDSMessage_del(msg);
-
-	session_tracking_table[tracking_id % MAX_SESSION] = session;
-	tracking_id++;
-
-	return 0;
-}
-
-int transmit_node_connectinfo(e_ConnState state, char *ipAddress, char *certName)
-{
-	DNDSMessage_t *msg;
-
-	DNDSMessage_new(&msg);
-	DNDSMessage_set_channel(msg, 0);
-	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
-
-	DSMessage_set_seqNumber(msg, 0);
-	DSMessage_set_ackNumber(msg, 0);
-	DSMessage_set_action(msg, action_updateNodeConnInfo);
-	DSMessage_set_operation(msg, dsop_PR_nodeConnInfo);
-
-	NodeConnInfo_set_certName(msg, certName, strlen(certName));
-	NodeConnInfo_set_ipAddr(msg, ipAddress);
-	NodeConnInfo_set_state(msg, state);
-
-	net_send_msg(ctrl_netc, msg);
-	DNDSMessage_del(msg);
-
-	return 0;
-}
-
-int transmit_search_node()
-{
-	uint16_t i = 0;
-	context_t *context = NULL;
-
-	DNDSObject_t *objNode;
-
-	DNDSMessage_t *msg;
-	DNDSMessage_new(&msg);
-	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
-	DSMessage_set_action(msg, action_listNode);
-	DSMessage_set_operation(msg, dsop_PR_searchRequest);
-	SearchRequest_set_searchType(msg, SearchType_sequence);
-
-	for (i = 0; i < 4096; i++) {
-		context = context_lookup(i);
-		if (context) {
-			DNDSObject_new(&objNode);
-			DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
-			Node_set_contextId(objNode, i);
-			SearchRequest_add_to_objects(msg, objNode);
-		}
-	}
-
-	net_send_msg(ctrl_netc, msg);
-	DNDSMessage_del(msg);
-
-	return 0;
-}
-
-static void on_secure(netc_t *netc)
-{
-	jlog(L_DEBUG, "connection secured with the controller");
-
-	DNDSMessage_t *msg;
-
-	DNDSMessage_new(&msg);
-	DNDSMessage_set_channel(msg, 0);
-	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
-
-	DSMessage_set_seqNumber(msg, 0);
-	DSMessage_set_ackNumber(msg, 0);
-	DSMessage_set_action(msg, action_listNetwork);
-	DSMessage_set_operation(msg, dsop_PR_searchRequest);
-
-	SearchRequest_set_searchType(msg, SearchType_all);
-	SearchRequest_set_objectName(msg, ObjectName_context);
-
-	net_send_msg(netc, msg);
-	DNDSMessage_del(msg);
-}
-
-static void DelRequest_node(DNDSMessage_t *msg)
-{
-	DNDSObject_t *object;
-	DelRequest_get_object(msg, &object);
-
-	uint32_t contextId = -1;
-	Node_get_contextId(object, &contextId);
-
-	size_t length = 0;
-	char *uuid = NULL;
-	Node_get_uuid(object, &uuid, &length);
+	node = json_object_get(jmsg, "node");
+	json_unpack(node, "{s:s}", "uuid", &uuid);
+	json_unpack(node, "{s:s}", "netid", &netid);
 
 	context_t *context = NULL;
-	context = context_lookup(contextId);
-
-	if (context == NULL) {
+	if ((context = context_lookup(atoi(netid))) == NULL) {
 		jlog(L_ERROR, "context id {%d} doesn't exist");
 		return;
 	}
@@ -187,20 +78,19 @@ static void DelRequest_node(DNDSMessage_t *msg)
 	}
 }
 
-static void DelRequest_context(DNDSMessage_t *msg)
+void
+del_network(struct session_info *sinfo, json_t *jmsg)
 {
-	DNDSObject_t *object;
-	DelRequest_get_object(msg, &object);
+	char		*netid;
+	json_t		*network;
+	context_t	*context = NULL;
+	struct session	*session_list = NULL;
 
-	struct session *session_list = NULL;
-	uint32_t contextId = 0;
-	Context_get_id(object, &contextId);
+	network = json_object_get(jmsg, "network");
+	json_unpack(network, "{s:s}", "netid", &netid);
 
-	context_t *context = NULL;
-	context = context_disable(contextId);
-
-	if (context == NULL) {
-		jlog(L_ERROR, "context id {%d} doesn't exist");
+	if ((context = context_disable(atoi(netid))) == NULL) {
+		jlog(L_ERROR, "context id `%s' doesn't exist", netid);
 		return;
 	}
 
@@ -214,38 +104,36 @@ static void DelRequest_context(DNDSMessage_t *msg)
 	context_free(context);
 }
 
-void delRequest(DNDSMessage_t *msg)
+int
+provisioning(struct session_info *sinfo, json_t *jmsg)
 {
-	DNDSObject_PR objType;
-	DelRequest_get_objectType(msg, &objType);
+	char		*cert;
+	char		*pkey;
+	char		*tcert;
+	char		*ipaddr;
+	char		*response;
+	json_t		*node;
+	struct		 session *session;
+	uint32_t	 tid;
 
-	if (objType == DNDSObject_PR_client) {
-		/* FIXME : DelRequest_client(msg); */
+	json_unpack(jmsg, "{s:s}", "response", &response);
+	if (strcmp(response, "success") != 0) {
+		/* XXX disconnect user */
+		return -1;
 	}
 
-	if (objType == DNDSObject_PR_context) {
-		DelRequest_context(msg);
+	json_unpack(jmsg, "{s:s}", "tid", &tid);
+
+	node = json_object_get(jmsg, "node");
+	json_unpack(node, "{s:s}", "cert", &cert);
+	json_unpack(node, "{s:s}", "pkey", &pkey);
+	json_unpack(node, "{s:s}", "tcert", &tcert);
+	json_unpack(node, "{s:s}", "ipaddr", &ipaddr);
+
+	if (cert == NULL || pkey == NULL ||
+	    tcert == NULL || ipaddr == NULL) {
+		return -1;
 	}
-
-	if (objType == DNDSObject_PR_node) {
-		DelRequest_node(msg);
-	}
-}
-
-static void handle_SearchResponse_Node(DNDSMessage_t *msg)
-{
-	struct session *session;
-	uint32_t tracked_id;
-	DNDSObject_t *object;
-	uint32_t count; int ret;
-	size_t length;
-
-	char *certificate = NULL;
-	uint8_t *certificateKey = NULL;
-	uint8_t *trustedCert = NULL;
-	char ipAddress[INET_ADDRSTRLEN];
-
-	SearchResponse_get_object_count(msg, &count);
 
 	DNDSMessage_t *new_msg;
 	DNDSMessage_new(&new_msg);
@@ -254,220 +142,216 @@ static void handle_SearchResponse_Node(DNDSMessage_t *msg)
 
 	DNMessage_set_operation(new_msg, dnop_PR_provResponse);
 
-	ret = SearchResponse_get_object(msg, &object);
-	if (ret == DNDS_success && object != NULL) {
+	ProvResponse_set_certificate(new_msg, cert, strlen(cert));
+	ProvResponse_set_certificateKey(new_msg, pkey, strlen(pkey));
+	ProvResponse_set_trustedCert(new_msg, tcert, strlen(tcert));
+	ProvResponse_set_ipAddress(new_msg, ipaddr);
 
-		Node_get_certificate(object, &certificate, &length);
-		ProvResponse_set_certificate(new_msg, certificate, length);
-
-		Node_get_certificateKey(object, &certificateKey, &length);
-		ProvResponse_set_certificateKey(new_msg, certificateKey, length);
-
-		Node_get_trustedCert(object, &trustedCert, &length);
-		ProvResponse_set_trustedCert(new_msg, trustedCert, length);
-
-		Node_get_ipAddress(object, ipAddress);
-		ProvResponse_set_ipAddress(new_msg, ipAddress);
-
-		DNDSObject_del(object);
-	}
-
-	DSMessage_get_seqNumber(msg, &tracked_id);
-
-	session = session_tracking_table[tracked_id % MAX_SESSION];
-	session_tracking_table[tracked_id % MAX_SESSION] = NULL;
+	session = session_tracking_table[atoi(tid) % MAX_SESSION];
+	session_tracking_table[atoi(tid) % MAX_SESSION] = NULL;
 	if (session)
 		net_send_msg(session->netc, new_msg);
 	DNDSMessage_del(new_msg);
 }
 
-static void handle_SearchResponse_node(DNDSMessage_t *msg)
+int
+listall_node(struct session_info *sinfo, json_t *jmsg)
 {
-	DNDSObject_t *object;
-	int ret;
-	size_t length;
-	uint32_t count;
-	char *uuid;
-	uint32_t contextId;
-	context_t *context;
+	char		*uuid = NULL;
+	char		*netid = NULL;
+	char		*response = NULL;
+	size_t		 array_size = 0;
+	int		 i;
+	json_t		*js_nodes = NULL;
+	json_t		*node = NULL;
+	context_t	*context = NULL;
 
-	SearchResponse_get_object_count(msg, &count);
-	while (count-- > 0) {
-		ret = SearchResponse_get_object(msg, &object);
-		if (ret == DNDS_success && object != NULL) {
-
-			Node_get_uuid(object, &uuid, &length);
-			Node_get_contextId(object, &contextId);
-
-			context = context_lookup(contextId);
-			if (context) {
-				ctable_insert(context->atable, uuid, context->access_session);
-
-			}
-
-			DNDSObject_del(object);
-			object = NULL;
-		}
+	if ((js_nodes = json_object_get(jmsg, "nodes")) == NULL) {
+		return -1;
 	}
-}
 
-static int handle_SearchResponse_Context(DNDSMessage_t *msg)
-{
-	DNDSObject_t *object;
-	uint32_t count;
-	int total;
-	int ret;
-	size_t length;
-	uint32_t id;
-	char *desc;
-	char network[INET_ADDRSTRLEN];
-	char netmask[INET_ADDRSTRLEN];
-	char *serverCert;
-	char *serverPrivkey;
-	char *trustedCert;
-
-	SearchResponse_get_object_count(msg, &count);
-	total = count;
-	while (count-- > 0) {
-
-		ret = SearchResponse_get_object(msg, &object);
-		if (ret == DNDS_success && object != NULL) {
-
-			Context_get_id(object, &id);
-			Context_get_description(object, &desc, &length);
-			Context_get_network(object, network);
-			Context_get_netmask(object, netmask);
-			Context_get_serverCert(object, &serverCert, &length);
-			Context_get_serverPrivkey(object, &serverPrivkey, &length);
-			Context_get_trustedCert(object, &trustedCert, &length);
-
-			context_create(id, network, netmask, serverCert, serverPrivkey, trustedCert);
-
-			DNDSObject_del(object);
-		}
+	if ((array_size = json_array_size(js_nodes)) == 0) {
+		return -1;
 	}
-	return total;
-}
 
-static void handle_SearchResponse(DNDSMessage_t *msg)
-{
-	e_SearchType SearchType;
-	e_DNDSResult result;
+	for (i = 0; i < array_size; i++) {
 
-	SearchResponse_get_searchType(msg, &SearchType);
+		node = json_array_get(js_nodes, i);
+		json_unpack(node, "{s:s}", "uuid", &uuid);
+		json_unpack(node, "{s:s}", "netid", &netid);
 
-	if (SearchType == SearchType_all) {
-		if (handle_SearchResponse_Context(msg) == 0) {
-			cfg->ctrl_initialized = 1;
+		if (uuid == NULL || netid == NULL) {
+			return -1;
 		}
-		SearchResponse_get_result(msg, &result);
-		if (result == DNDSResult_success) {
-			transmit_search_node();
+
+		/* FIXME */
+		if ((context = context_lookup(atoi(netid))) != NULL) {
+			ctable_insert(context->atable, uuid, context->access_session);
 		}
 	}
 
-	if (SearchType == SearchType_sequence) {
-		handle_SearchResponse_node(msg);
-		SearchResponse_get_result(msg, &result);
-		if (result == DNDSResult_success) {
-			cfg->ctrl_initialized = 1;
-		}
+	if ((json_unpack(jmsg, "{s:s}", "response", &response)) != 0) {
+		return -1;
 	}
 
-	if (SearchType == SearchType_object) {
-		handle_SearchResponse_Node(msg);
+	if (strcmp(response, "success") == 0) {
+		return 0;
 	}
+
+	return -1;
 }
 
-static void dispatch_operation(DNDSMessage_t *msg)
+int
+listall_network(struct session_info *sinfo, json_t *jmsg)
 {
-	dsop_PR operation;
-	DSMessage_get_operation(msg, &operation);
+	char	*uuid = NULL;
+	char	*subnet = NULL;
+	char	*netmask = NULL;
+	char	*cert = NULL;
+	char	*pkey = NULL;
+	char	*tcert = NULL;
+	char	*response = NULL;
+	int	 i;
+	size_t	 array_size = 0;
+	json_t	*js_networks = NULL;
+	json_t	*elm = NULL;
 
-	switch (operation) {
-	case dsop_PR_delRequest:
-		delRequest(msg);
-		break;
-
-	case dsop_PR_searchResponse:
-		handle_SearchResponse(msg);
-		break;
-
-	default:
-		jlog(L_WARNING, "not a valid DSM operation");
+	if ((js_networks = json_object_get(jmsg, "networks")) == NULL) {
+		return -1;
 	}
-}
 
-static void on_input(netc_t *netc)
-{
-	DNDSMessage_t *msg;
-	mbuf_t **mbuf_itr;
-	pdu_PR pdu;
+	if ((array_size = json_array_size(js_networks)) == 0) {
+		return -1;
+	}
 
-	mbuf_itr = &netc->queue_msg;
+	for (i = 0; i < array_size; i++) {
 
-	while (*mbuf_itr != NULL) {
+		elm = json_array_get(js_networks, i);
 
-		msg = (DNDSMessage_t *)(*mbuf_itr)->ext_buf;
-		DNDSMessage_get_pdu(msg, &pdu);
+		json_unpack(elm, "{s:s}", "uuid", &uuid);
+		json_unpack(elm, "{s:s}", "network", &subnet);
+		json_unpack(elm, "{s:s}", "netmask", &netmask);
+		json_unpack(elm, "{s:s}", "cert", &cert);
+		json_unpack(elm, "{s:s}", "pkey", &pkey);
+		json_unpack(elm, "{s:s}", "tcert", &tcert);
 
-		switch (pdu) {
-		case pdu_PR_dsm:	/* DNDS protocol */
-			dispatch_operation(msg);
-			break;
-		default:
-			/* TODO disconnect session */
-			jlog(L_ERROR, "invalid PDU");
-			break;
+		if (uuid == NULL || subnet == NULL || netmask == NULL ||
+		    cert == NULL || pkey == NULL || tcert == NULL) {
+			return -1;
 		}
 
-		mbuf_del(mbuf_itr, *mbuf_itr);
+		printf("uuid: %s\n", uuid);
+		printf("subnet: %s\n", subnet);
+		printf("netmask: %s\n", netmask);
+		printf("cert: %s\n", cert);
+		printf("pkey: %s\n", pkey);
+		printf("tcert: %s\n", tcert);
+
+		context_create(uuid, subnet, netmask, cert, pkey, tcert);
 	}
+
+	if ((json_unpack(jmsg, "{s:s}", "response", &response)) != 0) {
+		return -1;
+	}
+
+	if (strcmp(response, "success") == 0) {
+		return 0;
+	}
+
+	return -1;
 }
 
-static void on_disconnect(netc_t *netc)
+void
+query_provisioning(struct session *session, char *provcode)
 {
-	(void)(netc);
+	jlog(L_DEBUG, "query provisioning");
 
-	if (cfg->ctrl_running == 0) {
-		return;
-	}
+	char	*query_str = NULL;
+	char	*query = NULL;
+	char	*node = NULL;
 
-	netc_t *retry_netc = NULL;
+	char	tid[10];
 
-	jlog(L_NOTICE, "disconnected from the controller");
-	jlog(L_NOTICE, "connection retry in 5sec...");
-	do {
-		sleep(5);
-		retry_netc = net_client(cfg->ctrler_ip, cfg->ctrler_port,
-		    NET_PROTO_TCP, NET_SECURE_RSA, switch_passport,
-		    on_disconnect, on_input, on_secure);
-	} while (retry_netc == NULL);
+	sprintf(tid, "%d", tracking_id);
+	session_tracking_table[tracking_id % MAX_SESSION] = session;
 
-	ctrl_netc = retry_netc;
+	query = json_object();
+	json_object_set_new(query, "tid", json_string(tid));
+	json_object_set_new(query, "action", json_string("provisioning"));
+
+	node = json_object();
+	json_object_set_new(node, "provcode", json_string(provcode));
+
+	json_object_set_new(query, "node", node);
+	query_str = json_dumps(query, 0);
+
+	bufferevent_write(bufev_sock, query_str, strlen(query_str));
+	bufferevent_write(bufev_sock, "\n", strlen("\n"));
+
+	json_decref(query);
+	free(query_str);
+
+	return;
 }
 
-static void *ctrl_loop(void *nil)
+void
+query_list_node()
 {
-	(void)nil;
+	jlog(L_DEBUG, "query list node");
 
-	while (cfg->ctrl_running) {
-		tcpbus_ion_poke();
-	}
+	char	*query_str = NULL;
+	json_t	*query = NULL;
 
-	return NULL;
+	query = json_object();
+	json_object_set_new(query, "tid", json_string("tid"));
+	json_object_set_new(query, "action", json_string("listall-node"));
+
+	query_str = json_dumps(query, 0);
+
+	bufferevent_write(bufev_sock, query_str, strlen(query_str));
+	bufferevent_write(bufev_sock, "\n", strlen("\n"));
+
+	json_decref(query);
+	free(query_str);
+
+	return;
 }
 
-static struct event_base	*base;
-struct bufferevent		*bufev_sock = NULL;
+void
+update_node_status(char *status, char *local_ipaddr, char *cert_name)
+{
+	jlog(L_DEBUG, "update node status");
+
+	char	*query_str = NULL;
+	json_t	*query = NULL;
+	json_t	*node = NULL;
+
+	query = json_object();
+	json_object_set_new(query, "action", json_string("update-node-status"));
+
+	node = json_object();
+	json_object_set_new(node, "status", json_string(status));
+	json_object_set_new(node, "local-ipaddr", json_string(local_ipaddr));
+	json_object_set_new(node, "cert-name", json_string(cert_name));
+	json_object_set_new(query, "node", node);
+	query_str = json_dumps(query, 0);
+
+	bufferevent_write(bufev_sock, query_str, strlen(query_str));
+	bufferevent_write(bufev_sock, "\n", strlen("\n"));
+
+	json_decref(query);
+	free(query_str);
+
+	return;
+}
 
 void
 query_list_network()
 {
 	jlog(L_DEBUG, "list network");
 
-	json_t	*query = NULL;
 	char	*query_str = NULL;
+	json_t	*query = NULL;
 
 	query = json_object();
 	json_object_set_new(query, "tid", json_string("tid"));
@@ -506,7 +390,38 @@ bufev_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
 	}
 }
 
-static void
+void
+dispatch(struct session_info *sinfo, json_t *jmsg)
+{
+	char	*dump;
+	char	*action;
+
+	dump = json_dumps(jmsg, 0);
+	free(dump);
+
+	if (json_unpack(jmsg, "{s:s}", "action", &action) == -1) {
+		/* XXX disconnect */
+		return;
+	}
+
+	if (strcmp(action, "listall-network") == 0) {
+		if (listall_network(sinfo, jmsg) == 0) {
+			/* All network are fetched */
+			cfg->ctrl_initialized = 1;
+			query_list_node(sinfo, jmsg);
+		}
+	} else if (strcmp(action, "listall-node") == 0) {
+		listall_node(sinfo, jmsg);
+	} else if (strcmp(action, "provisioning") == 0) {
+		provisioning(sinfo, jmsg);
+	} else if (strcmp(action, "del-network") == 0) {
+		del_network(sinfo, jmsg);
+	} else if (strcmp(action, "del-node") == 0) {
+		del_node(sinfo, jmsg);
+	}
+}
+
+void
 on_read_cb(struct bufferevent *bev, void *session)
 {
 	char			*str = NULL;
@@ -523,15 +438,19 @@ on_read_cb(struct bufferevent *bev, void *session)
 			&n_read_out,
 			EVBUFFER_EOL_LF);
 
-	if (str != NULL) {
-		jlog(L_DEBUG, "str> %s", str);
-		jmsg = json_loadb(str, n_read_out, 0, &error);
-		if (jmsg = NULL) {
-			jlog(L_DEBUG, "error: %s\n", error.text);
-		} else {
-			json_decref(jmsg);
-		}
+	if (str == NULL)
+		return;
+
+	//jlog(L_DEBUG, "str> %s", str);
+	printf("str: %d <> %s\n\n\n", strlen(str), str);
+	if ((jmsg = json_loadb(str, n_read_out, 0, &error)) == NULL) {
+		jlog(L_ERROR, "json_loadb: %s", error.text);
+		/* FIXME DISCONNECT */
+		return;
 	}
+
+	dispatch(sinfo, jmsg);
+	json_decref(jmsg);
 }
 
 static DH *
@@ -672,10 +591,8 @@ ctrl_init(struct switch_cfg *_cfg)
 	}
 
 	event_base_dispatch(base);
-
 	return 0;
 out:
-
 	bufferevent_free(bufev_sock);
 	return -1;
 }

@@ -28,48 +28,39 @@
 #include "pki.h"
 #include "request.h"
 
-void nodeConnectInfo(struct session *session, DNDSMessage_t *req_msg)
+extern struct session_info *switch_sinfo;
+
+void
+update_node_status(struct session_info *sinfo, json_t *jmsg)
 {
-	(void)(session);
+	jlog(L_DEBUG, "update-node-status");
 
-	size_t length;
-	char *certName;
-	char ipAddress[INET_ADDRSTRLEN];
-	e_ConnState state;
-	char *uuid = NULL;
-	char *context_id = NULL;
-	char *ptr = NULL;
+	char	*status;
+	char	*local_ipaddr;
+	char	*cert_name;
+	char	*uuid = NULL;
+	char	*netid = NULL;
+	char	*ptr = NULL;
 
-	NodeConnInfo_get_certName(req_msg, &certName, &length);
-	NodeConnInfo_get_ipAddr(req_msg, ipAddress);
-	NodeConnInfo_get_state(req_msg, &state);
+	json_t	*node;
 
-	uuid = strdup(certName+4);
+
+	node = json_object_get(jmsg, "node");
+	json_unpack(node, "{s:s}", "status", &status);
+	json_unpack(node, "{s:s}", "local-ipaddr", &local_ipaddr);
+	json_unpack(node, "{s:s}", "cert-name", &cert_name);
+
+	uuid = strdup(cert_name+4);
 	ptr = strchr(uuid, '@');
 	*ptr = '\0';
-	context_id = strdup(ptr+1);
+	netid = strdup(ptr+1);
 
-	switch(state) {
-	case ConnState_connected:
-		dao_update_node_status(context_id, uuid, "1", ipAddress);
-		break;
-	case ConnState_disconnected:
-		dao_update_node_status(context_id, uuid, "0", ipAddress);
-		break;
-	default:
-		jlog(L_WARNING, "the connection state is invalid");
-		break;
-	}
+	dao_update_node_status(netid, uuid, status, local_ipaddr);
 
 	free(uuid);
-	free(context_id);
+	free(netid);
 
 	return;
-}
-
-void AddRequest_context(DNDSMessage_t *msg)
-{
-	(void)msg;
 }
 
 void
@@ -83,6 +74,7 @@ delNetwork(struct session_info *sinfo, json_t *jmsg)
 
 	char		*apikey = NULL;
 	char		*network_name = NULL;
+	char		*fwd_str = NULL;
 	char		*resp_str = NULL;
 	json_t		*resp = NULL;
 	json_t		*js_network = NULL;
@@ -136,10 +128,16 @@ delNetwork(struct session_info *sinfo, json_t *jmsg)
 		return;
 	}
 
-	/* XXX forward the delRequest to nvswitch */
-	if (g_switch_netc) { };
-		//net_send_msg(g_switch_netc, msg);
+	/* Forward del-network to the switch */
+	json_object_del(jmsg, "apikey");
+	json_object_del(js_network, "uuid");
+	json_object_del(js_network, "name");
+	json_object_set_new(js_network, "netid", json_string(network_id));
 
+	fwd_str = json_dumps(jmsg, 0);
+	bufferevent_write(switch_sinfo->bev, fwd_str, strlen(fwd_str));
+	bufferevent_write(switch_sinfo->bev, "\n", strlen("\n"));
+	free(fwd_str);
 out:
 
 	resp_str = json_dumps(resp, 0);
@@ -186,7 +184,7 @@ addNode(struct session_info *sinfo, json_t *jmsg)
 
 	struct ippool	*ippool = NULL;
 	char		*ip = NULL;
-	int		pool_size;
+	int		 pool_size;
 
 	if ((js_node = json_object_get(jmsg, "node")) == NULL)
 		return;
@@ -269,7 +267,7 @@ addNode(struct session_info *sinfo, json_t *jmsg)
 	}
 
 
-	/* send node update to nvswitch */
+	/* FIXME send node update to nvswitch */
 
 	DNDSMessage_t *msg_up;
 	DNDSMessage_new(&msg_up);
@@ -315,7 +313,6 @@ free1:
 	free(emb_pvkey_ptr);
 
 out:
-
 	resp_str = json_dumps(resp, 0);
 
 	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
@@ -337,11 +334,12 @@ delNode(struct session_info *sinfo, json_t *jmsg)
 	char		*apikey = NULL;
 	char		*network_name = NULL;
 	char		*resp_str = NULL;
+	char		*fwd_str = NULL;
 	char		*ipaddr = NULL;
 	json_t		*js_node = NULL;
 	json_t		*resp = NULL;
-	struct		ippool *ippool = NULL;
-	int		pool_size;
+	struct ippool	*ippool = NULL;
+	int		 pool_size;
 
 
 	if ((js_node = json_object_get(jmsg, "node")) == NULL)
@@ -398,9 +396,15 @@ delNode(struct session_info *sinfo, json_t *jmsg)
 		jlog(L_ERROR, "failed to update embassy ippool");
 	}
 
-	/* forward the delRequest to nvswitch */
-	//if (g_switch_netc)
-		//net_send_msg(g_switch_netc, msg);
+	/* Forward del-node to the switch */
+	json_object_del(jmsg, "apikey");
+	json_object_del(js_node, "networkname");
+	json_object_set_new(js_node, "netid", json_string(network_id));
+
+	fwd_str = json_dumps(jmsg, 0);
+	bufferevent_write(switch_sinfo->bev, fwd_str, strlen(fwd_str));
+	bufferevent_write(switch_sinfo->bev, "\n", strlen("\n"));
+	free(fwd_str);
 
 out:
 
@@ -427,12 +431,6 @@ void delRequest(struct session *session, DNDSMessage_t *msg)
 	if (objType == DNDSObject_PR_client) {
 		/* FIXME : DelRequest_client(msg); */
 	}
-}
-
-void modifyRequest(struct session *session, DNDSMessage_t *msg)
-{
-	(void)session;
-	(void)msg;
 }
 
 void searchRequest_client(struct session *session, DNDSMessage_t *req_msg)
@@ -479,7 +477,56 @@ void searchRequest_client(struct session *session, DNDSMessage_t *req_msg)
 	free(id);
 }
 
-void CB_listallNetwork(void *arg, int remaining,
+void
+provisioning(struct session_info *sinfo, json_t *jmsg)
+{
+	jlog(L_DEBUG, "provisioning");
+
+	char	*cert;
+	char	*pkey;
+	char	*tcert;
+	char	*ipaddr;
+
+	char	*node;
+	char	*provcode;
+	char	*tid;
+	char	*resp_str = NULL;
+	char	*resp = NULL;
+
+	json_unpack(jmsg, "{s:s}", "tid", &tid);
+
+	node = json_object_get(jmsg, "node");
+	json_unpack(node, "{s:s}", "provcode", &provcode);
+
+	resp = json_object();
+	json_object_set_new(resp, "tid", json_string(tid));
+	json_object_set_new(resp, "action", json_string("provisioning"));
+
+	if ((dao_fetch_node_from_provcode(provcode, &cert, &pkey, &tcert, &ipaddr)) == 0) {
+		json_object_set_new(resp, "response", json_string("success"));
+		node = json_object();
+		json_object_set_new(node, "cert", json_string(cert));
+		json_object_set_new(node, "pkey", json_string(pkey));
+		json_object_set_new(node, "tcert", json_string(tcert));
+		json_object_set_new(node, "ipaddr", json_string(ipaddr));
+		json_object_set_new(resp, "node", node);
+	} else {
+		json_object_set_new(resp, "response", json_string("error"));
+	}
+
+	resp_str = json_dumps(resp, 0);
+
+	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+
+	json_decref(resp);
+	free(resp_str);
+
+	return;
+}
+
+void
+CB_listallNetwork(void *arg, int remaining,
 				char *id,
 				char *description,
 				char *client_id,
@@ -489,13 +536,21 @@ void CB_listallNetwork(void *arg, int remaining,
 				char *pkey,
 				char *tcert)
 {
-	json_t	*array;
-	json_t	*network;
+	char			*resp_str = NULL;
+	struct session_info	*sinfo;
+	json_t			*array;
+	json_t			*network;
+	json_t			*resp = NULL;
 
-	array = (json_t*)arg;
+	sinfo = arg;
 	network = json_object();
+	array = json_array();
+	resp = json_object();
 
 	printf("uuid: %s\n", id);
+
+	json_object_set_new(resp, "tid", json_string("tid"));
+	json_object_set_new(resp, "action", json_string("listall-network"));
 
 	json_object_set_new(network, "uuid", json_string(id));
 	json_object_set_new(network, "network", json_string(subnet));
@@ -505,30 +560,40 @@ void CB_listallNetwork(void *arg, int remaining,
 	json_object_set_new(network, "tcert", json_string(tcert));
 
 	json_array_append_new(array, network);
+
+	json_object_set_new(resp, "networks", array);
+	if (remaining > 0)
+		json_object_set_new(resp, "response", json_string("more-data"));
+	else
+		json_object_set_new(resp, "response", json_string("success"));
+
+	resp_str = json_dumps(resp, 0);
+
+	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+
+	json_decref(resp);
+	free(resp_str);
 }
 
-void listallNetwork(struct session_info *sinfo, json_t *jmsg)
+void
+listallNetwork(struct session_info *sinfo, json_t *jmsg)
 {
 	jlog(L_DEBUG, "listallNetwork");
 
 	char	*resp_str = NULL;
-	int	 ret;
-	json_t	*array;
 	json_t	*resp = NULL;
 
 	resp = json_object();
 	json_object_set_new(resp, "tid", json_string("tid"));
-	json_object_set_new(resp, "action", json_string("response"));
+	json_object_set_new(resp, "action", json_string("listall-network"));
 
-	array = json_array();
-	ret = dao_fetch_context(array, CB_listallNetwork);
-	if (ret == -1) {
+	if (dao_fetch_context(sinfo, CB_listallNetwork) == -1) {
 		json_object_set_new(resp, "response", json_string("error"));
 		goto out;
 	}
 
-	json_object_set_new(resp, "networks", array);
-	json_object_set_new(resp, "response", json_string("success"));
+	return;
 out:
 	resp_str = json_dumps(resp, 0);
 
@@ -539,6 +604,57 @@ out:
 	free(resp_str);
 
 	return;
+}
+
+void
+CB_listallNode(void *arg, int remaining, char *netid, char *uuid)
+{
+	char			*resp_str = NULL;
+	struct	session_info	*sinfo;
+	json_t			*array;
+	json_t			*node;
+	json_t			*resp = NULL;
+
+	sinfo = arg;
+	node = json_object();
+	array = json_array();
+	resp = json_object();
+
+	printf("uuid: %s\n", uuid);
+	printf("netid: %s\n", netid);
+
+	json_object_set_new(resp, "tid", json_string("tid"));
+	json_object_set_new(resp, "action", json_string("listall-node"));
+
+	json_object_set_new(node, "netid", json_string(netid));
+	json_object_set_new(node, "uuid", json_string(uuid));
+
+	json_array_append_new(array, node);
+
+	json_object_set_new(resp, "nodes", array);
+	if (remaining > 0)
+		json_object_set_new(resp, "response", json_string("more-data"));
+	else
+		json_object_set_new(resp, "response", json_string("success"));
+
+	resp_str = json_dumps(resp, 0);
+
+	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+
+	json_decref(resp);
+	free(resp_str);
+}
+
+void
+listallNode(struct session_info *sinfo, json_t *jmsg)
+{
+	jlog(L_DEBUG, "listallNode");
+
+	char	*resp_str = NULL;
+	json_t	*resp = NULL;
+
+	dao_fetch_node_uuid_netid(sinfo, CB_listallNode);
 }
 
 void CB_searchRequest_node_sequence(void *data, int remaining, char *uuid, char *context_id)
@@ -630,92 +746,6 @@ void searchRequest_node_sequence(struct session *session, DNDSMessage_t *req_msg
 	}
 
 	free(id_list);
-}
-
-void searchRequest_node(struct session *session, DNDSMessage_t *req_msg)
-{
-	char *provcode = NULL;
-	uint32_t contextid = 0;
-#if 0
-	char str_contextid[20];
-#endif
-	size_t length;
-	int ret = 0;
-
-	DNDSObject_t *obj = NULL;
-        SearchRequest_get_object(req_msg, &obj);
-	Node_get_provCode(obj, &provcode, &length);
-	Node_get_contextId(obj, &contextid);
-
-	uint32_t tracked_id;
-	DSMessage_get_seqNumber(req_msg, &tracked_id);
-
-
-	DNDSMessage_t *msg;
-
-	DNDSMessage_new(&msg);
-	DNDSMessage_set_channel(msg, 0);
-	DNDSMessage_set_pdu(msg, pdu_PR_dsm);
-
-	DSMessage_set_seqNumber(msg, tracked_id);
-	DSMessage_set_ackNumber(msg, 0);
-	DSMessage_set_action(msg, action_listNode);
-	DSMessage_set_operation(msg, dsop_PR_searchResponse);
-
-#if 0
-	if (contextid > 0) { /* searching by context ID */
-
-		jlog(L_DEBUG, "context ID to search: %d", contextid);
-		snprintf(str_contextid, sizeof(str_contextid), "%d", contextid);
-
-		ret = dao_fetch_node_from_context_id(str_contextid, msg,
-					CB_searchRequest_node_by_context_id);
-		if (ret != 0) {
-			jlog(L_WARNING, "dao fetch node from context id failed: %d", contextid);
-			return; /* FIXME send negative response */
-		}
-
-		/* the fields are set via the callback */
-
-	} else
-#endif
-
-	if (provcode != NULL) { /* searching by provcode */
-
-		jlog(L_DEBUG, "searchRequest node for provisioning");
-
-		DNDSObject_t *objNode;
-		DNDSObject_new(&objNode);
-		DNDSObject_set_objectType(objNode, DNDSObject_PR_node);
-
-		jlog(L_DEBUG, "provcode to search: %s", provcode);
-
-		char *certificate = NULL;
-		char *private_key = NULL;
-		char *trustedcert = NULL;
-		char *ipAddress = NULL;
-
-		ret = dao_fetch_node_from_provcode(provcode, &certificate, &private_key, &trustedcert, &ipAddress);
-		if (ret != 0) {
-			SearchResponse_set_result(msg, DNDSResult_noSuchObject);
-			SearchResponse_set_searchType(msg, SearchType_object);
-			net_send_msg(session->netc, msg);
-			DNDSMessage_del(msg);
-			return;
-		}
-
-		Node_set_certificate(objNode, certificate, strlen(certificate));
-		Node_set_certificateKey(objNode, (uint8_t*)private_key, strlen(private_key));
-		Node_set_trustedCert(objNode, (uint8_t*)trustedcert, strlen(trustedcert));
-		Node_set_ipAddress(objNode, ipAddress);
-
-		SearchResponse_set_result(msg, DNDSResult_success);
-		SearchResponse_add_object(msg, objNode);
-	}
-
-	SearchResponse_set_searchType(msg, SearchType_object);
-	net_send_msg(session->netc, msg);
-	DNDSMessage_del(msg);
 }
 
 void
@@ -1199,41 +1229,4 @@ out:
 	free(context_id);
 
 	return;
-}
-
-
-void searchRequest(struct session *session, DNDSMessage_t *req_msg)
-{
-	e_SearchType SearchType;
-	DNDSObject_t *object;
-	DNDSObject_PR objType;
-
-	SearchRequest_get_searchType(req_msg, &SearchType);
-
-	SearchRequest_get_object(req_msg, &object);
-	DNDSObject_get_objectType(object, &objType);
-
-
-	if (SearchType == SearchType_sequence) {
-		searchRequest_node_sequence(session, req_msg);
-	}
-
-	if (SearchType == SearchType_object) {
-
-		switch (objType) {
-		case DNDSObject_PR_client:
-			searchRequest_client(session, req_msg);
-			break;
-		case DNDSObject_PR_node:
-			searchRequest_node(session, req_msg);
-			break;
-		case DNDSObject_PR_context:
-#if 0
-			searchRequest_context_by_client_id(session, req_msg);
-			break;
-#endif
-		case DNDSObject_PR_NOTHING:
-			break;
-		}
-	}
 }

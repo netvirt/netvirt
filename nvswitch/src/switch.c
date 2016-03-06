@@ -125,8 +125,8 @@ void transmit_netinfo_response(netc_t *netc)
 
 	net_send_msg(session->netc, msg);
 	DNDSMessage_del(msg);
-	transmit_node_connectinfo(ConnState_connected,
-				session->ip, session->cert_name);
+
+	update_node_status("1", session->ip, session->cert_name);
 }
 
 void handle_netinfo_request(struct session *session, DNDSMessage_t *msg)
@@ -292,8 +292,8 @@ static void on_disconnect(netc_t *netc)
 		context_del_session(session->context, session);
 	}
 
-	transmit_node_connectinfo(ConnState_disconnected,
-				session->ip, session->cert_name);
+	update_node_status("0", session->ip, session->cert_name);
+
 	session_free(session);
 
 	return;

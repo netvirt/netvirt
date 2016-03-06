@@ -342,6 +342,18 @@ int dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
+			"dao_fetch_node_uuid_netid",
+			"SELECT context_id, uuid "
+			"FROM node",
+			0,
+			NULL);
+
+	check_result_status(result);
+	if (result == NULL)
+		goto error;
+	PQclear(result);
+
+	result = PQprepare(dbconn,
 			"dao_fetch_node_ip",
 			"SELECT ipaddress "
 			"FROM node "
@@ -1222,6 +1234,36 @@ int dao_fetch_node_sequence(uint32_t *context_id_list, uint32_t list_size, void 
 	free(fetch_req);
 
 	return 0;
+}
+
+int dao_fetch_node_uuid_netid(void *arg, int (*cb_data_handler)(void *, int, char *, char *))
+{
+	int		 i;
+	int		 tuples;
+	PGresult	*result;
+
+	if ((result = PQexecPrepared(dbconn, "dao_fetch_node_uuid_netid", 0, NULL, NULL, NULL, 0)) == NULL) {
+		jlog(L_WARNING, "PQexec command failed: %s\n", PQerrorMessage(dbconn));
+		return -1;
+	}
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return -1;
+	}
+
+	tuples = PQntuples(result);
+	for (i = 0; i < tuples; i++) {
+		cb_data_handler(arg, tuples - i - 1,
+			PQgetvalue(result, i, 0),
+			PQgetvalue(result, i, 1));
+	}
+
+	PQclear(result);
+
+	return 0;
+
+
 }
 
 int dao_fetch_node_ip(char *context_id, char *uuid, char **ipaddress)

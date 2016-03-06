@@ -127,7 +127,7 @@ context_t *context_disable(uint32_t id)
 	return context;
 }
 
-int context_create(uint32_t id, char *address, char *netmask,
+int context_create(char *id, char *address, char *netmask,
 			char *serverCert, char *serverPrivkey, char *trustedCert)
 {
 	(void)address;
@@ -136,9 +136,9 @@ int context_create(uint32_t id, char *address, char *netmask,
 	context_t *context;
 
 	context = (context_t*)malloc(sizeof(context_t));
-	context_table[id] = context;
+	context_table[atoi(id)] = context;
 
-	context->id = id;
+	context->id = atoi(id);
 
 	context->passport = pki_passport_load_from_memory(serverCert, serverPrivkey, trustedCert);
 

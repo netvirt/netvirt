@@ -48,7 +48,7 @@ typedef struct context {
 
 void contexts_free();
 void context_free(context_t *context);
-int context_create(uint32_t id, char *address, char *netmask, char *serverCert, char *serverPrivkey, char *trustedCert);
+int context_create(char *id, char *address, char *netmask, char *serverCert, char *serverPrivkey, char *trustedCert);
 void context_del_session(context_t *ctx, struct session *session);
 void context_add_session(context_t *ctx, struct session *session);
 context_t *context_disable(uint32_t id);

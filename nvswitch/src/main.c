@@ -142,6 +142,11 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	if (switch_init(switch_cfg)) {
+		jlog(L_ERROR, "switch_init failed");
+		exit(EXIT_FAILURE);
+	}
+
 	if (ctrl_init(switch_cfg)) {
 		jlog(L_ERROR, "ctrl_init failed");
 		exit(EXIT_FAILURE);
@@ -153,11 +158,6 @@ int main(int argc, char *argv[])
 		accepting connection */
 	while (switch_cfg->ctrl_initialized == 0) {
 		sleep(1);
-	}
-
-	if (switch_init(switch_cfg)) {
-		jlog(L_ERROR, "switch_init failed");
-		exit(EXIT_FAILURE);
 	}
 
 	while (switch_cfg->ctrl_running || switch_cfg->switch_running) {
