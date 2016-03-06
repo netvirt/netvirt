@@ -32,15 +32,16 @@
 #include "pki.h"
 #include "request.h"
 
+struct session_info *switch_sinfo = NULL;
 static struct ctrler_cfg *cfg = NULL;
 
-static void
+void
 sinfo_free(struct session_info *sinfo)
 {
 	free(sinfo);
 }
 
-static struct session_info *
+struct session_info *
 sinfo_new()
 {
 	struct session_info *sinfo = calloc(1, sizeof(struct session_info));
@@ -64,7 +65,7 @@ response()
 	return ret_strings;
 }
 
-static void
+void
 dispatch_nvswitch(struct session_info *sinfo, json_t *jmsg)
 {
 	char	*dump;
@@ -81,10 +82,16 @@ dispatch_nvswitch(struct session_info *sinfo, json_t *jmsg)
 
 	if (strcmp(action, "listall-network") == 0) {
 		listallNetwork(sinfo, jmsg);
+	} else if (strcmp(action, "listall-node") == 0) {
+		listallNode(sinfo, jmsg);
+	} else if (strcmp(action, "provisioning") == 0) {
+		provisioning(sinfo, jmsg);
+	} else if (strcmp(action, "update-node-status") == 0) {
+		update_node_status(sinfo, jmsg);
 	}
 }
 
-static void
+void
 dispatch_nvapi(struct session_info *sinfo, json_t *jmsg)
 {
 	char	*dump;
@@ -120,7 +127,7 @@ dispatch_nvapi(struct session_info *sinfo, json_t *jmsg)
 	}
 }
 
-static void
+void
 on_read_cb(struct bufferevent *bev, void *session)
 {
 	char			*str;
@@ -158,7 +165,7 @@ on_read_cb(struct bufferevent *bev, void *session)
 	json_decref(jmsg);
 }
 
-static void
+void
 on_connect_cb(struct bufferevent *bev, void *arg)
 {
 	SSL			*client_ssl;
@@ -176,14 +183,16 @@ on_connect_cb(struct bufferevent *bev, void *arg)
 		sinfo->cert_name, sizeof(sinfo->cert_name));
 	X509_free(cert);
 
-	if (strncmp("netvirt-switch", sinfo->cert_name, strlen("netvirt-switch")) == 0)
+	if (strncmp("netvirt-switch", sinfo->cert_name, strlen("netvirt-switch")) == 0) {
 		sinfo->type = NVSWITCH;
-	else
+		switch_sinfo = sinfo;
+	} else {
 		sinfo->type = NVAPI;
+	}
 	jlog(L_DEBUG, "cert: %s", sinfo->cert_name);
 }
 
-static void
+void
 on_event_cb(struct bufferevent *bev, short events, void *arg)
 {
 	struct session_info	*sinfo = arg;
@@ -197,7 +206,7 @@ on_event_cb(struct bufferevent *bev, short events, void *arg)
 	}
 }
 
-static void
+void
 on_timeout_cb(evutil_socket_t fd, short what, void *arg)
 {
 	struct bufferevent *bev = (struct bufferevent *)arg;
@@ -205,7 +214,7 @@ on_timeout_cb(evutil_socket_t fd, short what, void *arg)
 	bufferevent_free(bev);
 }
 
-static void
+void
 accept_conn_cb(struct evconnlistener *listener,
 	evutil_socket_t fd, struct sockaddr *address, int socklen,
 	void *arg)
@@ -243,7 +252,7 @@ accept_conn_cb(struct evconnlistener *listener,
 
 }
 
-static void
+void
 accept_error_cb(struct evconnlistener *listener, void *ptr)
 {
 	struct event_base	*base;
@@ -266,7 +275,7 @@ sighandler(evutil_socket_t sk, short t, void *ptr)
 	event_base_loopbreak(ev_base);
 }
 
-static DH *
+DH *
 get_dh_1024() {
 
 	DH *dh = NULL;
@@ -304,7 +313,7 @@ get_dh_1024() {
 	return dh;
 }
 
-static SSL_CTX *
+SSL_CTX *
 evssl_init()
 {
 	passport_t	*passport;

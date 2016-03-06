@@ -21,15 +21,6 @@
 #include "ctrler.h"
 #include "ctrler2.h"
 
-void authRequest(struct session *session, DNDSMessage_t *msg);
-void addRequest(DNDSMessage_t *msg);
-void delRequest(struct session *session, DNDSMessage_t *msg);
-void modifyRequest(struct session *session, DNDSMessage_t *msg);
-void searchRequest(struct session *session, DNDSMessage_t *msg);
-void peerConnectInfo(struct session *session, DNDSMessage_t *req_msg);
-void nodeConnectInfo(struct session *session, DNDSMessage_t *req_msg);
-
-
 void addNode(struct session_info *, json_t *);
 void addAccount(struct session_info *, json_t *);
 void getAccountApiKey(struct session_info *, json_t *);
@@ -38,7 +29,6 @@ void listNetwork(struct session_info *, json_t *);
 void listNode(struct session_info *, json_t *);
 void activateAccount(struct session_info *, json_t *);
 void delNetwork(struct session_info *, json_t *);
-void delNode(struct session_info *sinfo, json_t *jmsg);
+void delNode(struct session_info *, json_t *);
 
 #endif
-
