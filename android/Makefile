@@ -27,4 +27,4 @@ install: $(APK_SIGNED)
 
 clean:
 	docker run -it --rm -v ${SRC_DIR}:/home/user rabits/qt:5.4-android make distclean
-	docker run -it --rm -v ${SRC_DIR}:/home/user rabits/qt:5.4-android rm -rf ${BUILD_DIR} deployment-settings.json
+	rm -rf ${SRC_DIR}/${BUILD_DIR} deployment-settings.json
