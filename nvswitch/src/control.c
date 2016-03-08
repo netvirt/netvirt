@@ -420,7 +420,6 @@ on_read_cb(struct bufferevent *bev, void *session)
 {
 	char			*str = NULL;
 	size_t			n_read_out;
-	int			n;
 	json_error_t		error;
 	json_t			*jmsg = NULL;
 
@@ -433,7 +432,6 @@ on_read_cb(struct bufferevent *bev, void *session)
 	if (str == NULL)
 		return;
 
-	//jlog(L_DEBUG, "str> %s", str);
 	printf("str: %d <> %s\n\n\n", strlen(str), str);
 	if ((jmsg = json_loadb(str, n_read_out, 0, &error)) == NULL) {
 		jlog(L_ERROR, "json_loadb: %s", error.text);
