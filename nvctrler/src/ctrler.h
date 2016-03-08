@@ -50,6 +50,7 @@ struct session_info {
 	struct bufferevent	*bev;
 };
 
-int ctrler2_init(struct ctrler_cfg *);
+int ctrler_init(struct ctrler_cfg *);
+void ctrler_fini();
 
 #endif

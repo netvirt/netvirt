@@ -4,7 +4,7 @@ else (PostgreSQL_TYPE_INCLUDE_DIR)
 endif (PostgreSQL_TYPE_INCLUDE_DIR)
 
 set(CMAKE_C_FLAGS "-g -W -Wall -Wno-unused-parameter -DNVCTRLER_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
-set(CMAKE_CXX_FLAGS "-g -W -Wall -DNVCTRLER_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
+set(CMAKE_CXX_FLAGS "-g -W -Wall -Wno-unused-parameter -DNVCTRLER_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
 
 add_subdirectory(tests)
 

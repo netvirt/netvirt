@@ -1,6 +1,6 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2014
+ * Copyright (C) 2009-2016
  * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -64,9 +64,9 @@ update_node_status(struct session_info *sinfo, json_t *jmsg)
 }
 
 void
-delNetwork(struct session_info *sinfo, json_t *jmsg)
+del_network(struct session_info *sinfo, json_t *jmsg)
 {
-	jlog(L_DEBUG, "del network");
+	jlog(L_DEBUG, "del-network");
 
 	int		ret = 0;
 	char		*client_id = NULL;
@@ -153,9 +153,9 @@ out:
 }
 
 void
-addNode(struct session_info *sinfo, json_t *jmsg)
+add_node(struct session_info *sinfo, json_t *jmsg)
 {
-	jlog(L_DEBUG, "add node");
+	jlog(L_DEBUG, "add-node");
 
 	int		 ret = 0;
 	char		*context_id = NULL;
@@ -328,9 +328,9 @@ out:
 }
 
 void
-delNode(struct session_info *sinfo, json_t *jmsg)
+del_node(struct session_info *sinfo, json_t *jmsg)
 {
-	jlog(L_DEBUG, "del node");
+	jlog(L_DEBUG, "del-node");
 
 	int		ret = 0;
 	char		*client_id = NULL;
@@ -438,11 +438,11 @@ provisioning(struct session_info *sinfo, json_t *jmsg)
 	char	*tcert;
 	char	*ipaddr;
 
-	char	*node;
 	char	*provcode;
 	char	*tid;
 	char	*resp_str = NULL;
-	char	*resp = NULL;
+	json_t	*node;
+	json_t	*resp = NULL;
 
 	json_unpack(jmsg, "{s:s}", "tid", &tid);
 
@@ -476,8 +476,8 @@ provisioning(struct session_info *sinfo, json_t *jmsg)
 	return;
 }
 
-void
-CB_listallNetwork(void *arg, int remaining,
+static void
+CB_listall_network(void *arg, int remaining,
 				char *id,
 				char *description,
 				char *client_id,
@@ -526,7 +526,7 @@ CB_listallNetwork(void *arg, int remaining,
 }
 
 void
-listallNetwork(struct session_info *sinfo, json_t *jmsg)
+listall_network(struct session_info *sinfo, json_t *jmsg)
 {
 	jlog(L_DEBUG, "listallNetwork");
 
@@ -537,7 +537,7 @@ listallNetwork(struct session_info *sinfo, json_t *jmsg)
 	json_object_set_new(resp, "tid", json_string("tid"));
 	json_object_set_new(resp, "action", json_string("listall-network"));
 
-	if (dao_fetch_context(sinfo, CB_listallNetwork) == -1) {
+	if (dao_fetch_context(sinfo, CB_listall_network) == -1) {
 		json_object_set_new(resp, "response", json_string("error"));
 		goto out;
 	}
@@ -555,8 +555,8 @@ out:
 	return;
 }
 
-void
-CB_listallNode(void *arg, int remaining, char *netid, char *uuid)
+static void
+CB_listall_node(void *arg, int remaining, char *netid, char *uuid)
 {
 	char			*resp_str = NULL;
 	struct	session_info	*sinfo;
@@ -596,18 +596,15 @@ CB_listallNode(void *arg, int remaining, char *netid, char *uuid)
 }
 
 void
-listallNode(struct session_info *sinfo, json_t *jmsg)
+listall_node(struct session_info *sinfo, json_t *jmsg)
 {
 	jlog(L_DEBUG, "listallNode");
 
-	char	*resp_str = NULL;
-	json_t	*resp = NULL;
-
-	dao_fetch_node_uuid_netid(sinfo, CB_listallNode);
+	dao_fetch_node_uuid_netid(sinfo, CB_listall_node);
 }
 
 void
-activateAccount(struct session_info *sinfo, json_t *jmsg)
+activate_account(struct session_info *sinfo, json_t *jmsg)
 {
 	jlog(L_DEBUG, "activate account");
 
@@ -663,9 +660,9 @@ out:
 }
 
 void
-addAccount(struct session_info *sinfo, json_t *jmsg)
+add_account(struct session_info *sinfo, json_t *jmsg)
 {
-	jlog(L_DEBUG, "Add new account");
+	jlog(L_DEBUG, "add-account");
 
 	int	 ret = 0;
 	char	*email = NULL;
@@ -718,9 +715,9 @@ out:
 }
 
 void
-getAccountApiKey(struct session_info *sinfo, json_t *jmsg)
+get_account_apikey(struct session_info *sinfo, json_t *jmsg)
 {
-	jlog(L_DEBUG, "get account api key");
+	jlog(L_DEBUG, "get-account-apikey");
 
 	int	 ret = 0;
 	char	*email = NULL;
@@ -770,7 +767,7 @@ out:
 }
 
 void
-addNetwork(struct session_info *sinfo, json_t *jmsg)
+add_network(struct session_info *sinfo, json_t *jmsg)
 {
 	jlog(L_DEBUG, "add network");
 
@@ -924,8 +921,8 @@ out:
 	json_decref(resp);
 }
 
-int
-CB_listNetwork(void *arg, char *name)
+static int
+CB_list_network(void *arg, char *name)
 {
 	json_t	*array;
 	json_t	*network;
@@ -940,7 +937,7 @@ CB_listNetwork(void *arg, char *name)
 }
 
 void
-listNetwork(struct session_info *sinfo, json_t *jmsg)
+list_network(struct session_info *sinfo, json_t *jmsg)
 {
 	jlog(L_DEBUG, "list network");
 
@@ -970,7 +967,7 @@ listNetwork(struct session_info *sinfo, json_t *jmsg)
 	}
 
 	array = json_array();
-	ret = dao_fetch_networks_by_client_id(client_id, array, CB_listNetwork);
+	ret = dao_fetch_networks_by_client_id(client_id, array, CB_list_network);
 	if (ret == -1) {
 		json_object_set_new(resp, "response", json_string("error"));
 		goto out;
@@ -992,8 +989,8 @@ out:
 	return;
 }
 
-int
-CB_listNode(void *ptr, char *uuid, char *description, char *provcode, char *ipaddress, char *status)
+static int
+CB_list_node(void *ptr, char *uuid, char *description, char *provcode, char *ipaddress, char *status)
 {
 	json_t	*array;
 	json_t	*node;
@@ -1013,9 +1010,9 @@ CB_listNode(void *ptr, char *uuid, char *description, char *provcode, char *ipad
 }
 
 void
-listNode(struct session_info *sinfo, json_t *jmsg)
+list_node(struct session_info *sinfo, json_t *jmsg)
 {
-	jlog(L_DEBUG, "list node");
+	jlog(L_DEBUG, "list-node");
 
 	int	 ret = 0;
 	char	*client_id = NULL;
@@ -1050,7 +1047,7 @@ listNode(struct session_info *sinfo, json_t *jmsg)
 	}
 
 	array = json_array();
-	ret = dao_fetch_node_from_context_id(context_id, array, CB_listNode);
+	ret = dao_fetch_node_from_context_id(context_id, array, CB_list_node);
 	if (ret != 0) {
 		jlog(L_WARNING, "dao fetch node from context id failed: %s", context_id);
 		json_object_set_new(resp, "response", json_string("denied"));
