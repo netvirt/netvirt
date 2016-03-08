@@ -1,6 +1,6 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2014
+ * Copyright (C) 2009-2016
  * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -20,14 +20,18 @@
 #include <dnds.h>
 #include "ctrler.h"
 
-void addNode(struct session_info *, json_t *);
-void addAccount(struct session_info *, json_t *);
-void getAccountApiKey(struct session_info *, json_t *);
-void addNetwork(struct session_info *, json_t *);
-void listNetwork(struct session_info *, json_t *);
-void listNode(struct session_info *, json_t *);
-void activateAccount(struct session_info *, json_t *);
-void delNetwork(struct session_info *, json_t *);
-void delNode(struct session_info *, json_t *);
+void update_node_status(struct session_info *, json_t *);
+void del_network(struct session_info *, json_t *);
+void add_node(struct session_info *, json_t *);
+void del_node(struct session_info *, json_t *);
+void provisioning(struct session_info *, json_t *);
+void listall_network(struct session_info *, json_t *);
+void listall_node(struct session_info *, json_t *);
+void activate_account(struct session_info *, json_t *);
+void add_account(struct session_info *, json_t *);
+void get_account_apikey(struct session_info *, json_t *);
+void add_network(struct session_info *, json_t *);
+void list_network(struct session_info *, json_t *);
+void list_node(struct session_info *, json_t *);
 
 #endif

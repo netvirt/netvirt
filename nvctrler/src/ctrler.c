@@ -81,9 +81,9 @@ dispatch_nvswitch(struct session_info *sinfo, json_t *jmsg)
 	}
 
 	if (strcmp(action, "listall-network") == 0) {
-		listallNetwork(sinfo, jmsg);
+		listall_network(sinfo, jmsg);
 	} else if (strcmp(action, "listall-node") == 0) {
-		listallNode(sinfo, jmsg);
+		listall_node(sinfo, jmsg);
 	} else if (strcmp(action, "provisioning") == 0) {
 		provisioning(sinfo, jmsg);
 	} else if (strcmp(action, "update-node-status") == 0) {
@@ -107,23 +107,23 @@ dispatch_nvapi(struct session_info *sinfo, json_t *jmsg)
 	}
 
 	if (strcmp(action, "add-account") == 0) {
-		addAccount(sinfo, jmsg);
+		add_account(sinfo, jmsg);
 	} else if (strcmp(action, "activate-account") == 0) {
-		activateAccount(sinfo, jmsg);
+		activate_account(sinfo, jmsg);
 	} else if (strcmp(action, "get-account-apikey") == 0) {
-		getAccountApiKey(sinfo, jmsg);
+		get_account_apikey(sinfo, jmsg);
 	} else if (strcmp(action, "add-network") == 0) {
-		addNetwork(sinfo, jmsg);
+		add_network(sinfo, jmsg);
 	} else if (strcmp(action, "del-network") == 0) {
-		delNetwork(sinfo, jmsg);
+		del_network(sinfo, jmsg);
 	} else if (strcmp(action, "list-network") == 0) {
-		listNetwork(sinfo, jmsg);
+		list_network(sinfo, jmsg);
 	} else if (strcmp(action, "add-node") == 0) {
-		addNode(sinfo, jmsg);
+		add_node(sinfo, jmsg);
 	} else if (strcmp(action, "del-node") == 0) {
-		delNode(sinfo, jmsg);
+		del_node(sinfo, jmsg);
 	} else if (strcmp(action, "list-node") == 0) {
-		listNode(sinfo, jmsg);
+		list_node(sinfo, jmsg);
 	}
 }
 
@@ -132,7 +132,6 @@ on_read_cb(struct bufferevent *bev, void *session)
 {
 	char			*str;
 	size_t			 n_read_out;
-	int			 n;
 	json_error_t		 error;
 	json_t			*jmsg = NULL;
 	struct session_info	*sinfo;
@@ -219,11 +218,11 @@ accept_conn_cb(struct evconnlistener *listener,
 	evutil_socket_t fd, struct sockaddr *address, int socklen,
 	void *arg)
 {
-	struct timeval		 tv = {1, 0};
+//	struct timeval		 tv = {1, 0};
 	struct event_base	*base;
 	struct bufferevent	*bev;
 	struct session_info	*sinfo;
-	struct event		*ev;
+//	struct event		*ev;
 	SSL_CTX			*server_ctx;
 	SSL			*client_ssl;
 
@@ -348,7 +347,7 @@ static struct event_base	*base;
 static struct evconnlistener	*listener;
 
 int
-ctrler2_init(struct ctrler_cfg *_cfg)
+ctrler_init(struct ctrler_cfg *_cfg)
 {
 	SSL_CTX			*ctx;
 	struct sockaddr_in	 sin;
@@ -390,7 +389,7 @@ ctrler2_init(struct ctrler_cfg *_cfg)
 }
 
 void
-ctrler2_fini()
+ctrler_fini()
 {
 	evsignal_del(ev_int);
 	evconnlistener_free(listener);

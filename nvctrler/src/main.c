@@ -1,6 +1,6 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2014
+ * Copyright (C) 2009-2016
  * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -23,7 +23,6 @@
 
 #include <dnds.h>
 #include <logger.h>
-#include <netbus.h>
 
 #include "ctrler.h"
 #include "dao.h"
@@ -150,21 +149,14 @@ int parse_config(config_t *cfg, struct ctrler_cfg *ctrler_cfg)
 	return 0;
 }
 
-void int_handler(int sig)
-{
-	(void)sig;
-	ctrler_cfg->ctrler_running = 0;
-}
-
 int main(int argc, char *argv[])
 {
-	int opt;
-	uint8_t quiet = 0;
-	uint8_t daemon = 0;
-	config_t cfg;
-	ctrler_cfg = calloc(1, sizeof(struct ctrler_cfg));
+	int		 opt;
+	uint8_t		 quiet = 0;
+	uint8_t		 daemon = 0;
+	config_t	 cfg;
 
-	signal(SIGINT, int_handler);
+	ctrler_cfg = calloc(1, sizeof(struct ctrler_cfg));
 
 	while ((opt = getopt(argc, argv, "bdqvh")) != -1) {
 		switch (opt) {
@@ -203,48 +195,20 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	if (krypt_init()) {
-		jlog(L_ERROR, "krypt_init failed");
-		exit(EXIT_FAILURE);
-	}
-
 	if (dao_connect(ctrler_cfg)) {
 		jlog(L_ERROR, "dao_connect failed");
 		exit(EXIT_FAILURE);
 	}
 
-	netbus_tcp_init();
-	if (netbus_init()) {
-		jlog(L_ERROR, "netbus_init failed");
-		exit(EXIT_FAILURE);
-	}
-/*
-	if (ctrler_init(ctrler_cfg)) {
-		jlog(L_NOTICE, "ctrler_init failed");
-		exit(EXIT_FAILURE);
-	}
-*/
-
 	if (daemon) {
 		daemonize();
 	}
 
-	ctrler2_init(ctrler_cfg);
-/*
-	while (ctrler_cfg->ctrler_running) {
-		sleep(1);
-	}
-	sleep(1);
-*/
-
-//	ctrler_fini();
-
+	ctrler_init(ctrler_cfg);
 	jlog(L_NOTICE, "good bye\n");
 
-	ctrler2_fini();
-	netbus_fini();
+	ctrler_fini();
 	dao_disconnect();
-	krypt_fini();
 	config_destroy(&cfg);
 	free(ctrler_cfg);
 
