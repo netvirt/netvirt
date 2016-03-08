@@ -1,5 +1,5 @@
-set(CMAKE_C_FLAGS "-g -W -Wno-unused-variable -Wall -DNVSWITCH_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
-set(CMAKE_CXX_FLAGS "-g -W -Wno-unused-variable -Wall -DNVSWITCH_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
+set(CMAKE_C_FLAGS "-g -W -Wall -Wno-unused-parameter -DNVSWITCH_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
+set(CMAKE_CXX_FLAGS "-g -W -Wall -Wno-unused-parameter -DNVSWITCH_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
 
 add_subdirectory(tests)
 
