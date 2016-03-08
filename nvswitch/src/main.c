@@ -73,22 +73,22 @@ config_parse(config_t *cfg, struct switch_cfg *switch_cfg)
 		return -1;
 	}
 
-	if (config_lookup_string(cfg, "certificate", &switch_cfg->certificate))
-		jlog(L_DEBUG, "certificate: %s", switch_cfg->certificate);
+	if (config_lookup_string(cfg, "certificate", &switch_cfg->cert))
+		jlog(L_DEBUG, "certificate: %s", switch_cfg->cert);
 	else {
 		jlog(L_ERROR, "certificate is not present !");
 		return -1;
 	}
 
-	if (config_lookup_string(cfg, "privatekey", &switch_cfg->privatekey))
-		jlog(L_DEBUG, "privatekey: %s", switch_cfg->privatekey);
+	if (config_lookup_string(cfg, "privatekey", &switch_cfg->pkey))
+		jlog(L_DEBUG, "privatekey: %s", switch_cfg->pkey);
 	else {
 		jlog(L_ERROR, "privatekey is not present !");
 		return -1;
 	}
 
-	if (config_lookup_string(cfg, "trusted_cert", &switch_cfg->trusted_cert))
-		jlog(L_DEBUG, "trusted_cert: %s", switch_cfg->trusted_cert);
+	if (config_lookup_string(cfg, "trusted_cert", &switch_cfg->tcert))
+		jlog(L_DEBUG, "trusted_cert: %s", switch_cfg->tcert);
 	else {
 		jlog(L_ERROR, "trusted_cert is not present !");
 		return -1;
