@@ -1,6 +1,6 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2014
+ * Copyright (C) 2009-2016
  * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -27,41 +27,37 @@
 #include <event2/listener.h>
 #include <event2/util.h>
 
+#include <openssl/rand.h>
+
 #include <jansson.h>
 
-#include <dnds.h>
 #include <logger.h>
-#include <netbus.h>
-
 #include "context.h"
 #include "control.h"
 #include "session.h"
-#include "tcp.h"
 
-static struct event_base	*base;
-struct bufferevent		*bufev_sock = NULL;
-
-static netc_t *ctrl_netc = NULL;
-static passport_t *switch_passport = NULL;
-static struct switch_cfg *cfg = NULL;
+static struct event_base		*base;
+static struct bufferevent		*bufev_sock = NULL;
+static struct switch_cfg		*cfg = NULL;
 
 /* TODO extend this tracking table into a subsystem in it's own */
 #define MAX_SESSION 10024
 struct session *session_tracking_table[MAX_SESSION];
 static uint32_t tracking_id = 0;
 
-void
-del_node(struct session_info *sinfo, json_t *jmsg)
+static void
+del_node(json_t *jmsg)
 {
-	char	*netid;
-	char	*uuid;
-	json_t	*node;
+	char		*netid;
+	char		*uuid;
+	json_t		*node;
+	struct session	*session;
+	context_t	*context;
 
 	node = json_object_get(jmsg, "node");
 	json_unpack(node, "{s:s}", "uuid", &uuid);
 	json_unpack(node, "{s:s}", "netid", &netid);
 
-	context_t *context = NULL;
 	if ((context = context_lookup(atoi(netid))) == NULL) {
 		jlog(L_ERROR, "context id {%d} doesn't exist");
 		return;
@@ -71,15 +67,13 @@ del_node(struct session_info *sinfo, json_t *jmsg)
 	ctable_erase(context->atable, uuid);
 
 	/* if the node is connected, mark it to be purged */
-	struct session *session = NULL;
-	session = ctable_find(context->ctable, uuid);
-	if (session) {
+	if ((session = ctable_find(context->ctable, uuid)) == NULL) {
 		session->state = SESSION_STATE_PURGE;
 	}
 }
 
-void
-del_network(struct session_info *sinfo, json_t *jmsg)
+static void
+del_network(json_t *jmsg)
 {
 	char		*netid;
 	json_t		*network;
@@ -104,8 +98,8 @@ del_network(struct session_info *sinfo, json_t *jmsg)
 	context_free(context);
 }
 
-int
-provisioning(struct session_info *sinfo, json_t *jmsg)
+static int
+provisioning(json_t *jmsg)
 {
 	char		*cert;
 	char		*pkey;
@@ -114,7 +108,7 @@ provisioning(struct session_info *sinfo, json_t *jmsg)
 	char		*response;
 	json_t		*node;
 	struct		 session *session;
-	uint32_t	 tid;
+	char		*tid;
 
 	json_unpack(jmsg, "{s:s}", "response", &response);
 	if (strcmp(response, "success") != 0) {
@@ -143,8 +137,8 @@ provisioning(struct session_info *sinfo, json_t *jmsg)
 	DNMessage_set_operation(new_msg, dnop_PR_provResponse);
 
 	ProvResponse_set_certificate(new_msg, cert, strlen(cert));
-	ProvResponse_set_certificateKey(new_msg, pkey, strlen(pkey));
-	ProvResponse_set_trustedCert(new_msg, tcert, strlen(tcert));
+	ProvResponse_set_certificateKey(new_msg, (uint8_t*)pkey, strlen(pkey));
+	ProvResponse_set_trustedCert(new_msg, (uint8_t*)tcert, strlen(tcert));
 	ProvResponse_set_ipAddress(new_msg, ipaddr);
 
 	session = session_tracking_table[atoi(tid) % MAX_SESSION];
@@ -152,16 +146,18 @@ provisioning(struct session_info *sinfo, json_t *jmsg)
 	if (session)
 		net_send_msg(session->netc, new_msg);
 	DNDSMessage_del(new_msg);
+
+	return 0;
 }
 
-int
-listall_node(struct session_info *sinfo, json_t *jmsg)
+static int
+listall_node(json_t *jmsg)
 {
 	char		*uuid = NULL;
 	char		*netid = NULL;
 	char		*response = NULL;
 	size_t		 array_size = 0;
-	int		 i;
+	size_t		 i;
 	json_t		*js_nodes = NULL;
 	json_t		*node = NULL;
 	context_t	*context = NULL;
@@ -201,8 +197,8 @@ listall_node(struct session_info *sinfo, json_t *jmsg)
 	return -1;
 }
 
-int
-listall_network(struct session_info *sinfo, json_t *jmsg)
+static int
+listall_network(json_t *jmsg)
 {
 	char	*uuid = NULL;
 	char	*subnet = NULL;
@@ -211,7 +207,7 @@ listall_network(struct session_info *sinfo, json_t *jmsg)
 	char	*pkey = NULL;
 	char	*tcert = NULL;
 	char	*response = NULL;
-	int	 i;
+	size_t	 i;
 	size_t	 array_size = 0;
 	json_t	*js_networks = NULL;
 	json_t	*elm = NULL;
@@ -267,10 +263,9 @@ query_provisioning(struct session *session, char *provcode)
 	jlog(L_DEBUG, "query provisioning");
 
 	char	*query_str = NULL;
-	char	*query = NULL;
-	char	*node = NULL;
-
-	char	tid[10];
+	char	 tid[10];
+	json_t	*node = NULL;
+	json_t	*query = NULL;
 
 	sprintf(tid, "%d", tracking_id);
 	session_tracking_table[tracking_id % MAX_SESSION] = session;
@@ -368,7 +363,7 @@ query_list_network()
 	return;
 }
 
-void
+static void
 sighandler(evutil_socket_t sk, short t, void *ptr)
 {
 	struct event_base	*ev_base;
@@ -378,7 +373,7 @@ sighandler(evutil_socket_t sk, short t, void *ptr)
 	event_base_loopbreak(ev_base);
 }
 
-void
+static void
 bufev_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
 {
 	if (events & BEV_EVENT_CONNECTED) {
@@ -390,8 +385,8 @@ bufev_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
 	}
 }
 
-void
-dispatch(struct session_info *sinfo, json_t *jmsg)
+static void
+dispatch(json_t *jmsg)
 {
 	char	*action;
 
@@ -401,26 +396,26 @@ dispatch(struct session_info *sinfo, json_t *jmsg)
 	}
 
 	if (strcmp(action, "listall-network") == 0) {
-		if (listall_network(sinfo, jmsg) == 0) {
+		if (listall_network(jmsg) == 0) {
 			/* all network are now fetched */
 			if (cfg->ctrl_initialized == 0) {
 				/* if not yet initialized... */
 				cfg->ctrl_initialized = 1;
-				query_list_node(sinfo, jmsg);
+				query_list_node(jmsg);
 			}
 		}
 	} else if (strcmp(action, "listall-node") == 0) {
-		listall_node(sinfo, jmsg);
+		listall_node(jmsg);
 	} else if (strcmp(action, "provisioning") == 0) {
-		provisioning(sinfo, jmsg);
+		provisioning(jmsg);
 	} else if (strcmp(action, "del-network") == 0) {
-		del_network(sinfo, jmsg);
+		del_network(jmsg);
 	} else if (strcmp(action, "del-node") == 0) {
-		del_node(sinfo, jmsg);
+		del_node(jmsg);
 	}
 }
 
-void
+static void
 on_read_cb(struct bufferevent *bev, void *session)
 {
 	char			*str = NULL;
@@ -428,10 +423,8 @@ on_read_cb(struct bufferevent *bev, void *session)
 	int			n;
 	json_error_t		error;
 	json_t			*jmsg = NULL;
-	struct session_info	*sinfo;
 
 	jlog(L_DEBUG, "on_read_cb");
-	sinfo = (struct session_info*)session;
 
 	str = evbuffer_readln(bufferevent_get_input(bev),
 			&n_read_out,
@@ -448,7 +441,7 @@ on_read_cb(struct bufferevent *bev, void *session)
 		return;
 	}
 
-	dispatch(sinfo, jmsg);
+	dispatch(jmsg);
 	json_decref(jmsg);
 }
 
@@ -596,9 +589,8 @@ out:
 	return -1;
 }
 
-void ctrl_fini()
+void
+ctrl_fini()
 {
-	net_disconnect(ctrl_netc);
-	pki_passport_destroy(switch_passport);
 	contexts_free();
 }
