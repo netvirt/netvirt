@@ -1,6 +1,6 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2014
+ * Copyright (C) 2009-2016
  * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,11 +21,13 @@
 #include "request.h"
 #include "session.h"
 
-void provRequest(struct session *session, DNDSMessage_t *req_msg)
+void
+provRequest(struct session *session, DNDSMessage_t *req_msg)
 {
 	jlog(L_DEBUG, "provisioning request");
-	size_t length;
-	char *provcode = NULL;
+
+	size_t	length;
+	char	*provcode = NULL;
 
 	ProvRequest_get_provCode(req_msg, &provcode, &length);
 	jlog(L_DEBUG, "provisioning code: %s", provcode);
@@ -34,11 +36,12 @@ void provRequest(struct session *session, DNDSMessage_t *req_msg)
 }
 
 /* Authentication Request from the node */
-int authRequest(struct session *session, DNDSMessage_t *req_msg)
+int
+authRequest(struct session *session, DNDSMessage_t *req_msg)
 {
-	char *certName = NULL;
-	size_t length = 0;
-	uint32_t context_id = 0;
+	char		*certName = NULL;
+	size_t	 	 length = 0;
+	uint32_t	 context_id = 0;
 
 	struct session *old_session = NULL;
 
@@ -128,13 +131,14 @@ int authRequest(struct session *session, DNDSMessage_t *req_msg)
 	return 0;
 }
 
-void p2pRequest(struct session *session_a, struct session *session_b)
+void
+p2pRequest(struct session *session_a, struct session *session_b)
 {
-	DNDSMessage_t *msg;
 
-	uint32_t port;
-	char *ip_a;
-	char *ip_b;
+	char		*ip_a;
+	char		*ip_b;
+	uint32_t	 port;
+	DNDSMessage_t	*msg;
 
 	if (session_a->netc == NULL || session_b->netc == NULL) {
 		return;
@@ -181,4 +185,5 @@ void p2pRequest(struct session *session_a, struct session *session_b)
 
 	net_send_msg(session_b->netc, msg);
 	DNDSMessage_del(msg);
+
 }

@@ -1,6 +1,6 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2014
+ * Copyright (C) 2009-2016
  * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -34,18 +34,17 @@
 static struct switch_cfg *switch_cfg;
 static netc_t *switch_netc = NULL;
 
-static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
+static void
+forward_ethernet(struct session *session, DNDSMessage_t *msg)
 {
-	uint8_t *frame;
-	size_t frame_size;
-
-	uint8_t macaddr_src[ETHER_ADDR_LEN];
-	uint8_t macaddr_dst[ETHER_ADDR_LEN];
-	uint8_t macaddr_dst_type;
-
-	struct session *session_dst = NULL;
-	struct session *session_src = NULL;
-	struct session *session_list = NULL;
+	size_t	 	 frame_size;
+	uint8_t		*frame;
+	uint8_t		 macaddr_src[ETHER_ADDR_LEN];
+	uint8_t		 macaddr_dst[ETHER_ADDR_LEN];
+	uint8_t		 macaddr_dst_type;
+	struct session	*session_dst = NULL;
+	struct session	*session_src = NULL;
+	struct session	*session_list = NULL;
 
 	if (session->state != SESSION_STATE_AUTHED)
 		return;
@@ -110,9 +109,10 @@ static void forward_ethernet(struct session *session, DNDSMessage_t *msg)
 	}
 }
 
-void transmit_netinfo_response(netc_t *netc)
+void
+transmit_netinfo_response(netc_t *netc)
 {
-	struct session *session = netc->ext_ptr;
+	struct session	*session = netc->ext_ptr;
 
 	DNDSMessage_t *msg = NULL;
 	DNDSMessage_new(&msg);
@@ -129,7 +129,8 @@ void transmit_netinfo_response(netc_t *netc)
 	update_node_status("1", session->ip, session->cert_name);
 }
 
-void handle_netinfo_request(struct session *session, DNDSMessage_t *msg)
+void
+handle_netinfo_request(struct session *session, DNDSMessage_t *msg)
 {
 	NetinfoRequest_get_ipLocal(msg, session->ip_local);
 	NetinfoRequest_get_macAddr(msg, session->tun_mac_addr);
@@ -146,7 +147,8 @@ void handle_netinfo_request(struct session *session, DNDSMessage_t *msg)
 	transmit_netinfo_response(session->netc);
 }
 
-static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
+static void
+dispatch_operation(struct session *session, DNDSMessage_t *msg)
 {
 	dnop_PR operation;
 	DNMessage_get_operation(msg, &operation);
@@ -176,7 +178,8 @@ static void dispatch_operation(struct session *session, DNDSMessage_t *msg)
 	}
 }
 
-static void on_secure(netc_t *netc)
+static void
+on_secure(netc_t *netc)
 {
 	struct session *session;
 	session = netc->ext_ptr;
@@ -205,7 +208,8 @@ static void on_secure(netc_t *netc)
 	}
 }
 
-static void on_input(netc_t *netc)
+static void
+on_input(netc_t *netc)
 {
 	DNDSMessage_t *msg;
 	struct session *session;
@@ -240,7 +244,8 @@ static void on_input(netc_t *netc)
 	}
 }
 
-static void on_connect(netc_t *netc)
+static void
+on_connect(netc_t *netc)
 {
 	struct session *session = NULL;
 	session = session_new();
@@ -258,7 +263,8 @@ static void on_connect(netc_t *netc)
 	return;
 }
 
-static void on_disconnect(netc_t *netc)
+static void
+on_disconnect(netc_t *netc)
 {
 	jlog(L_DEBUG, "disconnect");
 
@@ -299,10 +305,9 @@ static void on_disconnect(netc_t *netc)
 	return;
 }
 
-static void *switch_loop(void *nil)
+static void
+*switch_loop(void *nil)
 {
-	(void)nil;
-
 	while (switch_cfg->switch_running) {
 		udtbus_poke_queue();
 	}
@@ -312,7 +317,8 @@ static void *switch_loop(void *nil)
 	return NULL;
 }
 
-int switch_init(struct switch_cfg *cfg)
+int
+switch_init(struct switch_cfg *cfg)
 {
 	switch_cfg = cfg;
 	switch_cfg->switch_running = 1;
@@ -338,7 +344,8 @@ int switch_init(struct switch_cfg *cfg)
 	return 0;
 }
 
-void switch_fini()
+void
+switch_fini()
 {
 	net_disconnect(switch_netc);
 }

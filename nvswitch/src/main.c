@@ -1,6 +1,6 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2014
+ * Copyright (C) 2009-2016
  * Nicolas J. Bouliane <admin@netvirt.org>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,8 +16,9 @@
 #include <unistd.h>
 
 #include <libconfig.h>
-#include <logger.h>
 #include <netbus.h>
+
+#include <logger.h>
 
 #include "control.h"
 #include "switch.h"
@@ -25,12 +26,15 @@
 #define CONFIG_FILE "/etc/netvirt/nvswitch.conf"
 
 static struct switch_cfg *switch_cfg;
-void on_log(const char *logline)
+
+void
+on_log(const char *logline)
 {
 	fprintf(stdout, "%s", logline);
 }
 
-int config_parse(config_t *cfg, struct switch_cfg *switch_cfg)
+int
+config_parse(config_t *cfg, struct switch_cfg *switch_cfg)
 {
 	if (!config_read_file(cfg, CONFIG_FILE)) {
 		jlog(L_ERROR, "Can't open %s", CONFIG_FILE);
@@ -93,11 +97,13 @@ int config_parse(config_t *cfg, struct switch_cfg *switch_cfg)
 	return 0;
 }
 
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
-	int opt;
-	uint8_t quiet = 0;
-	config_t cfg;
+	int		opt;
+	uint8_t		quiet = 0;
+	config_t	cfg;
+
 	switch_cfg = calloc(1, sizeof(struct switch_cfg));
 
 	while ((opt = getopt(argc, argv, "qvh")) != -1) {
@@ -130,13 +136,11 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-
 	if (krypt_init()) {
 		jlog(L_ERROR, "krypt_init failed");
 		exit(EXIT_FAILURE);
 	}
 
-//	netbus_tcp_init();
 	if (netbus_init()) {
 		jlog(L_ERROR, "netbus_init failed");
 		exit(EXIT_FAILURE);
@@ -152,17 +156,8 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	printf("after ctrl_init");
-
-	/* make sure control is properly initialized before
-		accepting connection */
-	while (switch_cfg->ctrl_initialized == 0) {
+	while (switch_cfg->switch_running)
 		sleep(1);
-	}
-
-	while (switch_cfg->ctrl_running || switch_cfg->switch_running) {
-		sleep(1);
-	}
 
 	/* clean up */
 	ctrl_fini();
