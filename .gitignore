@@ -28,3 +28,6 @@ _CPack_Packages/
 #tapcfg-linux
 #udt4
 
+# Android
+
+android/*.keystore
