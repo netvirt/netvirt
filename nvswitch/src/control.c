@@ -485,27 +485,50 @@ static SSL_CTX *
 evssl_init()
 {
 	passport_t	*passport;
-	SSL_CTX		*server_ctx = NULL;
+	SSL_CTX		*ctx;
 
 	SSL_load_error_strings();
 	SSL_library_init();
+	RAND_poll();
 
-	if (!RAND_poll())
+	if ((passport = pki_passport_load_from_file(cfg->cert,
+	    cfg->pkey, cfg->tcert)) == NULL) {
 		return NULL;
+	}
 
-	passport = pki_passport_load_from_file(cfg->cert, cfg->pkey, cfg->tcert);
+	if ((ctx = SSL_CTX_new(TLSv1_2_client_method())) == NULL) {
+		jlog(L_ERROR, "SSL_CTX_new failed");
+		return NULL;
+	}
 
-	server_ctx = SSL_CTX_new(TLSv1_2_client_method());
-	SSL_CTX_set_tmp_dh(server_ctx, get_dh_1024());
+	if ((SSL_CTX_set_tmp_dh(ctx, get_dh_1024())) != 0) {
+		jlog(L_ERROR, "SSL_CTX_set_tmp_dh failed");
+		goto out;
+	}
 
-	SSL_CTX_set_cipher_list(server_ctx, "AES256-GCM-SHA384");
-	//SSL_CTX_set_cipher_list(server_ctx, "ECDHE-ECDSA-AES256-GCM-SHA384");
+	//SSL_CTX_set_cipher_list(ctx, "ECDHE-ECDSA-AES256-GCM-SHA384");
+	if ((SSL_CTX_set_cipher_list(ctx, "AES256-GCM-SHA384")) == 1) {
+		jlog(L_ERROR, "SSL_CTX_set_cipher failed");
+		goto out;
+	}
 
-	SSL_CTX_set_cert_store(server_ctx, passport->cacert_store);
-	SSL_CTX_use_certificate(server_ctx, passport->certificate);
-	SSL_CTX_use_PrivateKey(server_ctx, passport->keyring);
+	SSL_CTX_set_cert_store(ctx, passport->cacert_store);
 
-	return server_ctx;
+	if ((SSL_CTX_use_certificate(ctx, passport->certificate)) == 1) {
+		jlog(L_ERROR, "SSL_CTX_use_certificate failed");
+		goto out;
+	}
+
+	if ((SSL_CTX_use_PrivateKey(ctx, passport->keyring)) == 1) {
+		jlog(L_ERROR, "SSL_CTX_use_PrivateKey failed");
+		goto out;
+	}
+
+	return ctx;
+
+out:
+	SSL_CTX_free(ctx);
+	return NULL;
 }
 
 int
