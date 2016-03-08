@@ -493,8 +493,7 @@ evssl_init()
 	if (!RAND_poll())
 		return NULL;
 
-	passport = pki_passport_load_from_file(cfg->certificate, cfg->privatekey, cfg->trusted_cert);
-
+	passport = pki_passport_load_from_file(cfg->cert, cfg->pkey, cfg->tcert);
 
 	server_ctx = SSL_CTX_new(TLSv1_2_client_method());
 	SSL_CTX_set_tmp_dh(server_ctx, get_dh_1024());
@@ -524,8 +523,7 @@ ctrl_init(struct switch_cfg *_cfg)
 
 	jlog(L_NOTICE, "Control initializing...");
 
-	base = event_base_new();
-	if (base == NULL) {
+	if ((base = event_base_new()) == NULL) {
 		jlog(L_ERROR, "event_base_new failed");
 		goto out;
 	}
@@ -561,8 +559,15 @@ ctrl_init(struct switch_cfg *_cfg)
 		goto out;
 	}	
 
-	ctx = evssl_init();
-	ssl = SSL_new(ctx);
+	if ((ctx = evssl_init()) == NULL) {
+		jlog(L_ERROR, "evssl_init failed");
+		goto out;
+	}
+
+	if ((ssl = SSL_new(ctx)) == NULL) {
+		jlog(L_ERROR, "SSL_new failed");
+		goto out;
+	}
 
 	if ((bufev_sock = bufferevent_openssl_socket_new(base, fd, ssl,
 						BUFFEREVENT_SSL_CONNECTING,

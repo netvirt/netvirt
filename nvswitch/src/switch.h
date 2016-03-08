@@ -28,9 +28,9 @@ struct switch_cfg {
 	const char *ctrler_ip;
 	const char *ctrler_port;
 
-	const char *certificate;
-	const char *privatekey;
-	const char *trusted_cert;
+	const char *cert;
+	const char *pkey;
+	const char *tcert;
 
 	int ctrl_initialized;
 	int ctrl_running;
