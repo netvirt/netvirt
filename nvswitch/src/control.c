@@ -40,12 +40,23 @@ static struct event_base		*base;
 static struct bufferevent		*bufev_sock = NULL;
 static struct switch_cfg		*cfg = NULL;
 
-/* TODO extend this tracking table into a subsystem in it's own */
-#define MAX_SESSION 1024
-struct session *session_tracking_table[MAX_SESSION];
+#define MAX_SESSION 4096
+static struct session *session_tracking_table[MAX_SESSION];
 static uint32_t tracking_id = 0;
 
-static void
+static int del_node(json_t *);
+static int del_network(json_t *);
+static int provisioning(json_t *);
+static int listall_node(json_t *);
+static int listall_network(json_t *);
+static void sighandler(evutil_socket_t, short, void *);
+static int dispatch_op(json_t *);
+static void on_read_cb(struct bufferevent *, void *);
+static void on_event_cb(struct bufferevent *, short, void *);
+static DH *get_dh_1024();
+static SSL_CTX *evssl_init();
+
+int
 del_node(json_t *jmsg)
 {
 	char		*netid;
@@ -54,13 +65,24 @@ del_node(json_t *jmsg)
 	struct session	*session;
 	context_t	*context;
 
-	node = json_object_get(jmsg, "node");
-	json_unpack(node, "{s:s}", "uuid", &uuid);
-	json_unpack(node, "{s:s}", "netid", &netid);
+	if ((node = json_object_get(jmsg, "node")) == NULL) {
+		jlog(L_ERROR, "json_object_get failed");
+		return -1;
+	}
+
+	if (json_unpack(node, "{s:s}", "uuid", &uuid) == -1) {
+		jlog(L_ERROR, "json_unpack failed");
+		return -1;
+	}
+
+	if (json_unpack(node, "{s:s}", "netid", &netid) == -1) {
+		jlog(L_ERROR, "json_unpack failed");
+		return -1;
+	}
 
 	if ((context = context_lookup(atoi(netid))) == NULL) {
-		jlog(L_ERROR, "context id {%d} doesn't exist");
-		return;
+		jlog(L_ERROR, "context_lookup failed");
+		return -1;
 	}
 
 	/* remove the node from the access table */
@@ -70,22 +92,31 @@ del_node(json_t *jmsg)
 	if ((session = ctable_find(context->ctable, uuid)) == NULL) {
 		session->state = SESSION_STATE_PURGE;
 	}
+
+	return 0;
 }
 
-static void
+int
 del_network(json_t *jmsg)
 {
 	char		*netid;
 	json_t		*network;
-	context_t	*context = NULL;
-	struct session	*session_list = NULL;
+	context_t	*context;
+	struct session	*session_list;
 
-	network = json_object_get(jmsg, "network");
-	json_unpack(network, "{s:s}", "netid", &netid);
+	if ((network = json_object_get(jmsg, "network")) == NULL) {
+		jlog(L_ERROR, "json_object_get failed");
+		return -1;
+	}
+
+	if (json_unpack(network, "{s:s}", "netid", &netid) == -1) {
+		jlog(L_ERROR, "json_unpack failed");
+		return -1;
+	}
 
 	if ((context = context_disable(atoi(netid))) == NULL) {
-		jlog(L_ERROR, "context id `%s' doesn't exist", netid);
-		return;
+		jlog(L_ERROR, "context_disable failed");
+		return -1;
 	}
 
 	session_list = context->session_list;
@@ -96,9 +127,11 @@ del_network(json_t *jmsg)
 	}
 
 	context_free(context);
+
+	return 0;
 }
 
-static int
+int
 provisioning(json_t *jmsg)
 {
 	char		*cert;
@@ -110,22 +143,31 @@ provisioning(json_t *jmsg)
 	struct		 session *session;
 	char		*tid;
 
-	json_unpack(jmsg, "{s:s}", "response", &response);
-	if (strcmp(response, "success") != 0) {
-		/* XXX disconnect user */
+	if (json_unpack(jmsg, "{s:s}", "response", &response) == -1) {
+		jlog(L_ERROR, "json_unpack failed");
 		return -1;
 	}
 
-	json_unpack(jmsg, "{s:s}", "tid", &tid);
+	if (strcmp(response, "success") != 0) {
+		jlog(L_ERROR, "provisioning != success");
+		return -1;
+	}
 
-	node = json_object_get(jmsg, "node");
-	json_unpack(node, "{s:s}", "cert", &cert);
-	json_unpack(node, "{s:s}", "pkey", &pkey);
-	json_unpack(node, "{s:s}", "tcert", &tcert);
-	json_unpack(node, "{s:s}", "ipaddr", &ipaddr);
+	if (json_unpack(jmsg, "{s:s}", "tid", &tid) == -1) {
+		jlog(L_ERROR, "json_unpack failed");
+		return -1;
+	}
 
-	if (cert == NULL || pkey == NULL ||
-	    tcert == NULL || ipaddr == NULL) {
+	if ((node = json_object_get(jmsg, "node")) == NULL) {
+		jlog(L_ERROR, "json_object_get failed");
+		return -1;
+	}
+
+	if (json_unpack(node, "{s:s}", "cert", &cert) == -1 ||
+	    json_unpack(node, "{s:s}", "pkey", &pkey) == -1 ||
+	    json_unpack(node, "{s:s}", "tcert", &tcert) == -1 ||
+	    json_unpack(node, "{s:s}", "ipaddr", &ipaddr) == -1) {
+		jlog(L_ERROR, "NULL parameter");
 		return -1;
 	}
 
@@ -150,43 +192,48 @@ provisioning(json_t *jmsg)
 	return 0;
 }
 
-static int
+int
 listall_node(json_t *jmsg)
 {
-	char		*uuid = NULL;
-	char		*netid = NULL;
-	char		*response = NULL;
-	size_t		 array_size = 0;
+	char		*uuid;
+	char		*netid;
+	char		*response;
+	size_t		 array_size;
 	size_t		 i;
-	json_t		*js_nodes = NULL;
-	json_t		*node = NULL;
-	context_t	*context = NULL;
+	json_t		*js_nodes;
+	json_t		*node;
+	context_t	*context;
 
 	if ((js_nodes = json_object_get(jmsg, "nodes")) == NULL) {
+		jlog(L_ERROR, "json_object_get failed");
 		return -1;
 	}
 
 	if ((array_size = json_array_size(js_nodes)) == 0) {
+		jlog(L_ERROR, "json_array_size failed");
 		return -1;
 	}
 
 	for (i = 0; i < array_size; i++) {
 
-		node = json_array_get(js_nodes, i);
-		json_unpack(node, "{s:s}", "uuid", &uuid);
-		json_unpack(node, "{s:s}", "netid", &netid);
-
-		if (uuid == NULL || netid == NULL) {
+		if ((node = json_array_get(js_nodes, i)) == NULL) {
+			jlog(L_ERROR, "json_array_get failed");
 			return -1;
 		}
 
-		/* FIXME */
+		if (json_unpack(node, "{s:s}", "uuid", &uuid) == -1 ||
+		    json_unpack(node, "{s:s}", "netid", &netid) == -1) {
+			jlog(L_ERROR, "NULL parameter");
+			return -1;
+		}
+
 		if ((context = context_lookup(atoi(netid))) != NULL) {
 			ctable_insert(context->atable, uuid, context->access_session);
 		}
 	}
 
-	if ((json_unpack(jmsg, "{s:s}", "response", &response)) != 0) {
+	if ((json_unpack(jmsg, "{s:s}", "response", &response)) == -1) {
+		jlog(L_ERROR, "json_unpack failed");
 		return -1;
 	}
 
@@ -194,59 +241,55 @@ listall_node(json_t *jmsg)
 		return 0;
 	}
 
-	return -1;
+	return 1;
 }
 
-static int
+int
 listall_network(json_t *jmsg)
 {
-	char	*uuid = NULL;
-	char	*subnet = NULL;
-	char	*netmask = NULL;
-	char	*cert = NULL;
-	char	*pkey = NULL;
-	char	*tcert = NULL;
-	char	*response = NULL;
+	char	*uuid;
+	char	*subnet;
+	char	*netmask;
+	char	*cert;
+	char	*pkey;
+	char	*tcert;
+	char	*response;
 	size_t	 i;
-	size_t	 array_size = 0;
-	json_t	*js_networks = NULL;
-	json_t	*elm = NULL;
+	size_t	 array_size;
+	json_t	*js_networks;
+	json_t	*elm;
 
 	if ((js_networks = json_object_get(jmsg, "networks")) == NULL) {
+		jlog(L_ERROR, "json_object_get failed");
 		return -1;
 	}
 
 	if ((array_size = json_array_size(js_networks)) == 0) {
+		jlog(L_ERROR, "json_array_size failed");
 		return -1;
 	}
 
 	for (i = 0; i < array_size; i++) {
 
-		elm = json_array_get(js_networks, i);
-
-		json_unpack(elm, "{s:s}", "uuid", &uuid);
-		json_unpack(elm, "{s:s}", "network", &subnet);
-		json_unpack(elm, "{s:s}", "netmask", &netmask);
-		json_unpack(elm, "{s:s}", "cert", &cert);
-		json_unpack(elm, "{s:s}", "pkey", &pkey);
-		json_unpack(elm, "{s:s}", "tcert", &tcert);
-
-		if (uuid == NULL || subnet == NULL || netmask == NULL ||
-		    cert == NULL || pkey == NULL || tcert == NULL) {
+		if ((elm = json_array_get(js_networks, i)) == NULL) {
+			jlog(L_ERROR, "json_array_get failed");
 			return -1;
 		}
 
-		printf("uuid: %s\n", uuid);
-		printf("subnet: %s\n", subnet);
-		printf("netmask: %s\n", netmask);
-		printf("cert: %s\n", cert);
-		printf("pkey: %s\n", pkey);
-		printf("tcert: %s\n", tcert);
-
+		if (json_unpack(elm, "{s:s}", "uuid", &uuid) == -1 ||
+		    json_unpack(elm, "{s:s}", "network", &subnet) == -1 ||
+		    json_unpack(elm, "{s:s}", "netmask", &netmask) == -1 ||
+		    json_unpack(elm, "{s:s}", "cert", &cert) == -1 ||
+		    json_unpack(elm, "{s:s}", "pkey", &pkey) == -1 ||
+		    json_unpack(elm, "{s:s}", "tcert", &tcert) == -1) {
+			jlog(L_ERROR, "NULL parameter");
+			return -1;
+		}
 		context_create(uuid, subnet, netmask, cert, pkey, tcert);
 	}
 
-	if ((json_unpack(jmsg, "{s:s}", "response", &response)) != 0) {
+	if ((json_unpack(jmsg, "{s:s}", "response", &response)) == -1) {
+		jlog(L_ERROR, "json_unpack failed");
 		return -1;
 	}
 
@@ -254,10 +297,10 @@ listall_network(json_t *jmsg)
 		return 0;
 	}
 
-	return -1;
+	return 1;
 }
 
-void
+int
 query_provisioning(struct session *session, char *provcode)
 {
 	jlog(L_DEBUG, "query provisioning");
@@ -270,26 +313,62 @@ query_provisioning(struct session *session, char *provcode)
 	sprintf(tid, "%d", tracking_id);
 	session_tracking_table[tracking_id % MAX_SESSION] = session;
 
-	query = json_object();
-	json_object_set_new(query, "tid", json_string(tid));
-	json_object_set_new(query, "action", json_string("provisioning"));
+	if ((query = json_object()) == NULL) {
+		jlog(L_ERROR, "json_object failed");
+		goto out;
+	}
 
-	node = json_object();
-	json_object_set_new(node, "provcode", json_string(provcode));
+	if (json_object_set_new(query, "tid", json_string(tid)) == -1) {
+		jlog(L_ERROR, "json_object_set_new failed");
+		goto out;
+	}
 
-	json_object_set_new(query, "node", node);
-	query_str = json_dumps(query, 0);
+	if (json_object_set_new(query, "action", json_string("provisioning")) == -1) {
+		jlog(L_ERROR, "json_object_set_new failed");
+		goto out;
+	}
 
-	bufferevent_write(bufev_sock, query_str, strlen(query_str));
-	bufferevent_write(bufev_sock, "\n", strlen("\n"));
+	if ((node = json_object()) == NULL) {
+		jlog(L_ERROR, "json_object failed");
+		goto out;
+	}
+
+	if (json_object_set_new(query, "node", node) == -1) {
+		jlog(L_ERROR, "json_object_set_new failed");
+		goto out;
+	}
+
+	if (json_object_set_new(node, "provcode", json_string(provcode)) == -1) {
+		jlog(L_ERROR, "json_object_set_new failed");
+		goto out;
+	}
+
+	if ((query_str = json_dumps(query, 0)) == NULL) {
+		jlog(L_ERROR, "json_dumps failed");
+		goto out;
+	}
+
+	if (bufferevent_write(bufev_sock, query_str, strlen(query_str)) == -1) {
+		jlog(L_ERROR, "bufferevent_write failed");
+		goto out;
+	}
+
+	if (bufferevent_write(bufev_sock, "\n", strlen("\n")) == -1) {
+		jlog(L_ERROR, "bufferevent_write failed");
+		goto out;
+	}
 
 	json_decref(query);
 	free(query_str);
+	return 0;
 
-	return;
+out:
+	json_decref(query);
+	free(query_str);
+	return -1;
 }
 
-void
+int
 query_list_node()
 {
 	jlog(L_DEBUG, "query list node");
@@ -297,22 +376,48 @@ query_list_node()
 	char	*query_str = NULL;
 	json_t	*query = NULL;
 
-	query = json_object();
-	json_object_set_new(query, "tid", json_string("tid"));
-	json_object_set_new(query, "action", json_string("listall-node"));
+	if ((query = json_object()) == NULL) {
+		jlog(L_ERROR, "json_object failed");
+		goto out;
+	}
 
-	query_str = json_dumps(query, 0);
+	if (json_object_set_new(query, "tid", json_string("tid")) == -1) {
+		jlog(L_ERROR, "json_object_set_new failed");
+		goto out;
+	}
 
-	bufferevent_write(bufev_sock, query_str, strlen(query_str));
-	bufferevent_write(bufev_sock, "\n", strlen("\n"));
+	if (json_object_set_new(query, "action", json_string("listall-node")) == -1) {
+		jlog(L_ERROR, "json_object_set_new failed");
+		goto out;
+	}
+
+	if ((query_str = json_dumps(query, 0)) == NULL) {
+		jlog(L_ERROR, "json_dumps failed");
+		goto out;
+	}
+
+	if (bufferevent_write(bufev_sock, query_str, strlen(query_str)) == -1) {
+		jlog(L_ERROR, "bufferevent_write failed");
+		goto out;
+	}
+
+	if (bufferevent_write(bufev_sock, "\n", strlen("\n")) == -1) {
+		jlog(L_ERROR, "bufferevent_write failed");
+		goto out;
+	}
 
 	json_decref(query);
 	free(query_str);
+	return 0;
 
-	return;
+out:
+	json_decref(query);
+	free(query_str);
+	return -1;
+
 }
 
-void
+int
 update_node_status(char *status, char *local_ipaddr, char *cert_name)
 {
 	jlog(L_DEBUG, "update node status");
@@ -321,26 +426,67 @@ update_node_status(char *status, char *local_ipaddr, char *cert_name)
 	json_t	*query = NULL;
 	json_t	*node = NULL;
 
-	query = json_object();
-	json_object_set_new(query, "action", json_string("update-node-status"));
+	if ((query = json_object()) == NULL) {
+		jlog(L_ERROR, "json_object failed");
+		goto out;
+	}
 
-	node = json_object();
-	json_object_set_new(node, "status", json_string(status));
-	json_object_set_new(node, "local-ipaddr", json_string(local_ipaddr));
-	json_object_set_new(node, "cert-name", json_string(cert_name));
-	json_object_set_new(query, "node", node);
-	query_str = json_dumps(query, 0);
+	if ((json_object_set_new(query, "action", json_string("update-node-status"))) == -1) {
+		jlog(L_ERROR, "json_object_set_new failed");
+		goto out;
+	}
 
-	bufferevent_write(bufev_sock, query_str, strlen(query_str));
-	bufferevent_write(bufev_sock, "\n", strlen("\n"));
+	if ((node = json_object()) == NULL) {
+		jlog(L_ERROR, "json_object failed");
+		goto out;
+	}
+
+	if ((json_object_set_new(query, "node", node)) == -1) {
+		jlog(L_ERROR, "json_object_set_new failed");
+		goto out;
+	}
+
+	if ((json_object_set_new(node, "status", json_string(status))) == -1) {
+		jlog(L_ERROR, "json_object_set_new failed");
+		goto out;
+	}
+
+	if ((json_object_set_new(node, "local-ipaddr", json_string(local_ipaddr))) == -1) {
+		jlog(L_ERROR, "json_object_set_new failed");
+		goto out;
+	}
+
+	if ((json_object_set_new(node, "cert-name", json_string(cert_name))) == -1) {
+		jlog(L_ERROR, "json_object_set_new failed");
+		goto out;
+	}
+
+	if ((query_str = json_dumps(query, 0)) == NULL) {
+		jlog(L_ERROR, "json_dumps failed");
+		goto out;
+	}
+
+	if (bufferevent_write(bufev_sock, query_str, strlen(query_str)) == -1) {
+		jlog(L_ERROR, "bufferevent_write failed");
+		goto out;
+	}
+
+	if (bufferevent_write(bufev_sock, "\n", strlen("\n")) == -1) {
+		jlog(L_ERROR, "bufferevent_write failed");
+		goto out;
+	}
 
 	json_decref(query);
 	free(query_str);
+	return 0;
 
-	return;
+out:
+	json_decref(query);
+	free(query_str);
+	return -1;
 }
 
-void
+int
 query_list_network()
 {
 	jlog(L_DEBUG, "list network");
@@ -348,22 +494,42 @@ query_list_network()
 	char	*query_str = NULL;
 	json_t	*query = NULL;
 
-	query = json_object();
-	json_object_set_new(query, "tid", json_string("tid"));
-	json_object_set_new(query, "action", json_string("listall-network"));
+	if ((query = json_object()) == NULL) {
+		jlog(L_ERROR, "json_object failed");
+		goto out;
+	}
 
-	query_str = json_dumps(query, 0);
+	if (json_object_set_new(query, "action", json_string("listall-network")) == -1) {
+		jlog(L_ERROR, "json_object_set_new failed");
+		goto out;
+	}
 
-	bufferevent_write(bufev_sock, query_str, strlen(query_str));
-	bufferevent_write(bufev_sock, "\n", strlen("\n"));
+	if ((query_str = json_dumps(query, 0)) == NULL) {
+		jlog(L_ERROR, "json_dumps failed");
+		goto out;
+	}
+
+	if (bufferevent_write(bufev_sock, query_str, strlen(query_str)) == -1) {
+		jlog(L_ERROR, "bufferevent_write failed");
+		goto out;
+	}
+
+	if (bufferevent_write(bufev_sock, "\n", strlen("\n")) == -1) {
+		jlog(L_ERROR, "bufferevent_write failed");
+		goto out;
+	}
 
 	json_decref(query);
 	free(query_str);
+	return 0;
 
-	return;
+out:
+	json_decref(query);
+	free(query_str);
+	return -1;
 }
 
-static void
+void
 sighandler(evutil_socket_t sk, short t, void *ptr)
 {
 	struct event_base	*ev_base;
@@ -373,8 +539,67 @@ sighandler(evutil_socket_t sk, short t, void *ptr)
 	event_base_loopbreak(ev_base);
 }
 
-static void
-bufev_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
+int
+dispatch_op(json_t *jmsg)
+{
+	char	*action;
+	int	 ret = 0;
+
+	if (json_unpack(jmsg, "{s:s}", "action", &action) == -1)
+		return -1;
+
+	if (strcmp(action, "listall-network") == 0) {
+		if ((ret = listall_network(jmsg)) == 0) {
+			/* all network are now fetched */
+			if (cfg->ctrl_initialized == 0) {
+				/* if not yet initialized... */
+				cfg->ctrl_initialized = 1;
+				ret = query_list_node(jmsg);
+			}
+		}
+	} else if (strcmp(action, "listall-node") == 0) {
+		ret = listall_node(jmsg);
+	} else if (strcmp(action, "provisioning") == 0) {
+		ret = provisioning(jmsg);
+	} else if (strcmp(action, "del-network") == 0) {
+		ret = del_network(jmsg);
+	} else if (strcmp(action, "del-node") == 0) {
+		ret = del_node(jmsg);
+	}
+
+	return ret;
+}
+
+void
+on_read_cb(struct bufferevent *bev, void *session)
+{
+	jlog(L_DEBUG, "on_read_cb");
+
+	char			*str = NULL;
+	size_t			n_read_out;
+	json_error_t		error;
+	json_t			*jmsg = NULL;
+
+	if ((str = evbuffer_readln(bufferevent_get_input(bev),
+	    &n_read_out, EVBUFFER_EOL_LF)) == NULL) {
+		return;
+	}
+
+	printf("str: %d <> %s\n\n\n", strlen(str), str);
+	if ((jmsg = json_loadb(str, n_read_out, 0, &error)) == NULL) {
+		jlog(L_ERROR, "json_loadb: %s", error.text);
+		bufferevent_free(bufev_sock);
+		return;
+	}
+
+	if (dispatch_op(jmsg) == -1)
+		bufferevent_free(bufev_sock);
+
+	json_decref(jmsg);
+}
+
+void
+on_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
 {
 	if (events & BEV_EVENT_CONNECTED) {
 		jlog(L_DEBUG, "connected");
@@ -385,65 +610,8 @@ bufev_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
 	}
 }
 
-static void
-dispatch(json_t *jmsg)
-{
-	char	*action;
 
-	if (json_unpack(jmsg, "{s:s}", "action", &action) == -1) {
-		/* XXX disconnect */
-		return;
-	}
-
-	if (strcmp(action, "listall-network") == 0) {
-		if (listall_network(jmsg) == 0) {
-			/* all network are now fetched */
-			if (cfg->ctrl_initialized == 0) {
-				/* if not yet initialized... */
-				cfg->ctrl_initialized = 1;
-				query_list_node(jmsg);
-			}
-		}
-	} else if (strcmp(action, "listall-node") == 0) {
-		listall_node(jmsg);
-	} else if (strcmp(action, "provisioning") == 0) {
-		provisioning(jmsg);
-	} else if (strcmp(action, "del-network") == 0) {
-		del_network(jmsg);
-	} else if (strcmp(action, "del-node") == 0) {
-		del_node(jmsg);
-	}
-}
-
-static void
-on_read_cb(struct bufferevent *bev, void *session)
-{
-	char			*str = NULL;
-	size_t			n_read_out;
-	json_error_t		error;
-	json_t			*jmsg = NULL;
-
-	jlog(L_DEBUG, "on_read_cb");
-
-	str = evbuffer_readln(bufferevent_get_input(bev),
-			&n_read_out,
-			EVBUFFER_EOL_LF);
-
-	if (str == NULL)
-		return;
-
-	printf("str: %d <> %s\n\n\n", strlen(str), str);
-	if ((jmsg = json_loadb(str, n_read_out, 0, &error)) == NULL) {
-		jlog(L_ERROR, "json_loadb: %s", error.text);
-		/* FIXME DISCONNECT */
-		return;
-	}
-
-	dispatch(jmsg);
-	json_decref(jmsg);
-}
-
-static DH *
+DH *
 get_dh_1024() {
 
 	DH *dh = NULL;
@@ -465,8 +633,7 @@ get_dh_1024() {
 		0x02,
 	};
 
-	dh = DH_new();
-	if (dh == NULL) {
+	if ((dh = DH_new()) == NULL) {
 		return NULL;
 	}
 
@@ -481,7 +648,7 @@ get_dh_1024() {
 	return dh;
 }
 
-static SSL_CTX *
+SSL_CTX *
 evssl_init()
 {
 	passport_t	*passport;
@@ -593,14 +760,13 @@ ctrl_init(struct switch_cfg *_cfg)
 	}
 
 	if ((bufev_sock = bufferevent_openssl_socket_new(base, fd, ssl,
-						BUFFEREVENT_SSL_CONNECTING,
-						BEV_OPT_CLOSE_ON_FREE)) == NULL) {
+	    BUFFEREVENT_SSL_CONNECTING, BEV_OPT_CLOSE_ON_FREE)) == NULL) {
 		jlog(L_ERROR, "bufferevent_socket_new failed");
 		goto out;
 	}
 
 	bufferevent_enable(bufev_sock, EV_READ|EV_WRITE);
-	bufferevent_setcb(bufev_sock, on_read_cb, NULL, bufev_event_cb, NULL);
+	bufferevent_setcb(bufev_sock, on_read_cb, NULL, on_event_cb, NULL);
 
 	if (bufferevent_socket_connect(bufev_sock,
 	    (struct sockaddr *)&sin, sizeof(sin)) < 0) {
@@ -610,6 +776,7 @@ ctrl_init(struct switch_cfg *_cfg)
 
 	event_base_dispatch(base);
 	return 0;
+
 out:
 	bufferevent_free(bufev_sock);
 	return -1;
