@@ -21,10 +21,10 @@
 #include "session.h"
 #include "switch.h"
 
-void query_provisioning(struct session *, char *);
-void query_list_node();
-void update_node_status(char *, char *, char *);
-void query_list_network();
+int query_provisioning(struct session *, char *);
+int query_list_node();
+int update_node_status(char *, char *, char *);
+int query_list_network();
 int ctrl_init(struct switch_cfg *);
 void ctrl_fini();
 
