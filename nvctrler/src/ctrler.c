@@ -195,9 +195,13 @@ void
 on_event_cb(struct bufferevent *bev, short events, void *arg)
 {
 	struct session_info	*sinfo = arg;
+	unsigned long e = 0;
 
 	if (events & (BEV_EVENT_TIMEOUT|BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
 		jlog(L_NOTICE, "disconnected");
+		while ((e = bufferevent_get_openssl_error(bev)) > 0) {
+			jlog(L_ERROR, "%s", ERR_error_string(e, NULL));
+		}
 		bufferevent_free(bev);
 		sinfo_free(sinfo);
 	} else if (events & BEV_EVENT_CONNECTED) {
