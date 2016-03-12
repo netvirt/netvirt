@@ -39,6 +39,7 @@
 static struct event_base		*base;
 static struct bufferevent		*bufev_sock = NULL;
 static struct switch_cfg		*cfg = NULL;
+static passport_t			*passport = NULL;
 
 #define MAX_SESSION 4096
 static struct session *session_tracking_table[MAX_SESSION];
@@ -135,13 +136,13 @@ int
 provisioning(json_t *jmsg)
 {
 	char		*cert;
-	char		*pkey;
-	char		*tcert;
 	char		*ipaddr;
+	char		*pkey;
 	char		*response;
-	json_t		*node;
-	struct		 session *session;
+	char		*tcert;
 	char		*tid;
+	json_t		*node;
+	struct session	*session;
 
 	if (json_unpack(jmsg, "{s:s}", "response", &response) == -1) {
 		jlog(L_ERROR, "json_unpack failed");
@@ -188,6 +189,11 @@ provisioning(json_t *jmsg)
 	if (session)
 		net_send_msg(session->netc, new_msg);
 	DNDSMessage_del(new_msg);
+
+	/* XXX
+	 * If the provisioning is not a success,
+	 * we must disconnect the client.
+	 */
 
 	return 0;
 }
@@ -592,24 +598,25 @@ on_read_cb(struct bufferevent *bev, void *session)
 		return;
 	}
 
-	if (dispatch_op(jmsg) == -1)
-		bufferevent_free(bufev_sock);
-
+	dispatch_op(jmsg);
 	json_decref(jmsg);
 }
 
 void
 on_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
 {
+	unsigned long e = 0;
+
 	if (events & BEV_EVENT_CONNECTED) {
 		jlog(L_DEBUG, "connected");
 		query_list_network();
 	} else if (events & (BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
 		jlog(L_DEBUG, "disconnected");
-		bufferevent_free(bufev_sock);
+		while ((e = bufferevent_get_openssl_error(bufev_sock)) > 0) {
+			jlog(L_ERROR, "%s", ERR_error_string(e, NULL));
+		}
 	}
 }
-
 
 DH *
 get_dh_1024() {
@@ -651,7 +658,7 @@ get_dh_1024() {
 SSL_CTX *
 evssl_init()
 {
-	passport_t	*passport;
+	DH		*dh;
 	SSL_CTX		*ctx;
 
 	SSL_load_error_strings();
@@ -668,32 +675,39 @@ evssl_init()
 		return NULL;
 	}
 
-	if ((SSL_CTX_set_tmp_dh(ctx, get_dh_1024())) != 0) {
+	if ((dh = get_dh_1024()) == NULL) {
+		jlog(L_ERROR, "get_dh_1024 failed");
+		goto out;
+	}
+
+	if ((SSL_CTX_set_tmp_dh(ctx, dh)) == 0) {
 		jlog(L_ERROR, "SSL_CTX_set_tmp_dh failed");
 		goto out;
 	}
 
 	//SSL_CTX_set_cipher_list(ctx, "ECDHE-ECDSA-AES256-GCM-SHA384");
-	if ((SSL_CTX_set_cipher_list(ctx, "AES256-GCM-SHA384")) == 1) {
+	if ((SSL_CTX_set_cipher_list(ctx, "AES256-GCM-SHA384")) == 0) {
 		jlog(L_ERROR, "SSL_CTX_set_cipher failed");
 		goto out;
 	}
 
 	SSL_CTX_set_cert_store(ctx, passport->cacert_store);
 
-	if ((SSL_CTX_use_certificate(ctx, passport->certificate)) == 1) {
+	if ((SSL_CTX_use_certificate(ctx, passport->certificate)) == 0) {
 		jlog(L_ERROR, "SSL_CTX_use_certificate failed");
 		goto out;
 	}
 
-	if ((SSL_CTX_use_PrivateKey(ctx, passport->keyring)) == 1) {
+	if ((SSL_CTX_use_PrivateKey(ctx, passport->keyring)) == 0) {
 		jlog(L_ERROR, "SSL_CTX_use_PrivateKey failed");
 		goto out;
 	}
 
+	DH_free(dh);
 	return ctx;
 
 out:
+	DH_free(dh);
 	SSL_CTX_free(ctx);
 	return NULL;
 }
@@ -775,15 +789,25 @@ ctrl_init(struct switch_cfg *_cfg)
 	}
 
 	event_base_dispatch(base);
+
+	if (bufev_sock != NULL) {
+		bufferevent_free(bufev_sock);
+	}
+
+
+	event_base_free(base);
 	return 0;
 
 out:
-	bufferevent_free(bufev_sock);
+	if (bufev_sock != NULL)
+		bufferevent_free(bufev_sock);
+	event_base_free(base);
 	return -1;
 }
 
 void
 ctrl_fini()
 {
+	pki_passport_destroy(passport);
 	contexts_free();
 }
