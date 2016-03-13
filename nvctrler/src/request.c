@@ -783,8 +783,8 @@ add_network(struct session_info *sinfo, json_t *jmsg)
 	char		*emb_cert_ptr = NULL;
 	long		size;
 	char		*emb_pvkey_ptr = NULL;
-	char		*serv_cert_ptr;
-	char		*serv_pvkey_ptr;
+	char		*serv_cert_ptr = NULL;
+	char		*serv_pvkey_ptr = NULL;
 	char		emb_serial[10];
 	struct		ippool *ippool = NULL;
 	size_t		pool_size;

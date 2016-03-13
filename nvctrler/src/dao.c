@@ -673,9 +673,6 @@ int dao_fetch_client_id_by_apikey(char **client_id, char *apikey)
 
 	if (tuples > 0 && fields > 0) {
 		*client_id = strdup(PQgetvalue(result, 0, 0));
-	} else {
-		PQclear(result);
-		return -1;
 	}
 
 	PQclear(result);
