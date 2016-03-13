@@ -25,6 +25,7 @@
 
 #define CONFIG_FILE "/etc/netvirt/nvswitch.conf"
 
+extern int pipefd[2];
 static struct switch_cfg *switch_cfg;
 
 void
@@ -145,7 +146,7 @@ main(int argc, char *argv[])
 		jlog(L_ERROR, "netbus_init failed");
 		exit(EXIT_FAILURE);
 	}
-
+	pipe(pipefd);
 	if (switch_init(switch_cfg)) {
 		jlog(L_ERROR, "switch_init failed");
 		exit(EXIT_FAILURE);
