@@ -202,6 +202,9 @@ char *pki_gen_apikey()
 
 void pki_free_digital_id(digital_id_t *digital_id)
 {
+	if (digital_id == NULL)
+		return;
+
 	free(digital_id->commonName);
 	free(digital_id->countryName);
 	free(digital_id->stateOrProvinceName);
@@ -236,6 +239,9 @@ digital_id_t *pki_digital_id(char *commonName,
 
 void pki_embassy_free(embassy_t *embassy)
 {
+	if (embassy == NULL)
+		return;
+
 	X509_free(embassy->certificate);
 	EVP_PKEY_free(embassy->keyring);
 	free(embassy);
@@ -282,6 +288,9 @@ embassy_t *pki_embassy_new(digital_id_t *digital_id, uint32_t expiration_delay)
 
 void pki_passport_free(passport_t *passport)
 {
+	if (passport == NULL)
+		return;
+
 	X509_free(passport->certificate);
 	EVP_PKEY_free(passport->keyring);
 	X509_free(passport->cacert);

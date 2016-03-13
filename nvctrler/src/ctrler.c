@@ -16,6 +16,7 @@
 #include <errno.h>
 #include <signal.h>
 
+#include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <openssl/rand.h>
 
@@ -199,9 +200,11 @@ on_event_cb(struct bufferevent *bev, short events, void *arg)
 
 	if (events & (BEV_EVENT_TIMEOUT|BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
 		jlog(L_NOTICE, "disconnected");
+
 		while ((e = bufferevent_get_openssl_error(bev)) > 0) {
 			jlog(L_ERROR, "%s", ERR_error_string(e, NULL));
 		}
+
 		bufferevent_free(bev);
 		sinfo_free(sinfo);
 	} else if (events & BEV_EVENT_CONNECTED) {
