@@ -27,6 +27,7 @@
 #include <event2/listener.h>
 #include <event2/util.h>
 
+#include <openssl/err.h>
 #include <openssl/rand.h>
 
 #include <jansson.h>
@@ -36,8 +37,11 @@
 #include "control.h"
 #include "session.h"
 
+int pipefd[2];
+
 static struct event_base		*base;
 static struct bufferevent		*bufev_sock = NULL;
+static struct bufferevent		*bufev_pipe = NULL;
 static struct switch_cfg		*cfg = NULL;
 static passport_t			*passport = NULL;
 
@@ -354,15 +358,7 @@ query_provisioning(struct session *session, char *provcode)
 		goto out;
 	}
 
-	if (bufferevent_write(bufev_sock, query_str, strlen(query_str)) == -1) {
-		jlog(L_ERROR, "bufferevent_write failed");
-		goto out;
-	}
-
-	if (bufferevent_write(bufev_sock, "\n", strlen("\n")) == -1) {
-		jlog(L_ERROR, "bufferevent_write failed");
-		goto out;
-	}
+	write(pipefd[1], query_str, strlen(query_str));
 
 	json_decref(query);
 	free(query_str);
@@ -420,7 +416,6 @@ out:
 	json_decref(query);
 	free(query_str);
 	return -1;
-
 }
 
 int
@@ -472,15 +467,7 @@ update_node_status(char *status, char *local_ipaddr, char *cert_name)
 		goto out;
 	}
 
-	if (bufferevent_write(bufev_sock, query_str, strlen(query_str)) == -1) {
-		jlog(L_ERROR, "bufferevent_write failed");
-		goto out;
-	}
-
-	if (bufferevent_write(bufev_sock, "\n", strlen("\n")) == -1) {
-		jlog(L_ERROR, "bufferevent_write failed");
-		goto out;
-	}
+	write(pipefd[1], query_str, strlen(query_str));
 
 	json_decref(query);
 	free(query_str);
@@ -577,7 +564,27 @@ dispatch_op(json_t *jmsg)
 }
 
 void
-on_read_cb(struct bufferevent *bev, void *session)
+pipe_read_cb(struct bufferevent *bev, void *arg)
+{
+	char query_str[1024] = {0};
+
+	bufferevent_read(bev, query_str, sizeof(query_str));
+	printf("tmp: %s\n", query_str);
+
+	if (bufferevent_write(bufev_sock, query_str, strlen(query_str)) == -1) {
+		jlog(L_ERROR, "bufferevent_write failed");
+		return;
+	}
+
+	if (bufferevent_write(bufev_sock, "\n", strlen("\n")) == -1) {
+		jlog(L_ERROR, "bufferevent_write failed");
+		return;
+	}
+}
+
+
+void
+on_read_cb(struct bufferevent *bev, void *arg)
 {
 	jlog(L_DEBUG, "on_read_cb");
 
@@ -600,6 +607,12 @@ on_read_cb(struct bufferevent *bev, void *session)
 
 	dispatch_op(jmsg);
 	json_decref(jmsg);
+}
+
+void
+pipe_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
+{
+	printf("on_event_cb\n");
 }
 
 void
@@ -788,12 +801,15 @@ ctrl_init(struct switch_cfg *_cfg)
 		goto out;
 	}
 
+	bufev_pipe = bufferevent_socket_new(base, pipefd[0], BEV_OPT_CLOSE_ON_FREE);
+	bufferevent_enable(bufev_pipe, EV_READ|EV_WRITE);
+	bufferevent_setcb(bufev_pipe, pipe_read_cb, NULL, pipe_event_cb, NULL);
+
 	event_base_dispatch(base);
 
 	if (bufev_sock != NULL) {
 		bufferevent_free(bufev_sock);
 	}
-
 
 	event_base_free(base);
 	return 0;
