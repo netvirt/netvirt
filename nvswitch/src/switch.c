@@ -125,8 +125,6 @@ transmit_netinfo_response(netc_t *netc)
 
 	net_send_msg(session->netc, msg);
 	DNDSMessage_del(msg);
-
-	update_node_status("1", session->ip, session->cert_name);
 }
 
 void
@@ -204,6 +202,7 @@ on_secure(netc_t *netc)
 		DNDSMessage_del(msg);
 
 		context_add_session(session->context, session);
+		update_node_status("1", session->ip, session->cert_name);
 		jlog(L_DEBUG, "session id: %d", session->id);
 	}
 }
