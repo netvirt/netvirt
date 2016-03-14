@@ -78,7 +78,7 @@ int dao_fetch_networks_by_client_id(
 	int (*cb_data_handler)(void *data,
 		char *description));
 
-int dao_fetch_context(void *data, void (*cb_data_handler)(void *data, int remaining,
+int dao_fetch_context(void *data, int (*cb_data_handler)(void *data, int remaining,
 							char *id,
 							char *description,
 							char *client_id,

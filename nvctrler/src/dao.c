@@ -1505,7 +1505,7 @@ int dao_fetch_network_by_client_id_desc(char *client_id, char *description,
 
 	return 0;
 }
-int dao_fetch_context(void *data, void (*cb_data_handler)(void *data, int remaining,
+int dao_fetch_context(void *data, int (*cb_data_handler)(void *data, int remaining,
 							char *id,
 							char *description,
 							char *client_id,
@@ -1515,6 +1515,7 @@ int dao_fetch_context(void *data, void (*cb_data_handler)(void *data, int remain
 							char *serverPrivkey,
 							char *trustedCert))
 {
+	int ret;
 	int tuples;
 	PGresult *result;
 
@@ -1538,7 +1539,7 @@ int dao_fetch_context(void *data, void (*cb_data_handler)(void *data, int remain
 
 	int i;
 	for (i = 0; i < tuples; i++) {
-		cb_data_handler(data, tuples - i - 1,
+		ret = cb_data_handler(data, tuples - i - 1,
 			PQgetvalue(result, i, 0),
 			PQgetvalue(result, i, 1),
 			PQgetvalue(result, i, 2),
@@ -1547,9 +1548,15 @@ int dao_fetch_context(void *data, void (*cb_data_handler)(void *data, int remain
 			PQgetvalue(result, i, 5),
 			PQgetvalue(result, i, 6),
 			PQgetvalue(result, i, 7));
+
+		if (ret == -1) {
+			goto out;
+		}
 	}
 
 	PQclear(result);
-
 	return 0;
+out:
+	PQclear(result);
+	return -1;
 }
