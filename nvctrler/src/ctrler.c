@@ -37,9 +37,12 @@ struct session_info *switch_sinfo = NULL;
 static struct ctrler_cfg *cfg = NULL;
 
 void
-sinfo_free(struct session_info *sinfo)
+sinfo_free(struct session_info **sinfo)
 {
-	free(sinfo);
+	(*sinfo)->bev = NULL;
+	memset((*sinfo)->cert_name, 0, sizeof((*sinfo)->cert_name));
+	free(*sinfo);
+	*sinfo = NULL;
 }
 
 struct session_info *
@@ -160,7 +163,7 @@ on_read_cb(struct bufferevent *bev, void *session)
 		dispatch_nvapi(sinfo, jmsg);
 	else {
 		bufferevent_free(bev);
-		sinfo_free(sinfo);
+		sinfo_free(&sinfo);
 	}
 	json_decref(jmsg);
 }
@@ -198,17 +201,20 @@ on_event_cb(struct bufferevent *bev, short events, void *arg)
 	struct session_info	*sinfo = arg;
 	unsigned long e = 0;
 
-	if (events & (BEV_EVENT_TIMEOUT|BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
+	if (events & BEV_EVENT_CONNECTED) {
+		on_connect_cb(bev, arg);
+	} else if (events & (BEV_EVENT_TIMEOUT|BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
 		jlog(L_NOTICE, "disconnected");
 
 		while ((e = bufferevent_get_openssl_error(bev)) > 0) {
 			jlog(L_ERROR, "%s", ERR_error_string(e, NULL));
 		}
 
+		if (sinfo->type == NVSWITCH) {
+			switch_sinfo = NULL;
+		}
+		sinfo_free(&sinfo);
 		bufferevent_free(bev);
-		sinfo_free(sinfo);
-	} else if (events & BEV_EVENT_CONNECTED) {
-		on_connect_cb(bev, arg);
 	}
 }
 
@@ -333,7 +339,6 @@ evssl_init()
 
 	passport = pki_passport_load_from_file(cfg->certificate, cfg->privatekey, cfg->trusted_cert);
 
-
 	server_ctx = SSL_CTX_new(TLSv1_2_server_method());
 	SSL_CTX_set_tmp_dh(server_ctx, get_dh_1024());
 
@@ -367,9 +372,8 @@ ctrler_init(struct ctrler_cfg *_cfg)
 		return -1;
 	}
 
-	base = event_base_new();
-	if (base == NULL) {
-		jlog(L_ERROR, "couldn't open event base");
+	if ((base = event_base_new()) == NULL) {
+		jlog(L_ERROR, "event_base_new failed");
 		return -1;
 	}
 

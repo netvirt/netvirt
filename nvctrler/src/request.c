@@ -476,7 +476,7 @@ provisioning(struct session_info *sinfo, json_t *jmsg)
 	return;
 }
 
-static void
+static int
 CB_listall_network(void *arg, int remaining,
 				char *id,
 				char *description,
@@ -518,11 +518,22 @@ CB_listall_network(void *arg, int remaining,
 
 	resp_str = json_dumps(resp, 0);
 
+	if (sinfo->bev == NULL)
+		goto out;
 	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+
+	if (sinfo->bev == NULL)
+		goto out;
 	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
 
 	json_decref(resp);
 	free(resp_str);
+	return 0;
+
+out:
+	json_decref(resp);
+	free(resp_str);
+	return -1;
 }
 
 void
@@ -542,12 +553,16 @@ listall_network(struct session_info *sinfo, json_t *jmsg)
 		goto out;
 	}
 
+	json_decref(resp);
 	return;
 out:
-	resp_str = json_dumps(resp, 0);
-
-	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+	if (sinfo->bev != NULL) {
+		resp_str = json_dumps(resp, 0);
+		bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	}
+	if (sinfo->bev != NULL) {
+		bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+	}
 
 	json_decref(resp);
 	free(resp_str);
