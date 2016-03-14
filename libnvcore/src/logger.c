@@ -36,7 +36,7 @@ void jlog_init_file(const char *log_file_path)
 void _jlog(const char *file, int line, int level, const char *format, ...)
 {
 	char logline[256];
-	static char logtxt[512];
+	static char logtxt[1024];
 	time_t timer;
 	char cur_time[20];
 	struct tm* tm_info;
@@ -47,6 +47,8 @@ void _jlog(const char *file, int line, int level, const char *format, ...)
 	va_list ap;
 	va_start(ap, format);
 
+	memset(logtxt, 0, sizeof(logtxt));
+
 	time(&timer);
 	tm_info = localtime(&timer);
 	strftime(cur_time, 20, "%Y-%m-%d %H:%M:%S", tm_info);
@@ -54,7 +56,7 @@ void _jlog(const char *file, int line, int level, const char *format, ...)
 	filename = strrchr(file, '/') ? strrchr(file, '/') + 1: file;
 
 	snprintf(logline, 256, "[%s] %s [%s:%d]\n", cur_time, format, filename, line);
-	vsnprintf(logtxt, 512, logline, ap);
+	vsnprintf(logtxt, 1024, logline, ap);
 	va_end(ap);
 
 	if (on_log_cb) {
