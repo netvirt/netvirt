@@ -24,13 +24,13 @@ ApplicationWindow {
         Button {
             id: connectButton
             text: "Connect"
-            onClicked: netvirtAgent.connect()
+            onClicked: netvirtAgent.connect_()
         }
 
         Button {
             id: disconnectButton
             text: "Disconnect"
-            onClicked: netvirtAgent.disconnect()
+            onClicked: netvirtAgent.disconnect_()
         }
     }
 
@@ -38,5 +38,6 @@ ApplicationWindow {
         id: netvirtAgent
         onConnected: status.text = "Status: connected"
         onDisconnected: status.text = "Status: disconnected"
+        onMessageReceived: status.text = message
     }
 }

@@ -24,7 +24,7 @@ sign: ${KEYSTORE} ${APK_UNSIGNED}
 	mv ${APK_UNSIGNED} ${APK_SIGNED}
 
 install: ${APK_SIGNED}
-	adb install ${APK_SIGNED}
+	adb install -r ${APK_SIGNED}
 
 clean:
 	docker run -it --rm -v ${SRC_DIR}:/home/user rabits/qt:5.4-android make distclean
