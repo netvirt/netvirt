@@ -1233,9 +1233,10 @@ int dao_fetch_node_sequence(uint32_t *context_id_list, uint32_t list_size, void 
 	return 0;
 }
 
-int dao_fetch_node_uuid_netid(void *arg, void (*cb_data_handler)(void *, int, char *, char *))
+int dao_fetch_node_uuid_netid(void *arg, int (*cb_data_handler)(void *, int, char *, char *))
 {
 	int		 i;
+	int		 ret;
 	int		 tuples;
 	PGresult	*result;
 
@@ -1251,16 +1252,20 @@ int dao_fetch_node_uuid_netid(void *arg, void (*cb_data_handler)(void *, int, ch
 
 	tuples = PQntuples(result);
 	for (i = 0; i < tuples; i++) {
-		cb_data_handler(arg, tuples - i - 1,
+		ret = cb_data_handler(arg, tuples - i - 1,
 			PQgetvalue(result, i, 0),
 			PQgetvalue(result, i, 1));
+
+		if (ret == -1)
+			goto out;
 	}
 
 	PQclear(result);
-
 	return 0;
 
-
+out:
+	PQclear(result);
+	return -1;
 }
 
 int dao_fetch_node_ip(char *context_id, char *uuid, char **ipaddress)

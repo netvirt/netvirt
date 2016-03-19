@@ -74,11 +74,11 @@ dispatch_nvswitch(struct session_info **sinfo, json_t *jmsg)
 {
 	char	*dump;
 	char 	*action;
-
+/*
 	dump = json_dumps(jmsg, 0);
 	jlog(L_DEBUG, "jmsg: %s", dump);
 	free(dump);
-
+*/
 	if (json_unpack(jmsg, "{s:s}", "action", &action) == -1) {
 		/* XXX disconnect */
 		return;
@@ -140,7 +140,7 @@ on_read_cb(struct bufferevent *bev, void *session)
 	json_t			*jmsg = NULL;
 	struct session_info	*sinfo;
 
-	jlog(L_DEBUG, "on_read_cb");
+	//jlog(L_DEBUG, "on_read_cb");
 	sinfo = session;
 
 	str = evbuffer_readln(bufferevent_get_input(bev),

@@ -92,7 +92,7 @@ int dao_fetch_context(void *data, int (*cb_data_handler)(void *data, int remaini
 void dao_reset_node_state();
 int dao_fetch_node_sequence(uint32_t *context_id_list, uint32_t list_size, void *data, void (*cb_data_handler)(void *data, int remaining,
 								char *uuid, char *contextId));
-int dao_fetch_node_uuid_netid(void *arg, void (*cb_data_handler)(void *, int, char *, char *));
+int dao_fetch_node_uuid_netid(void *arg, int (*cb_data_handler)(void *, int, char *, char *));
 
 int dao_fetch_node_ip(char *context_id, char *uuid, char **ipaddress);
 
