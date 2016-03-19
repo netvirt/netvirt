@@ -70,7 +70,7 @@ response()
 }
 
 void
-dispatch_nvswitch(struct session_info *sinfo, json_t *jmsg)
+dispatch_nvswitch(struct session_info **sinfo, json_t *jmsg)
 {
 	char	*dump;
 	char 	*action;
@@ -141,7 +141,7 @@ on_read_cb(struct bufferevent *bev, void *session)
 	struct session_info	*sinfo;
 
 	jlog(L_DEBUG, "on_read_cb");
-	sinfo = (struct session_info*)session;
+	sinfo = session;
 
 	str = evbuffer_readln(bufferevent_get_input(bev),
 			&n_read_out,
@@ -158,7 +158,7 @@ on_read_cb(struct bufferevent *bev, void *session)
 	}
 
 	if (sinfo->type == NVSWITCH)
-		dispatch_nvswitch(sinfo, jmsg);
+		dispatch_nvswitch(&sinfo, jmsg);
 	else if (sinfo->type == NVAPI)
 		dispatch_nvapi(sinfo, jmsg);
 	else {
@@ -393,6 +393,8 @@ ctrler_init(struct ctrler_cfg *_cfg)
 
 	ev_int = evsignal_new(base, SIGINT, sighandler, base);
 	event_add(ev_int, NULL);
+
+	signal(SIGPIPE, SIG_IGN);
 
 	evconnlistener_set_error_cb(listener, accept_error_cb);
 	event_base_dispatch(base);

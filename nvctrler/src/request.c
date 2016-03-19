@@ -31,7 +31,7 @@
 extern struct session_info *switch_sinfo;
 
 void
-update_node_status(struct session_info *sinfo, json_t *jmsg)
+update_node_status(struct session_info **sinfo, json_t *jmsg)
 {
 	jlog(L_DEBUG, "update-node-status");
 
@@ -429,7 +429,7 @@ out:
 }
 
 void
-provisioning(struct session_info *sinfo, json_t *jmsg)
+provisioning(struct session_info **sinfo, json_t *jmsg)
 {
 	jlog(L_DEBUG, "provisioning");
 
@@ -467,8 +467,8 @@ provisioning(struct session_info *sinfo, json_t *jmsg)
 
 	resp_str = json_dumps(resp, 0);
 
-	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+	bufferevent_write((*sinfo)->bev, resp_str, strlen(resp_str));
+	bufferevent_write((*sinfo)->bev, "\n", strlen("\n"));
 
 	json_decref(resp);
 	free(resp_str);
@@ -488,7 +488,7 @@ CB_listall_network(void *arg, int remaining,
 				char *tcert)
 {
 	char			*resp_str = NULL;
-	struct session_info	*sinfo;
+	struct session_info	**sinfo;
 	json_t			*array;
 	json_t			*network;
 	json_t			*resp = NULL;
@@ -519,20 +519,24 @@ CB_listall_network(void *arg, int remaining,
 	if ((resp_str = json_dumps(resp, 0)) == NULL)
 		goto out;
 
-	printf("%s\n", resp_str);
+	if (*sinfo && (*sinfo)->bev != NULL)
+		goto out;
+	bufferevent_write((*sinfo)->bev, resp_str, strlen(resp_str));
+	if (*sinfo && (*sinfo)->bev != NULL)
+		goto out;
+	bufferevent_write((*sinfo)->bev, "\n", strlen("\n"));
 
-	if (sinfo->bev != NULL)
-		bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	if (sinfo->bev != NULL)
-		bufferevent_write(sinfo->bev, "\n", strlen("\n"));
-out:
 	json_decref(resp);
 	free(resp_str);
 	return 0;
+out:
+	json_decref(resp);
+	free(resp_str);
+	return -1;
 }
 
 void
-listall_network(struct session_info *sinfo, json_t *jmsg)
+listall_network(struct session_info **sinfo, json_t *jmsg)
 {
 	jlog(L_DEBUG, "listallNetwork");
 
@@ -552,10 +556,10 @@ listall_network(struct session_info *sinfo, json_t *jmsg)
 	return;
 out:
 	resp_str = json_dumps(resp, 0);
-	if (sinfo->bev != NULL)
-		bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	if (sinfo->bev != NULL)
-		bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+	if (*sinfo && (*sinfo)->bev != NULL)
+		bufferevent_write((*sinfo)->bev, resp_str, strlen(resp_str));
+	if (*sinfo && (*sinfo)->bev != NULL)
+		bufferevent_write((*sinfo)->bev, "\n", strlen("\n"));
 
 	json_decref(resp);
 	free(resp_str);
@@ -567,7 +571,7 @@ static void
 CB_listall_node(void *arg, int remaining, char *netid, char *uuid)
 {
 	char			*resp_str = NULL;
-	struct	session_info	*sinfo;
+	struct	session_info	**sinfo;
 	json_t			*array;
 	json_t			*node;
 	json_t			*resp = NULL;
@@ -596,15 +600,15 @@ CB_listall_node(void *arg, int remaining, char *netid, char *uuid)
 
 	resp_str = json_dumps(resp, 0);
 
-	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+	bufferevent_write((*sinfo)->bev, resp_str, strlen(resp_str));
+	bufferevent_write((*sinfo)->bev, "\n", strlen("\n"));
 
 	json_decref(resp);
 	free(resp_str);
 }
 
 void
-listall_node(struct session_info *sinfo, json_t *jmsg)
+listall_node(struct session_info **sinfo, json_t *jmsg)
 {
 	jlog(L_DEBUG, "listallNode");
 
