@@ -140,7 +140,6 @@ del_network(struct session_info *sinfo, json_t *jmsg)
 	free(fwd_str);
 	/* * */
 out:
-
 	resp_str = json_dumps(resp, 0);
 
 	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
@@ -289,12 +288,15 @@ add_node(struct session_info *sinfo, json_t *jmsg)
 
 		fwd_resp_str = json_dumps(fwd_resp, 0);
 
-		bufferevent_write(switch_sinfo->bev, fwd_resp_str, strlen(fwd_resp_str));
-		bufferevent_write(switch_sinfo->bev, "\n", strlen("\n"));
+		if (switch_sinfo && switch_sinfo->bev)
+			bufferevent_write(switch_sinfo->bev, fwd_resp_str, strlen(fwd_resp_str));
+		if (switch_sinfo && switch_sinfo->bev)
+			bufferevent_write(switch_sinfo->bev, "\n", strlen("\n"));
 
 		json_decref(fwd_resp);
 		free(fwd_resp_str);
 	}
+
 	/* * */
 
 	json_object_set_new(resp, "response", json_string("success"));
@@ -359,7 +361,6 @@ del_node(struct session_info *sinfo, json_t *jmsg)
 	json_object_set_new(resp, "tid", json_string("tid"));
 	json_object_set_new(resp, "action", json_string("response"));
 
-
 	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
 	if (ret != 0) {
 		json_object_set_new(resp, "response", json_string("denied"));
@@ -413,7 +414,6 @@ del_node(struct session_info *sinfo, json_t *jmsg)
 	/* * */
 
 out:
-
 	resp_str = json_dumps(resp, 0);
 
 	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
@@ -509,31 +509,26 @@ CB_listall_network(void *arg, int remaining,
 	json_object_set_new(network, "tcert", json_string(tcert));
 
 	json_array_append_new(array, network);
-
 	json_object_set_new(resp, "networks", array);
+
 	if (remaining > 0)
 		json_object_set_new(resp, "response", json_string("more-data"));
 	else
 		json_object_set_new(resp, "response", json_string("success"));
 
-	resp_str = json_dumps(resp, 0);
-
-	if (sinfo->bev == NULL)
+	if ((resp_str = json_dumps(resp, 0)) == NULL)
 		goto out;
-	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
 
-	if (sinfo->bev == NULL)
-		goto out;
-	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+	printf("%s\n", resp_str);
 
-	json_decref(resp);
-	free(resp_str);
-	return 0;
-
+	if (sinfo->bev != NULL)
+		bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	if (sinfo->bev != NULL)
+		bufferevent_write(sinfo->bev, "\n", strlen("\n"));
 out:
 	json_decref(resp);
 	free(resp_str);
-	return -1;
+	return 0;
 }
 
 void
@@ -556,13 +551,11 @@ listall_network(struct session_info *sinfo, json_t *jmsg)
 	json_decref(resp);
 	return;
 out:
-	if (sinfo->bev != NULL) {
-		resp_str = json_dumps(resp, 0);
+	resp_str = json_dumps(resp, 0);
+	if (sinfo->bev != NULL)
 		bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	}
-	if (sinfo->bev != NULL) {
+	if (sinfo->bev != NULL)
 		bufferevent_write(sinfo->bev, "\n", strlen("\n"));
-	}
 
 	json_decref(resp);
 	free(resp_str);
@@ -905,8 +898,10 @@ add_network(struct session_info *sinfo, json_t *jmsg)
 
 		fwd_resp_str = json_dumps(fwd_resp, 0);
 
-		bufferevent_write(switch_sinfo->bev, fwd_resp_str, strlen(fwd_resp_str));
-		bufferevent_write(switch_sinfo->bev, "\n", strlen("\n"));
+		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
+			bufferevent_write(switch_sinfo->bev, fwd_resp_str, strlen(fwd_resp_str));
+		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
+			bufferevent_write(switch_sinfo->bev, "\n", strlen("\n"));
 
 		json_decref(fwd_resp);
 		free(fwd_resp_str);
@@ -917,8 +912,10 @@ add_network(struct session_info *sinfo, json_t *jmsg)
 out:
 	resp_str = json_dumps(resp, 0);
 
-	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+	if (sinfo->bev != NULL)
+		bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	if (sinfo->bev != NULL)
+		bufferevent_write(sinfo->bev, "\n", strlen("\n"));
 
 	pki_free_digital_id(embassy_id);
 	pki_free_digital_id(server_id);
@@ -994,8 +991,10 @@ list_network(struct session_info *sinfo, json_t *jmsg)
 out:
 	resp_str = json_dumps(resp, 0);
 
-	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+	if (sinfo->bev != NULL)
+		bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	if (sinfo->bev != NULL)
+		bufferevent_write(sinfo->bev, "\n", strlen("\n"));
 
 	json_decref(resp);
 	free(resp_str);
