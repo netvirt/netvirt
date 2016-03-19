@@ -20,13 +20,14 @@
 #include <dnds.h>
 #include "ctrler.h"
 
-void update_node_status(struct session_info *, json_t *);
+void update_node_status(struct session_info **, json_t *);
+void provisioning(struct session_info **, json_t *);
+void listall_network(struct session_info **, json_t *);
+void listall_node(struct session_info **, json_t *);
+
 void del_network(struct session_info *, json_t *);
 void add_node(struct session_info *, json_t *);
 void del_node(struct session_info *, json_t *);
-void provisioning(struct session_info *, json_t *);
-void listall_network(struct session_info *, json_t *);
-void listall_node(struct session_info *, json_t *);
 void activate_account(struct session_info *, json_t *);
 void add_account(struct session_info *, json_t *);
 void get_account_apikey(struct session_info *, json_t *);
