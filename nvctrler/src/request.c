@@ -568,7 +568,7 @@ out:
 	return;
 }
 
-static void
+static int
 CB_listall_node(void *arg, int remaining, char *netid, char *uuid)
 {
 	char			*resp_str = NULL;
@@ -581,9 +581,6 @@ CB_listall_node(void *arg, int remaining, char *netid, char *uuid)
 	node = json_object();
 	array = json_array();
 	resp = json_object();
-
-	printf("uuid: %s\n", uuid);
-	printf("netid: %s\n", netid);
 
 	json_object_set_new(resp, "tid", json_string("tid"));
 	json_object_set_new(resp, "action", json_string("listall-node"));
@@ -601,11 +598,21 @@ CB_listall_node(void *arg, int remaining, char *netid, char *uuid)
 
 	resp_str = json_dumps(resp, 0);
 
+	if (*sinfo == NULL || (*sinfo)->bev == NULL)
+		goto out;
 	bufferevent_write((*sinfo)->bev, resp_str, strlen(resp_str));
+
+	if (*sinfo == NULL || (*sinfo)->bev == NULL)
+		goto out;
 	bufferevent_write((*sinfo)->bev, "\n", strlen("\n"));
 
 	json_decref(resp);
 	free(resp_str);
+	return 0;
+out:
+	json_decref(resp);
+	free(resp_str);
+	return -1;
 }
 
 void
@@ -613,7 +620,28 @@ listall_node(struct session_info **sinfo, json_t *jmsg)
 {
 	jlog(L_DEBUG, "listallNode");
 
-	dao_fetch_node_uuid_netid(sinfo, CB_listall_node);
+	char	*resp_str = NULL;
+	json_t	*resp = NULL;
+
+	if (dao_fetch_node_uuid_netid(sinfo, CB_listall_node) == 0)
+		return;
+
+	resp = json_object();
+	json_object_set_new(resp, "response", json_string("error"));
+	json_object_set_new(resp, "action", json_string("listall-node"));
+
+	resp_str = json_dumps(resp, 0);
+
+	if (*sinfo && (*sinfo)->bev != NULL)
+		bufferevent_write((*sinfo)->bev, resp_str, strlen(resp_str));
+	if (*sinfo && (*sinfo)->bev != NULL)
+		bufferevent_write((*sinfo)->bev, "\n", strlen("\n"));
+
+	json_decref(resp);
+	free(resp_str);
+
+	return;
+
 }
 
 void
