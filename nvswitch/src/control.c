@@ -269,6 +269,11 @@ listall_network(json_t *jmsg)
 	json_t	*js_networks;
 	json_t	*elm;
 
+	if ((json_unpack(jmsg, "{s:s}", "response", &response)) == -1) {
+		jlog(L_ERROR, "json_unpack failed");
+		return -1;
+	}
+
 	if ((js_networks = json_object_get(jmsg, "networks")) == NULL) {
 		jlog(L_ERROR, "json_object_get failed");
 		return -1;
@@ -295,12 +300,8 @@ listall_network(json_t *jmsg)
 			jlog(L_ERROR, "NULL parameter");
 			return -1;
 		}
-		context_create(uuid, subnet, netmask, cert, pkey, tcert);
-	}
 
-	if ((json_unpack(jmsg, "{s:s}", "response", &response)) == -1) {
-		jlog(L_ERROR, "json_unpack failed");
-		return -1;
+		context_create(uuid, subnet, netmask, cert, pkey, tcert);
 	}
 
 	if (strcmp(response, "success") == 0) {
@@ -547,6 +548,7 @@ dispatch_op(json_t *jmsg)
 			if (cfg->ctrl_initialized == 0) {
 				/* if not yet initialized... */
 				cfg->ctrl_initialized = 1;
+				jlog(L_DEBUG, "initalized!");
 				ret = query_list_node(jmsg);
 			}
 		}
@@ -586,27 +588,27 @@ pipe_read_cb(struct bufferevent *bev, void *arg)
 void
 on_read_cb(struct bufferevent *bev, void *arg)
 {
-	jlog(L_DEBUG, "on_read_cb");
-
 	char			*str = NULL;
 	size_t			n_read_out;
 	json_error_t		error;
 	json_t			*jmsg = NULL;
 
-	if ((str = evbuffer_readln(bufferevent_get_input(bev),
-	    &n_read_out, EVBUFFER_EOL_LF)) == NULL) {
-		return;
-	}
+	while (evbuffer_get_length(bufferevent_get_input(bev)) > 0) {
+		if ((str = evbuffer_readln(bufferevent_get_input(bev),
+		    &n_read_out, EVBUFFER_EOL_LF)) == NULL) {
+			return;
+		}
+	//	printf("str: %d <> %s\n\n\n", strlen(str), str);
+		if ((jmsg = json_loadb(str, n_read_out, 0, &error)) == NULL) {
+			jlog(L_ERROR, "json_loadb: %s", error.text);
+			bufferevent_free(bufev_sock);
+			return;
+		}
 
-	printf("str: %d <> %s\n\n\n", strlen(str), str);
-	if ((jmsg = json_loadb(str, n_read_out, 0, &error)) == NULL) {
-		jlog(L_ERROR, "json_loadb: %s", error.text);
-		bufferevent_free(bufev_sock);
-		return;
+		free(str);
+		dispatch_op(jmsg);
+		json_decref(jmsg);
 	}
-
-	dispatch_op(jmsg);
-	json_decref(jmsg);
 }
 
 void
@@ -625,6 +627,7 @@ on_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
 		query_list_network();
 	} else if (events & (BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
 		jlog(L_DEBUG, "disconnected");
+		printf("events %x\n", events);
 		while ((e = bufferevent_get_openssl_error(bufev_sock)) > 0) {
 			jlog(L_ERROR, "%s", ERR_error_string(e, NULL));
 		}

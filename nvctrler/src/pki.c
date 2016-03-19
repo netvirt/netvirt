@@ -80,11 +80,11 @@ static X509_REQ *pki_certificate_request(EVP_PKEY *keyring, digital_id_t *digita
 	subject = X509_NAME_new();
 
 	X509_NAME_add_entry_by_txt(subject, "commonName", MBSTRING_ASC, (unsigned char*)digital_id->commonName, -1, -1, 0);
-	X509_NAME_add_entry_by_txt(subject, "countryName", MBSTRING_ASC, (unsigned char*)digital_id->countryName, -1, -1, 0);
-	X509_NAME_add_entry_by_txt(subject, "stateOrProvinceName", MBSTRING_ASC, (unsigned char*)digital_id->stateOrProvinceName, -1, -1, 0);
-	X509_NAME_add_entry_by_txt(subject, "localityName", MBSTRING_ASC, (unsigned char*)digital_id->localityName, -1, -1, 0);
-	X509_NAME_add_entry_by_txt(subject, "emailAddress", MBSTRING_ASC, (unsigned char*)digital_id->emailAddress, -1, -1, 0);
-	X509_NAME_add_entry_by_txt(subject, "organizationName", MBSTRING_ASC, (unsigned char*)digital_id->organizationName, -1, -1, 0);
+	//X509_NAME_add_entry_by_txt(subject, "countryName", MBSTRING_ASC, (unsigned char*)digital_id->countryName, -1, -1, 0);
+	//X509_NAME_add_entry_by_txt(subject, "stateOrProvinceName", MBSTRING_ASC, (unsigned char*)digital_id->stateOrProvinceName, -1, -1, 0);
+	//X509_NAME_add_entry_by_txt(subject, "localityName", MBSTRING_ASC, (unsigned char*)digital_id->localityName, -1, -1, 0);
+	//X509_NAME_add_entry_by_txt(subject, "emailAddress", MBSTRING_ASC, (unsigned char*)digital_id->emailAddress, -1, -1, 0);
+	//X509_NAME_add_entry_by_txt(subject, "organizationName", MBSTRING_ASC, (unsigned char*)digital_id->organizationName, -1, -1, 0);
 
 	X509_REQ_set_subject_name(cert_req, subject);
 	X509_NAME_free(subject);
