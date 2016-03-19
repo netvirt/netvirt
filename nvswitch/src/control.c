@@ -49,6 +49,7 @@ static passport_t			*passport = NULL;
 static struct session *session_tracking_table[MAX_SESSION];
 static uint32_t tracking_id = 0;
 
+static int new_peer();
 static int del_node(json_t *);
 static int del_network(json_t *);
 static int provisioning(json_t *);
@@ -628,19 +629,31 @@ pipe_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
 }
 
 void
+on_timeout_cb(evutil_socket_t fd, short what, void *arg)
+{
+	new_peer();
+}
+
+void
 on_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
 {
-	unsigned long e = 0;
+	unsigned long	 e = 0;
+	struct event	*ev;
+	struct timeval	 tv = {1, 0};
 
 	if (events & BEV_EVENT_CONNECTED) {
 		jlog(L_DEBUG, "connected");
+		cfg->ctrl_initialized = 0;
 		query_list_network();
 	} else if (events & (BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
-		jlog(L_DEBUG, "disconnected");
-		printf("events %x\n", events);
+		jlog(L_DEBUG, "event (%x)", events);
 		while ((e = bufferevent_get_openssl_error(bufev_sock)) > 0) {
 			jlog(L_ERROR, "%s", ERR_error_string(e, NULL));
 		}
+		bufferevent_free(bufev_sock);
+
+		ev = event_new(base, -1, EV_TIMEOUT, on_timeout_cb, NULL);
+		event_add(ev, &tv);
 	}
 }
 
@@ -738,35 +751,14 @@ out:
 	return NULL;
 }
 
-int
-ctrl_init(struct switch_cfg *_cfg)
+static int
+new_peer()
 {
-	int			 fd = -1;
 	int			 flag = 1;
+	int			 fd = -1;
 	struct sockaddr_in	 sin;
-	static struct event	*ev_int;
 	SSL_CTX			*ctx;
 	SSL			*ssl;
-
-	cfg = _cfg;
-	cfg->ctrl_running = 1;
-
-	jlog(L_NOTICE, "Control initializing...");
-
-	if ((base = event_base_new()) == NULL) {
-		jlog(L_ERROR, "event_base_new failed");
-		goto out;
-	}
-
-	if ((ev_int = evsignal_new(base, SIGHUP, sighandler, NULL)) == NULL) {
-		jlog(L_ERROR, "evsignal_new failed");
-		goto out;
-	}
-
-	if (event_add(ev_int, NULL) < 0) {
-		jlog(L_ERROR, "event_add failed");
-		goto out;
-	}
 
 	memset(&sin, 0, sizeof(sin));
 	sin.sin_family = AF_INET;
@@ -814,6 +806,43 @@ ctrl_init(struct switch_cfg *_cfg)
 		goto out;
 	}
 
+	return 0;
+out:
+	if (bufev_sock != NULL)
+		bufferevent_free(bufev_sock);
+	return -1;
+
+}
+
+int
+ctrl_init(struct switch_cfg *_cfg)
+{
+	static struct event	*ev_int;
+
+	cfg = _cfg;
+	cfg->ctrl_running = 1;
+
+	jlog(L_NOTICE, "Control initializing...");
+
+	if ((base = event_base_new()) == NULL) {
+		jlog(L_ERROR, "event_base_new failed");
+		goto out;
+	}
+
+	if ((ev_int = evsignal_new(base, SIGHUP, sighandler, NULL)) == NULL) {
+		jlog(L_ERROR, "evsignal_new failed");
+		goto out;
+	}
+
+	if (event_add(ev_int, NULL) < 0) {
+		jlog(L_ERROR, "event_add failed");
+		goto out;
+	}
+
+	if (new_peer() == -1) {
+		jlog(L_ERROR, "new_peer failed");
+	}
+
 	bufev_pipe = bufferevent_socket_new(base, pipefd[0], BEV_OPT_CLOSE_ON_FREE);
 	bufferevent_enable(bufev_pipe, EV_READ|EV_WRITE);
 	bufferevent_setcb(bufev_pipe, pipe_read_cb, NULL, pipe_event_cb, NULL);
@@ -826,10 +855,7 @@ ctrl_init(struct switch_cfg *_cfg)
 
 	event_base_free(base);
 	return 0;
-
 out:
-	if (bufev_sock != NULL)
-		bufferevent_free(bufev_sock);
 	event_base_free(base);
 	return -1;
 }
