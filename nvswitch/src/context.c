@@ -29,7 +29,7 @@
 
 /* XXX the context list should be a tree, or a hashlist */
 
-#define CONTEXT_LIST_SIZE 4096
+#define CONTEXT_LIST_SIZE 10000
 context_t *context_table[CONTEXT_LIST_SIZE] = {NULL};
 
 void context_del_session(context_t *context, struct session *session)
@@ -108,7 +108,7 @@ void context_free(context_t *context)
 
 void contexts_free()
 {
-	uint16_t i;
+	uint32_t i;
 	context_t *context = NULL;
 
 	for (i = 0; i < CONTEXT_LIST_SIZE; i++) {
