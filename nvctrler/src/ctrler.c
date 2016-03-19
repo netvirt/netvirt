@@ -204,7 +204,7 @@ on_event_cb(struct bufferevent *bev, short events, void *arg)
 	if (events & BEV_EVENT_CONNECTED) {
 		on_connect_cb(bev, arg);
 	} else if (events & (BEV_EVENT_TIMEOUT|BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
-		jlog(L_NOTICE, "disconnected");
+		jlog(L_DEBUG, "event (%x)", events);
 
 		while ((e = bufferevent_get_openssl_error(bev)) > 0) {
 			jlog(L_ERROR, "%s", ERR_error_string(e, NULL));
@@ -212,6 +212,7 @@ on_event_cb(struct bufferevent *bev, short events, void *arg)
 
 		if (sinfo->type == NVSWITCH) {
 			switch_sinfo = NULL;
+			jlog(L_DEBUG, "switch disconnected");
 		}
 		sinfo_free(&sinfo);
 		bufferevent_free(bev);
