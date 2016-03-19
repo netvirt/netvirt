@@ -108,7 +108,7 @@ void context_free(context_t *context)
 
 void contexts_free()
 {
-	uint16_t i;
+	uint32_t i;
 	context_t *context = NULL;
 
 	for (i = 0; i < CONTEXT_LIST_SIZE; i++) {
