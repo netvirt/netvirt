@@ -519,10 +519,11 @@ CB_listall_network(void *arg, int remaining,
 	if ((resp_str = json_dumps(resp, 0)) == NULL)
 		goto out;
 
-	if (*sinfo && (*sinfo)->bev != NULL)
+	if (*sinfo == NULL || (*sinfo)->bev == NULL)
 		goto out;
 	bufferevent_write((*sinfo)->bev, resp_str, strlen(resp_str));
-	if (*sinfo && (*sinfo)->bev != NULL)
+
+	if (*sinfo == NULL || (*sinfo)->bev == NULL)
 		goto out;
 	bufferevent_write((*sinfo)->bev, "\n", strlen("\n"));
 
