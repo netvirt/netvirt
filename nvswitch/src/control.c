@@ -210,6 +210,7 @@ listall_node(json_t *jmsg)
 	char		*response;
 	size_t		 array_size;
 	size_t		 i;
+static	size_t		 total = 0;
 	json_t		*js_nodes;
 	json_t		*node;
 	context_t	*context;
@@ -248,9 +249,11 @@ listall_node(json_t *jmsg)
 	}
 
 	if (strcmp(response, "success") == 0) {
+		jlog(L_DEBUG, "fetched %d node", total);
 		return 0;
 	}
 
+	total++;
 	return 1;
 }
 
@@ -266,6 +269,7 @@ listall_network(json_t *jmsg)
 	char	*response;
 	size_t	 i;
 	size_t	 array_size;
+static	size_t	 total = 0;
 	json_t	*js_networks;
 	json_t	*elm;
 
@@ -305,9 +309,12 @@ listall_network(json_t *jmsg)
 	}
 
 	if (strcmp(response, "success") == 0) {
+		jlog(L_DEBUG, "fetched %d network", total);
+		total = 0;
 		return 0;
 	}
 
+	total++;
 	return 1;
 }
 
@@ -546,14 +553,17 @@ dispatch_op(json_t *jmsg)
 		if ((ret = listall_network(jmsg)) == 0) {
 			/* all network are now fetched */
 			if (cfg->ctrl_initialized == 0) {
-				/* if not yet initialized... */
-				cfg->ctrl_initialized = 1;
-				jlog(L_DEBUG, "initalized!");
+				jlog(L_DEBUG, "networks initalized");
 				ret = query_list_node(jmsg);
 			}
 		}
 	} else if (strcmp(action, "listall-node") == 0) {
-		ret = listall_node(jmsg);
+		if ((ret = listall_node(jmsg)) == 0) {
+			if (cfg->ctrl_initialized == 0) {
+				cfg->ctrl_initialized = 1;
+				jlog(L_DEBUG, "nodes initialized");
+			}
+		}
 	} else if (strcmp(action, "provisioning") == 0) {
 		ret = provisioning(jmsg);
 	} else if (strcmp(action, "del-network") == 0) {
