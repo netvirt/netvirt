@@ -94,8 +94,7 @@ int dao_prepare_statements()
 			"dao_activate_client",
 			"UPDATE client "
 			"SET status = 1 "
-			"WHERE email = $1 "
-			"AND apikey = $2;",
+			"WHERE apikey = $1;",
 			0,
 			NULL);
 	check_result_status(result);
@@ -106,9 +105,8 @@ int dao_prepare_statements()
 	result = PQprepare(dbconn,
 			"dao_update_client_apikey",
 			"UPDATE client "
-			"set apikey = $3 "
-			"WHERE email = $1 "
-			"AND apikey = $2;",
+			"set apikey = $2 "
+			"WHERE apikey = $1;",
 			0,
 			NULL);
 	check_result_status(result);
@@ -491,26 +489,24 @@ int dao_update_node_status(char *context_id, char *uuid, char *status, char *ips
 
 	return 0;
 }
-int dao_update_client_apikey(char *email, char *apikey, char *new_apikey)
+int dao_update_client_apikey(char *apikey, char *new_apikey)
 {
-	const char *paramValues[3];
+	const char *paramValues[2];
 	int paramLengths[3];
 	PGresult *result = NULL;
 
-	if (!email || !apikey || !new_apikey) {
+	if (!apikey || !new_apikey) {
 		jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
-	paramValues[0] = email;
-	paramValues[1] = apikey;
-	paramValues[2] = new_apikey;
+	paramValues[0] = apikey;
+	paramValues[1] = new_apikey;
 
-	paramLengths[0] = strlen(email);
-	paramLengths[1] = strlen(apikey);
-	paramLengths[2] = strlen(new_apikey);
+	paramLengths[0] = strlen(apikey);
+	paramLengths[1] = strlen(new_apikey);
 
-	result = PQexecPrepared(dbconn, "dao_update_client_apikey", 3, paramValues, paramLengths, NULL, 1);
+	result = PQexecPrepared(dbconn, "dao_update_client_apikey", 2, paramValues, paramLengths, NULL, 1);
 	if (!result) {
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
@@ -526,24 +522,22 @@ int dao_update_client_apikey(char *email, char *apikey, char *new_apikey)
 	return 0;
 }
 
-int dao_activate_client(char *email, char *apikey)
+int dao_activate_client(char *apikey)
 {
-	const char *paramValues[2];
-	int paramLengths[2];
+	const char *paramValues[1];
+	int paramLengths[1];
 	PGresult *result = NULL;
 
-	if (!email || !apikey) {
+	if (!apikey) {
 		jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
-	paramValues[0] = email;
-	paramValues[1] = apikey;
+	paramValues[0] = apikey;
 
-	paramLengths[0] = strlen(email);
-	paramLengths[1] = strlen(apikey);
+	paramLengths[0] = strlen(apikey);
 
-	result = PQexecPrepared(dbconn, "dao_activate_client", 2, paramValues, paramLengths, NULL, 1);
+	result = PQexecPrepared(dbconn, "dao_activate_client", 1, paramValues, paramLengths, NULL, 1);
 
 	if (!result) {
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));

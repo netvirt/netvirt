@@ -650,7 +650,6 @@ activate_account(struct session_info *sinfo, json_t *jmsg)
 	jlog(L_DEBUG, "activate account");
 
 	int	ret = 0;
-	char	*email = NULL;
 	char	*apikey = NULL;
 	char	*new_apikey = NULL;
 	char	*resp_str = NULL;
@@ -661,16 +660,10 @@ activate_account(struct session_info *sinfo, json_t *jmsg)
 		return;
 
 	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
-	json_unpack(js_account, "{s:s}", "email", &email);
 
 	resp = json_object();
 	json_object_set_new(resp, "tid", json_string("tid"));
 	json_object_set_new(resp, "action", json_string("response"));
-
-	if (email == NULL) {
-		jlog(L_ERROR, "Invalid message\n");
-		return;
-	}
 
 	new_apikey = pki_gen_apikey();
 	if (apikey == NULL) {
@@ -678,13 +671,14 @@ activate_account(struct session_info *sinfo, json_t *jmsg)
 		goto out;
 	}
 
-	ret = dao_activate_client(email, apikey);
+	ret = dao_activate_client(apikey);
 	if (ret == -1) {
 		json_object_set_new(resp, "response", json_string("denied"));
 		goto out;
 	}
 
-	dao_update_client_apikey(email, apikey, new_apikey);
+	// XXX check this update ?
+	dao_update_client_apikey(apikey, new_apikey);
 
 	json_object_set_new(resp, "response", json_string("success"));
 
