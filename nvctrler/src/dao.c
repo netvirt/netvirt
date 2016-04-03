@@ -203,7 +203,7 @@ int dao_prepare_statements()
 			"SELECT id "
 			"FROM CONTEXT "
 			"WHERE client_id = $1 "
-			"AND description = $2;",
+			"AND uuid = $2;",
 			0,
 			NULL);
 
@@ -303,7 +303,7 @@ int dao_prepare_statements()
 
 	result = PQprepare(dbconn,
 			"dao_fetch_networks_by_client_id",
-			"SELECT description "
+			"SELECT description, uuid "
 			"FROM context "
 			"WHERE client_id = $1;",
 			0,
@@ -964,22 +964,22 @@ int dao_fetch_context_ippool(char *context_id, unsigned char **ippool)
 	return 0;
 }
 
-int dao_fetch_network_id(char **context_id, char *client_id, char *description)
+int dao_fetch_network_id(char **context_id, char *client_id, char *uuid)
 {
 	const char *paramValues[2];
 	int paramLengths[2];
 	PGresult *result;
 
-	if (!client_id || !description) {
+	if (!client_id || !uuid) {
 		jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
 	paramValues[0] = client_id;
-	paramValues[1] = description;
+	paramValues[1] = uuid;
 
 	paramLengths[0] = strlen(client_id);
-	paramLengths[0] = strlen(description);
+	paramLengths[0] = strlen(uuid);
 
 	result = PQexecPrepared(dbconn, "dao_fetch_network_id", 2, paramValues, paramLengths, NULL, 0);
 
@@ -1407,7 +1407,7 @@ int dao_fetch_networks_by_client_id(
 	char *client_id,
 	void *data,
 	int (*cb_data_handler)(void *data,
-		char *description))
+		char *description, char *uuid))
 {
 	const char *paramValues[1];
 	int paramLengths[1];
@@ -1438,7 +1438,8 @@ int dao_fetch_networks_by_client_id(
 	int i;
 	for (i = 0; i < tuples; i++) {
 		cb_data_handler(data,
-			PQgetvalue(result, i, 0));
+			PQgetvalue(result, i, 0),
+			PQgetvalue(result, i, 1));
 	}
 
 	PQclear(result);

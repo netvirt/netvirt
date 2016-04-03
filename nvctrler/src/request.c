@@ -159,7 +159,7 @@ add_node(struct session_info *sinfo, json_t *jmsg)
 	int		 ret = 0;
 	char		*context_id = NULL;
 	char		*client_id = NULL;
-	char		*context_name = NULL;
+	char		*network_uuid = NULL;
 	char		*description = NULL;
 
 	int		 exp_delay;
@@ -190,7 +190,7 @@ add_node(struct session_info *sinfo, json_t *jmsg)
 		return;
 
 	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
-	json_unpack(js_node, "{s:s}", "networkname", &context_name);
+	json_unpack(js_node, "{s:s}", "networkuuid", &network_uuid);
 	json_unpack(js_node, "{s:s}", "description", &description);
 
 	resp = json_object();
@@ -203,7 +203,7 @@ add_node(struct session_info *sinfo, json_t *jmsg)
 		goto out;
 	}
 
-	ret = dao_fetch_network_id(&context_id, client_id, context_name);
+	ret = dao_fetch_network_id(&context_id, client_id, network_uuid);
 	if (ret != 0) {
 		json_object_set_new(resp, "response", json_string("no-such-object"));
 		goto out;
@@ -961,7 +961,7 @@ out:
 }
 
 static int
-CB_list_network(void *arg, char *name)
+CB_list_network(void *arg, char *name, char *uuid)
 {
 	json_t	*array;
 	json_t	*network;
@@ -970,6 +970,7 @@ CB_list_network(void *arg, char *name)
 	network = json_object();
 
 	json_object_set_new(network, "name", json_string(name));
+	json_object_set_new(network, "uuid", json_string(uuid));
 	json_array_append_new(array, network);
 
 	return 0;
@@ -1059,7 +1060,7 @@ list_node(struct session_info *sinfo, json_t *jmsg)
 	char	*client_id = NULL;
 	char	*context_id = NULL;
 	char	*apikey = NULL;
-	char	*context_name = NULL;
+	char	*network_uuid = NULL;
 	char	*resp_str = NULL;
 	json_t	*js_network = NULL;
 	json_t	*array = NULL;
@@ -1069,7 +1070,7 @@ list_node(struct session_info *sinfo, json_t *jmsg)
 		return;
 
 	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
-	json_unpack(js_network, "{s:s}", "name", &context_name);
+	json_unpack(js_network, "{s:s}", "uuid", &network_uuid);
 
 	resp = json_object();
 	json_object_set_new(resp, "tid", json_string("tid"));
@@ -1081,7 +1082,7 @@ list_node(struct session_info *sinfo, json_t *jmsg)
 		goto out;
 	}
 
-	ret = dao_fetch_network_id(&context_id, client_id, context_name);
+	ret = dao_fetch_network_id(&context_id, client_id, network_uuid);
 	if (context_id == NULL) {
 		json_object_set_new(resp, "response", json_string("no-such-object"));
 		goto out;
