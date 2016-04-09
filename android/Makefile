@@ -4,6 +4,7 @@ BUILD_DIR=build
 KEYSTORE=${PWD}/netvirt.keystore
 KEYSTORE_ALIAS=netvirt
 SRC_DIR=${PWD}/src
+KEYSTORE_PASSWORD=netvirt
 
 APK_SIGNED=${SRC_DIR}/${BUILD_DIR}/bin/QtApp-release-signed.apk
 APK_UNSIGNED=${SRC_DIR}/${BUILD_DIR}/bin/QtApp-release-unsigned.apk
@@ -20,7 +21,7 @@ genkey:
 	keytool -genkey -v -keystore ${KEYSTORE} -alias ${KEYSTORE_ALIAS} -keyalg RSA -keysize 2048 -validity 10000
 
 sign: ${KEYSTORE} ${APK_UNSIGNED}
-	jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore ${KEYSTORE} ${SRC_DIR}/${BUILD_DIR}/bin/QtApp-release-unsigned.apk ${KEYSTORE_ALIAS}
+	jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore ${KEYSTORE} -storepass ${KEYSTORE_PASSWORD} ${SRC_DIR}/${BUILD_DIR}/bin/QtApp-release-unsigned.apk ${KEYSTORE_ALIAS}
 	mv ${APK_UNSIGNED} ${APK_SIGNED}
 
 install: ${APK_SIGNED}
