@@ -21,10 +21,25 @@ ApplicationWindow {
             text: "Status: disconnected"
         }
 
+        TextInput {
+            id: host
+            text: "10.0.0.1"
+        }
+
+        TextInput {
+            id: port
+            text: "8000"
+        }
+
+        TextInput {
+            id: secret
+            text: "test"
+        }
+
         Button {
             id: connectButton
             text: "Connect"
-            onClicked: netvirtAgent.connect_()
+            onClicked: netvirtAgent.connect_(host.text, port.text, secret.text)
         }
 
         Button {
@@ -38,6 +53,5 @@ ApplicationWindow {
         id: netvirtAgent
         onConnected: status.text = "Status: connected"
         onDisconnected: status.text = "Status: disconnected"
-        onMessageReceived: status.text = message
     }
 }

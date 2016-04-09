@@ -11,22 +11,12 @@ class NetvirtAgent : public QObject {
         NetvirtAgent();
 
     public slots:
-        void connect_();
+        void connect_(const QString &host, const QString &port, const QString &secret);
         void disconnect_();
-
-    private slots:
-        void processServerData();
 
     signals:
         void connected();
         void disconnected();
-        void messageReceived(const QString &message);
-
-    private:
-        void server2client(QByteArray payload);
-        void client2server(QByteArray payload);
-
-        QUdpSocket *server;
 };
 
 #endif
