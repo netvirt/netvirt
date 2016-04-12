@@ -44,7 +44,7 @@ char *uuid_v4(void)
 	return str;
 }
 
-int check_result_status(PGresult *result)
+__inline__ int check_result_status(PGresult *result)
 {
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
@@ -161,7 +161,7 @@ int dao_prepare_statements()
 			"dao_del_context",
 			"DELETE FROM context "
 			"WHERE client_id = $1 "
-			"AND id = $2;",
+			"AND uuid = $2;",
 			0,
 			NULL);
 
@@ -189,7 +189,7 @@ int dao_prepare_statements()
 			"dao_fetch_context_ippool",
 			"SELECT ippool "
 			"FROM CONTEXT "
-			"WHERE id = $1;",
+			"WHERE uuid = $1;",
 			0,
 			NULL);
 
@@ -216,7 +216,7 @@ int dao_prepare_statements()
 			"dao_fetch_context_embassy",
 			"SELECT embassy_certificate, embassy_privatekey, embassy_serial, ippool "
 			"FROM CONTEXT "
-			"WHERE id = $1;",
+			"WHERE uuid = $1;",
 			0,
 			NULL);
 
@@ -228,7 +228,7 @@ int dao_prepare_statements()
 	result = PQprepare(dbconn,
 			"dao_del_node",
 			"DELETE FROM node "
-			"WHERE context_id = $1 AND uuid = $2;",
+			"WHERE network_uuid = $1 AND uuid = $2;",
 			0,
 			NULL);
 
@@ -240,7 +240,7 @@ int dao_prepare_statements()
 	result = PQprepare(dbconn,
 			"dao_del_node_by_context_id",
 			"DELETE FROM node "
-			"WHERE context_id = $1",
+			"WHERE network_uuid = $1",
 			0,
 			NULL);
 
@@ -252,7 +252,7 @@ int dao_prepare_statements()
 	result = PQprepare(dbconn,
 			"dao_add_node",
 			"INSERT INTO NODE "
-			"(context_id, uuid, certificate, privatekey, provcode, description, ipaddress) "
+			"(network_uuid, uuid, certificate, privatekey, provcode, description, ipaddress) "
 			"VALUES ($1, $2, $3, $4, $5, $6, $7);",
 			0,
 			NULL);
@@ -266,7 +266,7 @@ int dao_prepare_statements()
 			"dao_update_node_status",
 			"UPDATE node "
 			"SET status = $3, ipsrc = $4 "
-			"WHERE context_id = $1 AND uuid = $2;",
+			"WHERE network_uuid = $1 AND uuid = $2;",
 			0,
 			NULL);
 
@@ -279,7 +279,7 @@ int dao_prepare_statements()
 			"dao_update_context_ippool",
 			"UPDATE context "
 			"SET ippool = $2::bytea "
-			"WHERE Id = $1;",
+			"WHERE uuid = $1;",
 			0,
 			NULL);
 
@@ -292,7 +292,7 @@ int dao_prepare_statements()
 			"dao_update_embassy_serial",
 			"UPDATE context "
 			"SET embassy_serial = $2 "
-			"WHERE id = $1;",
+			"WHERE uuid = $1;",
 			0,
 			NULL);
 
@@ -329,7 +329,7 @@ int dao_prepare_statements()
 
 	result = PQprepare(dbconn,
 			"dao_fetch_context",
-			"SELECT id, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
+			"SELECT uuid, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
 			"FROM context;",
 			0,
 			NULL);
@@ -340,8 +340,8 @@ int dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
-			"dao_fetch_node_uuid_netid",
-			"SELECT context_id, uuid "
+			"dao_fetch_node_uuid_networkuuid",
+			"SELECT network_uuid, uuid "
 			"FROM node",
 			0,
 			NULL);
@@ -355,7 +355,7 @@ int dao_prepare_statements()
 			"dao_fetch_node_ip",
 			"SELECT ipaddress "
 			"FROM node "
-			"WHERE context_id = $1 "
+			"WHERE network_uuid = $1 "
 			"AND uuid = $2;",
 			0,
 			NULL);
@@ -369,7 +369,7 @@ int dao_prepare_statements()
 			"dao_fetch_node_from_context_id",
 			"SELECT uuid, description, provcode, ipaddress, status "
 			"FROM node "
-			"WHERE context_id = $1;",
+			"WHERE network_uuid = $1;",
 			0,
 			NULL);
 
@@ -447,28 +447,23 @@ void dao_dump_statements()
 	PQclear(result);
 }
 
-int dao_update_node_status(char *context_id, char *uuid, char *status, char *ipsrc)
+int dao_update_node_status(char *network_uuid, char *uuid, char *status, char *ipsrc)
 {
-	jlog(L_DEBUG, "context: %s", context_id);
-	jlog(L_DEBUG, "uuid: %s", uuid);
-	jlog(L_DEBUG, "status: %s", status);
-	jlog(L_DEBUG, "ip src: %s", ipsrc);
-
 	const char *paramValues[4];
 	int paramLengths[4];
 	PGresult *result = NULL;
 
-	if (!context_id || !uuid || !status || !ipsrc) {
+	if (!network_uuid || !uuid || !status || !ipsrc) {
 		jlog(L_WARNING, "invalid parameter");
 		return -1;
 	}
 
-	paramValues[0] = context_id;
+	paramValues[0] = network_uuid;
 	paramValues[1] = uuid;
 	paramValues[2] = status;
 	paramValues[3] = ipsrc;
 
-	paramLengths[0] = strlen(context_id);
+	paramLengths[0] = strlen(network_uuid);
 	paramLengths[1] = strlen(uuid);
 	paramLengths[2] = strlen(status);
 	paramLengths[3] = strlen(ipsrc);
@@ -720,21 +715,21 @@ int dao_fetch_client_id(char **client_id, char *email, char *password)
 	return 0;
 }
 
-int dao_del_node(char *context_id, char *uuid)
+int dao_del_node(char *network_uuid, char *uuid)
 {
 	const char *paramValues[2];
 	int paramLengths[2];
 	PGresult *result;
 
-	if (!context_id || !uuid) {
+	if (!network_uuid || !uuid) {
 		jlog(L_WARNING, "invalid parameter");
 		return -1;
 	}
 
-	paramValues[0] = context_id;
+	paramValues[0] = network_uuid;
 	paramValues[1] = uuid;
 
-	paramLengths[0] = strlen(context_id);
+	paramLengths[0] = strlen(network_uuid);
 	paramLengths[1] = strlen(uuid);
 
 	result = PQexecPrepared(dbconn, "dao_del_node", 2, paramValues, paramLengths, NULL, 0);
@@ -750,19 +745,19 @@ int dao_del_node(char *context_id, char *uuid)
 	return 0;
 }
 
-int dao_del_node_by_context_id(char *context_id)
+int dao_del_node_by_context_id(char *network_uuid)
 {
 	const char *paramValues[1];
 	int paramLengths[1];
 	PGresult *result;
 
-	if (!context_id) {
+	if (!network_uuid) {
 		jlog(L_WARNING, "invalid parameter");
 		return -1;
 	}
 
-	paramValues[0] = context_id;
-	paramLengths[0] = strlen(context_id);
+	paramValues[0] = network_uuid;
+	paramLengths[0] = strlen(network_uuid);
 
 	result = PQexecPrepared(dbconn, "dao_del_node_by_context_id", 1, paramValues, paramLengths, NULL, 0);
 
@@ -777,18 +772,18 @@ int dao_del_node_by_context_id(char *context_id)
 	return 0;
 }
 
-int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatekey, char *provcode, char *description, char *ipaddress)
+int dao_add_node(char *network_uuid, char *uuid, char *certificate, char *privatekey, char *provcode, char *description, char *ipaddress)
 {
 	const char *paramValues[7];
 	int paramLengths[7];
 	PGresult *result;
 
-	if (!context_id || !uuid || !certificate || !privatekey || !provcode || !ipaddress) {
+	if (!network_uuid || !uuid || !certificate || !privatekey || !provcode || !ipaddress) {
 		jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
-	paramValues[0] = context_id;
+	paramValues[0] = network_uuid;
 	paramValues[1] = uuid;
 	paramValues[2] = certificate;
 	paramValues[3] = privatekey;
@@ -796,7 +791,7 @@ int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatek
 	paramValues[5] = description;
 	paramValues[6] = ipaddress;
 
-	paramLengths[0] = strlen(context_id);
+	paramLengths[0] = strlen(network_uuid);
 	paramLengths[1] = strlen(uuid);
 	paramLengths[2] = strlen(certificate);
 	paramLengths[3] = strlen(privatekey);
@@ -821,13 +816,13 @@ int dao_add_node(char *context_id, char *uuid, char *certificate, char *privatek
 	return 0;
 }
 
-int dao_del_context(char *client_id, char *context_id)
+int dao_del_context(char *client_id, char *network_uuid)
 {
 	const char *paramValues[2];
 	int paramLengths[2];
 	PGresult *result;
 
-	if (!context_id || !client_id) {
+	if (!network_uuid || !client_id) {
 		jlog(L_WARNING, "invalid parameter");
 		return -1;
 	}
@@ -835,8 +830,8 @@ int dao_del_context(char *client_id, char *context_id)
 	paramValues[0] = client_id;
 	paramLengths[0] = strlen(client_id);
 
-	paramValues[1] = context_id;
-	paramLengths[1] = strlen(context_id);
+	paramValues[1] = network_uuid;
+	paramLengths[1] = strlen(network_uuid);
 
 	result = PQexecPrepared(dbconn, "dao_del_context", 2, paramValues, paramLengths, NULL, 0);
 
@@ -918,7 +913,7 @@ int dao_add_context(char *client_id,
 	return 0;
 }
 
-int dao_fetch_context_ippool(char *context_id, unsigned char **ippool)
+int dao_fetch_context_ippool(char *network_uuid, unsigned char **ippool)
 {
 	const char *paramValues[1];
 	int paramLengths[1];
@@ -926,13 +921,13 @@ int dao_fetch_context_ippool(char *context_id, unsigned char **ippool)
 	size_t ippool_size;
 	PGresult *result;
 
-	if (!context_id) {
+	if (!network_uuid) {
 		jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
-	paramValues[0] = context_id;
-	paramLengths[0] = strlen(context_id);
+	paramValues[0] = network_uuid;
+	paramLengths[0] = strlen(network_uuid);
 
 	result = PQexecPrepared(dbconn, "dao_fetch_context_ippool", 1, paramValues, paramLengths, NULL, 0);
 
@@ -1009,7 +1004,7 @@ int dao_fetch_network_id(char **context_id, char *client_id, char *uuid)
 	return 0;
 }
 
-int dao_fetch_context_embassy(char *context_id,
+int dao_fetch_context_embassy(char *uuid,
 			char **certificate,
 			char **privatekey,
 			char **serial,
@@ -1022,13 +1017,13 @@ int dao_fetch_context_embassy(char *context_id,
 	unsigned char *ippool_ptr;
 	size_t ippool_size;
 
-	if (!context_id || !certificate || !privatekey || !serial) {
+	if (!uuid || !certificate || !privatekey || !serial) {
 		jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
-	paramValues[0] = context_id;
-	paramLengths[0] = strlen(context_id);
+	paramValues[0] = uuid;
+	paramLengths[0] = strlen(uuid);
 
 	result = PQexecPrepared(dbconn, "dao_fetch_context_embassy", 1, paramValues, paramLengths, NULL, 0);
 
@@ -1064,7 +1059,7 @@ int dao_fetch_context_embassy(char *context_id,
 	return 0;
 }
 
-int dao_update_context_ippool(char *context_id, unsigned char *ippool, int pool_size)
+int dao_update_context_ippool(char *network_uuid, unsigned char *ippool, int pool_size)
 {
 	const char *paramValues[2];
 	int paramLengths[2];
@@ -1072,17 +1067,17 @@ int dao_update_context_ippool(char *context_id, unsigned char *ippool, int pool_
 	unsigned char *ippool_str;
 	size_t ippool_str_len;
 
-	if (!context_id || !ippool) {
+	if (!network_uuid || !ippool) {
 		jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
 	ippool_str = PQescapeByteaConn(dbconn, ippool, pool_size, &ippool_str_len);
 
-	paramValues[0] = context_id;
-	paramValues[1] = (char *)ippool_str;
+	paramValues[0] = network_uuid;
+	paramLengths[0] = strlen(network_uuid);
 
-	paramLengths[0] = strlen(context_id);
+	paramValues[1] = (char *)ippool_str;
 	paramLengths[1] = ippool_str_len;
 
 	result = PQexecPrepared(dbconn, "dao_update_context_ippool", 2, paramValues, paramLengths, NULL, 1);
@@ -1104,21 +1099,21 @@ int dao_update_context_ippool(char *context_id, unsigned char *ippool, int pool_
 	return 0;
 }
 
-int dao_update_embassy_serial(char *context_id, char *serial)
+int dao_update_embassy_serial(char *network_uuid, char *serial)
 {
 	const char *paramValues[2];
 	int paramLengths[2];
 	PGresult *result = NULL;
 
-	if (!context_id || !serial) {
+	if (!network_uuid || !serial) {
 		jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
-	paramValues[0] = context_id;
-	paramValues[1] = serial;
+	paramValues[0] = network_uuid;
+	paramLengths[0] = strlen(network_uuid);
 
-	paramLengths[0] = strlen(context_id);
+	paramValues[1] = serial;
 	paramLengths[1] = strlen(serial);
 
 	result = PQexecPrepared(dbconn, "dao_update_embassy_serial", 2, paramValues, paramLengths, NULL, 1);
@@ -1227,14 +1222,14 @@ int dao_fetch_node_sequence(uint32_t *context_id_list, uint32_t list_size, void 
 	return 0;
 }
 
-int dao_fetch_node_uuid_netid(void *arg, int (*cb_data_handler)(void *, int, char *, char *))
+int dao_fetch_node_uuid_networkuuid(void *arg, int (*cb_data_handler)(void *, int, char *, char *))
 {
 	int		 i;
 	int		 ret;
 	int		 tuples;
 	PGresult	*result;
 
-	if ((result = PQexecPrepared(dbconn, "dao_fetch_node_uuid_netid", 0, NULL, NULL, NULL, 0)) == NULL) {
+	if ((result = PQexecPrepared(dbconn, "dao_fetch_node_uuid_networkuuid", 0, NULL, NULL, NULL, 0)) == NULL) {
 		jlog(L_WARNING, "PQexec command failed: %s\n", PQerrorMessage(dbconn));
 		return -1;
 	}
@@ -1262,19 +1257,19 @@ out:
 	return -1;
 }
 
-int dao_fetch_node_ip(char *context_id, char *uuid, char **ipaddress)
+int dao_fetch_node_ip(char *network_uuid, char *uuid, char **ipaddress)
 {
 	const char *paramValues[2];
 	int paramLengths[2];
 	PGresult *result;
 
-	if (!context_id || !uuid) {
+	if (!network_uuid || !uuid) {
 		jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
-	paramValues[0] = context_id;
-	paramLengths[0] = strlen(context_id);
+	paramValues[0] = network_uuid;
+	paramLengths[0] = strlen(network_uuid);
 
 	paramValues[1] = uuid;
 	paramLengths[1] = strlen(uuid);
@@ -1506,7 +1501,7 @@ int dao_fetch_network_by_client_id_desc(char *client_id, char *description,
 	return 0;
 }
 int dao_fetch_context(void *data, int (*cb_data_handler)(void *data, int remaining,
-							char *id,
+							char *uuid,
 							char *description,
 							char *client_id,
 							char *network,

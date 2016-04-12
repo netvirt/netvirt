@@ -4,13 +4,13 @@ set(CMAKE_CXX_FLAGS "-g -W -Wall -Wno-unused-parameter -DNVSWITCH_VERSION='\"${C
 add_subdirectory(tests)
 
 add_executable(netvirt-switch
-	context.c
 	control.c
 	ctable.c
 	inet.c
 	linkst.c
 	main.c
 	request.c
+	vnetwork.c
 	session.c
 	switch.c
 )

@@ -52,16 +52,16 @@ int dao_fetch_network_by_client_id_desc(char *client_id, char *description,
 					char *serverPrivkey,
 					char *trustedCert));
 
-int dao_fetch_context_ippool(char *context_id, unsigned char **ippool);
+int dao_fetch_context_ippool(char *, unsigned char **);
 int dao_fetch_network_id(char **context_id, char *client_id, char *description);
-int dao_fetch_context_embassy(char *context_id,
+int dao_fetch_context_embassy(char *uuid,
 			char **certificate,
 			char **privatekey,
 			char **serial,
 			unsigned char **ippool);
 
 
-int dao_update_embassy_serial(char *context_id, char *serial);
+int dao_update_embassy_serial(char *, char *);
 
 int dao_del_node(char *context_id, char *uuid);
 int dao_del_node_by_context_id(char *context_id);
@@ -92,9 +92,9 @@ int dao_fetch_context(void *data, int (*cb_data_handler)(void *data, int remaini
 void dao_reset_node_state();
 int dao_fetch_node_sequence(uint32_t *context_id_list, uint32_t list_size, void *data, void (*cb_data_handler)(void *data, int remaining,
 								char *uuid, char *contextId));
-int dao_fetch_node_uuid_netid(void *arg, int (*cb_data_handler)(void *, int, char *, char *));
+int dao_fetch_node_uuid_networkuuid(void *arg, int (*cb_data_handler)(void *, int, char *, char *));
 
-int dao_fetch_node_ip(char *context_id, char *uuid, char **ipaddress);
+int dao_fetch_node_ip(char *, char *, char **);
 
 int dao_fetch_node_from_context_id(char *context_id, void *data, int (*cb_data_handler)(void *data,
 								char *uuid,
