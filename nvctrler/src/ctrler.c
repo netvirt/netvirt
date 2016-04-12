@@ -74,11 +74,11 @@ dispatch_nvswitch(struct session_info **sinfo, json_t *jmsg)
 {
 	char	*dump;
 	char 	*action;
-/*
+
 	dump = json_dumps(jmsg, 0);
 	jlog(L_DEBUG, "jmsg: %s", dump);
 	free(dump);
-*/
+
 	if (json_unpack(jmsg, "{s:s}", "action", &action) == -1) {
 		/* XXX disconnect */
 		return;
@@ -215,7 +215,7 @@ on_event_cb(struct bufferevent *bev, short events, void *arg)
 			jlog(L_DEBUG, "switch disconnected");
 		}
 		sinfo_free(&sinfo);
-		bufferevent_free(bev);
+		//bufferevent_free(bev);
 	}
 }
 
@@ -355,9 +355,9 @@ evssl_init()
 	return server_ctx;
 }
 
-static struct event		*ev_int;
-static struct event_base	*base;
-static struct evconnlistener	*listener;
+static struct event		*ev_int = NULL;
+static struct event_base	*base = NULL;
+static struct evconnlistener	*listener = NULL;
 
 int
 ctrler_init(struct ctrler_cfg *_cfg)
@@ -405,7 +405,9 @@ ctrler_init(struct ctrler_cfg *_cfg)
 void
 ctrler_fini()
 {
-	evsignal_del(ev_int);
-	evconnlistener_free(listener);
+	if (ev_int != NULL)
+		evsignal_del(ev_int);
+	if (listener != NULL)
+		evconnlistener_free(listener);
 	event_base_free(base);
 }

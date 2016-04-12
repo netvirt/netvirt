@@ -16,8 +16,6 @@
 #ifndef SWITCH_H
 #define SWITCH_H
 
-#include "context.h"
-
 struct switch_cfg {
 
 	const char *log_file;

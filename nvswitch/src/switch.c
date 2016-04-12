@@ -24,12 +24,12 @@
 #include <netbus.h>
 #include <dnds.h>
 
-#include "context.h"
 #include "control.h"
 #include "inet.h"
 #include "request.h"
 #include "session.h"
 #include "switch.h"
+#include "vnetwork.h"
 
 static struct switch_cfg *switch_cfg;
 static netc_t *switch_netc = NULL;
@@ -53,11 +53,11 @@ forward_ethernet(struct session *session, DNDSMessage_t *msg)
 
 	/* New mac address ? Add it to the lookup table */
 	inet_get_mac_addr_src(frame, macaddr_src);
-	session_src = ftable_find(session->context->ftable, macaddr_src);
+	session_src = ftable_find(session->vnetwork->ftable, macaddr_src);
 
 	if (session_src == NULL) {
 		memcpy(session->mac_addr, macaddr_src, ETHER_ADDR_LEN);
-		ftable_insert(session->context->ftable, macaddr_src, session);
+		ftable_insert(session->vnetwork->ftable, macaddr_src, session);
 		session_src = session;
 		session_add_mac(session, macaddr_src);
 	}
@@ -65,7 +65,7 @@ forward_ethernet(struct session *session, DNDSMessage_t *msg)
 	/* Lookup the destination */
 	inet_get_mac_addr_dst(frame, macaddr_dst);
 	macaddr_dst_type = inet_get_mac_addr_type(macaddr_dst);
-	session_dst = ftable_find(session->context->ftable, macaddr_dst);
+	session_dst = ftable_find(session->vnetwork->ftable, macaddr_dst);
 
 	if (session_src != NULL && session_dst != NULL &&
 		(session_src == session_dst)) {
@@ -87,10 +87,10 @@ forward_ethernet(struct session *session, DNDSMessage_t *msg)
 			net_send_msg(session_dst->netc, msg);
 
 			int lnk_state = 0;
-			lnk_state = linkst_joined(session_src->context->linkst, session_src->id, session_dst->id);
+			lnk_state = linkst_joined(session_src->vnetwork->linkst, session_src->id, session_dst->id);
 			if (lnk_state != 1) {
 				p2pRequest(session_src, session_dst);
-				linkst_join(session_src->context->linkst, session_src->id, session_dst->id);
+				linkst_join(session_src->vnetwork->linkst, session_src->id, session_dst->id);
 			}
 
 
@@ -98,7 +98,7 @@ forward_ethernet(struct session *session, DNDSMessage_t *msg)
 	} else if (macaddr_dst_type == ADDR_BROADCAST ||	/* This packet has to be broadcasted */
 		session_dst == NULL)  {				/* OR the fib session is down */
 
-			session_list = session->context->session_list;
+			session_list = session->vnetwork->session_list;
 			while (session_list != NULL) {
 				net_send_msg(session_list->netc, msg);
 				/*jlog(L_DEBUG, "flooding the packet to [%s]", session_list->ip);*/
@@ -201,7 +201,7 @@ on_secure(netc_t *netc)
 		net_send_msg(session->netc, msg);
 		DNDSMessage_del(msg);
 
-		context_add_session(session->context, session);
+		vnetwork_add_session(session->vnetwork, session);
 		update_node_status("1", session->ip, session->cert_name);
 		jlog(L_DEBUG, "session id: %d", session->id);
 	}
@@ -281,20 +281,20 @@ on_disconnect(netc_t *netc)
 		return;
 	}
 
-	/* If the context is still valid, update the node in it. */
-	if (session->context != NULL) {
+	/* If the ventwork is still valid, update the node in it. */
+	if (session->vnetwork != NULL) {
 
-		linkst_disjoin(session->context->linkst, session->id);
+		linkst_disjoin(session->vnetwork->linkst, session->id);
 
 		while (session->mac_list != NULL) {
 			mac_itr = session->mac_list;
 			session->mac_list = mac_itr->next;
-			ftable_erase(session->context->ftable, mac_itr->mac_addr);
+			ftable_erase(session->vnetwork->ftable, mac_itr->mac_addr);
 			free(mac_itr);
 		}
 
-		ctable_erase(session->context->ctable, session->node_info->uuid);
-		context_del_session(session->context, session);
+		ctable_erase(session->vnetwork->ctable, session->node_info->uuid);
+		vnetwork_del_session(session->vnetwork, session);
 	}
 
 	update_node_status("0", session->ip, session->cert_name);
@@ -330,7 +330,7 @@ switch_init(struct switch_cfg *cfg)
 		return -1;
 	}
 
-	context_init();
+	vnetwork_init();
 
 	pthread_t thread_loop;
 	pthread_attr_t attr;

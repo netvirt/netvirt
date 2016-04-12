@@ -16,9 +16,9 @@
 #include <dnds.h>
 #include <logger.h>
 
-#include "context.h"
 #include "control.h"
 #include "request.h"
+#include "vnetwork.h"
 #include "session.h"
 
 void
@@ -41,7 +41,6 @@ authRequest(struct session *session, DNDSMessage_t *req_msg)
 {
 	char		*certName = NULL;
 	size_t	 	 length = 0;
-	uint32_t	 context_id = 0;
 
 	struct session *old_session = NULL;
 
@@ -75,10 +74,9 @@ authRequest(struct session *session, DNDSMessage_t *req_msg)
 	jlog(L_DEBUG, "uuid: %s", session->node_info->uuid);
 	jlog(L_DEBUG, "context_id: %s", session->node_info->context_id);
 
-	context_id = atoi(session->node_info->context_id);
-	session->context = context_lookup(context_id);
+	session->vnetwork = vnetwork_lookup(session->node_info->context_id);
 
-	if (session->context == NULL) {
+	if (session->vnetwork == NULL) {
 		AuthResponse_set_result(msg, DNDSResult_noRight);
 		net_send_msg(session->netc, msg);
 		DNDSMessage_del(msg);
@@ -86,7 +84,7 @@ authRequest(struct session *session, DNDSMessage_t *req_msg)
 	}
 
 	/* check if the node's uuid is known */
-	if (ctable_find(session->context->atable, session->node_info->uuid) == NULL) {
+	if (ctable_find(session->vnetwork->atable, session->node_info->uuid) == NULL) {
 		AuthResponse_set_result(msg, DNDSResult_noRight);
 		net_send_msg(session->netc, msg);
 		DNDSMessage_del(msg);
@@ -95,15 +93,15 @@ authRequest(struct session *session, DNDSMessage_t *req_msg)
 	}
 
 	/* check if the node is already connected */
-	old_session = ctable_find(session->context->ctable, session->node_info->uuid);
+	old_session = ctable_find(session->vnetwork->ctable, session->node_info->uuid);
 	if (old_session == NULL) {
-		ctable_insert(session->context->ctable, session->node_info->uuid, session);
+		ctable_insert(session->vnetwork->ctable, session->node_info->uuid, session);
 	} else {
 		// that node is already connected, if the new session is from the same IP
 		// disconnect the old session, and let this one connect
 		if (strcmp(old_session->ip, session->ip) == 0) {
 			net_disconnect(old_session->netc);
-			ctable_insert(session->context->ctable, session->node_info->uuid, session);
+			ctable_insert(session->vnetwork->ctable, session->node_info->uuid, session);
 		}
 	}
 
@@ -121,7 +119,7 @@ authRequest(struct session *session, DNDSMessage_t *req_msg)
 		AuthResponse_set_result(msg, DNDSResult_secureStepUp);
 		net_send_msg(session->netc, msg);
 
-		krypt_add_passport(session->netc->kconn, session->context->passport);
+		krypt_add_passport(session->netc->kconn, session->vnetwork->passport);
 		session->state = SESSION_STATE_WAIT_STEPUP;
 		net_step_up(session->netc);
 	}

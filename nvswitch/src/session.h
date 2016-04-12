@@ -20,6 +20,7 @@
 
 #include <cert.h>
 #include <netbus.h>
+#include "vnetwork.h"
 
 #define SESSION_STATE_AUTHED		0x1
 #define SESSION_STATE_NOT_AUTHED	0x2
@@ -44,7 +45,7 @@ struct session {
 	uint8_t tun_mac_addr[6];
 
 	netc_t *netc;
-	struct context *context;
+	struct vnetwork *vnetwork;
 
 	uint8_t mac_addr[6];
 	struct mac_list *mac_list;

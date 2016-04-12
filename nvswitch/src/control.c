@@ -33,7 +33,7 @@
 #include <jansson.h>
 
 #include <logger.h>
-#include "context.h"
+#include "vnetwork.h"
 #include "control.h"
 #include "session.h"
 
@@ -65,11 +65,11 @@ static SSL_CTX *evssl_init();
 int
 del_node(json_t *jmsg)
 {
-	char		*netid;
+	char		*network_uuid;
 	char		*uuid;
 	json_t		*node;
 	struct session	*session;
-	context_t	*context;
+	struct vnetwork	*vnet;
 
 	if ((node = json_object_get(jmsg, "node")) == NULL) {
 		jlog(L_ERROR, "json_object_get failed");
@@ -81,21 +81,21 @@ del_node(json_t *jmsg)
 		return -1;
 	}
 
-	if (json_unpack(node, "{s:s}", "netid", &netid) == -1) {
+	if (json_unpack(node, "{s:s}", "networkuuid", &network_uuid) == -1) {
 		jlog(L_ERROR, "json_unpack failed");
 		return -1;
 	}
 
-	if ((context = context_lookup(atoi(netid))) == NULL) {
+	if ((vnet = vnetwork_lookup(network_uuid)) == NULL) {
 		jlog(L_ERROR, "context_lookup failed");
 		return -1;
 	}
 
 	/* remove the node from the access table */
-	ctable_erase(context->atable, uuid);
+	ctable_erase(vnet->atable, uuid);
 
 	/* if the node is connected, mark it to be purged */
-	if ((session = ctable_find(context->ctable, uuid)) == NULL) {
+	if ((session = ctable_find(vnet->ctable, uuid)) == NULL) {
 		session->state = SESSION_STATE_PURGE;
 	}
 
@@ -105,9 +105,9 @@ del_node(json_t *jmsg)
 int
 del_network(json_t *jmsg)
 {
-	char		*netid;
+	char		*network_uuid;
 	json_t		*network;
-	context_t	*context;
+	struct vnetwork	*vnet;
 	struct session	*session_list;
 
 	if ((network = json_object_get(jmsg, "network")) == NULL) {
@@ -115,24 +115,24 @@ del_network(json_t *jmsg)
 		return -1;
 	}
 
-	if (json_unpack(network, "{s:s}", "netid", &netid) == -1) {
+	if (json_unpack(network, "{s:s}", "networkuuid", &network_uuid) == -1) {
 		jlog(L_ERROR, "json_unpack failed");
 		return -1;
 	}
 
-	if ((context = context_disable(atoi(netid))) == NULL) {
+	if ((vnet = vnetwork_disable(network_uuid)) == NULL) {
 		jlog(L_ERROR, "context_disable failed");
 		return -1;
 	}
 
-	session_list = context->session_list;
+	session_list = vnet->session_list;
 	while (session_list != NULL) {
 		session_list->state = SESSION_STATE_PURGE;
-		session_list->context = NULL;
+		session_list->vnetwork = NULL;
 		session_list = session_list->next;
 	}
 
-	context_free(context);
+	vnetwork_free(vnet);
 
 	return 0;
 }
@@ -207,14 +207,14 @@ int
 listall_node(json_t *jmsg)
 {
 	char		*uuid;
-	char		*netid;
+	char		*network_uuid;
 	char		*response;
 	size_t		 array_size;
 	size_t		 i;
-static	size_t		 total = 0;
+static	size_t		 total = 1;
 	json_t		*js_nodes;
 	json_t		*node;
-	context_t	*context;
+	struct vnetwork	*vnet;
 
 	if ((js_nodes = json_object_get(jmsg, "nodes")) == NULL) {
 		jlog(L_ERROR, "json_object_get failed");
@@ -234,13 +234,16 @@ static	size_t		 total = 0;
 		}
 
 		if (json_unpack(node, "{s:s}", "uuid", &uuid) == -1 ||
-		    json_unpack(node, "{s:s}", "netid", &netid) == -1) {
+		    json_unpack(node, "{s:s}", "networkuuid", &network_uuid) == -1) {
 			jlog(L_ERROR, "NULL parameter");
 			return -1;
 		}
 
-		if ((context = context_lookup(atoi(netid))) != NULL) {
-			ctable_insert(context->atable, uuid, context->access_session);
+		printf("uuid: %s\n", uuid);
+		printf("network_uuid: %s\n", network_uuid);
+
+		if ((vnet = vnetwork_lookup(network_uuid)) != NULL) {
+			ctable_insert(vnet->atable, uuid, vnet->access_session);
 		}
 	}
 
@@ -261,7 +264,7 @@ static	size_t		 total = 0;
 int
 listall_network(json_t *jmsg)
 {
-	char	*uuid;
+	char	*network_uuid;
 	char	*subnet;
 	char	*netmask;
 	char	*cert;
@@ -270,7 +273,7 @@ listall_network(json_t *jmsg)
 	char	*response;
 	size_t	 i;
 	size_t	 array_size;
-static	size_t	 total = 0;
+static	size_t	 total = 1;
 	json_t	*js_networks;
 	json_t	*elm;
 
@@ -296,7 +299,7 @@ static	size_t	 total = 0;
 			return -1;
 		}
 
-		if (json_unpack(elm, "{s:s}", "uuid", &uuid) == -1 ||
+		if (json_unpack(elm, "{s:s}", "uuid", &network_uuid) == -1 ||
 		    json_unpack(elm, "{s:s}", "network", &subnet) == -1 ||
 		    json_unpack(elm, "{s:s}", "netmask", &netmask) == -1 ||
 		    json_unpack(elm, "{s:s}", "cert", &cert) == -1 ||
@@ -305,8 +308,8 @@ static	size_t	 total = 0;
 			jlog(L_ERROR, "NULL parameter");
 			return -1;
 		}
-
-		context_create(uuid, subnet, netmask, cert, pkey, tcert);
+		printf("\nuuid: %s\n", network_uuid);
+		vnetwork_create(network_uuid, subnet, netmask, cert, pkey, tcert);
 	}
 
 	if (strcmp(response, "success") == 0) {
@@ -544,8 +547,13 @@ sighandler(evutil_socket_t sk, short t, void *ptr)
 int
 dispatch_op(json_t *jmsg)
 {
+	char	*dump;
 	char	*action;
 	int	 ret = 0;
+
+	dump = json_dumps(jmsg, 0);
+	jlog(L_DEBUG, "jmsg: %s", dump);
+	free(dump);
 
 	if (json_unpack(jmsg, "{s:s}", "action", &action) == -1)
 		return -1;
@@ -864,5 +872,5 @@ void
 ctrl_fini()
 {
 	pki_passport_destroy(passport);
-	contexts_free();
+	vnetworks_free();
 }
