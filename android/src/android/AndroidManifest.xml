@@ -33,6 +33,12 @@
             -->
             <!-- Splash screen -->
         </activity>
+        <service android:name=".ToyVpnService"
+                android:permission="android.permission.BIND_VPN_SERVICE">
+            <intent-filter>
+                <action android:name="android.net.VpnService"/>
+            </intent-filter>
+        </service>
     </application>
     <uses-sdk android:minSdkVersion="9" android:targetSdkVersion="14"/>
     <supports-screens android:largeScreens="true" android:normalScreens="true" android:anyDensity="true" android:smallScreens="true"/>
