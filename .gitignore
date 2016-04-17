@@ -31,3 +31,4 @@ _CPack_Packages/
 # Android
 
 android/*.keystore
+android/src/build
