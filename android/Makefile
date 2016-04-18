@@ -1,5 +1,6 @@
 .PHONY: default apk clean
 
+PWD=$(shell pwd)
 BUILD_DIR=build
 KEYSTORE=${PWD}/netvirt.keystore
 KEYSTORE_ALIAS=netvirt
