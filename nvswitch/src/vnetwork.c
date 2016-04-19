@@ -91,7 +91,6 @@ void vnetwork_show_session_list(struct vnetwork *vnet)
 	jlog(L_DEBUG, "--\n");
 }
 
-
 struct vnetwork *vnetwork_lookup(const char *uuid)
 {
 	struct vnetwork match;
