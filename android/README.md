@@ -11,7 +11,7 @@ For compiling:
 
 For packaging/signing:
 
-* Android SDK with binaries from /tools and /platform-tools in your `$PATH`
+* Android SDK with binaries from /tools and /platform-tools in your `$PATH` (on Debian: `apt-get install openjdk-7-jre-headless android-tools-adb openjdk-7-jdk`)
 * `make keygen  # generates a keystore for signing the APK`
 
 How to test
@@ -26,6 +26,16 @@ make install  # installs the APK on an emulator/device via adb
 
 How to enable Android device debugging
 --------------------------------------
+
+On your Android device:
 - Settings > Security > Unknown sources = true
 - Settings > About {tablet,phone}: Tap 8 times on "Build number"
 - Settings > Developer options > USB debugging = true
+
+On your machine (after plugging and turning on the device):
+- `lsusb | grep -i google  # note the Bus XXX Device YYY`
+- `lsusb -vs XXX:YYY | grep idVendor  # note the idVendor 0xZZZZ`
+- `echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="ZZZZ", MODE="0666", GROUP="androidsdk"' > /etc/udev/rules.d/51-android.rules`
+- `gpasswd $USER androidsdk  # then logout/login`
+
+Then unplug and replug the device.
