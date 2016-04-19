@@ -223,7 +223,7 @@ add_node(struct session_info *sinfo, json_t *jmsg)
 	uuid = uuid_v4();
 	provcode = uuid_v4();
 
-	snprintf(common_name, sizeof(common_name), "nva-%s@%s", uuid, network_uuid);
+	snprintf(common_name, sizeof(common_name), "URI:%s@%s", uuid, network_uuid);
 	jlog(L_DEBUG, "common_name: %s", common_name);
 
 	digital_id_t *node_ident = NULL;
@@ -412,8 +412,6 @@ del_node(struct session_info *sinfo, json_t *jmsg)
 	/* Forward del-node to the switch */
 	if (switch_sinfo != NULL) {
 		json_object_del(jmsg, "apikey");
-		json_object_del(js_node, "networkuuid");
-		json_object_set_new(js_node, "networkuuid", json_string(network_uuid));
 
 		fwd_str = json_dumps(jmsg, 0);
 		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
