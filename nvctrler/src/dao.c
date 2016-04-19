@@ -1365,7 +1365,7 @@ int dao_fetch_node_from_provcode(char *provcode,
 						"context.embassy_certificate as trustedcert "
 					"FROM	node, context "
 					"WHERE	provcode = '%s' "
-					"AND	node.context_id = context.id;",
+					"AND	node.network_uuid = context.uuid;",
 					provcode);
 
 	result = PQexec(dbconn, fetch_req);
