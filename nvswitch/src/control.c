@@ -95,7 +95,7 @@ del_node(json_t *jmsg)
 	ctable_erase(vnet->atable, uuid);
 
 	/* if the node is connected, mark it to be purged */
-	if ((session = ctable_find(vnet->ctable, uuid)) == NULL) {
+	if ((session = ctable_find(vnet->ctable, uuid)) != NULL) {
 		session->state = SESSION_STATE_PURGE;
 	}
 
