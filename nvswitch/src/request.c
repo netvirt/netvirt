@@ -63,6 +63,7 @@ authRequest(struct session *session, DNDSMessage_t *req_msg)
 
 	AuthRequest_get_certName(req_msg, &certName, &length);
 
+	jlog(L_DEBUG, "URI:%s\n", certName);
 	session->node_info = cn2node_info(certName);
 	if (session->node_info == NULL) {
 		jlog(L_WARNING, "cn2node_info failed");
@@ -70,11 +71,11 @@ authRequest(struct session *session, DNDSMessage_t *req_msg)
 		return -1;
 	}
 
-	jlog(L_DEBUG, "type: %s", session->node_info->type);
+//	jlog(L_DEBUG, "type: %s", session->node_info->type);
 	jlog(L_DEBUG, "uuid: %s", session->node_info->uuid);
-	jlog(L_DEBUG, "context_id: %s", session->node_info->context_id);
+	jlog(L_DEBUG, "network_uuid: %s", session->node_info->network_uuid);
 
-	session->vnetwork = vnetwork_lookup(session->node_info->context_id);
+	session->vnetwork = vnetwork_lookup(session->node_info->network_uuid);
 
 	if (session->vnetwork == NULL) {
 		AuthResponse_set_result(msg, DNDSResult_noRight);
