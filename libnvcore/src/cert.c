@@ -15,10 +15,32 @@
 
 #include <openssl/bio.h>
 #include <openssl/pem.h>
+#include <openssl/x509v3.h>
 
 #include <string.h>
 
 #include "cert.h"
+
+char *cert_uri(X509 *certificate)
+{
+	GENERAL_NAMES *alt;
+	GENERAL_NAME *gname;
+	int count, i;
+	char *str = NULL;
+
+	alt = X509_get_ext_d2i(certificate, NID_subject_alt_name, NULL, NULL);
+	count = sk_GENERAL_NAME_num(alt);
+	for (i = 0; i < count; i++) {
+		gname = sk_GENERAL_NAME_value(alt, i);
+		if (gname->type == GEN_URI) {
+			str = ASN1_STRING_data(gname->d.uniformResourceIdentifier);
+			str = strdup(str);
+			break;
+		}
+	}
+	sk_GENERAL_NAME_pop_free(alt, GENERAL_NAME_free);
+	return str;
+}
 
 void node_info_destroy(node_info_t *node_info)
 {
@@ -27,22 +49,23 @@ void node_info_destroy(node_info_t *node_info)
 
 node_info_t *cn2node_info(char *cn)
 {
-	// expected: dnc-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX@99999
+	// expected: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX@XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
 	node_info_t *ninfo = NULL;
 
 	if (cn == NULL || strlen(cn) < 42)
 		return NULL;
 
-	ninfo = calloc(1, sizeof(node_info_t));
 
+	ninfo = calloc(1, sizeof(node_info_t));
+/*
 	strncpy(ninfo->type, cn, 3);
         ninfo->type[3] = '\0';
-
-        strncpy(ninfo->uuid, cn+4, 36);
+*/
+        strncpy(ninfo->uuid, cn, 36);
         ninfo->uuid[36] = '\0';
 
-        strncpy(ninfo->context_id, cn+41, 5);
-        ninfo->context_id[5] = '\0';
+        strncpy(ninfo->network_uuid, cn+37, 36);
+        ninfo->network_uuid[36] = '\0';
 
 	return ninfo;
 }
