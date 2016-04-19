@@ -21,7 +21,7 @@
 typedef struct node_info {
 	char type[3+1];
 	char uuid[36+1];
-	char context_id[5+1];
+	char network_uuid[36+1];
 } node_info_t;
 
 typedef struct passport {
@@ -31,6 +31,7 @@ typedef struct passport {
 	X509 *cacert;
 } passport_t;
 
+char *cert_uri(X509 *);
 void node_info_destroy(node_info_t *node_info);
 node_info_t *cn2node_info(char *cn);
 void pki_passport_destroy(passport_t *passport);
