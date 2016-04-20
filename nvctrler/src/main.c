@@ -209,6 +209,7 @@ int main(int argc, char *argv[])
 
 	ctrler_fini();
 	dao_disconnect();
+	krypt_fini();
 	config_destroy(&cfg);
 	free(ctrler_cfg);
 

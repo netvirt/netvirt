@@ -387,6 +387,7 @@ error:
 
 void dao_disconnect()
 {
+	krypt_fini();
 	PQfinish(dbconn);
 	dbconn = NULL;
 }
