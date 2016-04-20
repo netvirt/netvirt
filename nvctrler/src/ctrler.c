@@ -148,7 +148,6 @@ on_read_cb(struct bufferevent *bev, void *session)
 	json_t			*jmsg = NULL;
 	struct session_info	*sinfo;
 
-	//jlog(L_DEBUG, "on_read_cb");
 	sinfo = session;
 
 	str = evbuffer_readln(bufferevent_get_input(bev),
@@ -162,7 +161,7 @@ on_read_cb(struct bufferevent *bev, void *session)
 	if (jmsg == NULL) {
 		jlog(L_ERROR, "json_loadb: %s", error.text);
 		/* FIXME DISCONNECT */
-		return;
+		goto out;
 	}
 
 	if (sinfo->type == NVSWITCH)
@@ -174,6 +173,8 @@ on_read_cb(struct bufferevent *bev, void *session)
 		sinfo_free(&sinfo);
 	}
 	json_decref(jmsg);
+out:
+	free(str);
 }
 
 void
@@ -223,7 +224,7 @@ on_event_cb(struct bufferevent *bev, short events, void *arg)
 			jlog(L_DEBUG, "switch disconnected");
 		}
 		sinfo_free(&sinfo);
-		//bufferevent_free(bev);
+		bufferevent_free(bev);
 	}
 }
 
