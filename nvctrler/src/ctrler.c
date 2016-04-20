@@ -36,6 +36,14 @@
 struct session_info *switch_sinfo = NULL;
 static struct ctrler_cfg *cfg = NULL;
 
+struct server {
+	struct event		*ev_int;
+	struct event_base	*base;
+	struct evconnlistener	*listener;
+	SSL_CTX			*ctx;
+	passport_t		*passport;
+} s1;
+
 void
 sinfo_free(struct session_info **sinfo)
 {
@@ -326,54 +334,50 @@ get_dh_1024() {
 	return dh;
 }
 
-SSL_CTX *
-evssl_init()
+int
+evssl_init(struct server *serv)
 {
-	passport_t	*passport;
-	SSL_CTX		*server_ctx = NULL;
+	DH	*dh;
 
 	SSL_load_error_strings();
 	SSL_library_init();
 
 	if (!RAND_poll())
-		return NULL;
+		return -1;
 
-	passport = pki_passport_load_from_file(cfg->certificate, cfg->privatekey, cfg->trusted_cert);
+	serv->passport = pki_passport_load_from_file(cfg->certificate, cfg->privatekey, cfg->trusted_cert);
 
-	server_ctx = SSL_CTX_new(TLSv1_2_server_method());
-	SSL_CTX_set_tmp_dh(server_ctx, get_dh_1024());
+	serv->ctx = SSL_CTX_new(TLSv1_2_server_method());
+	dh = get_dh_1024();
+	SSL_CTX_set_tmp_dh(serv->ctx, dh);
+	DH_free(dh);
 
-	SSL_CTX_set_cipher_list(server_ctx, "AES256-GCM-SHA384");
-	//SSL_CTX_set_cipher_list(server_ctx, "ECDHE-ECDSA-AES256-GCM-SHA384");
+	SSL_CTX_set_cipher_list(serv->ctx, "AES256-GCM-SHA384");
+	//SSL_CTX_set_cipher_list(serv.ctx, "ECDHE-ECDSA-AES256-GCM-SHA384");
 
-	SSL_CTX_set_cert_store(server_ctx, passport->cacert_store);
-	SSL_CTX_use_certificate(server_ctx, passport->certificate);
-	SSL_CTX_use_PrivateKey(server_ctx, passport->keyring);
+	SSL_CTX_set_cert_store(serv->ctx, serv->passport->cacert_store);
+	SSL_CTX_use_certificate(serv->ctx, serv->passport->certificate);
+	SSL_CTX_use_PrivateKey(serv->ctx, serv->passport->keyring);
 
-	SSL_CTX_set_verify(server_ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+	SSL_CTX_set_verify(serv->ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
 
-	return server_ctx;
+	return 0;
 }
-
-static struct event		*ev_int = NULL;
-static struct event_base	*base = NULL;
-static struct evconnlistener	*listener = NULL;
 
 int
 ctrler_init(struct ctrler_cfg *_cfg)
 {
-	SSL_CTX			*ctx;
 	struct sockaddr_in	 sin;
 
 	cfg = _cfg;
 	cfg->ctrler_running = 1;
 
-	if ((ctx = evssl_init()) == NULL) {
+	if (evssl_init(&s1) != 0) {
 		jlog(L_ERROR, "evssl_init failed");
 		return -1;
 	}
 
-	if ((base = event_base_new()) == NULL) {
+	if ((s1.base = event_base_new()) == NULL) {
 		jlog(L_ERROR, "event_base_new failed");
 		return -1;
 	}
@@ -383,21 +387,19 @@ ctrler_init(struct ctrler_cfg *_cfg)
 	sin.sin_addr.s_addr = htonl(0);
 	sin.sin_port = htons(9093);
 
-	listener = evconnlistener_new_bind(base, accept_conn_cb, ctx,
-		LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1,
-		(struct sockaddr*)&sin, sizeof(sin));
-	if (listener == NULL) {
-		jlog(L_ERROR, "couldn't create listener");
+	if ((s1.listener = evconnlistener_new_bind(s1.base, accept_conn_cb, s1.ctx,
+	    LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1,
+	    (struct sockaddr*)&sin, sizeof(sin))) == NULL) {
+		jlog(L_ERROR, "evconnlistener_new_bind failed");
 		return -1;
 	}
 
-	ev_int = evsignal_new(base, SIGINT, sighandler, base);
-	event_add(ev_int, NULL);
-
 	signal(SIGPIPE, SIG_IGN);
+	s1.ev_int = evsignal_new(s1.base, SIGINT, sighandler, s1.base);
+	event_add(s1.ev_int, NULL);
 
-	evconnlistener_set_error_cb(listener, accept_error_cb);
-	event_base_dispatch(base);
+	evconnlistener_set_error_cb(s1.listener, accept_error_cb);
+	event_base_dispatch(s1.base);
 
 	return 0;
 }
@@ -405,9 +407,12 @@ ctrler_init(struct ctrler_cfg *_cfg)
 void
 ctrler_fini()
 {
-	if (ev_int != NULL)
-		evsignal_del(ev_int);
-	if (listener != NULL)
-		evconnlistener_free(listener);
-	event_base_free(base);
+	if (s1.ev_int != NULL)
+		evsignal_del(s1.ev_int);
+	if (s1.listener != NULL)
+		evconnlistener_free(s1.listener);
+	event_base_free(s1.base);
+	pki_passport_free(s1.passport);
+	SSL_CTX_free(s1.ctx);
+
 }
