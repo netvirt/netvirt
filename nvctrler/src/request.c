@@ -36,8 +36,7 @@ update_node_status(struct session_info **sinfo, json_t *jmsg)
 	jlog(L_DEBUG, "update-node-status");
 
 	char	*status;
-	char	*local_ipaddr;
-	char	*cert_name;
+	char	*local_ipaddr = NULL;
 	char	*uuid = NULL;
 	char	*network_uuid = NULL;
 	char	*ptr = NULL;
@@ -48,17 +47,12 @@ update_node_status(struct session_info **sinfo, json_t *jmsg)
 	node = json_object_get(jmsg, "node");
 	json_unpack(node, "{s:s}", "status", &status);
 	json_unpack(node, "{s:s}", "local-ipaddr", &local_ipaddr);
-	json_unpack(node, "{s:s}", "cert-name", &cert_name);
-
-	uuid = strdup(cert_name+4);
-	ptr = strchr(uuid, '@');
-	*ptr = '\0';
-	network_uuid = strdup(ptr+1);
+	json_unpack(node, "{s:s}", "uuid", &uuid);
+	json_unpack(node, "{s:s}", "networkuuid", &network_uuid);
 
 	dao_update_node_status(network_uuid, uuid, status, local_ipaddr);
 
-	free(uuid);
-	free(network_uuid);
+	json_decref(node);
 
 	return;
 }

@@ -23,7 +23,7 @@
 
 int query_provisioning(struct session *, char *);
 int query_list_node();
-int update_node_status(char *, char *, char *);
+int update_node_status(char *, char *, char *, char *);
 int query_list_network();
 int ctrl_init(struct switch_cfg *);
 void ctrl_fini();
