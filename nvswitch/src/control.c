@@ -239,9 +239,6 @@ static	size_t		 total = 1;
 			return -1;
 		}
 
-		printf("uuid: %s\n", uuid);
-		printf("network_uuid: %s\n", network_uuid);
-
 		if ((vnet = vnetwork_lookup(network_uuid)) != NULL) {
 			ctable_insert(vnet->atable, uuid, vnet->access_session);
 		}
@@ -252,13 +249,12 @@ static	size_t		 total = 1;
 		return -1;
 	}
 
-	jlog(L_DEBUG, "fetched %d node", total);
-	total++;
-
 	if (strcmp(response, "success") == 0) {
+		jlog(L_DEBUG, "fetched %d node", total);
 		return 0;
 	}
 
+	total++;
 	return 1;
 }
 
@@ -309,17 +305,15 @@ static	size_t	 total = 1;
 			jlog(L_ERROR, "NULL parameter");
 			return -1;
 		}
-		printf("\nuuid: %s\n", network_uuid);
 		vnetwork_create(network_uuid, subnet, netmask, cert, pkey, tcert);
 	}
 
-	jlog(L_DEBUG, "fetched %d network", total);
-	total++;
-
 	if (strcmp(response, "success") == 0) {
+		jlog(L_DEBUG, "fetched %d network", total);
 		return 0;
 	}
 
+	total++;
 	return 1;
 }
 
@@ -551,11 +545,11 @@ dispatch_op(json_t *jmsg)
 	char	*dump;
 	char	*action;
 	int	 ret = 0;
-
+/*
 	dump = json_dumps(jmsg, 0);
 	jlog(L_DEBUG, "jmsg: %s", dump);
 	free(dump);
-
+*/
 	if (json_unpack(jmsg, "{s:s}", "action", &action) == -1)
 		return -1;
 
