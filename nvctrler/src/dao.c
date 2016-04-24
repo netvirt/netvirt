@@ -171,12 +171,13 @@ int dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
-			"dao_add_context",
+			"dao_add_vnetwork",
 			"INSERT INTO CONTEXT "
 			"(client_id, description, network, "
 				"embassy_certificate, embassy_privatekey, embassy_serial, "
 				"passport_certificate, passport_privatekey, ippool)"
-			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::bytea);",
+			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::bytea) "
+			"RETURNING uuid;",
 			0,
 			NULL);
 
@@ -849,7 +850,7 @@ int dao_del_context(char *client_id, char *network_uuid)
 	return 0;
 }
 
-int dao_add_context(char *client_id,
+int dao_add_vnetwork(char **network_uuid, char *client_id,
 			char *description,
 			char *network,
 			char *embassy_certificate,
@@ -896,7 +897,7 @@ int dao_add_context(char *client_id,
 	paramLengths[7] = strlen(passport_privatekey);
 	paramLengths[8] = ippool_str_len;
 
-	result = PQexecPrepared(dbconn, "dao_add_context", 9, paramValues, paramLengths, NULL, 0);
+	result = PQexecPrepared(dbconn, "dao_add_vnetwork", 9, paramValues, paramLengths, NULL, 0);
 	if (!result) {
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
@@ -907,6 +908,17 @@ int dao_add_context(char *client_id,
 	if (check_result_status(result) == -1) {
 		PQclear(result);
 		return -2;
+	}
+
+	int tuples, fields;
+	tuples = PQntuples(result);
+	fields = PQnfields(result);
+
+	if (tuples > 0 && fields > 0) {
+		*network_uuid = strdup(PQgetvalue(result, 0, 0));
+	} else {
+		PQclear(result);
+		return -1;
 	}
 
 	PQclear(result);

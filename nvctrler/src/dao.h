@@ -22,7 +22,7 @@ int dao_connect(struct ctrler_cfg *ctrler_cfg);
 void dao_disconnect();
 
 int dao_update_node_status(char *context, char *uuid, char *status, char *public_ip);
-int dao_add_context(char *client_id,
+int dao_add_vnetwork(char **network_uuid, char *client_id,
 			char *description,
 			char *network,
 			char *embassy_certificate,
