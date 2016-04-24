@@ -278,7 +278,7 @@ add_node(struct session_info *sinfo, json_t *jmsg)
 		array = json_array();
 
 		json_object_set_new(fwd_resp, "action", json_string("listall-node"));
-		json_object_set_new(fwd_resp, "response", json_string("success"));
+		json_object_set_new(fwd_resp, "response", json_string("more-data"));
 
 		json_object_set_new(node, "networkuuid", json_string(network_uuid));
 		json_object_set_new(node, "uuid", json_string(uuid));
@@ -440,10 +440,10 @@ provisioning(struct session_info **sinfo, json_t *jmsg)
 {
 	jlog(L_DEBUG, "provisioning");
 
-	char	*cert;
-	char	*pkey;
-	char	*tcert;
-	char	*ipaddr;
+	char	*cert = NULL;
+	char	*pkey = NULL;
+	char	*tcert = NULL;
+	char	*ipaddr = NULL;
 
 	char	*provcode;
 	char	*tid;
@@ -477,8 +477,12 @@ provisioning(struct session_info **sinfo, json_t *jmsg)
 	bufferevent_write((*sinfo)->bev, resp_str, strlen(resp_str));
 	bufferevent_write((*sinfo)->bev, "\n", strlen("\n"));
 
-	json_decref(resp);
+	free(cert);
+	free(pkey);
+	free(tcert);
+	free(ipaddr);
 	free(resp_str);
+	json_decref(resp);
 
 	return;
 }
@@ -814,6 +818,7 @@ add_network(struct session_info *sinfo, json_t *jmsg)
 	jlog(L_DEBUG, "add network");
 
 	int		 ret = 0;
+	char		*network_uuid = NULL;
 	char		*client_id = NULL;
 	char		*apikey = NULL;
 	char		*name = NULL;
@@ -882,7 +887,7 @@ add_network(struct session_info *sinfo, json_t *jmsg)
 	ippool = ippool_new("44.128.0.0", "255.255.0.0");
 	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
 
-	ret = dao_add_context(client_id,
+	ret = dao_add_vnetwork(&network_uuid, client_id,
 				name,
 				"44.128.0.0/16",
 				emb_cert_ptr,
@@ -904,23 +909,23 @@ add_network(struct session_info *sinfo, json_t *jmsg)
 	}
 
 	/* forward new network to nvswitch */
-	char	*netid;
+//	char	*netid = NULL;
 	char	*fwd_resp_str = NULL;
 	json_t	*array;
 	json_t	*network;
 	json_t	*fwd_resp = NULL;
 
 	if (switch_sinfo != NULL) {
-		dao_fetch_network_id(&netid, client_id, name);
+//		dao_fetch_network_id(&netid, client_id, name);
 
 		network = json_object();
 		array = json_array();
 		fwd_resp = json_object();
 
 		json_object_set_new(fwd_resp, "action", json_string("listall-network"));
-		json_object_set_new(fwd_resp, "response", json_string("success"));
+		json_object_set_new(fwd_resp, "response", json_string("more-data"));
 
-		json_object_set_new(network, "uuid", json_string(netid));
+		json_object_set_new(network, "uuid", json_string(network_uuid));
 		json_object_set_new(network, "network", json_string("44.128.0.0"));
 		json_object_set_new(network, "netmask", json_string("255.255.0.0"));
 		json_object_set_new(network, "cert", json_string(serv_cert_ptr));
