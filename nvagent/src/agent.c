@@ -145,6 +145,7 @@ void transmit_register(netc_t *netc)
 {
 	X509_NAME *subj_ptr;
 	char subj[256];
+	char *uri;
         ssize_t nbyte;
 	struct session *session = (struct session *)netc->ext_ptr;
 
@@ -160,9 +161,13 @@ void transmit_register(netc_t *netc)
 
 	subj_ptr = X509_get_subject_name(session->passport->certificate);
 	X509_NAME_get_text_by_NID(subj_ptr, NID_commonName, subj, 256);
-
 	jlog(L_NOTICE, "CN=%s", subj);
-        AuthRequest_set_certName(msg, subj, strlen(subj));
+
+
+	uri = cert_uri(session->passport->certificate);
+	jlog(L_NOTICE, "URI:%s", uri);
+        AuthRequest_set_certName(msg, uri, strlen(uri));
+	free(uri);
 
         nbyte = net_send_msg(netc, msg);
 	DNDSMessage_del(msg);
@@ -336,11 +341,11 @@ static void op_auth_response(struct session *session, DNDSMessage_t *msg)
 	case DNDSResult_secureStepUp:
 		jlog(L_NOTICE, "server authentication require step up");
 		break;
-
+/*
 	case DNDSResult_insufficientAccessRights:
 		jlog(L_ERROR, "authentication failed, invalid certificate");
 		break;
-
+*/
 	default:
 		jlog(L_NOTICE, "unknown AuthResponse result (%i)", result);
 	}
