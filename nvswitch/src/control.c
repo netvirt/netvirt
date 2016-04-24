@@ -252,12 +252,13 @@ static	size_t		 total = 1;
 		return -1;
 	}
 
+	jlog(L_DEBUG, "fetched %d node", total);
+	total++;
+
 	if (strcmp(response, "success") == 0) {
-		jlog(L_DEBUG, "fetched %d node", total);
 		return 0;
 	}
 
-	total++;
 	return 1;
 }
 
@@ -312,13 +313,13 @@ static	size_t	 total = 1;
 		vnetwork_create(network_uuid, subnet, netmask, cert, pkey, tcert);
 	}
 
+	jlog(L_DEBUG, "fetched %d network", total);
+	total++;
+
 	if (strcmp(response, "success") == 0) {
-		jlog(L_DEBUG, "fetched %d network", total);
-		total = 0;
 		return 0;
 	}
 
-	total++;
 	return 1;
 }
 
