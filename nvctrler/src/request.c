@@ -189,13 +189,21 @@ add_node(struct session_info *sinfo, json_t *jmsg)
 	if ((js_node = json_object_get(jmsg, "node")) == NULL)
 		return;
 
+	resp = json_object();
+	json_object_set_new(resp, "tid", json_string("tid"));
+	json_object_set_new(resp, "action", json_string("response"));
+
 	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
 	json_unpack(js_node, "{s:s}", "networkuuid", &network_uuid);
 	json_unpack(js_node, "{s:s}", "description", &description);
 
-	resp = json_object();
-	json_object_set_new(resp, "tid", json_string("tid"));
-	json_object_set_new(resp, "action", json_string("response"));
+	if (apikey == NULL ||
+	    network_uuid == NULL ||
+	    description == NULL) {
+
+		json_object_set_new(resp, "response", json_string("error"));
+		goto out;
+	}
 
 	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
 	if (ret != 0) {
@@ -843,14 +851,19 @@ add_network(struct session_info *sinfo, json_t *jmsg)
 	if ((js_network = json_object_get(jmsg, "network")) == NULL)
 		return;
 
-	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
-	json_unpack(js_network, "{s:s}", "name", &name);
-
-	/* check apikey and name... */
-
 	resp = json_object();
 	json_object_set_new(resp, "tid", json_string("tid"));
 	json_object_set_new(resp, "action", json_string("response"));
+
+	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
+	json_unpack(js_network, "{s:s}", "name", &name);
+
+	if (apikey == NULL ||
+	    name == NULL) {
+
+		json_object_set_new(resp, "response", json_string("error"));
+		goto out;
+	}
 
 	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
 	if (ret == -1) {
