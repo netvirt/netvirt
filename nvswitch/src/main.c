@@ -13,6 +13,7 @@
  * GNU Affero General Public License for more details
  */
 
+#include <pthread.h>
 #include <unistd.h>
 
 #include <libconfig.h>
@@ -146,11 +147,15 @@ main(int argc, char *argv[])
 		jlog(L_ERROR, "netbus_init failed");
 		exit(EXIT_FAILURE);
 	}
+
+	vnetwork_init();
 	pipe(pipefd);
-	if (switch_init(switch_cfg)) {
-		jlog(L_ERROR, "switch_init failed");
-		exit(EXIT_FAILURE);
-	}
+
+	pthread_t thread_switch;
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	pthread_create(&thread_switch, &attr, switch_init, switch_cfg);
 
 	if (ctrl_init(switch_cfg)) {
 		jlog(L_ERROR, "ctrl_init failed");

@@ -19,6 +19,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 
 #include <logger.h>
 #include <netbus.h>
@@ -316,21 +317,22 @@ static void
 	return NULL;
 }
 
-int
-switch_init(struct switch_cfg *cfg)
+void *
+switch_init(void *cfg)
 {
 	switch_cfg = cfg;
 	switch_cfg->switch_running = 1;
+
+	while (switch_cfg->ctrl_initialized == 0)
+		sleep(1);
 
 	switch_netc = net_server(switch_cfg->listen_ip, switch_cfg->listen_port, NET_PROTO_UDT, NET_SECURE_ADH, NULL,
 		on_connect, on_disconnect, on_input, on_secure);
 
 	if (switch_netc == NULL) {
 		jlog(L_ERROR, "net_server failed");
-		return -1;
+		return NULL;
 	}
-
-	vnetwork_init();
 
 	pthread_t thread_loop;
 	pthread_attr_t attr;
@@ -340,7 +342,7 @@ switch_init(struct switch_cfg *cfg)
 
 	pthread_create(&thread_loop, &attr, switch_loop, NULL);
 
-	return 0;
+	return NULL;
 }
 
 void

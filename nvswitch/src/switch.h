@@ -35,7 +35,7 @@ struct switch_cfg {
 	int switch_running;
 };
 
-int switch_init(struct switch_cfg *switch_cfg);
+void *switch_init(void *switch_cfg);
 void switch_fini();
 
 #endif
