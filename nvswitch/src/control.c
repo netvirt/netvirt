@@ -426,7 +426,7 @@ out:
 }
 
 int
-update_node_status(char *status, char *local_ipaddr, char *cert_name)
+update_node_status(char *status, char *local_ipaddr, char *uuid, char *network_uuid)
 {
 	jlog(L_DEBUG, "update node status");
 
@@ -464,7 +464,12 @@ update_node_status(char *status, char *local_ipaddr, char *cert_name)
 		goto out;
 	}
 
-	if ((json_object_set_new(node, "cert-name", json_string(cert_name))) == -1) {
+	if ((json_object_set_new(node, "uuid", json_string(uuid))) == -1) {
+		jlog(L_ERROR, "json_object_set_new failed");
+		goto out;
+	}
+
+	if ((json_object_set_new(node, "networkuuid", json_string(network_uuid))) == -1) {
 		jlog(L_ERROR, "json_object_set_new failed");
 		goto out;
 	}

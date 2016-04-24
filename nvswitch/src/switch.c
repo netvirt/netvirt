@@ -203,7 +203,7 @@ on_secure(netc_t *netc)
 		DNDSMessage_del(msg);
 
 		vnetwork_add_session(session->vnetwork, session);
-		update_node_status("1", session->ip, session->cert_name);
+		update_node_status("1", session->ip, session->node_info->uuid, session->node_info->network_uuid);
 		jlog(L_DEBUG, "session id: %d", session->id);
 	}
 }
@@ -298,7 +298,7 @@ on_disconnect(netc_t *netc)
 		vnetwork_del_session(session->vnetwork, session);
 	}
 
-	update_node_status("0", session->ip, session->cert_name);
+	update_node_status("0", session->ip, session->node_info->uuid, session->node_info->network_uuid);
 
 	session_free(session);
 
