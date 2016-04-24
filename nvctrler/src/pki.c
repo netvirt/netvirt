@@ -78,18 +78,28 @@ static X509_REQ *pki_certificate_request(EVP_PKEY *keyring, digital_id_t *digita
 	// create a certificate request
 	cert_req = X509_REQ_new();
 
-	// set certificate request 'Subject:'
-	subject = X509_NAME_new();
-	X509_NAME_add_entry_by_txt(subject, "commonName", MBSTRING_ASC, (unsigned char*)"netvirt", -1, -1, 0);
-	X509_REQ_set_subject_name(cert_req, subject);
-	X509_NAME_free(subject);
-
 	// add extensions
-	extlist = sk_X509_EXTENSION_new_null();
-	ext = X509V3_EXT_conf(NULL, NULL, "subjectAltName", digital_id->commonName);
-	sk_X509_EXTENSION_push(extlist, ext);
-	X509_REQ_add_extensions(cert_req, extlist);
-	sk_X509_EXTENSION_pop_free(extlist, X509_EXTENSION_free);
+	if (strcmp(digital_id->commonName, "embassy") != 0
+	    && strcmp(digital_id->commonName, "nvswitch") != 0) {
+
+		extlist = sk_X509_EXTENSION_new_null();
+		ext = X509V3_EXT_conf(NULL, NULL, "subjectAltName", digital_id->commonName);
+		sk_X509_EXTENSION_push(extlist, ext);
+		X509_REQ_add_extensions(cert_req, extlist);
+		sk_X509_EXTENSION_pop_free(extlist, X509_EXTENSION_free);
+
+		// set certificate request 'Subject:'
+		subject = X509_NAME_new();
+		X509_NAME_add_entry_by_txt(subject, "commonName", MBSTRING_ASC, (unsigned char*)"netvirt", -1, -1, 0);
+		X509_REQ_set_subject_name(cert_req, subject);
+		X509_NAME_free(subject);
+	} else {
+		// set certificate request 'Subject:'
+		subject = X509_NAME_new();
+		X509_NAME_add_entry_by_txt(subject, "commonName", MBSTRING_ASC, (unsigned char*)digital_id->commonName, -1, -1, 0);
+		X509_REQ_set_subject_name(cert_req, subject);
+		X509_NAME_free(subject);
+	}
 
 	// set certificate request public key
 	X509_REQ_set_pubkey(cert_req, keyring);
@@ -129,17 +139,17 @@ static X509 *pki_certificate(X509_NAME *issuer, EVP_PKEY *keyring, X509_REQ *cer
 	STACK_OF(X509_EXTENSION) *req_exts;
 	X509_EXTENSION *subjAltName;
 
-	req_exts = X509_REQ_get_extensions(cert_req);
-	subjAltName_pos = X509v3_get_ext_by_NID(req_exts, OBJ_sn2nid("subjectAltName"), -1);
-	subjAltName = X509v3_get_ext(req_exts, subjAltName_pos);
+	if ((req_exts = X509_REQ_get_extensions(cert_req)) != NULL) {
+		subjAltName_pos = X509v3_get_ext_by_NID(req_exts, OBJ_sn2nid("subjectAltName"), -1);
+		subjAltName = X509v3_get_ext(req_exts, subjAltName_pos);
+		X509_add_ext(certificate, subjAltName, -1);
+	}
 
 	// set certificate 'Issuer:'
 	X509_set_issuer_name(certificate, issuer);
 
 	// set X509v3 extension "basicConstraints" CA:TRUE/FALSE
 	X509V3_set_ctx(&ctx, NULL, certificate, cert_req, NULL, 0);
-
-	X509_add_ext(certificate, subjAltName, -1);
 
 	if (is_cert_authority == true)
 		ext = X509V3_EXT_conf(NULL, &ctx, "basicConstraints", "CA:TRUE");
