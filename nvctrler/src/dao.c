@@ -780,7 +780,7 @@ int dao_add_node(char *network_uuid, char *uuid, char *certificate, char *privat
 	int paramLengths[7];
 	PGresult *result;
 
-	if (!network_uuid || !uuid || !certificate || !privatekey || !provcode || !ipaddress) {
+	if (!network_uuid || !uuid || !certificate || !privatekey || !provcode || !description || !ipaddress) {
 		jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
