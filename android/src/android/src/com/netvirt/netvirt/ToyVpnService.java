@@ -32,6 +32,8 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 
+import com.netvirt.netvirt.ToyVpnServiceQt;
+
 public class ToyVpnService extends VpnService implements Handler.Callback, Runnable {
     private static final String TAG = "ToyVpnService";
 
@@ -87,6 +89,12 @@ public class ToyVpnService extends VpnService implements Handler.Callback, Runna
 
     @Override
     public synchronized void run() {
+        Log.i(TAG, "run: starting main");
+        ToyVpnServiceQt.main(this);
+        Log.i(TAG, "run: main ended");
+    }
+
+    public void _run() {
         try {
             Log.i(TAG, "Starting");
 
