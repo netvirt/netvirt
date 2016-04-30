@@ -39,3 +39,29 @@ On your machine (after plugging and turning on the device):
 - `gpasswd $USER androidsdk  # then logout/login`
 
 Then unplug and replug the device.
+
+
+How to get logs from Android
+----------------------------
+
+Run this command to print logs:
+
+`adb logcat`
+
+
+The code needed to generate logs looks like:
+
+Java:
+```
+import android.util.Log;
+
+Log.i("ToyVpnService", "message");
+```
+
+C++:
+```
+#include <android/log.h>
+
+__android_log_write(ANDROID_LOG_INFO, "ToyVpnService", "message");
+
+```
