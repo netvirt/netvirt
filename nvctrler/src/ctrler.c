@@ -222,6 +222,7 @@ on_event_cb(struct bufferevent *bev, short events, void *arg)
 		if (sinfo->type == NVSWITCH) {
 			switch_sinfo = NULL;
 			jlog(L_DEBUG, "switch disconnected");
+			dao_reset_node_state();
 		}
 		sinfo_free(&sinfo);
 		bufferevent_free(bev);
@@ -373,6 +374,8 @@ ctrler_init(struct ctrler_cfg *_cfg)
 	cfg = _cfg;
 	cfg->ctrler_running = 1;
 
+	dao_reset_node_state();
+
 	if (evssl_init(&s1) != 0) {
 		jlog(L_ERROR, "evssl_init failed");
 		return -1;
@@ -416,4 +419,5 @@ ctrler_fini()
 	pki_passport_free(s1.passport);
 	SSL_CTX_free(s1.ctx);
 
+	dao_reset_node_state();
 }
