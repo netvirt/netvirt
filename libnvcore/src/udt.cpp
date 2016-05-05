@@ -426,6 +426,7 @@ out:
 	free(p2p_args->port[0]);
 	free(p2p_args->port[1]);
 	free(p2p_args->port[2]);
+	free(p2p_args->port[3]);
 	free(p2p_args);
 
 	if (p2p_failed) {

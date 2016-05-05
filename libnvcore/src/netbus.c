@@ -780,6 +780,7 @@ void net_p2p(const char *listen_addr,
 	p2p_args->port[0] = strdup(port);
 	p2p_args->port[1] = strdup("443");
 	p2p_args->port[2] = strdup("80");
+	p2p_args->port[3] = strdup("500");
 
 	p2p_args->on_connect = net_p2p_on_connect;
 	p2p_args->on_disconnect = net_on_disconnect;
