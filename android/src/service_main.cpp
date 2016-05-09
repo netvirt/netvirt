@@ -6,6 +6,8 @@
 #include "service.h"
 #include "service_main.h"
 
+static QAndroidJniObject toyVpnServiceJava;
+
 JNIEXPORT void JNICALL Java_com_netvirt_netvirt_ToyVpnServiceQt_main(JNIEnv *env,
                                                                      jobject thisObj,
                                                                      jobject toyVpnServiceJava_,
@@ -14,6 +16,7 @@ JNIEXPORT void JNICALL Java_com_netvirt_netvirt_ToyVpnServiceQt_main(JNIEnv *env
                                                                      jstring secret_) {
     __android_log_write(ANDROID_LOG_INFO, "ToyVpnService", "beginning of main()");
 
+    toyVpnServiceJava = QAndroidJniObject(toyVpnServiceJava_);
     QString server_host = QAndroidJniObject(server_host_).toString();
     int server_port = server_port_;
     QString secret = QAndroidJniObject(secret_).toString();
@@ -22,6 +25,10 @@ JNIEXPORT void JNICALL Java_com_netvirt_netvirt_ToyVpnServiceQt_main(JNIEnv *env
     service_thread->start();
 
     __android_log_write(ANDROID_LOG_INFO, "ToyVpnService", "ending of main()");
+}
+
+bool protect(int socket) {
+    return (bool) toyVpnServiceJava.callMethod<jboolean>("protect", "(I)Z", socket);
 }
 
 

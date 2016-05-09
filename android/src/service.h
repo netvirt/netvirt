@@ -17,6 +17,7 @@ class VPNService : public QObject {
     signals:
         void testSignal();
     private:
+        void handshake();
         QUdpSocket *server;
         QHostAddress server_host;
         quint16 server_port;

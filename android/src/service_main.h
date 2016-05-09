@@ -19,6 +19,8 @@ extern "C" {
 }
 #endif
 
+bool protect(int socket);
+
 class MainThread: public QThread {
     Q_OBJECT
     public:

@@ -34,7 +34,7 @@ import java.nio.channels.DatagramChannel;
 
 import com.netvirt.netvirt.ToyVpnServiceQt;
 
-public class ToyVpnService extends VpnService implements Handler.Callback, Runnable {
+public class ToyVpnService extends VpnService implements Handler.Callback {
     private static final String TAG = "ToyVpnService";
 
     private String mServerAddress;
