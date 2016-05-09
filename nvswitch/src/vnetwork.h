@@ -31,8 +31,9 @@
 
 struct vnetwork {
 	RB_ENTRY(vnetwork)	entry;
+	RB_ENTRY(vnetwork)	entry_id;
+	char			*id;
 	char			*uuid;
-	uint32_t		 id;				// context unique identifier
 	ftable_t		*ftable;			// forwarding table
 	ctable_t		*ctable;			// connection table
 	ctable_t		*atable;			// access table
@@ -50,7 +51,7 @@ void vnetwork_del_session(struct vnetwork *, struct session *);
 void vnetwork_add_session(struct vnetwork *, struct session *);
 struct vnetwork *vnetwork_disable(const char *);
 struct vnetwork *vnetwork_lookup(const char *);
-int vnetwork_create(char *, char *, char *, char *, char *, char *);
+int vnetwork_create(char *, char *, char *, char *, char *, char *, char *);
 void vnetwork_fini(void *);
 int vnetwork_init();
 

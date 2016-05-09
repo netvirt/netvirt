@@ -22,6 +22,8 @@ typedef struct node_info {
 	char type[3+1];
 	char uuid[36+1];
 	char network_uuid[36+1];
+	char network_id[5+1];
+	char v;
 } node_info_t;
 
 typedef struct passport {

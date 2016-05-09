@@ -330,7 +330,7 @@ int dao_prepare_statements()
 
 	result = PQprepare(dbconn,
 			"dao_fetch_context",
-			"SELECT uuid, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
+			"SELECT id, uuid, description, client_id, host(network), netmask(network), passport_certificate, passport_privatekey, embassy_certificate "
 			"FROM context;",
 			0,
 			NULL);
@@ -1514,6 +1514,7 @@ int dao_fetch_network_by_client_id_desc(char *client_id, char *description,
 	return 0;
 }
 int dao_fetch_context(void *data, int (*cb_data_handler)(void *data, int remaining,
+							char *id,
 							char *uuid,
 							char *description,
 							char *client_id,
@@ -1555,7 +1556,8 @@ int dao_fetch_context(void *data, int (*cb_data_handler)(void *data, int remaini
 			PQgetvalue(result, i, 4),
 			PQgetvalue(result, i, 5),
 			PQgetvalue(result, i, 6),
-			PQgetvalue(result, i, 7));
+			PQgetvalue(result, i, 7),
+			PQgetvalue(result, i, 8));
 
 		if (ret == -1) {
 			goto out;

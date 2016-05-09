@@ -261,6 +261,7 @@ static	size_t		 total = 1;
 int
 listall_network(json_t *jmsg)
 {
+	char	*network_id;
 	char	*network_uuid;
 	char	*subnet;
 	char	*netmask;
@@ -296,7 +297,8 @@ static	size_t	 total = 1;
 			return -1;
 		}
 
-		if (json_unpack(elm, "{s:s}", "uuid", &network_uuid) == -1 ||
+		if (json_unpack(elm, "{s:s}", "id", &network_id) == -1 ||
+		    json_unpack(elm, "{s:s}", "uuid", &network_uuid) == -1 ||
 		    json_unpack(elm, "{s:s}", "network", &subnet) == -1 ||
 		    json_unpack(elm, "{s:s}", "netmask", &netmask) == -1 ||
 		    json_unpack(elm, "{s:s}", "cert", &cert) == -1 ||
@@ -305,7 +307,8 @@ static	size_t	 total = 1;
 			jlog(L_ERROR, "NULL parameter");
 			return -1;
 		}
-		vnetwork_create(network_uuid, subnet, netmask, cert, pkey, tcert);
+		printf("id: %s\n", network_id);
+		vnetwork_create(network_id, network_uuid, subnet, netmask, cert, pkey, tcert);
 	}
 
 	if (strcmp(response, "success") == 0) {

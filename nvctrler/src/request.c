@@ -491,6 +491,7 @@ provisioning(struct session_info **sinfo, json_t *jmsg)
 
 static int
 CB_listall_network(void *arg, int remaining,
+				char *id,
 				char *uuid,
 				char *description,
 				char *client_id,
@@ -514,6 +515,7 @@ CB_listall_network(void *arg, int remaining,
 	json_object_set_new(resp, "tid", json_string("tid"));
 	json_object_set_new(resp, "action", json_string("listall-network"));
 
+	json_object_set_new(network, "id", json_string(id));
 	json_object_set_new(network, "uuid", json_string(uuid));
 	json_object_set_new(network, "network", json_string(subnet));
 	json_object_set_new(network, "netmask", json_string(netmask));
