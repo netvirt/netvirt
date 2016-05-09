@@ -49,23 +49,47 @@ void node_info_destroy(node_info_t *node_info)
 
 node_info_t *cn2node_info(char *cn)
 {
-	// expected: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX@XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
 	node_info_t *ninfo = NULL;
+	int len;
 
 	if (cn == NULL || strlen(cn) < 42)
 		return NULL;
 
+	if (!strncmp(cn, "nva", 3) || !strncmp(cn, "dnc", 3)) {
+
+		// nva-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX@99999
+
+		ninfo = calloc(1, sizeof(node_info_t));
+
+		strncpy(ninfo->type, cn, 3);
+		ninfo->type[3] = '\0';
+
+		strncpy(ninfo->uuid, cn+4, 36);
+		ninfo->uuid[36] = '\0';
+
+		len = strlen(cn) - 41;
+		if (len > 5)
+			len = 5;
+		printf("len: %d\n", len);
+		strncpy(ninfo->network_id, cn+41, len);
+		ninfo->network_id[5] = '\0';
+
+		ninfo->v = 1;
+
+		return ninfo;
+	}
+
+	// XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX@XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
 
 	ninfo = calloc(1, sizeof(node_info_t));
-/*
-	strncpy(ninfo->type, cn, 3);
-        ninfo->type[3] = '\0';
-*/
+
         strncpy(ninfo->uuid, cn, 36);
         ninfo->uuid[36] = '\0';
 
         strncpy(ninfo->network_uuid, cn+37, 36);
         ninfo->network_uuid[36] = '\0';
+
+	ninfo->v = 2;
 
 	return ninfo;
 }
