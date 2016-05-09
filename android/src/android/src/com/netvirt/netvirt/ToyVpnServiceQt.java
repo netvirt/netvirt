@@ -1,10 +1,9 @@
 package com.netvirt.netvirt;
 
 public class ToyVpnServiceQt {
-   // static {
-   //    System.loadLibrary("hello"); // Load native library at runtime
-   //                                 // hello.dll (Windows) or libhello.so (Unixes)
-   // }
 
-   public static native void main(ToyVpnService ToyVpnServiceJava);
+    public static native void main(ToyVpnService ToyVpnServiceJava,
+                                   String server_host,
+                                   int server_port,
+                                   String secret);
 }

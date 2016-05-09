@@ -1,16 +1,26 @@
-#include <jni.h>
-
 #ifndef __SERVICE_H__
 #define __SERVICE_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <QHostAddress>
+#include <QObject>
 
-    JNIEXPORT void JNICALL Java_com_netvirt_netvirt_ToyVpnServiceQt_main(JNIEnv *, jobject, jobject);
+class QUdpSocket;
 
-#ifdef __cplusplus
-}
-#endif
+class VPNService : public QObject {
+    Q_OBJECT
+
+    public:
+        VPNService(const QString& server_host, int server_port, const QString& secret);
+        void initialize();
+    private slots:
+        void testSlot();
+    signals:
+        void testSignal();
+    private:
+        QUdpSocket *server;
+        QHostAddress server_host;
+        quint16 server_port;
+        QString secret;
+};
 
 #endif

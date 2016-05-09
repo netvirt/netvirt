@@ -23,7 +23,7 @@ ApplicationWindow {
 
         TextInput {
             id: host
-            text: "10.0.0.1"
+            text: "192.168.1.90"
         }
 
         TextInput {

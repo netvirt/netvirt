@@ -66,9 +66,12 @@ public class ToyVpnService extends VpnService implements Handler.Callback, Runna
         mServerPort = intent.getStringExtra(prefix + ".PORT");
         mSharedSecret = intent.getStringExtra(prefix + ".SECRET").getBytes();
 
-        // Start a new session by creating a new thread.
-        mThread = new Thread(this, "ToyVpnThread");
-        mThread.start();
+        Log.i(TAG, "run: starting main");
+        int serverPort = Integer.parseInt(mServerPort);
+        String secret = new String(mSharedSecret);
+        ToyVpnServiceQt.main(this, mServerAddress, serverPort, secret);
+        Log.i(TAG, "run: main ended");
+
         return START_STICKY;
     }
 
@@ -85,13 +88,6 @@ public class ToyVpnService extends VpnService implements Handler.Callback, Runna
             Toast.makeText(this, message.what, Toast.LENGTH_SHORT).show();
         }
         return true;
-    }
-
-    @Override
-    public synchronized void run() {
-        Log.i(TAG, "run: starting main");
-        ToyVpnServiceQt.main(this);
-        Log.i(TAG, "run: main ended");
     }
 
     public void _run() {
