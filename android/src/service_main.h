@@ -2,7 +2,10 @@
 #define __SERVICE_MAIN_H__
 
 #include <jni.h>
+
 #include <QThread>
+
+class QHostAddress;
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,6 +23,14 @@ extern "C" {
 #endif
 
 bool protect(int socket);
+int configure(int mtu,
+              const QString &address,
+              int address_mask,
+              const QString &route,
+              int route_mask,
+              const QString &dns_server,
+              const QString &search_domain,
+              const QHostAddress &server);
 
 class MainThread: public QThread {
     Q_OBJECT

@@ -338,4 +338,32 @@ public class ToyVpnService extends VpnService implements Handler.Callback {
         mParameters = parameters;
         Log.i(TAG, "New interface: " + parameters);
     }
+
+    public int configure_(int mtu,
+                          String address,
+                          int address_mask,
+                          String route,
+                          int route_mask,
+                          String dns_server,
+                          String search_domain,
+                          String server) {
+        Log.d(TAG, "Configuring interface...");
+        Log.d(TAG, "MTU = " + mtu);
+        Log.d(TAG, "address = " + address);
+        Log.d(TAG, "address_mask = " + address_mask);
+        Log.d(TAG, "route = " + route);
+        Log.d(TAG, "route_mask = " + route_mask);
+        Log.d(TAG, "dns_server = " + dns_server);
+        Log.d(TAG, "search_domain = " + search_domain);
+        Log.d(TAG, "server = " + server);
+        Builder builder = new Builder();
+        builder.setMtu(mtu);
+        builder.addAddress(address, address_mask);
+        builder.addRoute(route, route_mask);
+        builder.addDnsServer(dns_server);
+        builder.addSearchDomain(search_domain);
+        builder.setSession(server);
+        Log.d(TAG, "Returning interface");
+        return builder.establish().getFd();
+    }
 }
