@@ -83,23 +83,17 @@ static X509_REQ *pki_certificate_request(EVP_PKEY *keyring, digital_id_t *digita
 	    && strcmp(digital_id->commonName, "nvswitch") != 0) {
 
 		extlist = sk_X509_EXTENSION_new_null();
-		ext = X509V3_EXT_conf(NULL, NULL, "subjectAltName", digital_id->commonName);
+		ext = X509V3_EXT_conf(NULL, NULL, "subjectAltName", digital_id->altName);
 		sk_X509_EXTENSION_push(extlist, ext);
 		X509_REQ_add_extensions(cert_req, extlist);
 		sk_X509_EXTENSION_pop_free(extlist, X509_EXTENSION_free);
-
-		// set certificate request 'Subject:'
-		subject = X509_NAME_new();
-		X509_NAME_add_entry_by_txt(subject, "commonName", MBSTRING_ASC, (unsigned char*)"netvirt", -1, -1, 0);
-		X509_REQ_set_subject_name(cert_req, subject);
-		X509_NAME_free(subject);
-	} else {
-		// set certificate request 'Subject:'
-		subject = X509_NAME_new();
-		X509_NAME_add_entry_by_txt(subject, "commonName", MBSTRING_ASC, (unsigned char*)digital_id->commonName, -1, -1, 0);
-		X509_REQ_set_subject_name(cert_req, subject);
-		X509_NAME_free(subject);
 	}
+
+	// set certificate request 'Subject:'
+	subject = X509_NAME_new();
+	X509_NAME_add_entry_by_txt(subject, "commonName", MBSTRING_ASC, (unsigned char*)digital_id->commonName, -1, -1, 0);
+	X509_REQ_set_subject_name(cert_req, subject);
+	X509_NAME_free(subject);
 
 	// set certificate request public key
 	X509_REQ_set_pubkey(cert_req, keyring);
@@ -229,7 +223,7 @@ void pki_free_digital_id(digital_id_t *digital_id)
 		return;
 
 	free(digital_id->commonName);
-	free(digital_id->countryName);
+	free(digital_id->altName);
 	free(digital_id->stateOrProvinceName);
 	free(digital_id->localityName);
 	free(digital_id->emailAddress);
@@ -239,7 +233,7 @@ void pki_free_digital_id(digital_id_t *digital_id)
 }
 
 digital_id_t *pki_digital_id(char *commonName,
-				char *countryName,
+				char *altName,
 				char *stateOrProvinceName,
 				char *localityName,
 				char *emailAddress,
@@ -251,7 +245,7 @@ digital_id_t *pki_digital_id(char *commonName,
 	digital_id = calloc(1, sizeof(digital_id_t));
 
 	digital_id->commonName = strdup(commonName);
-	digital_id->countryName = strdup(countryName);
+	digital_id->altName = strdup(altName);
 	digital_id->localityName = strdup(localityName);
 	digital_id->stateOrProvinceName = strdup(stateOrProvinceName);
 	digital_id->emailAddress = strdup(emailAddress);

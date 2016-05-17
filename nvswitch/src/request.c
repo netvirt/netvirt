@@ -73,8 +73,9 @@ authRequest(struct session *session, DNDSMessage_t *req_msg)
 	jlog(L_DEBUG, "uuid: %s", session->node_info->uuid);
 	jlog(L_DEBUG, "network_uuid: %s", session->node_info->network_uuid);
 	jlog(L_DEBUG, "network_id: %s", session->node_info->network_id);
+	jlog(L_DEBUG, "v: %d", session->node_info->v);
 
-	if (session->node_info->network_id != NULL) {
+	if (session->node_info->v == 1) {
 		session->vnetwork = vnetwork_lookup_id(session->node_info->network_id);
 		strncpy(session->node_info->network_uuid, session->vnetwork->uuid, 36);
 		session->node_info->network_uuid[36] = '\0';
@@ -88,14 +89,14 @@ authRequest(struct session *session, DNDSMessage_t *req_msg)
 		return -1;
 	}
 
-	/* check if the node's uuid is known */
+	/* check if the node's uuid is known
 	if (ctable_find(session->vnetwork->atable, session->node_info->uuid) == NULL) {
 		AuthResponse_set_result(msg, DNDSResult_noRight);
 		net_send_msg(session->netc, msg);
 		DNDSMessage_del(msg);
 		jlog(L_ERROR, "authentication failed, invalid certificate");
 		return -1;
-	}
+	}*/
 
 	/* check if the node is already connected */
 	old_session = ctable_find(session->vnetwork->ctable, session->node_info->uuid);

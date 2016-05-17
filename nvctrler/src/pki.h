@@ -26,7 +26,7 @@
 typedef struct digital_id {
 
 	char *commonName;
-	char *countryName;
+	char *altName;
 	char *stateOrProvinceName;
 	char *localityName;
 	char *emailAddress;

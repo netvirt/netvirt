@@ -21,19 +21,33 @@
 
 #include "cert.h"
 
-char *cert_uri(X509 *certificate)
+char *cert_cname(X509 *cert)
+{
+	X509_NAME	*subj_ptr;
+	char		 cn[64];
+
+	if ((subj_ptr = X509_get_subject_name(cert)) == NULL)
+		return NULL;
+
+	if (X509_NAME_get_text_by_NID(subj_ptr, NID_commonName, cn, 64) == -1)
+		return NULL;
+
+	return strdup(cn);
+}
+
+char *cert_altname_uri(X509 *cert)
 {
 	GENERAL_NAMES *alt;
 	GENERAL_NAME *gname;
 	int count, i;
 	char *str = NULL;
 
-	alt = X509_get_ext_d2i(certificate, NID_subject_alt_name, NULL, NULL);
+	alt = X509_get_ext_d2i(cert, NID_subject_alt_name, NULL, NULL);
 	count = sk_GENERAL_NAME_num(alt);
 	for (i = 0; i < count; i++) {
 		gname = sk_GENERAL_NAME_value(alt, i);
 		if (gname->type == GEN_URI) {
-			str = ASN1_STRING_data(gname->d.uniformResourceIdentifier);
+			str = (char *)ASN1_STRING_data(gname->d.uniformResourceIdentifier);
 			str = strdup(str);
 			break;
 		}
@@ -47,15 +61,38 @@ void node_info_destroy(node_info_t *node_info)
 	free(node_info);
 }
 
+node_info_t *altname2node_info(char *altn)
+{
+	// XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX@XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+
+	node_info_t *ninfo = NULL;
+
+	ninfo = calloc(1, sizeof(node_info_t));
+
+	strncpy(ninfo->type, "nva", 3);
+	ninfo->type[3] = '\0';
+
+	strncpy(ninfo->uuid, altn, 36);
+	ninfo->uuid[36] = '\0';
+
+	strncpy(ninfo->network_uuid, altn+37, 36);
+	ninfo->uuid[36] = '\0';
+
+	ninfo->v = 2;
+
+	return ninfo;
+}
+
 node_info_t *cn2node_info(char *cn)
 {
 	node_info_t *ninfo = NULL;
 	int len;
 
-	if (cn == NULL || strlen(cn) < 42)
+	if (cn == NULL) {
 		return NULL;
+	}
 
-	if (!strncmp(cn, "nva", 3) || !strncmp(cn, "dnc", 3)) {
+	if (!strncmp(cn, "nva-", 4) || !strncmp(cn, "dnc-", 4)) {
 
 		// nva-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX@99999
 
@@ -70,28 +107,29 @@ node_info_t *cn2node_info(char *cn)
 		len = strlen(cn) - 41;
 		if (len > 5)
 			len = 5;
-		printf("len: %d\n", len);
 		strncpy(ninfo->network_id, cn+41, len);
 		ninfo->network_id[5] = '\0';
 
 		ninfo->v = 1;
 
 		return ninfo;
+
+	} else if (!strncmp(cn, "nva2-", 5)) {
+
+		ninfo = calloc(1, sizeof(node_info_t));
+
+		strncpy(ninfo->type, cn, 3);
+		ninfo->type[3] = '\0';
+
+		strncpy(ninfo->network_uuid, cn+5, 36);
+		ninfo->uuid[36] = '\0';
+
+		ninfo->v = 2;
+
+		return ninfo;
 	}
 
-	// XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX@XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-
-	ninfo = calloc(1, sizeof(node_info_t));
-
-        strncpy(ninfo->uuid, cn, 36);
-        ninfo->uuid[36] = '\0';
-
-        strncpy(ninfo->network_uuid, cn+37, 36);
-        ninfo->network_uuid[36] = '\0';
-
-	ninfo->v = 2;
-
-	return ninfo;
+	return NULL;
 }
 
 void pki_passport_destroy(passport_t *passport)

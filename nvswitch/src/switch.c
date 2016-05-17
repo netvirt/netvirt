@@ -21,6 +21,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <cert.h>
 #include <logger.h>
 #include <netbus.h>
 #include <dnds.h>
@@ -180,32 +181,58 @@ dispatch_operation(struct session *session, DNDSMessage_t *msg)
 static void
 on_secure(netc_t *netc)
 {
+	X509 *cert;
+	char *altname = NULL;
+	char *cn = NULL;
 	struct session *session;
 	session = netc->ext_ptr;
 
-	if (session->state == SESSION_STATE_WAIT_STEPUP) {
+	if (session->state != SESSION_STATE_WAIT_STEPUP)
+		return;
 
-		/* Set the session as authenticated */
-		session->state = SESSION_STATE_AUTHED;
+	/* update node info from peer certificate */
+	node_info_destroy(session->node_info);
+	cert = SSL_get_peer_certificate(netc->kconn->ssl);
+	if ((altname = cert_altname_uri(cert)) == NULL) {
+		if ((cn = cert_cname(cert)) == NULL)
+			return;
+		session->node_info = cn2node_info(cn);
+	} else {
+		session->node_info = altname2node_info(altname);
+	}
 
-		/* Send a message to acknowledge the client */
-		DNDSMessage_t *msg = NULL;
-		DNDSMessage_new(&msg);
-		DNDSMessage_set_channel(msg, 0);
-		DNDSMessage_set_pdu(msg, pdu_PR_dnm);
+	X509_free(cert);
 
-		DNMessage_set_seqNumber(msg, 1);
-		DNMessage_set_ackNumber(msg, 0);
-		DNMessage_set_operation(msg, dnop_PR_authResponse);
+	/* Send a message to acknowledge the client */
+	DNDSMessage_t *msg = NULL;
+	DNDSMessage_new(&msg);
+	DNDSMessage_set_channel(msg, 0);
+	DNDSMessage_set_pdu(msg, pdu_PR_dnm);
 
-		AuthResponse_set_result(msg, DNDSResult_success);
+	DNMessage_set_seqNumber(msg, 1);
+	DNMessage_set_ackNumber(msg, 0);
+	DNMessage_set_operation(msg, dnop_PR_authResponse);
+
+	/* check if the node's uuid is known */
+	if (ctable_find(session->vnetwork->atable, session->node_info->uuid) == NULL) {
+		AuthResponse_set_result(msg, DNDSResult_noRight);
 		net_send_msg(session->netc, msg);
 		DNDSMessage_del(msg);
-
-		vnetwork_add_session(session->vnetwork, session);
-		update_node_status("1", session->ip, session->node_info->uuid, session->node_info->network_uuid);
-		jlog(L_DEBUG, "session id: %d", session->id);
+		jlog(L_ERROR, "authentication failed, invalid certificate");
+		goto out;
+	} else {
+		AuthResponse_set_result(msg, DNDSResult_success);
 	}
+
+	/* Set the session as authenticated */
+	session->state = SESSION_STATE_AUTHED;
+
+	vnetwork_add_session(session->vnetwork, session);
+	update_node_status("1", session->ip, session->node_info->uuid, session->node_info->network_uuid);
+	jlog(L_DEBUG, "session id: %d", session->id);
+out:
+	net_send_msg(session->netc, msg);
+	DNDSMessage_del(msg);
 }
 
 static void
