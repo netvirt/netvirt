@@ -33,8 +33,11 @@ typedef struct passport {
 	X509 *cacert;
 } passport_t;
 
+char *cert_cname(X509 *);
+char *cert_altname_uri(X509 *);
 char *cert_uri(X509 *);
 void node_info_destroy(node_info_t *node_info);
+node_info_t *altname2node_info(char *altn);
 node_info_t *cn2node_info(char *cn);
 void pki_passport_destroy(passport_t *passport);
 passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, char *trusted_authority);

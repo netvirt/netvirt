@@ -167,7 +167,8 @@ add_node(struct session_info *sinfo, json_t *jmsg)
 	char		*apikey = NULL;
 	char		*uuid = NULL;
 	char		*provcode = NULL;
-	char		 common_name[256] = {0};
+	char		 common_name[64] = {0};
+	char		 alt_name[256] = {0};
 	char		*node_cert_ptr = NULL;
 	char		*node_pvkey_ptr = NULL;
 	char		 emb_serial[10];
@@ -225,11 +226,14 @@ add_node(struct session_info *sinfo, json_t *jmsg)
 	uuid = uuid_v4();
 	provcode = uuid_v4();
 
-	snprintf(common_name, sizeof(common_name), "URI:%s@%s", uuid, network_uuid);
+	snprintf(common_name, sizeof(common_name), "nva2-%s", network_uuid);
 	jlog(L_DEBUG, "common_name: %s", common_name);
 
+	snprintf(alt_name, sizeof(alt_name), "URI:%s@%s", uuid, network_uuid);
+	jlog(L_DEBUG, "alt_name: %s", alt_name);
+
 	digital_id_t *node_ident = NULL;
-	node_ident = pki_digital_id(common_name, "", "", "", "admin@netvirt.org", "NetVirt");
+	node_ident = pki_digital_id(common_name, alt_name, "", "", "admin@netvirt.org", "NetVirt");
 
 	passport_t *node_passport = NULL;
 	node_passport = pki_embassy_deliver_passport(emb, node_ident, exp_delay);

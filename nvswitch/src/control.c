@@ -307,7 +307,6 @@ static	size_t	 total = 1;
 			jlog(L_ERROR, "NULL parameter");
 			return -1;
 		}
-		printf("id: %s\n", network_id);
 		vnetwork_create(network_id, network_uuid, subnet, netmask, cert, pkey, tcert);
 	}
 
