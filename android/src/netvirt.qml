@@ -1,8 +1,6 @@
 import QtQuick 2.3
 import QtQuick.Controls 1.0
-import com.netvirt.netvirt 1.0
-
-// netvirt_agent injected via rootContext()
+import com.netvirt.netvirt 1.0  // injected from C++
 
 ApplicationWindow {
     title: "Netvirt Agent"
@@ -10,48 +8,28 @@ ApplicationWindow {
     width: 640
     height: 480
 
-    Column {
-        spacing: 20
-        width: 100
-        height: 60
-        anchors.centerIn: parent
+    ProvisionWindow {
+        id: provisionWindow
+        z: -1
 
-        Text {
-            id: status
-            text: "Status: disconnected"
-        }
+        onProvision: netvirtAgent.provision(provKey)
+    }
 
-        TextInput {
-            id: host
-            text: "192.168.1.90"
-        }
+    ConnectWindow {
+        id: connectWindow
+        z: 1
 
-        TextInput {
-            id: port
-            text: "8000"
-        }
-
-        TextInput {
-            id: secret
-            text: "test"
-        }
-
-        Button {
-            id: connectButton
-            text: "Connect"
-            onClicked: netvirtAgent.connect_(host.text, port.text, secret.text)
-        }
-
-        Button {
-            id: disconnectButton
-            text: "Disconnect"
-            onClicked: netvirtAgent.disconnect_()
-        }
+        onConnect: netvirtAgent.connect_(host, port, secret)
+        onDisconnect: netvirtAgent.disconnect_()
     }
 
     NetvirtAgent {
         id: netvirtAgent
-        onConnected: status.text = "Status: connected"
-        onDisconnected: status.text = "Status: disconnected"
+        onConnected: connectWindow.status = "Status: connected"
+        onDisconnected: connectWindow.status = "Status: disconnected"
+        onProvisioned: {
+            provisionWindow.z = -1
+            connectWindow.z = 1
+        }
     }
 }

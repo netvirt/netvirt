@@ -11,10 +11,12 @@ class NetvirtAgent : public QObject {
         NetvirtAgent();
 
     public slots:
+        void provision(const QString &provisioning_key);
         void connect_(const QString &host, const QString &port, const QString &secret);
         void disconnect_();
 
     signals:
+        void provisioned();
         void connected();
         void disconnected();
 };

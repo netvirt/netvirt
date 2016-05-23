@@ -6,6 +6,9 @@ NetvirtAgent::NetvirtAgent()
 {
 }
 
+void NetvirtAgent::provision(const QString &provisioning_key) {
+}
+
 void NetvirtAgent::connect_(const QString &host, const QString &port, const QString &secret) {
     QAndroidJniObject::callStaticMethod<void>(
         "com/netvirt/netvirt/NetvirtAgent",

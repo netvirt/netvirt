@@ -1,5 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file>netvirt.qml</file>
+        <file>ConnectWindow.qml</file>
+        <file>ProvisionWindow.qml</file>
     </qresource>
 </RCC>
