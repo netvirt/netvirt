@@ -3,5 +3,6 @@
         <file>netvirt.qml</file>
         <file>ConnectWindow.qml</file>
         <file>ProvisionWindow.qml</file>
+        <file>images/header.png</file>
     </qresource>
 </RCC>
