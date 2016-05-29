@@ -25,7 +25,7 @@
 #include "linkst.h"
 #include "switch.h"
 
-#define MAX_NODE 1024	// the maximum of nodes per context
+#define MAX_NODE 10096	// the maximum of nodes per context
 #define TIMEOUT_SEC 300	// linkstate timeout in second
 
 typedef struct context {

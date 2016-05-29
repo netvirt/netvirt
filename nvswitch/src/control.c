@@ -30,7 +30,7 @@ static passport_t *switch_passport = NULL;
 static struct switch_cfg *switch_cfg = NULL;
 
 /* TODO extend this tracking table into a subsystem in it's own */
-#define MAX_SESSION 1024
+#define MAX_SESSION 10024
 struct session *session_tracking_table[MAX_SESSION];
 static uint32_t tracking_id = 0;
 
@@ -102,7 +102,7 @@ int transmit_search_node()
 	DSMessage_set_operation(msg, dsop_PR_searchRequest);
 	SearchRequest_set_searchType(msg, SearchType_sequence);
 
-	for (i = 0; i < 4096; i++) {
+	for (i = 0; i < 16000; i++) {
 		context = context_lookup(i);
 		if (context) {
 			DNDSObject_new(&objNode);
