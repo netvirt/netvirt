@@ -51,6 +51,7 @@ void vnetwork_del_session(struct vnetwork *, struct session *);
 void vnetwork_add_session(struct vnetwork *, struct session *);
 struct vnetwork *vnetwork_disable(const char *);
 struct vnetwork *vnetwork_lookup(const char *);
+struct vnetwork *vnetwork_lookup_id(const char *id);
 int vnetwork_create(char *, char *, char *, char *, char *, char *, char *);
 void vnetwork_fini(void *);
 int vnetwork_init();

@@ -77,8 +77,10 @@ authRequest(struct session *session, DNDSMessage_t *req_msg)
 
 	if (session->node_info->v == 1) {
 		session->vnetwork = vnetwork_lookup_id(session->node_info->network_id);
-		strncpy(session->node_info->network_uuid, session->vnetwork->uuid, 36);
-		session->node_info->network_uuid[36] = '\0';
+		if (session->vnetwork != NULL) {
+			strncpy(session->node_info->network_uuid, session->vnetwork->uuid, 36);
+			session->node_info->network_uuid[36] = '\0';
+		}
 	} else
 		session->vnetwork = vnetwork_lookup(session->node_info->network_uuid);
 
