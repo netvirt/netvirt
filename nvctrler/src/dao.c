@@ -541,6 +541,11 @@ int dao_activate_client(char *apikey)
 		return -1;
 	}
 
+	if (strcmp(PQcmdTuples(result), "0") == 0) {
+		PQclear(result);
+		return -1;
+	}
+
 	if (check_result_status(result) == -1) {
 		PQclear(result);
 		return -1;
