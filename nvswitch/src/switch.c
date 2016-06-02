@@ -216,8 +216,6 @@ on_secure(netc_t *netc)
 	/* check if the node's uuid is known */
 	if (ctable_find(session->vnetwork->atable, session->node_info->uuid) == NULL) {
 		AuthResponse_set_result(msg, DNDSResult_noRight);
-		net_send_msg(session->netc, msg);
-		DNDSMessage_del(msg);
 		jlog(L_ERROR, "authentication failed, invalid certificate");
 		goto out;
 	} else {
