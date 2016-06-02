@@ -222,6 +222,12 @@ on_secure(netc_t *netc)
 		AuthResponse_set_result(msg, DNDSResult_success);
 	}
 
+	/* reWrite network_uuid, it has been destroyed */
+	if (session->node_info->v == 1) {
+		strncpy(session->node_info->network_uuid, session->vnetwork->uuid, 36);
+		session->node_info->network_uuid[36] = '\0';
+	}
+
 	/* Set the session as authenticated */
 	session->state = SESSION_STATE_AUTHED;
 
