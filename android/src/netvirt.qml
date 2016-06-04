@@ -8,6 +8,13 @@ ApplicationWindow {
     width: 640
     height: 480
 
+    Rectangle {
+        id: background
+        anchors.fill: parent
+
+        z: 0
+    }
+
     ProvisionWindow {
         id: provisionWindow
         z: -1
@@ -25,8 +32,8 @@ ApplicationWindow {
 
     NetvirtAgent {
         id: netvirtAgent
-        onConnected: connectWindow.status = "Status: connected"
-        onDisconnected: connectWindow.status = "Status: disconnected"
+        onConnected: connectWindow.connected("10.0.0.2")
+        onDisconnected: connectWindow.disconnected()
         onProvisioned: {
             provisionWindow.z = -1
             connectWindow.z = 1

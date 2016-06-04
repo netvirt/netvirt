@@ -4,5 +4,8 @@
         <file>ConnectWindow.qml</file>
         <file>ProvisionWindow.qml</file>
         <file>images/header.png</file>
+        <file>images/logo.svg</file>
+        <file>images/connected.png</file>
+        <file>images/disconnected.png</file>
     </qresource>
 </RCC>

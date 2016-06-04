@@ -1,6 +1,6 @@
 TEMPLATE = app
 TARGET = netvirt
-QT += quick xml androidextras
+QT += quick xml androidextras svg
 
 ANDROID_PACKAGE_SOURCE_DIR = $$PWD/android
 
