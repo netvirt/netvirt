@@ -117,7 +117,7 @@ Rectangle {
 
             enabled: true  // enabled: false  // pass-through until provisioning is implemented
             text: "Next"
-            onClicked: provision(provKeyInput.text)
+            onClicked: provision.provision(provKey.text)
         }
     }
 }
