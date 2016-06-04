@@ -297,8 +297,9 @@ static	size_t	 total = 1;
 			return -1;
 		}
 
-		if (json_unpack(elm, "{s:s}", "id", &network_id) == -1 ||
-		    json_unpack(elm, "{s:s}", "uuid", &network_uuid) == -1 ||
+		json_unpack(elm, "{s:s}", "id", &network_id);
+
+		if (json_unpack(elm, "{s:s}", "uuid", &network_uuid) == -1 ||
 		    json_unpack(elm, "{s:s}", "network", &subnet) == -1 ||
 		    json_unpack(elm, "{s:s}", "netmask", &netmask) == -1 ||
 		    json_unpack(elm, "{s:s}", "cert", &cert) == -1 ||
@@ -307,9 +308,10 @@ static	size_t	 total = 1;
 			jlog(L_ERROR, "NULL parameter");
 			return -1;
 		}
-		vnetwork_create(network_id, network_uuid, subnet, netmask, cert, pkey, tcert);
+		vnetwork_create(network_id?network_id:"", network_uuid, subnet, netmask, cert, pkey, tcert);
 	}
 
+	jlog(L_DEBUG, "fetched %d network", total);
 	if (strcmp(response, "success") == 0) {
 		jlog(L_DEBUG, "fetched %d network", total);
 		return 0;
