@@ -151,15 +151,11 @@ void vnetworks_free()
 
 struct vnetwork *vnetwork_disable(const char *uuid)
 {
-/*
-	context_t *context = NULL;
-	if (id < CONTEXT_LIST_SIZE) {
-		context = context_table[id];
-		context_table[id] = NULL;
-	}
+	struct vnetwork *vnet = NULL;
+	if ((vnet = vnetwork_lookup(uuid)) != NULL)
+		RB_REMOVE(vnetwork_tree, &vnetworks, vnet);
 
-*/
-	return NULL;
+	return vnet;
 }
 
 int vnetwork_create(char *id, char *uuid, char *address, char *netmask,

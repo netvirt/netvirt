@@ -123,9 +123,9 @@ del_network(struct session_info *sinfo, json_t *jmsg)
 	/* Forward del-network to the switch */
 	if (switch_sinfo != NULL) {
 		json_object_del(jmsg, "apikey");
+		json_object_set_new(js_network, "networkuuid", json_string(network_uuid));
 		json_object_del(js_network, "uuid");
 		json_object_del(js_network, "name");
-		json_object_set_new(js_network, "networkuuid", json_string(network_uuid));
 
 		fwd_str = json_dumps(jmsg, 0);
 		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
