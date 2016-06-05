@@ -108,7 +108,7 @@ authRequest(struct session *session, DNDSMessage_t *req_msg)
 	} else {
 		// that node is already connected, if the new session is from the same IP
 		// disconnect the old session, and let this one connect
-		if (strcmp(old_session->ip, session->ip) == 0) {
+		if (old_session->ip == NULL || strcmp(old_session->ip, session->ip) == 0) {
 			net_disconnect(old_session->netc);
 			ctable_insert(session->vnetwork->ctable, session->node_info->uuid, session);
 		}
