@@ -7,8 +7,8 @@ ANDROID_PACKAGE_SOURCE_DIR = $$PWD/android
 SOURCES = main.cpp
 HEADERS = logging.h
 
-SOURCES += agent.cpp service.cpp service_main.cpp
-HEADERS += agent.h    service.h  service_main.h
+SOURCES += agent.cpp config.cpp service.cpp service_main.cpp
+HEADERS += agent.h   config.h   service.h  service_main.h
 
 RESOURCES += \
     netvirt.qrc

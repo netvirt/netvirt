@@ -26,8 +26,6 @@ int main(int argc, char *argv[])
 
     qmlRegisterType<NetvirtAgent>("com.netvirt.netvirt", 1, 0, "NetvirtAgent");
     QQmlApplicationEngine engine(QUrl("qrc:///netvirt.qml"));
-    NetvirtAgent netvirtAgent;
-    engine.rootContext()->setContextProperty("netvirtAgent", &netvirtAgent);
 
     return app.exec();
 }

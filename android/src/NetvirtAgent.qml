@@ -18,4 +18,6 @@ QtObject {
   signal provision(string provKey)
   signal provisioned()
   onProvision: provisioned()
+
+  signal initialize()
 }

@@ -4,13 +4,17 @@
 #include <QObject>
 #include <QUdpSocket>
 
+#include "config.h"
+
 class NetvirtAgent : public QObject {
         Q_OBJECT
 
     public:
         NetvirtAgent();
+        ~NetvirtAgent();
 
     public slots:
+        void initialize();
         void provision(const QString &provisioning_key);
         void connect_(const QString &host, const QString &port, const QString &secret);
         void disconnect_();
@@ -19,6 +23,9 @@ class NetvirtAgent : public QObject {
         void provisioned();
         void connected();
         void disconnected();
+
+    protected:
+        Config *_config;
 };
 
 #endif

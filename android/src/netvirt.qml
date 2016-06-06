@@ -17,14 +17,14 @@ ApplicationWindow {
 
     ProvisionWindow {
         id: provisionWindow
-        z: -1
+        z: 1
 
         onProvision: netvirtAgent.provision(provKey)
     }
 
     ConnectWindow {
         id: connectWindow
-        z: 1
+        z: -1
 
         onConnect: netvirtAgent.connect_(host, port, secret)
         onDisconnect: netvirtAgent.disconnect_()
@@ -37,6 +37,9 @@ ApplicationWindow {
         onProvisioned: {
             provisionWindow.z = -1
             connectWindow.z = 1
+        }
+        Component.onCompleted: {
+            initialize()
         }
     }
 }
