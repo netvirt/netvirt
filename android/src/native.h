@@ -1,3 +1,6 @@
+#ifndef __NATIVE_H__
+#define __NATIVE_H__
+
 class QString;
 class QHostAddress;
 
@@ -11,3 +14,5 @@ int configure(int mtu,
               const QString &dns_server,
               const QString &search_domain,
               const QHostAddress &server);
+
+#endif
