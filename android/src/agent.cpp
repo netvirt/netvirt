@@ -19,6 +19,7 @@ void NetvirtAgent::initialize() {
 }
 
 void NetvirtAgent::provision(const QString &provisioning_key) {
+    Q_UNUSED(provisioning_key)
     this->_config->provision();
     emit provisioned();
 }
