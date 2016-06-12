@@ -1,6 +1,6 @@
-#include <android/log.h>
+#ifndef __LOGGING_H__
+#define __LOGGING_H__
 
-#define TAG "ToyVpnService"
+void log_info(const char *string);  // see native_* for implementation
 
-#define log_info(...) \
-        __android_log_write(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
+#endif

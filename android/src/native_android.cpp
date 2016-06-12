@@ -6,6 +6,8 @@
 
 #include "service_main.h"
 
+#define TAG "ToyVpnService"
+
 static QAndroidJniObject toyVpnServiceJava;
 
 void start_service(const QString &host, const QString &port, const QString &secret) {
@@ -66,4 +68,8 @@ int configure(int mtu,
                                              QAndroidJniObject::fromString(dns_server).object<jstring>(),
                                              QAndroidJniObject::fromString(search_domain).object<jstring>(),
                                              QAndroidJniObject::fromString(server.toString()).object<jstring>());
+}
+
+void log_info(const char *string) {
+    __android_log_write(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__);
 }

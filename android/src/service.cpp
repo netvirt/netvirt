@@ -75,10 +75,8 @@ void VPNService::handshakeReceived() {
 
 void VPNService::clientToServer() {
     log_info("Start receiving from client");
-    log_info("Bytes available: " + QString::number(this->client->bytesAvailable()).toUtf8());
     QByteArray packet = this->client->read(MAX_CLIENT_READ);
     while(!packet.isEmpty()) {
-        log_info("Bytes available: " + QString::number(this->client->bytesAvailable()).toUtf8());
         log_info("Received packet from client");
         this->server->write(packet);
         packet = this->client->read(MAX_CLIENT_READ);
