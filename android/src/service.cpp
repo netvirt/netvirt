@@ -3,7 +3,7 @@
 #include <QUdpSocket>
 
 #include "logging.h"
-#include "service_main.h"
+#include "native.h"
 #include "service.h"
 
 const int MAX_CLIENT_READ = 32767;

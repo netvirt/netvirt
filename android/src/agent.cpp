@@ -1,7 +1,6 @@
-#include <QtAndroidExtras/QAndroidJniObject>
-
 #include "agent.h"
 #include "logging.h"
+#include "native.h"
 
 NetvirtAgent::NetvirtAgent()
     : _config(new Config())
@@ -25,14 +24,7 @@ void NetvirtAgent::provision(const QString &provisioning_key) {
 }
 
 void NetvirtAgent::connect_(const QString &host, const QString &port, const QString &secret) {
-    QAndroidJniObject::callStaticMethod<void>(
-        "com/netvirt/netvirt/NetvirtAgent",
-        "connect",
-        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V",
-        QAndroidJniObject::fromString(host).object<jstring>(),
-        QAndroidJniObject::fromString(port).object<jstring>(),
-        QAndroidJniObject::fromString(secret).object<jstring>()
-    );
+    start_service(host, port, secret);
     emit connected();
 }
 
