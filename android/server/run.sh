@@ -1,8 +1,5 @@
 #!/bin/sh
 
-echo "adding iptables rules"
-sudo iptables -t nat -D POSTROUTING -s 10.0.0.0/8 -o eth0 -j MASQUERADE
-sudo iptables -t nat -A POSTROUTING -s 10.0.0.0/8 -o eth0 -j MASQUERADE
 echo "adding tun0"
 sudo ip tuntap del dev tun0 mode tun
 sudo ip tuntap add dev tun0 mode tun
