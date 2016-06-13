@@ -14,7 +14,6 @@ RESOURCES += \
     src/netvirt.qrc
 
 OTHER_FILES = \
-    $$files(src/*.qml) \
     src/android/AndroidManifest.xml\
     src/android/src/com/netvirt/netvirt/NetvirtAgent.java \
     src/android/src/com/netvirt/netvirt/ToyVpnService.java \

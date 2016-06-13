@@ -10,6 +10,3 @@ HEADERS += src/agent.h   src/config.h   src/native.h           src/service.h   s
 
 RESOURCES += \
     src/netvirt.qrc
-
-OTHER_FILES = \
-    $$files(src/*.qml)
