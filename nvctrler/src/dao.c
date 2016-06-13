@@ -81,7 +81,7 @@ int dao_prepare_statements()
 			"dao_add_client",
 			"INSERT INTO client "
 			"(email, password, apikey) "
-			"VALUES ($1, crypt($2, gen_salt('bf')), $3);",
+			"VALUES (LOWER($1), crypt($2, gen_salt('bf')), $3);",
 			0,
 			NULL);
 
@@ -118,7 +118,7 @@ int dao_prepare_statements()
 			"dao_fetch_account_apikey",
 			"SELECT apikey "
 			"FROM CLIENT "
-			"WHERE email = $1 "
+			"WHERE LOWER(email) = LOWER($1) "
 			"AND password = crypt($2, password) "
 			"AND status = 1;",
 			0,
@@ -147,7 +147,7 @@ int dao_prepare_statements()
 			"dao_fetch_client_id",
 			"SELECT id "
 			"FROM CLIENT "
-			"WHERE email = $1 "
+			"WHERE LOWER(email) = LOWER($1) "
 			"AND password = crypt($2, password);",
 			0,
 			NULL);
