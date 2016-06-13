@@ -103,16 +103,21 @@ authRequest(struct session *session, DNDSMessage_t *req_msg)
 
 	/* check if the node is already connected */
 	old_session = ctable_find(session->vnetwork->ctable, session->node_info->uuid);
-	if (old_session == NULL) {
+//	if (old_session == NULL) {
 		ctable_insert(session->vnetwork->ctable, session->node_info->uuid, session);
+/*
 	} else {
 		// that node is already connected, if the new session is from the same IP
 		// disconnect the old session, and let this one connect
-		if (old_session->ip == NULL || strcmp(old_session->ip, session->ip) == 0) {
+		if (old_session->ip == NULL) {
+			net_disconnect(old_session->netc);
+			ctable_insert(session->vnetwork->ctable, session->node_info->uuid, session);
+		} else if (strcmp(old_session->ip, session->ip) == 0) {
 			net_disconnect(old_session->netc);
 			ctable_insert(session->vnetwork->ctable, session->node_info->uuid, session);
 		}
 	}
+*/
 
 	session->cert_name = strdup(certName);
 	if (session->netc->security_level == NET_UNSECURE) {
