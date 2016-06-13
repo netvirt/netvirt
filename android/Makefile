@@ -36,4 +36,4 @@ clean:
 
 desktop:
 	qmake desktop.pro -o ${BUILD_DESKTOP_DIR}/Makefile
-	make -C ${BUILD_DESKTOP_DIR}
+	$(MAKE) -C ${BUILD_DESKTOP_DIR}
