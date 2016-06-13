@@ -1,11 +1,11 @@
 <RCC>
-    <qresource prefix="/">
-        <file>netvirt.qml</file>
-        <file>ConnectWindow.qml</file>
-        <file>ProvisionWindow.qml</file>
-        <file>images/header.png</file>
-        <file>images/logo.svg</file>
-        <file>images/connected.png</file>
-        <file>images/disconnected.png</file>
+    <qresource>
+        <file alias="netvirt.qml">gui/netvirt.qml</file>
+        <file alias="ConnectWindow.qml">gui/ConnectWindow.qml</file>
+        <file alias="ProvisionWindow.qml">gui/ProvisionWindow.qml</file>
+        <file alias="images/header.png">gui/images/header.png</file>
+        <file alias="images/logo.svg">gui/images/logo.svg</file>
+        <file alias="images/connected.png">gui/images/connected.png</file>
+        <file alias="images/disconnected.png">gui/images/disconnected.png</file>
     </qresource>
 </RCC>
