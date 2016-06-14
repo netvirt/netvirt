@@ -152,8 +152,11 @@ void vnetworks_free()
 struct vnetwork *vnetwork_disable(const char *uuid)
 {
 	struct vnetwork *vnet = NULL;
-	if ((vnet = vnetwork_lookup(uuid)) != NULL)
+	if ((vnet = vnetwork_lookup(uuid)) != NULL) {
 		RB_REMOVE(vnetwork_tree, &vnetworks, vnet);
+		RB_REMOVE(vnetwork_tree_id, &vnetworks_id, vnet);
+	}
+
 
 	return vnet;
 }
