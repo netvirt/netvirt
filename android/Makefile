@@ -37,3 +37,7 @@ clean:
 desktop:
 	qmake desktop.pro -o ${BUILD_DESKTOP_DIR}/Makefile
 	$(MAKE) -C ${BUILD_DESKTOP_DIR}
+
+desktop-cli:
+	qmake desktop-cli.pro -o ${BUILD_DESKTOP_DIR}-cli/Makefile
+	$(MAKE) -C ${BUILD_DESKTOP_DIR}-cli

@@ -1,0 +1,15 @@
+client:
+  image: netvirt/android-client
+  links:
+    - "server"
+  cap_add:
+    - NET_ADMIN
+    - MKNOD
+
+server:
+  image: netvirt/android-server-mock
+  expose:
+    - "8000/udp"
+  cap_add:
+    - NET_ADMIN
+    - MKNOD
