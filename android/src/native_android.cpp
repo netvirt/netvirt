@@ -73,3 +73,11 @@ int configure(int mtu,
 void log_info(const char *string) {
     __android_log_write(ANDROID_LOG_INFO, LOG_TAG, string);
 }
+
+void log_info(const QString &string) {
+    log_info(string.toUtf8());
+}
+
+void log_info(const QByteArray &string) {
+    log_info(string.data());
+}

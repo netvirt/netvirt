@@ -6,6 +6,7 @@
 #include <net/if.h>
 #include <sys/ioctl.h>
 
+#include "logging.h"
 #include "service_main.h"
 
 #ifndef TUN_INTERFACE_NAME
@@ -52,9 +53,18 @@ int configure(int mtu,
         exit(1);
     }
 
+    log_info("File descriptor: " + QString::number(interface));
     return interface;
 }
 
 void log_info(const char *string) {
     qDebug(string);
+}
+
+void log_info(const QString &string) {
+    log_info(string.toUtf8());
+}
+
+void log_info(const QByteArray &string) {
+    log_info(string.data());
 }
