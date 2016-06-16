@@ -29,20 +29,17 @@ void VPNService::testSlot() {
 }
 
 void VPNService::initialize() {
-    log_info("Initializing VPNService...");
+    log_info("Initializing VPNService... to " + this->server_host + ":" + QString::number(this->server_port));
 
     this->server = new QUdpSocket(this);
+    connect(this->server, SIGNAL(connected()),
+            this, SLOT(handshake()));
     this->server->connectToHost(this->server_host, this->server_port);
-    protect(this->server->socketDescriptor());
-    this->handshake();
-
-    connect(this, SIGNAL(testSignal()),
-            this, SLOT(testSlot()));
-    emit testSignal();
-    QTimer::singleShot(400, this, SLOT(testSlot()));
 }
 
 void VPNService::handshake() {
+    log_info("Sending handshake...");
+    protect(this->server->socketDescriptor());
     QByteArray datagram;
     datagram.append('\0');
     datagram.append(secret);
@@ -52,6 +49,7 @@ void VPNService::handshake() {
 }
 
 void VPNService::handshakeReceived() {
+    log_info("Handshake received!");
     disconnect(this->server, SIGNAL(readyRead()),
                this, SLOT(handshakeReceived()));
 
@@ -102,6 +100,7 @@ void VPNService::pingServer() {
 }
 
 int VPNService::configureInterface(const QString &parameters) {
+    log_info("Configuring interface...");
     int mtu = 1500, address_mask = 24, route_mask = 24;
     QString address, route, dns_server, search_domain;
 

@@ -15,6 +15,7 @@ class VPNService : public QObject {
         void initialize();
     private slots:
         void testSlot();
+        void handshake();
         void handshakeReceived();
         void serverToClient();
         void clientToServer();
@@ -22,7 +23,6 @@ class VPNService : public QObject {
     signals:
         void testSignal();
     private:
-        void handshake();
         int configureInterface(const QString &parameters);
 
         QUdpSocket *server;
