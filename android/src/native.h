@@ -13,6 +13,6 @@ int configure(int mtu,
               int route_mask,
               const QString &dns_server,
               const QString &search_domain,
-              const QHostAddress &server);
+              const QString &server);
 
 #endif

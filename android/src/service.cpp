@@ -16,7 +16,7 @@ VPNService::VPNService(const QString& server_host_,
     : client(new QFile("")),
       ping_timer(new QTimer(this))
 {
-    this->server_host = QHostAddress(server_host_);
+    this->server_host = server_host_;
     this->server_port = server_port_;
     this->secret = secret_;
     connect(this->ping_timer, SIGNAL(timeout()),

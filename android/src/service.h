@@ -2,7 +2,6 @@
 #define __SERVICE_H__
 
 #include <QFile>
-#include <QHostAddress>
 #include <QObject>
 #include <QTimer>
 
@@ -27,7 +26,7 @@ class VPNService : public QObject {
         int configureInterface(const QString &parameters);
 
         QUdpSocket *server;
-        QHostAddress server_host;
+        QString server_host;
         quint16 server_port;
         QString secret;
         QFile *client;

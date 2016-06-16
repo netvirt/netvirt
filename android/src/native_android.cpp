@@ -56,7 +56,7 @@ int configure(int mtu,
               int route_mask,
               const QString &dns_server,
               const QString &search_domain,
-              const QHostAddress &server)
+              const QString &server)
 {
     return toyVpnServiceJava.callMethod<int>("configure_",
                                              "(ILjava/lang/String;ILjava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)I",
@@ -67,7 +67,7 @@ int configure(int mtu,
                                              route_mask,
                                              QAndroidJniObject::fromString(dns_server).object<jstring>(),
                                              QAndroidJniObject::fromString(search_domain).object<jstring>(),
-                                             QAndroidJniObject::fromString(server.toString()).object<jstring>());
+                                             QAndroidJniObject::fromString(server).object<jstring>());
 }
 
 void log_info(const char *string) {
