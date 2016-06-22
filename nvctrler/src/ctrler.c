@@ -84,7 +84,7 @@ dispatch_nvswitch(struct session_info **sinfo, json_t *jmsg)
 	char 	*action;
 
 	dump = json_dumps(jmsg, 0);
-	jlog(L_DEBUG, "jmsg: %s", dump);
+	//jlog(L_DEBUG, "jmsg: %s", dump);
 	free(dump);
 
 	if (json_unpack(jmsg, "{s:s}", "action", &action) == -1) {
@@ -110,7 +110,7 @@ dispatch_nvapi(struct session_info *sinfo, json_t *jmsg)
 	char	*action;
 
 	dump = json_dumps(jmsg, 0);
-	jlog(L_DEBUG, "jmsg: %s", dump);
+	//jlog(L_DEBUG, "jmsg: %s", dump);
 	free(dump);
 
 	if (json_unpack(jmsg, "{s:s}", "action", &action) == -1) {
