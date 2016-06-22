@@ -63,20 +63,28 @@ ctable_t *ctable_new(size_t size, itemdup_f session_itemdup, itemrel_f session_i
 
 void ctable_delete(ctable_t *ctable)
 {
+	if (ctable == NULL)
+		return;
 	jsw_hdelete(ctable);
 }
 
 void *ctable_find(ctable_t *ctable, char *uuid)
 {
+	if (ctable == NULL)
+		return NULL;
 	return jsw_hfind(ctable, uuid);
 }
 
 int ctable_insert(ctable_t *ctable, char *uuid, void *session)
 {
+	if (ctable == NULL)
+		return -1;
 	return jsw_hinsert(ctable, uuid, session);
 }
 
 int ctable_erase(ctable_t *ctable, char *uuid)
 {
+	if (ctable == NULL)
+		return -1;
 	return jsw_herase(ctable, uuid);
 }
