@@ -124,6 +124,10 @@ dispatch_nvapi(struct session_info *sinfo, json_t *jmsg)
 		activate_account(sinfo, jmsg);
 	} else if (strcmp(action, "get-account-apikey") == 0) {
 		get_account_apikey(sinfo, jmsg);
+	} else if (strcmp(action, "reset-account-password") == 0) {
+		reset_account_password(sinfo, jmsg);
+	} else if (strcmp(action, "set-new-password") == 0) {
+		set_new_password(sinfo, jmsg);
 	} else if (strcmp(action, "add-network") == 0) {
 		add_network(sinfo, jmsg);
 	} else if (strcmp(action, "del-network") == 0) {
