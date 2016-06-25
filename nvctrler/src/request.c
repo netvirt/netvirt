@@ -684,7 +684,7 @@ activate_account(struct session_info *sinfo, json_t *jmsg)
 	json_object_set_new(resp, "tid", json_string("tid"));
 	json_object_set_new(resp, "action", json_string("response"));
 
-	new_apikey = pki_gen_apikey();
+	new_apikey = pki_gen_key();
 	if (apikey == NULL) {
 		json_object_set_new(resp, "response", json_string("error"));
 		goto out;
@@ -741,7 +741,7 @@ add_account(struct session_info *sinfo, json_t *jmsg)
 	json_object_set_new(resp, "tid", json_string("tid"));
 	json_object_set_new(resp, "action", json_string("response"));
 
-	apikey = pki_gen_apikey();
+	apikey = pki_gen_key();
 	if (apikey == NULL) {
 		json_object_set_new(resp, "response", json_string("error"));
 		goto out;
@@ -1133,3 +1133,114 @@ out:
 
 	return;
 }
+
+void
+set_new_password(struct session_info *sinfo, json_t *jmsg)
+{
+	jlog(L_DEBUG, "set-new-password");
+	char	*email = NULL;
+	char	*resetkey = NULL;
+	char	*password = NULL;
+	char	*resp_str;
+	json_t	*resp = NULL;
+	json_t	*js_account = NULL;
+	int	 ret;
+
+	if ((js_account = json_object_get(jmsg, "account")) == NULL)
+		return;
+
+	json_unpack(js_account, "{s:s}", "email", &email);
+	if (email == NULL) {
+		jlog(L_ERROR, "Invalid message\n");
+		return;
+	}
+
+	json_unpack(js_account, "{s:s}", "resetkey", &resetkey);
+	if (resetkey == NULL) {
+		jlog(L_ERROR, "Invalid message\n");
+		return;
+	}
+	json_unpack(js_account, "{s:s}", "password", &password);
+	if (password == NULL) {
+		jlog(L_ERROR, "Invalid message\n");
+		return;
+	}
+
+	resp = json_object();
+	json_object_set_new(resp, "tid", json_string("tid"));
+	json_object_set_new(resp, "action", json_string("response"));
+
+	printf("email:%s\n", email);
+	printf("resetkey:%s\n", resetkey);
+	printf("password:%s\n", password);
+
+	if ((ret = dao_set_password(email, resetkey, password)) == -1) {
+		json_object_set_new(resp, "response", json_string("denied"));
+		goto out;
+	}
+
+	json_object_set_new(resp, "response", json_string("success"));
+out:
+	resp_str = json_dumps(resp, 0);
+
+	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+
+	json_decref(resp);
+	free(resp_str);
+}
+
+void
+reset_account_password(struct session_info *sinfo, json_t *jmsg)
+{
+	jlog(L_DEBUG, "reset-account-password");
+	char	*email = NULL;
+	char	*resetkey = NULL;
+	char	*resp_str;
+	json_t	*resp = NULL;
+	json_t	*js_account = NULL;
+	int	 ret;
+
+	if ((js_account = json_object_get(jmsg, "account")) == NULL)
+		return;
+
+	json_unpack(js_account, "{s:s}", "email", &email);
+
+	if (email == NULL) {
+		jlog(L_ERROR, "Invalid message\n");
+		return;
+	}
+
+	resp = json_object();
+	json_object_set_new(resp, "tid", json_string("tid"));
+	json_object_set_new(resp, "action", json_string("response"));
+
+	if ((resetkey = pki_gen_key()) == NULL) {
+		json_object_set_new(resp, "response", json_string("error"));
+		goto out;
+	}
+
+	printf("email: %s\n", email);
+	printf("resetkey: %s\n", resetkey);
+
+
+	if ((ret = dao_set_resetkey(email, resetkey)) == -1) {
+		json_object_set_new(resp, "response", json_string("denied"));
+		goto out;
+	}
+
+	json_object_set_new(resp, "response", json_string("success"));
+	json_object_set_new(js_account, "resetkey", json_string(resetkey));
+	json_object_del(js_account, "email");
+	json_object_set_new(resp, "account", js_account);
+
+out:
+	resp_str = json_dumps(resp, 0);
+
+	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
+	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
+
+	json_decref(resp);
+	free(resp_str);
+}
+

@@ -103,6 +103,36 @@ int dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
+			"dao_set_password",
+			"UPDATE client "
+			"SET password = crypt($3, gen_salt('bf')), "
+			"resetdate = NULL "
+			"WHERE digest(resetkey, 'sha256') = digest($2, 'sha256') "
+			"AND email = $1 "
+			"AND resetdate + interval '1day' > now() "
+			"AND resetkey is not NULL;",
+			0,
+			NULL);
+	check_result_status(result);
+	if (result == NULL)
+		goto error;
+	PQclear(result);
+
+	result = PQprepare(dbconn,
+			"dao_set_resetkey",
+			"UPDATE client "
+			"SET resetkey = $2, "
+			"resetdate = now() "
+			"WHERE email = $1 "
+			"AND (resetdate is NULL OR resetdate + interval '1hour' < now());",
+			0,
+			NULL);
+	check_result_status(result);
+	if (result == NULL)
+		goto error;
+	PQclear(result);
+
+	result = PQprepare(dbconn,
 			"dao_update_client_apikey",
 			"UPDATE client "
 			"set apikey = $2 "
@@ -543,6 +573,77 @@ int dao_activate_client(char *apikey)
 
 	if (strcmp(PQcmdTuples(result), "0") == 0) {
 		PQclear(result);
+		return -1;
+	}
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return -1;
+	}
+
+	PQclear(result);
+
+	return 0;
+}
+
+int dao_set_password(char *email, char *resetkey, char *password)
+{
+	const char *paramValues[3];
+	int paramLengths[3];
+	PGresult *result = NULL;
+
+	if (!email || !resetkey || !password) {
+		jlog(L_WARNING, "invalid NULL parameter");
+		return -1;
+	}
+
+	paramValues[0] = email;
+	paramValues[1] = resetkey;
+	paramValues[2] = password;
+
+	paramLengths[0] = strlen(email);
+	paramLengths[1] = strlen(resetkey);
+	paramLengths[2] = strlen(password);
+
+	result = PQexecPrepared(dbconn, "dao_set_password", 3, paramValues, paramLengths, NULL, 1);
+
+	if (!result) {
+		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		return -1;
+	}
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return -1;
+	}
+
+	PQclear(result);
+
+	return 0;
+
+
+}
+int dao_set_resetkey(char *email, char *resetkey)
+{
+	const char *paramValues[2];
+	int paramLengths[2];
+	PGresult *result = NULL;
+
+	if (!email || !resetkey) {
+		jlog(L_WARNING, "invalid NULL parameter");
+		return -1;
+	}
+
+	paramValues[0] = email;
+	paramValues[1] = resetkey;
+
+	paramLengths[0] = strlen(email);
+	paramLengths[1] = strlen(resetkey);
+
+	result = PQexecPrepared(dbconn, "dao_set_resetkey", 2, paramValues, paramLengths, NULL, 1);
+
+	if (!result) {
+		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 

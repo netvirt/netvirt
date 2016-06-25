@@ -200,19 +200,19 @@ static void b64enc(const uint8_t *buf, size_t length, char **b64buf)
 	BUF_MEM_free(memptr);
 }
 
-char *pki_gen_apikey()
+char *pki_gen_key()
 {
 	int ret = 0;
 
 	char *b64key = NULL;
-	uint8_t key[18];
+	uint8_t key[36];
 
-	ret = RAND_bytes(key, 18);
+	ret = RAND_bytes(key, 36);
 	if (ret != 1) {
 		return NULL;
 	}
 
-	b64enc(key, 18, &b64key);
+	b64enc(key, 36, &b64key);
 
 	return b64key;
 }
