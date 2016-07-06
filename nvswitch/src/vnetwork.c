@@ -169,7 +169,7 @@ int vnetwork_create(char *id, char *uuid, char *address, char *netmask,
 {
 	struct vnetwork *vnet;
 
-	vnet = malloc(sizeof(struct vnetwork));
+	vnet = calloc(1, sizeof(struct vnetwork));
 	vnet->uuid = strdup(uuid);
 	vnet->id = strdup(id);
 
