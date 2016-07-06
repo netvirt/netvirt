@@ -642,6 +642,11 @@ int dao_set_resetkey(char *email, char *resetkey)
 
 	result = PQexecPrepared(dbconn, "dao_set_resetkey", 2, paramValues, paramLengths, NULL, 1);
 
+	if (strcmp(PQcmdTuples(result), "0") == 0) {
+		PQclear(result);
+		return -1;
+	}
+
 	if (!result) {
 		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
