@@ -155,10 +155,10 @@ struct vnetwork *vnetwork_disable(const char *uuid)
 	struct vnetwork *vnet_id = NULL;
 	if ((vnet = vnetwork_lookup(uuid)) != NULL) {
 		RB_REMOVE(vnetwork_tree, &vnetworks, vnet);
-	}
 
-	if ((vnet_id = vnetwork_lookup_id(vnet->id)) != NULL) {
-		RB_REMOVE(vnetwork_tree_id, &vnetworks_id, vnet_id);
+		if ((vnet_id = vnetwork_lookup_id(vnet->id)) != NULL) {
+			RB_REMOVE(vnetwork_tree_id, &vnetworks_id, vnet_id);
+		}
 	}
 
 	return vnet;
@@ -169,7 +169,7 @@ int vnetwork_create(char *id, char *uuid, char *address, char *netmask,
 {
 	struct vnetwork *vnet;
 
-	vnet = malloc(sizeof(struct vnetwork));
+	vnet = calloc(1, sizeof(struct vnetwork));
 	vnet->uuid = strdup(uuid);
 	vnet->id = strdup(id);
 
