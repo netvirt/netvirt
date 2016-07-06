@@ -28,6 +28,8 @@ void listall_node(struct session_info **, json_t *);
 void del_network(struct session_info *, json_t *);
 void add_node(struct session_info *, json_t *);
 void del_node(struct session_info *, json_t *);
+void set_new_password(struct session_info *, json_t *);
+void reset_account_password(struct session_info *, json_t *);
 void activate_account(struct session_info *, json_t *);
 void add_account(struct session_info *, json_t *);
 void get_account_apikey(struct session_info *, json_t *);

@@ -37,6 +37,8 @@ int dao_del_context(char *client_id, char *context_id);
 
 int dao_update_client_apikey(char *apikey, char *new_apikey);
 int dao_activate_client(char *apikey);
+int dao_set_password(char *email, char *resetkey, char *password);
+int dao_set_resetkey(char *email, char *resetkey);
 int dao_add_client(char *email, char *password, char *apikey);
 int dao_fetch_account_apikey(char **apikey, char *email, char *password);
 int dao_fetch_client_id_by_apikey(char **client_id, char *apikey);
