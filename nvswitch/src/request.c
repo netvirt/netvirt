@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details
  */
-
+#if 0
 #include <dnds.h>
 #include <logger.h>
 
@@ -198,3 +198,4 @@ p2pRequest(struct session *session_a, struct session *session_b)
 	DNDSMessage_del(msg);
 
 }
+#endif

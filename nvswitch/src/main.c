@@ -1,7 +1,7 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2016
- * Nicolas J. Bouliane <admin@netvirt.org>
+ * Copyright (C) mind4networks inc. 2009-2016
+ * Nicolas J. Bouliane <nib@dynvpn.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,11 +13,11 @@
  * GNU Affero General Public License for more details
  */
 
-#include <pthread.h>
+#include <err.h>
+#include <signal.h>
 #include <unistd.h>
 
-#include <libconfig.h>
-#include <netbus.h>
+#include <event.h>
 
 #include <logger.h>
 
@@ -26,8 +26,29 @@
 
 #define CONFIG_FILE "/etc/netvirt/nvswitch.conf"
 
-extern int pipefd[2];
-static struct switch_cfg *switch_cfg;
+struct event_base	*ev_base;
+
+static void	usage(void);
+static void	on_log(const char *);
+
+void
+usage(void)
+{
+	extern char	*__progname;
+	fprintf(stdout, "%s:\n"
+	    "-q\t\tquiet mode\n"
+	    "-v\t\tshow version\n"
+	    "-h\t\tthis message\n"
+	    ,__progname);
+
+	exit(-1);
+}
+
+void
+sighandler(int signal, short events, void *arg)
+{
+	event_base_loopbreak(arg);
+}
 
 void
 on_log(const char *logline)
@@ -35,145 +56,63 @@ on_log(const char *logline)
 	fprintf(stdout, "%s", logline);
 }
 
-int
-config_parse(config_t *cfg, struct switch_cfg *switch_cfg)
-{
-	if (!config_read_file(cfg, CONFIG_FILE)) {
-		jlog(L_ERROR, "Can't open %s", CONFIG_FILE);
-		return -1;
-	}
-
-        if (config_lookup_string(cfg, "log_file", &switch_cfg->log_file)) {
-                jlog_init_file(switch_cfg->log_file);
-        }
-
-	if (config_lookup_string(cfg, "listen_ip", &switch_cfg->listen_ip))
-		jlog(L_DEBUG, "listen_ip: %s", switch_cfg->listen_ip);
-	else {
-		jlog(L_ERROR, "listen_ip is not present !");
-		return -1;
-	}
-
-	if (config_lookup_string(cfg, "listen_port", &switch_cfg->listen_port))
-		jlog(L_DEBUG, "listen_port: %s", switch_cfg->listen_port);
-	else {
-		jlog(L_ERROR, "listen_port is not present !");
-		return -1;
-	}
-
-	if (config_lookup_string(cfg, "ctrler_ip", &switch_cfg->ctrler_ip))
-		jlog(L_DEBUG, "ctrler_ip: %s", switch_cfg->ctrler_ip);
-	else {
-		jlog(L_ERROR, "ctrler_ip is not present !");
-		return -1;
-	}
-
-	if (config_lookup_string(cfg, "ctrler_port", &switch_cfg->ctrler_port))
-		jlog(L_DEBUG, "ctrler_port: %s", switch_cfg->ctrler_port);
-	else {
-		jlog(L_ERROR, "ctrler_port is not present !");
-		return -1;
-	}
-
-	if (config_lookup_string(cfg, "certificate", &switch_cfg->cert))
-		jlog(L_DEBUG, "certificate: %s", switch_cfg->cert);
-	else {
-		jlog(L_ERROR, "certificate is not present !");
-		return -1;
-	}
-
-	if (config_lookup_string(cfg, "privatekey", &switch_cfg->pkey))
-		jlog(L_DEBUG, "privatekey: %s", switch_cfg->pkey);
-	else {
-		jlog(L_ERROR, "privatekey is not present !");
-		return -1;
-	}
-
-	if (config_lookup_string(cfg, "trusted_cert", &switch_cfg->tcert))
-		jlog(L_DEBUG, "trusted_cert: %s", switch_cfg->tcert);
-	else {
-		jlog(L_ERROR, "trusted_cert is not present !");
-		return -1;
-	}
-
-	return 0;
-}
 
 int
 main(int argc, char *argv[])
 {
-	int		opt;
-	uint8_t		quiet = 0;
-	config_t	cfg;
+	json_t			*config;
+	json_error_t		 error;
+	struct event		 ev_sigint;
+	struct event		 ev_sigterm;
+	int			 ch;
+	int			 quiet = 0;
 
-	switch_cfg = calloc(1, sizeof(struct switch_cfg));
-
-	while ((opt = getopt(argc, argv, "qvh")) != -1) {
-		switch (opt) {
+	while ((ch = getopt(argc, argv, "qvh")) != -1) {
+		switch (ch) {
 		case 'q':
 			quiet = 1;
 			break;
 		case 'v':
 			fprintf(stdout, "netvirt-switch %s\n", NVSWITCH_VERSION);
-			return 0;
+			return (0);
 		default:
-		case 'h':
-			fprintf(stdout, "netvirt-switch:\n"
-					"-q\t\tquiet mode\n"
-					"-v\t\tshow version\n"
-					"-h\t\tshow this help\n");
-			return 0;
+			usage();
 		}
 	}
+	argc -= optind;
+	argv += optind;
 
-	if (!quiet) {
+	if (quiet != 1)
 		jlog_init_cb(on_log);
-	}
 
-	config_init(&cfg);
-	switch_cfg->ctrl_initialized = 0;
+	if ((config = json_load_file(CONFIG_FILE, 0, &error)) == NULL)
+		errx(1, "json_load_file: line: %d - %s",
+		    error.line, error.text);
 
-	if (config_parse(&cfg, switch_cfg)) {
-		jlog(L_ERROR, "config parse failed");
-		exit(EXIT_FAILURE);
-	}
+	if ((ev_base = event_init()) == NULL)
+		errx(1, "event_base_new");
 
-	if (krypt_init()) {
-		jlog(L_ERROR, "krypt_init failed");
-		exit(EXIT_FAILURE);
-	}
+	signal_set(&ev_sigint, SIGINT, sighandler, ev_base);
+	if (signal_add(&ev_sigint, NULL) < 0)
+		errx(1, "signal_add");
 
-	if (netbus_init()) {
-		jlog(L_ERROR, "netbus_init failed");
-		exit(EXIT_FAILURE);
-	}
+	signal_set(&ev_sigterm, SIGTERM, sighandler, ev_base);
+	if (signal_add(&ev_sigterm, NULL) < 0)
+		errx(1, "signal_add");
 
-	vnetwork_init();
-	pipe(pipefd);
+	switch_init(config);
 
-	pthread_t thread_switch;
-	pthread_attr_t attr;
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	pthread_create(&thread_switch, &attr, switch_init, switch_cfg);
+//	printf("%s\n", json_dumps(json, JSON_COMPACT|JSON_INDENT(1)|JSON_PRESERVE_ORDER));
+/*
 
-	if (ctrl_init(switch_cfg)) {
-		jlog(L_ERROR, "ctrl_init failed");
-		exit(EXIT_FAILURE);
-	}
+	control_init();
 
-	while (switch_cfg->switch_running)
-		sleep(1);
+*/
+	event_base_dispatch(ev_base);
 
-	/* clean up */
-	ctrl_fini();
-	switch_fini();
-	netbus_fini();
-	krypt_fini();
-	config_destroy(&cfg);
-	free(switch_cfg);
-
-	printf("Goodbye netvirt-switch !\n");
+	json_decref(config);
+	event_base_free(ev_base);
+	warnx("now off");
 
 	return 0;
 }

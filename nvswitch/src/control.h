@@ -16,8 +16,7 @@
 #ifndef CONTROL_H
 #define CONTROL_H
 
-#include <dnds.h>
-
+#if 0
 #include "session.h"
 #include "switch.h"
 
@@ -27,5 +26,6 @@ int update_node_status(char *, char *, char *, char *);
 int query_list_network();
 int ctrl_init(struct switch_cfg *);
 void ctrl_fini();
+#endif
 
 #endif

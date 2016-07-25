@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details
  */
-
+#if 0
 #include <errno.h>
 #include <signal.h>
 #include <unistd.h>
@@ -878,3 +878,4 @@ ctrl_fini()
 	pki_passport_destroy(passport);
 	vnetworks_free();
 }
+#endif

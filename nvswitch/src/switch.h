@@ -16,26 +16,23 @@
 #ifndef SWITCH_H
 #define SWITCH_H
 
-struct switch_cfg {
+#include <jansson.h>
 
-	const char *log_file;
+struct switch_config {
 
-	const char *listen_ip;
-	const char *listen_port;
+	const char	*log_file;
 
-	const char *ctrler_ip;
-	const char *ctrler_port;
+	const char	*switch_ip;
+	const char	*switch_port;
 
-	const char *cert;
-	const char *pkey;
-	const char *tcert;
-
-	int ctrl_initialized;
-	int ctrl_running;
-	int switch_running;
+	const char	*control_ip;
+	const char	*control_port;
+	const char	*certificate;
+	const char	*privatekey;
+	const char	*trustedcert;
 };
 
-void *switch_init(void *switch_cfg);
-void switch_fini();
+void	 switch_init(json_t *);
+void	 switch_fini(void);
 
 #endif

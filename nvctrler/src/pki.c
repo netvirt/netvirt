@@ -16,6 +16,7 @@
 #include <openssl/ssl.h>
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
+#include <openssl/ecdh.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
@@ -27,12 +28,32 @@
 
 // openssl x509 -in ./certificate.pem -text
 
-/* TODO handle errors
- * 	use EVP_sha256
- * 	add a function to write in a file/binary blob the signing request
- */
-
 static EVP_PKEY *pki_generate_keyring()
+{
+	EVP_PKEY_CTX	*params_ctx, *key_ctx;
+	EVP_PKEY	*keyring = NULL, *params = NULL;
+	EC_KEY		*pubkey;
+
+	OpenSSL_add_all_algorithms();
+	RAND_poll();
+
+	params_ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, NULL);
+	EVP_PKEY_paramgen_init(params_ctx);
+	EVP_PKEY_CTX_set_ec_paramgen_curve_nid(params_ctx, NID_X9_62_prime256v1);
+
+	EVP_PKEY_paramgen(params_ctx, &params);
+
+	key_ctx = EVP_PKEY_CTX_new(params, NULL);
+	EVP_PKEY_keygen_init(key_ctx);
+	EVP_PKEY_keygen(key_ctx, &keyring);
+
+	pubkey = EVP_PKEY_get1_EC_KEY(keyring);
+	EC_KEY_set_asn1_flag(pubkey, OPENSSL_EC_NAMED_CURVE);
+
+	return keyring;
+
+}
+static EVP_PKEY *pki_generate_rsa_keyring()
 {
 	jlog(L_DEBUG, "pki_generate_keyring");
 
@@ -99,7 +120,7 @@ static X509_REQ *pki_certificate_request(EVP_PKEY *keyring, digital_id_t *digita
 	X509_REQ_set_pubkey(cert_req, keyring);
 
 	// create a message digest
-	message_digest = EVP_sha1();
+	message_digest = EVP_sha256();
 
 	// sign certificate request
 	X509_REQ_sign(cert_req, keyring, message_digest);
@@ -171,7 +192,7 @@ static void pki_sign_certificate(EVP_PKEY *keyring, X509 *certificate)
 {
 	jlog(L_NOTICE, "pki_sign_certificate");
 
-	X509_sign(certificate, keyring, EVP_sha1());
+	X509_sign(certificate, keyring, EVP_sha256());
 }
 
 static void b64enc(const uint8_t *buf, size_t length, char **b64buf)
@@ -488,13 +509,10 @@ int pki_bootstrap_certs()
 
 	embassy_t *nvc_embassy;
 	nvc_embassy = pki_embassy_new(nvc_digital_id, expiration_delay);
-
 	passport_t *nvs_passport;
 	nvs_passport = pki_embassy_deliver_passport(nvc_embassy, nvs_digital_id, expiration_delay);
-
 	passport_t *nvp_passport;
 	nvp_passport = pki_embassy_deliver_passport(nvc_embassy, nvp_digital_id, expiration_delay);
-
 	pki_write_certificate_in_mem(nvc_embassy->certificate, &cert_ptr, &size);
 	pki_write_privatekey_in_mem(nvc_embassy->keyring, &pvkey_ptr, &size);
 
