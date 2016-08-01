@@ -33,20 +33,20 @@
 #include "cert.h"
 #include "switch.h"
 
+static SSL_CTX			*ctx;
+static passport_t		*passport;
 extern struct event_base	*ev_base;
 static struct event		*ev_udplisten;
 static struct addrinfo		*ai;
-static SSL_CTX			*ctx;
-static passport_t		*passport;
-static unsigned char		 cookie_secret[16];
 static int			 cookie_initialized;
+static unsigned char		 cookie_secret[16];
 
 int
 certverify_cb(int ok, X509_STORE_CTX *store)
 {
 	X509		*cert;
 	X509_NAME	*name;
-	char		buf[256];
+	char		 buf[256];
 
 	cert = X509_STORE_CTX_get_current_cert(store);
 	name = X509_get_subject_name(cert);
@@ -74,7 +74,7 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 	SSL_use_certificate(ssl, passport->certificate);
 	SSL_use_PrivateKey(ssl, passport->keyring);
 
-	return SSL_TLSEXT_ERR_OK;
+	return (SSL_TLSEXT_ERR_OK);
 }
 
 /* generate_cookie and verify_cookie
@@ -98,7 +98,7 @@ generate_cookie(SSL *ssl, unsigned char *cookie, unsigned int *cookie_len)
 	/* Initialize a random secret */
 	if (cookie_initialized == 0) {
 		if (RAND_bytes(cookie_secret, sizeof(cookie_secret)) <= 0)
-			return 0;
+			return (0);
 		cookie_initialized = 1;
 	}
 
@@ -119,11 +119,11 @@ generate_cookie(SSL *ssl, unsigned char *cookie, unsigned int *cookie_len)
 		break;
 #endif
 	default:
-		return 0;
+		return (0);
 	}
 
 	if ((buffer = OPENSSL_malloc(length)) == NULL)
-		return 0;
+		return (0);
 
 	switch (peer.sa.sa_family) {
 	case AF_INET:
@@ -139,7 +139,7 @@ generate_cookie(SSL *ssl, unsigned char *cookie, unsigned int *cookie_len)
 		break;
 #endif
 	default:
-		return 0;
+		return (0);
 	}
 
 	/* Calculate HMAC of buffer using the secret */
@@ -150,7 +150,7 @@ generate_cookie(SSL *ssl, unsigned char *cookie, unsigned int *cookie_len)
 	memcpy(cookie, result, resultlength);
 	*cookie_len = resultlength;
 
-    return 1;
+    return (1);
 }
 
 int
@@ -170,7 +170,7 @@ verify_cookie(SSL *ssl, unsigned char *cookie, unsigned int cookie_len)
 
 	/* If secret isn't initialized yet, the cookie can't be valid */
 	if (cookie_initialized == 0)
-		return 0;
+		return (0);
 
 	/* Read peer information */
 	(void)BIO_dgram_get_peer(SSL_get_rbio(ssl), &peer);
@@ -189,11 +189,11 @@ verify_cookie(SSL *ssl, unsigned char *cookie, unsigned int cookie_len)
 		break;
 #endif
 	default:
-		return 0;
+		return (0);
 	}
 
 	if ((buffer = OPENSSL_malloc(length)) == NULL)
-		return 0;
+		return (0);
 
 	switch (peer.sa.sa_family) {
 	case AF_INET:
@@ -209,7 +209,7 @@ verify_cookie(SSL *ssl, unsigned char *cookie, unsigned int cookie_len)
 		break;
 #endif
 	default:
-		return 0;
+		return (0);
 	}
 
 	/* Calculate HMAC of buffer using the secret */
@@ -219,9 +219,9 @@ verify_cookie(SSL *ssl, unsigned char *cookie, unsigned int cookie_len)
 
 	if (cookie_len == resultlength
 	    && memcmp(result, cookie, resultlength) == 0)
-		return 1;
+		return (1);
 
-    return 0;
+    return (0);
 }
 
 void
@@ -230,8 +230,8 @@ udpclient_cb(int sock, short what, void *arg)
 	printf("udpclient_cb %d\n", sock);
 
 	SSL	*ssl;
-	char	 buf[1500] = {0};
 	int	 ret;
+	char	 buf[1500] = {0};
 
 	ssl = arg;
 
@@ -321,14 +321,14 @@ switch_init(json_t *config)
 {
 	EC_KEY		*ecdh;
 	struct addrinfo	 hints;
+	int		 status;
+	int		 sock;
+	int		 flag;
 	const char	*ip;
 	const char	*port;
 	const char	*cert;
 	const char	*pkey;
 	const char	*trust_cert;
-	int		 status;
-	int		 sock;
-	int		 flag;
 
 	if (json_unpack(config, "{s:s}", "switch_ip", &ip) < 0)
 		err(1, "%s:%d", "switch_ip not found in config", __LINE__);
