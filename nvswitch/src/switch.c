@@ -63,7 +63,7 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 	const char	*name;
 
 	if ((name = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name)) == NULL)
-		return SSL_TLSEXT_ERR_NOACK;
+		return (SSL_TLSEXT_ERR_NOACK);
 
 	printf(">>> name %s\n", name);
 
