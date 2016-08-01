@@ -331,40 +331,41 @@ switch_init(json_t *config)
 	int		 flag;
 
 	if (json_unpack(config, "{s:s}", "switch_ip", &ip) < 0)
-		err(1, "switch_ip is not present in config");
+		err(1, "%s:%d", "switch_ip not found in config", __LINE__);
 
 	if (json_unpack(config, "{s:s}", "switch_port", &port) < 0)
-		err(1, "switch_port is not present in config");
+		err(1, "%s:%d", "switch_port not found config", __LINE__);
 
 	if (json_unpack(config, "{s:s}", "certificate", &cert) < 0)
-		err(1, "certificate is not present in config");
+		err(1, "%s:%d", "certificate not found in config", __LINE__);
 
 	if (json_unpack(config, "{s:s}", "privatekey", &pkey) < 0)
-		err(1, "privatekey is not present in config");
+		err(1, "%s:%d", "privatekey not found in config", __LINE__);
 
 	if (json_unpack(config, "{s:s}", "trusted_cert", &trust_cert) < 0)
-		err(1, "trusted_cert is not present in config");
+		err(1, "%s:%d", "trusted_cert not found in config", __LINE__);
 
 	SSL_load_error_strings();
 	SSL_library_init();
 
 	if (!RAND_poll())
-		err(1, "RAND_poll");
+		err(1, "%s:%d", "RAND_poll", __LINE__);
 
 	if ((ctx = SSL_CTX_new(DTLSv1_server_method())) == NULL)
-		errx(1, "SSL_CTX_new");
+		errx(1, "%s:%d", "SSL_CTX_new", __LINE__);
+
 	SSL_CTX_set_cookie_generate_cb(ctx, generate_cookie);
 	SSL_CTX_set_cookie_verify_cb(ctx, verify_cookie);
 	SSL_CTX_set_tlsext_servername_callback(ctx, servername_cb);
 	SSL_CTX_set_tlsext_servername_arg(ctx, NULL);
 
 	if ((passport = pki_passport_load_from_file(cert, pkey, trust_cert)) == NULL)
-		err(1, "pki_passport_load_from_file");
+		err(1, "%s:%d", "pki_passport_load_from_file", __LINE__);
 
 	SSL_CTX_set_cipher_list(ctx, "ECDHE-ECDSA-AES256-SHA");
 
 	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL)
-		err(1, "EC_KEY_new_by_curve_name");
+		err(1, "%s:%d", "EC_KEY_new_by_curve_name", __LINE__);
 
 	SSL_CTX_set_tmp_ecdh(ctx, ecdh);
 	EC_KEY_free(ecdh);
@@ -375,24 +376,24 @@ switch_init(json_t *config)
 	hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV;
 
 	if ((status = getaddrinfo(ip, port, &hints, &ai)) != 0)
-		errx(1, "getaddrinfo: %s", gai_strerror(status));
+		errx(1, "%s:%s:%d", "getaddrinfo", gai_strerror(status), __LINE__);
 
 	if ((sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) < 0)
-		errx(1, "socket");
+		errx(1, "%s:%d", "socket", __LINE__);
 
 	flag = 1;
 	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) < 0)
-		errx(1, "setsockopt");
+		errx(1, "%s:%d", "setsockopt", __LINE__);
 
 	if (evutil_make_socket_nonblocking(sock) > 0)
-		err(1, "evutil_make_socket_nonblocking");
+		err(1, "%s:%d", "evutil_make_socket_nonblocking", __LINE__);
 
 	if (bind(sock, ai->ai_addr, ai->ai_addrlen) < 0)
-		errx(1, "bind");
+		errx(1, "%s:%d", "bind", __LINE__);
 
 	if ((ev_udplisten = event_new(ev_base, sock,
 	    EV_READ | EV_PERSIST, udplisten_cb, ctx)) == NULL)
-		err(1, "event_new");
+		err(1, "%s:%d", "event_new", __LINE__);
 	event_add(ev_udplisten, NULL);
 }
 
