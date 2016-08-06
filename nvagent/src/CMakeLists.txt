@@ -85,6 +85,8 @@ else()
 		-Wl,-Bstatic
 		tapcfg
 		nvcore
+		event
+		event_openssl
 		-Wl,-Bdynamic
 	)
 endif()
