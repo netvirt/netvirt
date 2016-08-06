@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 
 include_directories("../libnvcore/src/")
-include_directories("../libnvcore/protocol/")
 
 add_subdirectory(src)
 
