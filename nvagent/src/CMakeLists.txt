@@ -82,12 +82,11 @@ elseif (WIN32)
 	)
 else()
 	target_link_libraries(netvirt-agent
-		-Wl,-Bstatic
 		tapcfg
 		nvcore
+		ssl
+		crypto
 		event
-		event_openssl
-		-Wl,-Bdynamic
 	)
 endif()
 
