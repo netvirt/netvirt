@@ -235,6 +235,10 @@ udpclient_cb(int sock, short what, void *arg)
 
 	ssl = arg;
 
+	if (what == EV_TIMEOUT) {
+		DTLSv1_handle_timeout(ssl);
+	}
+
 	if ((ret = SSL_read(ssl, &buf, sizeof(buf))) < 0) {
 		ret = SSL_get_error(ssl, ret);
 		fprintf(stderr, "SSL_read: error %d (%d-%d)\n", ret, SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE);
@@ -250,6 +254,7 @@ udplisten_cb(int sock, short what, void *arg)
 	BIO		*bio = NULL;
 	SSL		*ssl = NULL;
 	SSL_CTX		*ctx;
+	struct timeval	 timeout;
 	struct event	*ev_udpclient;
 	struct sockaddr	 caddr;
 	int		 csock = -1;
@@ -304,9 +309,16 @@ udplisten_cb(int sock, short what, void *arg)
 	BIO_set_fd(SSL_get_rbio(ssl), csock, BIO_NOCLOSE);
 
 	if ((ev_udpclient = event_new(ev_base, csock,
-	    EV_READ | EV_PERSIST, udpclient_cb, ssl)) == NULL)
+	    EV_READ | EV_PERSIST, udpclient_cb, ssl)) == NULL) {
 		warn("%s:%d", "event_new", __LINE__);
-	event_add(ev_udpclient, NULL);
+		goto error;
+	}
+
+	if (DTLSv1_get_timeout(ssl, &timeout) == 1 &&
+	    event_add(ev_udpclient, &timeout) < 0) {
+		warn("%s:%d", "event_add", __LINE__);
+		goto error;
+	}
 
 	return;
 

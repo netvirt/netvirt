@@ -36,8 +36,6 @@
 #endif
 
 #include "inet.h"
-#include "logger.h"
-#include "udt.h"
 
 /* TODO
  * fixing nomenclature
@@ -100,9 +98,9 @@ uint16_t inet_get_iphdr_len(void *data)
 
 void inet_print_iphdr(void *data)
 {
-	struct ip *iph;
-	iph = data + sizeof(struct ether_header);
-	jlog(L_DEBUG, "iphdr len: %i", iph->ip_len);
+	//struct ip *iph;
+	//iph = data + sizeof(struct ether_header);
+	//jlog(L_DEBUG, "iphdr len: %i", iph->ip_len);
 }
 
 int inet_is_ipv4(void *data)
@@ -145,17 +143,17 @@ int inet_is_ipv6(void *data)
 
 void inet_print_ether_type(void *data)
 {
-	struct ether_header *hd;
-	hd = data;
+	//struct ether_header *hd;
+	//hd = data;
 
-	jlog(L_DEBUG, "ether type: %x", htons(hd->ether_type));
+	//jlog(L_DEBUG, "ether type: %x", htons(hd->ether_type));
 }
 
 void inet_print_ethernet(void *data)
 {
-	struct ether_header *hd;
-	hd = data;
-
+//	struct ether_header *hd;
+//	hd = data;
+#if 0
 	jlog(L_DEBUG, "ether_dhost: %02x:%02x:%02x:%02x:%02x:%02x", hd->ether_dhost[0],
 		hd->ether_dhost[1], hd->ether_dhost[2], hd->ether_dhost[3],
 		hd->ether_dhost[4], hd->ether_dhost[5]);
@@ -165,8 +163,9 @@ void inet_print_ethernet(void *data)
 		hd->ether_shost[4], hd->ether_shost[5]);
 
 	jlog(L_DEBUG, "ether_type: %x", htons(hd->ether_type));
+#endif
 }
-
+#if 0
 void inet_print_arp(peer_t *peer)
 {
 	struct ether_header *hd;
@@ -176,7 +175,7 @@ void inet_print_arp(peer_t *peer)
 
 	if (htons(hd->ether_type) == 0x806) { // ARP Request
 		ea = peer->buffer + sizeof(struct ether_header);
-
+/*
 		jlog(L_DEBUG, "arp_hdr: %i", ea->arp_hrd);
 
 		jlog(L_DEBUG, "arp_sha:  %02x:%02x:%02x:%02x:%02x:%02x", ea->arp_sha[0],
@@ -190,5 +189,7 @@ void inet_print_arp(peer_t *peer)
 			ea->arp_tha[4], ea->arp_sha[5]);
 		jlog(L_DEBUG, "arp_tpa: %02x:%02x:%02x:%02x", ea->arp_tpa[0],
 			ea->arp_tpa[1], ea->arp_tpa[2], ea->arp_tpa[3]);
+*/
 	}
 }
+#endif

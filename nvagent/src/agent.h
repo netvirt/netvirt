@@ -1,7 +1,7 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2014
- * Nicolas J. Bouliane <admin@netvirt.org>
+ * Copyright (C) mind4networks inc. 2009-2016
+ * Nicolas J. Bouliane <nib@m4nt.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -14,45 +14,15 @@
  * GNU General Public License for more details.
  */
 
-#ifndef AGENT_H
-#define AGENT_H
-
-#include <netbus.h>
-
-struct agent_cfg {
-	char *server_address;
-	char *server_port;
-
-	char *certificate;
-	char *privatekey;
-	char *trusted_cert;
-
-	char *prov_code;
-	const char *log_file;
-	int auto_connect;
-
-	char *profile;
-	char *agent_conf;
-	char *ip_conf;
-
-	struct {
-		void (*on_log)(const char *str);
-		void (*on_connect)(const char *ip);
-		void (*on_disconnect)();
-	} ev;
-
-	int agent_running;
-};
+#ifndef NVAGENT_H
+#define nvAGENT_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void agent_fini();
-void agent_init_async(struct agent_cfg *cfg);
-void *agent_init(void *agent_cfg);
-int agent_config_toggle_auto_connect(int status);
-void on_input(netc_t *netc);
+void	agent_fini(void);
+int	agent_init(void);
 
 #ifdef __cplusplus
 }

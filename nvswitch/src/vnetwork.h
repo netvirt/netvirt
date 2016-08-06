@@ -16,10 +16,7 @@
 #ifndef VNETWORK_H
 #define VNETWORK_H
 
-#include <crypto.h>
 #include <ftable.h>
-#include <netbus.h>
-#include <mbuf.h>
 
 #include "ctable.h"
 #include "linkst.h"

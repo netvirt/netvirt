@@ -21,7 +21,7 @@
 
 #include <openssl/ssl.h>
 
-#include <crypto.h>
+#include <cert.h>
 
 typedef struct digital_id {
 

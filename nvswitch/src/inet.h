@@ -16,8 +16,6 @@
 #ifndef INET_H
 #define INET_H
 
-#include "udt.h"
-
 #define ADDR_UNICAST	0x1
 #define ADDR_BROADCAST	0x2
 #define ADDR_MULTICAST	0x4
@@ -37,6 +35,6 @@ int inet_is_ipv6(void *);
 
 void inet_print_ether_type(void *);
 void inet_print_ethernet(void *);
-void inet_print_arp(peer_t *);
+//void inet_print_arp(peer_t *);
 
 #endif

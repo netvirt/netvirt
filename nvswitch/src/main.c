@@ -19,8 +19,6 @@
 
 #include <event.h>
 
-#include <logger.h>
-
 #include "control.h"
 #include "switch.h"
 
@@ -29,7 +27,6 @@
 struct event_base	*ev_base;
 
 static void	usage(void);
-static void	on_log(const char *);
 
 void
 usage(void)
@@ -47,15 +44,9 @@ usage(void)
 void
 sighandler(int signal, short events, void *arg)
 {
+	printf("sighandler\n");
 	event_base_loopbreak(arg);
 }
-
-void
-on_log(const char *logline)
-{
-	fprintf(stdout, "%s", logline);
-}
-
 
 int
 main(int argc, char *argv[])
@@ -65,13 +56,9 @@ main(int argc, char *argv[])
 	struct event		 ev_sigint;
 	struct event		 ev_sigterm;
 	int			 ch;
-	int			 quiet = 0;
 
-	while ((ch = getopt(argc, argv, "qvh")) != -1) {
+	while ((ch = getopt(argc, argv, "vh")) != -1) {
 		switch (ch) {
-		case 'q':
-			quiet = 1;
-			break;
 		case 'v':
 			fprintf(stdout, "netvirt-switch %s\n", NVSWITCH_VERSION);
 			return (0);
@@ -81,9 +68,6 @@ main(int argc, char *argv[])
 	}
 	argc -= optind;
 	argv += optind;
-
-	if (quiet != 1)
-		jlog_init_cb(on_log);
 
 	if ((config = json_load_file(CONFIG_FILE, 0, &error)) == NULL)
 		errx(1, "json_load_file: line: %d - %s",
@@ -102,16 +86,16 @@ main(int argc, char *argv[])
 
 	switch_init(config);
 
-//	printf("%s\n", json_dumps(json, JSON_COMPACT|JSON_INDENT(1)|JSON_PRESERVE_ORDER));
 /*
-
+	printf("%s\n", json_dumps(json, JSON_COMPACT|JSON_INDENT(1)|JSON_PRESERVE_ORDER));
 	control_init();
-
 */
 	event_base_dispatch(ev_base);
 
+	switch_fini();
 	json_decref(config);
 	event_base_free(ev_base);
+
 	warnx("now off");
 
 	return 0;

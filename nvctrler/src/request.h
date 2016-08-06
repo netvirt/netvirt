@@ -17,7 +17,6 @@
 #define REQUEST_H
 
 #include <jansson.h>
-#include <dnds.h>
 #include "ctrler.h"
 
 void update_node_status(struct session_info **, json_t *);

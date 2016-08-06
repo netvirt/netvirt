@@ -13,14 +13,10 @@ else()
 endif()
 
 set(nvagent_sources
-	agent.c
-	config.c
-	p2p.c
-	session.c)
+	agent.c)
 
 message(STATUS "CMAKE_SOURCE_DIR" ${CMAKE_SOURCE_DIR})
 
-link_directories("${CMAKE_SOURCE_DIR}/libconfig/lib/.libs")
 link_directories("${CMAKE_SOURCE_DIR}/tapcfg/build")
 
 if (WITH_GUI)
@@ -68,28 +64,19 @@ else()
 	add_executable(netvirt-agent MACOSX_BUNDLE ${nvagent_sources} ${cli_sources})
 endif()
 
-find_package(OpenSSL REQUIRED)
-include_directories(${OPENSSL_INCLUDE_DIR})
-
-include_directories("${CMAKE_SOURCE_DIR}/libnvcore/src/protocol/")
-
 include_directories("${CMAKE_SOURCE_DIR}/tapcfg/src/include/")
-include_directories("${CMAKE_SOURCE_DIR}/libconfig/lib/")
 
 if (APPLE)
 	target_link_libraries(netvirt-agent
 		${CMAKE_SOURCE_DIR}/tapcfg/build/libtapcfg.a
-		${CMAKE_SOURCE_DIR}/libconfig/lib/.libs/libconfig.a
 		nvcore
 		ssl
 		crypto
-		pthread
 	)
 elseif (WIN32)
 	target_link_libraries(netvirt-agent
 		config
 		nvcore
-		pthread
 		${CMAKE_SOURCE_DIR}/tapcfg/build/tapcfg.dll
 		${OPENSSL_LIBRARIES}
 	)
@@ -97,12 +84,8 @@ else()
 	target_link_libraries(netvirt-agent
 		-Wl,-Bstatic
 		tapcfg
-		config
 		nvcore
 		-Wl,-Bdynamic
-		ssl
-		crypto
-		pthread
 	)
 endif()
 

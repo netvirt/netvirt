@@ -23,8 +23,6 @@
 #include <postgresql/libpq-fe.h>
 #include <ossp/uuid.h>
 
-#include <logger.h>
-
 #include "ctrler.h"
 #include "pki.h"
 
@@ -48,17 +46,17 @@ __inline__ int check_result_status(PGresult *result)
 {
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
-		jlog(L_DEBUG, "command executed ok, %s rows affected", PQcmdTuples(result));
+		//jlog(L_DEBUG, "command executed ok, %s rows affected", PQcmdTuples(result));
 		break;
 
 	case PGRES_TUPLES_OK:
-		jlog(L_DEBUG, "query may have returned data");
+		//jlog(L_DEBUG, "query may have returned data");
 		break;
 
 	default:
-		jlog(L_WARNING, "command failed with code %s, error message %s",
-			PQresStatus(PQresultStatus(result)),
-			PQresultErrorMessage(result));
+		//jlog(L_WARNING, "command failed with code %s, error message %s",
+//			PQresStatus(PQresultStatus(result)),
+//			PQresultErrorMessage(result));
 
 		return -1;
 	}
@@ -412,13 +410,12 @@ int dao_prepare_statements()
 	return 0;
 
 error:
-	jlog(L_WARNING, "PQprepare error: %s", PQerrorMessage(dbconn));
+	//jlog(L_WARNING, "PQprepare error: %s", PQerrorMessage(dbconn));
 	return -1;
 }
 
 void dao_disconnect()
 {
-	krypt_fini();
 	PQfinish(dbconn);
 	dbconn = NULL;
 }
@@ -432,11 +429,11 @@ int dao_connect(struct ctrler_cfg *ctrler_cfg)
 	dbconn = PQconnectdb(conn_str);
 
 	if (PQstatus(dbconn) != CONNECTION_OK) {
-		jlog(L_ERROR, "Connection to database failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_ERROR, "Connection to database failed: %s", PQerrorMessage(dbconn));
 		PQfinish(dbconn);
 		return -1;
 	} else {
-		jlog(L_NOTICE, "DAO connected");
+		//jlog(L_NOTICE, "DAO connected");
 	}
 
 	dao_prepare_statements();
@@ -455,7 +452,7 @@ void dao_dump_statements()
 
 	result = PQexec(dbconn, req);
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 	}
 
 	if (check_result_status(result) == -1) {
@@ -486,7 +483,7 @@ int dao_update_node_status(char *network_uuid, char *uuid, char *status, char *i
 	PGresult *result = NULL;
 
 	if (!network_uuid || !uuid || !status || !ipsrc) {
-		jlog(L_WARNING, "invalid parameter");
+		//jlog(L_WARNING, "invalid parameter");
 		return -1;
 	}
 
@@ -503,7 +500,7 @@ int dao_update_node_status(char *network_uuid, char *uuid, char *status, char *i
 	result = PQexecPrepared(dbconn, "dao_update_node_status", 4, paramValues, paramLengths, NULL, 1);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -523,7 +520,7 @@ int dao_update_client_apikey(char *apikey, char *new_apikey)
 	PGresult *result = NULL;
 
 	if (!apikey || !new_apikey) {
-		jlog(L_WARNING, "invalid NULL parameter");
+		//jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
@@ -535,7 +532,7 @@ int dao_update_client_apikey(char *apikey, char *new_apikey)
 
 	result = PQexecPrepared(dbconn, "dao_update_client_apikey", 2, paramValues, paramLengths, NULL, 1);
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -556,7 +553,7 @@ int dao_activate_client(char *apikey)
 	PGresult *result = NULL;
 
 	if (!apikey) {
-		jlog(L_WARNING, "invalid NULL parameter");
+		//jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
@@ -567,7 +564,7 @@ int dao_activate_client(char *apikey)
 	result = PQexecPrepared(dbconn, "dao_activate_client", 1, paramValues, paramLengths, NULL, 1);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -593,7 +590,7 @@ int dao_set_password(char *email, char *resetkey, char *password)
 	PGresult *result = NULL;
 
 	if (!email || !resetkey || !password) {
-		jlog(L_WARNING, "invalid NULL parameter");
+		//jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
@@ -608,7 +605,7 @@ int dao_set_password(char *email, char *resetkey, char *password)
 	result = PQexecPrepared(dbconn, "dao_set_password", 3, paramValues, paramLengths, NULL, 1);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -630,7 +627,7 @@ int dao_set_resetkey(char *email, char *resetkey)
 	PGresult *result = NULL;
 
 	if (!email || !resetkey) {
-		jlog(L_WARNING, "invalid NULL parameter");
+		//jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
@@ -648,7 +645,7 @@ int dao_set_resetkey(char *email, char *resetkey)
 	}
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -671,7 +668,7 @@ int dao_add_client(char *email, char *password, char *apikey)
 
 	if (!email || !password || !apikey) {
 
-		jlog(L_WARNING, "invalid NULL parameter");
+		//jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
@@ -686,7 +683,7 @@ int dao_add_client(char *email, char *password, char *apikey)
 	result = PQexecPrepared(dbconn, "dao_add_client", 3, paramValues, paramLengths, NULL, 1);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -710,7 +707,7 @@ int dao_fetch_account_apikey(char **apikey, char *email, char *password)
 	PGresult *result = NULL;
 
 	if (!apikey || !email || !password) {
-		jlog(L_WARNING, "invalid NULL parameter");
+		//jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
@@ -723,7 +720,7 @@ int dao_fetch_account_apikey(char **apikey, char *email, char *password)
 	result = PQexecPrepared(dbconn, "dao_fetch_account_apikey", 2, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -739,8 +736,8 @@ int dao_fetch_account_apikey(char **apikey, char *email, char *password)
 		*apikey = strdup(PQgetvalue(result, 0, 0));
 	}
 
-	jlog(L_DEBUG, "Tuples %d", tuples);
-	jlog(L_DEBUG, "Fields %d", fields);
+	//jlog(L_DEBUG, "Tuples %d", tuples);
+	//jlog(L_DEBUG, "Fields %d", fields);
 
 	PQclear(result);
 
@@ -756,7 +753,7 @@ int dao_fetch_client_id_by_apikey(char **client_id, char *apikey)
 	PGresult *result = NULL;
 
 	if (!client_id || !apikey) {
-		jlog(L_WARNING, "invalid NULL parameter");
+		//jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
@@ -766,7 +763,7 @@ int dao_fetch_client_id_by_apikey(char **client_id, char *apikey)
 	result = PQexecPrepared(dbconn, "dao_fetch_client_id_by_apikey", 1, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -791,7 +788,7 @@ int dao_fetch_client_id(char **client_id, char *email, char *password)
 	PGresult *result = NULL;
 
 	if (!client_id || !email || !password) {
-		jlog(L_WARNING, "invalid NULL parameter");
+		//jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
@@ -804,7 +801,7 @@ int dao_fetch_client_id(char **client_id, char *email, char *password)
 	result = PQexecPrepared(dbconn, "dao_fetch_client_id", 2, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -820,8 +817,8 @@ int dao_fetch_client_id(char **client_id, char *email, char *password)
 		*client_id = strdup(PQgetvalue(result, 0, 0));
 	}
 
-	jlog(L_DEBUG, "Tuples %d", tuples);
-	jlog(L_DEBUG, "Fields %d", fields);
+	//jlog(L_DEBUG, "Tuples %d", tuples);
+	//jlog(L_DEBUG, "Fields %d", fields);
 
 	PQclear(result);
 
@@ -835,7 +832,7 @@ int dao_del_node(char *network_uuid, char *uuid)
 	PGresult *result;
 
 	if (!network_uuid || !uuid) {
-		jlog(L_WARNING, "invalid parameter");
+		//jlog(L_WARNING, "invalid parameter");
 		return -1;
 	}
 
@@ -848,7 +845,7 @@ int dao_del_node(char *network_uuid, char *uuid)
 	result = PQexecPrepared(dbconn, "dao_del_node", 2, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		PQclear(result);
 		return -1;
 	}
@@ -865,7 +862,7 @@ int dao_del_node_by_context_id(char *network_uuid)
 	PGresult *result;
 
 	if (!network_uuid) {
-		jlog(L_WARNING, "invalid parameter");
+		//jlog(L_WARNING, "invalid parameter");
 		return -1;
 	}
 
@@ -875,7 +872,7 @@ int dao_del_node_by_context_id(char *network_uuid)
 	result = PQexecPrepared(dbconn, "dao_del_node_by_context_id", 1, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		PQclear(result);
 		return -1;
 	}
@@ -892,7 +889,7 @@ int dao_add_node(char *network_uuid, char *uuid, char *certificate, char *privat
 	PGresult *result;
 
 	if (!network_uuid || !uuid || !certificate || !privatekey || !provcode || !description || !ipaddress) {
-		jlog(L_WARNING, "invalid NULL parameter");
+		//jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
@@ -915,7 +912,7 @@ int dao_add_node(char *network_uuid, char *uuid, char *certificate, char *privat
 	result = PQexecPrepared(dbconn, "dao_add_node", 7, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -936,7 +933,7 @@ int dao_del_context(char *client_id, char *network_uuid)
 	PGresult *result;
 
 	if (!network_uuid || !client_id) {
-		jlog(L_WARNING, "invalid parameter");
+		//jlog(L_WARNING, "invalid parameter");
 		return -1;
 	}
 
@@ -949,7 +946,7 @@ int dao_del_context(char *client_id, char *network_uuid)
 	result = PQexecPrepared(dbconn, "dao_del_context", 2, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		PQclear(result);
 		return -1;
 	}
@@ -982,7 +979,7 @@ int dao_add_vnetwork(char **network_uuid, char *client_id,
 		!embassy_certificate || !embassy_privatekey || !embassy_serial ||
 		!passport_certificate || !passport_privatekey) {
 
-		jlog(L_WARNING, "invalid NULL parameter");
+		//jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
@@ -1010,7 +1007,7 @@ int dao_add_vnetwork(char **network_uuid, char *client_id,
 
 	result = PQexecPrepared(dbconn, "dao_add_vnetwork", 9, paramValues, paramLengths, NULL, 0);
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -1046,7 +1043,7 @@ int dao_fetch_context_ippool(char *network_uuid, unsigned char **ippool)
 	PGresult *result;
 
 	if (!network_uuid) {
-		jlog(L_WARNING, "invalid NULL parameter");
+		//jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
@@ -1056,7 +1053,7 @@ int dao_fetch_context_ippool(char *network_uuid, unsigned char **ippool)
 	result = PQexecPrepared(dbconn, "dao_fetch_context_ippool", 1, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -1090,7 +1087,7 @@ int dao_fetch_network_id(char **context_id, char *client_id, char *uuid)
 	PGresult *result;
 
 	if (!client_id || !uuid) {
-		jlog(L_WARNING, "invalid NULL parameter");
+		//jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
@@ -1103,7 +1100,7 @@ int dao_fetch_network_id(char **context_id, char *client_id, char *uuid)
 	result = PQexecPrepared(dbconn, "dao_fetch_network_id", 2, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -1142,7 +1139,7 @@ int dao_fetch_context_embassy(char *uuid,
 	size_t ippool_size;
 
 	if (!uuid || !certificate || !privatekey || !serial) {
-		jlog(L_WARNING, "invalid NULL parameter");
+		//jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
@@ -1152,7 +1149,7 @@ int dao_fetch_context_embassy(char *uuid,
 	result = PQexecPrepared(dbconn, "dao_fetch_context_embassy", 1, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -1192,7 +1189,7 @@ int dao_update_context_ippool(char *network_uuid, unsigned char *ippool, int poo
 	size_t ippool_str_len;
 
 	if (!network_uuid || !ippool) {
-		jlog(L_WARNING, "invalid NULL parameter");
+		//jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
@@ -1209,7 +1206,7 @@ int dao_update_context_ippool(char *network_uuid, unsigned char *ippool, int poo
 	PQfreemem(ippool_str);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -1230,7 +1227,7 @@ int dao_update_embassy_serial(char *network_uuid, char *serial)
 	PGresult *result = NULL;
 
 	if (!network_uuid || !serial) {
-		jlog(L_WARNING, "invalid NULL parameter");
+		//jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
@@ -1243,7 +1240,7 @@ int dao_update_embassy_serial(char *network_uuid, char *serial)
 	result = PQexecPrepared(dbconn, "dao_update_embassy_serial", 2, paramValues, paramLengths, NULL, 1);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -1270,7 +1267,7 @@ int dao_fetch_embassy(char *context_id,
 				"WHERE context_id = '%s';",
 				context_id);
 
-	jlog(L_DEBUG, "fetch_req: %s", fetch_req);
+	//jlog(L_DEBUG, "fetch_req: %s", fetch_req);
 
 	result = PQexec(dbconn, fetch_req);
 	*certificate = strdup(PQgetvalue(result, 0, 0));
@@ -1278,7 +1275,7 @@ int dao_fetch_embassy(char *context_id,
 	*issue_serial = strdup(PQgetvalue(result, 0, 2));
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 	}
 
 	if (check_result_status(result) == -1) {
@@ -1319,7 +1316,7 @@ int dao_fetch_node_sequence(uint32_t *context_id_list, uint32_t list_size, void 
 
 	result = PQexec(dbconn, fetch_req);
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 	}
 
 	if (check_result_status(result) == -1) {
@@ -1354,7 +1351,7 @@ int dao_fetch_node_uuid_networkuuid(void *arg, int (*cb_data_handler)(void *, in
 	PGresult	*result;
 
 	if ((result = PQexecPrepared(dbconn, "dao_fetch_node_uuid_networkuuid", 0, NULL, NULL, NULL, 0)) == NULL) {
-		jlog(L_WARNING, "PQexec command failed: %s\n", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s\n", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -1388,7 +1385,7 @@ int dao_fetch_node_ip(char *network_uuid, char *uuid, char **ipaddress)
 	PGresult *result;
 
 	if (!network_uuid || !uuid) {
-		jlog(L_WARNING, "invalid NULL parameter");
+		//jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
@@ -1400,7 +1397,7 @@ int dao_fetch_node_ip(char *network_uuid, char *uuid, char **ipaddress)
 
 	result = PQexecPrepared(dbconn, "dao_fetch_node_ip", 2, paramValues, paramLengths, NULL, 0);
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -1438,7 +1435,7 @@ int dao_fetch_node_from_context_id(char *context_id, void *data, int (*cb_data_h
 	PGresult *result;
 
 	if (!context_id) {
-		jlog(L_WARNING, "invalid NULL parameter");
+		//jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
@@ -1448,7 +1445,7 @@ int dao_fetch_node_from_context_id(char *context_id, void *data, int (*cb_data_h
 	result = PQexecPrepared(dbconn, "dao_fetch_node_from_context_id", 1, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 
@@ -1495,7 +1492,7 @@ int dao_fetch_node_from_provcode(char *provcode,
 	result = PQexec(dbconn, fetch_req);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 	}
 
 	int tuples, fields;
@@ -1534,7 +1531,7 @@ int dao_fetch_networks_by_client_id(
 	PGresult *result;
 
 	if (!client_id) {
-		jlog(L_WARNING, "invalid parameter");
+		//jlog(L_WARNING, "invalid parameter");
 		return -1;
 	}
 
@@ -1544,7 +1541,7 @@ int dao_fetch_networks_by_client_id(
 	result = PQexecPrepared(dbconn, "dao_fetch_networks_by_client_id", 1, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 	}
 
 	if (check_result_status(result) == -1) {
@@ -1584,7 +1581,7 @@ int dao_fetch_network_by_client_id_desc(char *client_id, char *description,
 	PGresult *result;
 
 	if (!client_id) {
-		jlog(L_WARNING, "invalid NULL parameter");
+		//jlog(L_WARNING, "invalid NULL parameter");
 		return -1;
 	}
 
@@ -1596,7 +1593,7 @@ int dao_fetch_network_by_client_id_desc(char *client_id, char *description,
 	result = PQexecPrepared(dbconn, "dao_fetch_network_by_client_id_desc", 2, paramValues, paramLengths, NULL, 0);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 	}
 
 	if (check_result_status(result) == -1) {
@@ -1642,7 +1639,7 @@ int dao_fetch_context(void *data, int (*cb_data_handler)(void *data, int remaini
 	result = PQexecPrepared(dbconn, "dao_fetch_context", 0, NULL, NULL, NULL, 0);
 
 	if (!result) {
-		jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
+		//jlog(L_WARNING, "PQexec command failed: %s", PQerrorMessage(dbconn));
 		return -1;
 	}
 

@@ -27,7 +27,6 @@
 
 #include <jansson.h>
 
-#include <logger.h>
 #include "ctrler.h"
 #include "dao.h"
 #include "pki.h"
@@ -163,7 +162,7 @@ on_read_cb(struct bufferevent *bev, void *session)
 
 	jmsg = json_loadb(str, n_read_out, 0, &error);
 	if (jmsg == NULL) {
-		jlog(L_ERROR, "json_loadb: %s", error.text);
+		//jlog(L_ERROR, "json_loadb: %s", error.text);
 		/* FIXME DISCONNECT */
 		goto out;
 	}
@@ -205,7 +204,7 @@ on_connect_cb(struct bufferevent *bev, void *arg)
 	} else {
 		sinfo->type = NVAPI;
 	}
-	jlog(L_DEBUG, "cert: %s", sinfo->cert_name);
+	//jlog(L_DEBUG, "cert: %s", sinfo->cert_name);
 }
 
 void
@@ -217,15 +216,15 @@ on_event_cb(struct bufferevent *bev, short events, void *arg)
 	if (events & BEV_EVENT_CONNECTED) {
 		on_connect_cb(bev, arg);
 	} else if (events & (BEV_EVENT_TIMEOUT|BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
-		jlog(L_DEBUG, "event (%x)", events);
+		//jlog(L_DEBUG, "event (%x)", events);
 
 		while ((e = bufferevent_get_openssl_error(bev)) > 0) {
-			jlog(L_ERROR, "%s", ERR_error_string(e, NULL));
+			//jlog(L_ERROR, "%s", ERR_error_string(e, NULL));
 		}
 
 		if (sinfo->type == NVSWITCH) {
 			switch_sinfo = NULL;
-			jlog(L_DEBUG, "switch disconnected");
+			//jlog(L_DEBUG, "switch disconnected");
 			dao_reset_node_state();
 		}
 		sinfo_free(&sinfo);
@@ -261,11 +260,11 @@ accept_conn_cb(struct evconnlistener *listener,
 	if ((bev = bufferevent_openssl_socket_new(base, fd, client_ssl,
 					BUFFEREVENT_SSL_ACCEPTING,
 					BEV_OPT_CLOSE_ON_FREE)) == NULL) {
-		jlog(L_ERROR, "bufferevent_openssl_socket_new failed");
+		//jlog(L_ERROR, "bufferevent_openssl_socket_new failed");
 		return;
 	}
 
-	jlog(L_NOTICE, "new connection");
+	//jlog(L_NOTICE, "new connection");
 
 	sinfo = sinfo_new();
 	sinfo->bev = bev;
@@ -283,12 +282,11 @@ void
 accept_error_cb(struct evconnlistener *listener, void *ptr)
 {
 	struct event_base	*base;
-	int			 err;
 
 	base = evconnlistener_get_base(listener);
-	err = EVUTIL_SOCKET_ERROR();
-	jlog(L_ERROR, "Got an error %d (%s) on the listener."
-		"Shutting down.\n", err, evutil_socket_error_to_string(err));
+	//err = EVUTIL_SOCKET_ERROR();
+	//jlog(L_ERROR, "Got an error %d (%s) on the listener."
+	//	"Shutting down.\n", err, evutil_socket_error_to_string(err));
 
 	event_base_loopexit(base, NULL);
 }
@@ -381,12 +379,12 @@ ctrler_init(struct ctrler_cfg *_cfg)
 	dao_reset_node_state();
 
 	if (evssl_init(&s1) != 0) {
-		jlog(L_ERROR, "evssl_init failed");
+		//jlog(L_ERROR, "evssl_init failed");
 		return -1;
 	}
 
 	if ((s1.base = event_base_new()) == NULL) {
-		jlog(L_ERROR, "event_base_new failed");
+		//jlog(L_ERROR, "event_base_new failed");
 		return -1;
 	}
 
@@ -398,7 +396,7 @@ ctrler_init(struct ctrler_cfg *_cfg)
 	if ((s1.listener = evconnlistener_new_bind(s1.base, accept_conn_cb, s1.ctx,
 	    LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1,
 	    (struct sockaddr*)&sin, sizeof(sin))) == NULL) {
-		jlog(L_ERROR, "evconnlistener_new_bind failed");
+		//jlog(L_ERROR, "evconnlistener_new_bind failed");
 		return -1;
 	}
 
