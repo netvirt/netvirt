@@ -47,28 +47,42 @@ certverify_cb(int ok, X509_STORE_CTX *store)
 	X509		*cert;
 	X509_NAME	*name;
 	char		 buf[256];
-
+/*
 	cert = X509_STORE_CTX_get_current_cert(store);
 	name = X509_get_subject_name(cert);
 	X509_NAME_get_text_by_NID(name, NID_commonName, buf, 256);
 
 	printf("CN: %s\n", buf);
-
+*/
 	return (ok);
 }
+
+static SSL_CTX	*newctx;
 
 int
 servername_cb(SSL *ssl, int *ad, void *arg)
 {
-	const char	*name;
+	const char	*servername;
 
-	if ((name = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name)) == NULL)
+	if ((servername = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name)) == NULL)
 		return (SSL_TLSEXT_ERR_NOACK);
 
-	printf(">>> name %s\n", name);
+	printf(">>> name %s\n", servername);
 
+//	vnet = vnetwork_lookup(servername);
+
+	if ((newctx = SSL_CTX_new(DTLSv1_server_method())) == NULL)
+		warn("%s:%d", "SSL_CTX_new", __LINE__);
+/*
+	SSL_CTX_set_cookie_generate_cb(ctx, generate_cookie);
+	SSL_CTX_set_cookie_verify_cb(ctx, verify_cookie);
+	SSL_CTX_set_tlsext_servername_callback(ctx, servername_cb);
+	SSL_CTX_set_tlsext_servername_arg(ctx, NULL);
+*/
 	/* Load the trusted certificate store into our SSL_CTX */
 	SSL_CTX_set_cert_store(ctx, passport->cacert_store);
+
+	SSL_set_SSL_CTX(ssl, ctx);
 
 	/* Set the certificate and key */
 	SSL_use_certificate(ssl, passport->certificate);
@@ -235,10 +249,6 @@ udpclient_cb(int sock, short what, void *arg)
 
 	ssl = arg;
 
-	if (what == EV_TIMEOUT) {
-		DTLSv1_handle_timeout(ssl);
-	}
-
 	if ((ret = SSL_read(ssl, &buf, sizeof(buf))) < 0) {
 		ret = SSL_get_error(ssl, ret);
 		fprintf(stderr, "SSL_read: error %d (%d-%d)\n", ret, SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE);
@@ -254,7 +264,6 @@ udplisten_cb(int sock, short what, void *arg)
 	BIO		*bio = NULL;
 	SSL		*ssl = NULL;
 	SSL_CTX		*ctx;
-	struct timeval	 timeout;
 	struct event	*ev_udpclient;
 	struct sockaddr	 caddr;
 	int		 csock = -1;
@@ -285,6 +294,7 @@ udplisten_cb(int sock, short what, void *arg)
 		goto error;
 	}
 
+	SSL_accept(ssl);
 	flag = 1;
 	if (setsockopt(csock, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) < 0) {
 		warnx("%s:%d", "setsockopt", __LINE__);
@@ -309,16 +319,9 @@ udplisten_cb(int sock, short what, void *arg)
 	BIO_set_fd(SSL_get_rbio(ssl), csock, BIO_NOCLOSE);
 
 	if ((ev_udpclient = event_new(ev_base, csock,
-	    EV_READ | EV_PERSIST, udpclient_cb, ssl)) == NULL) {
+	    EV_READ | EV_PERSIST, udpclient_cb, ssl)) == NULL)
 		warn("%s:%d", "event_new", __LINE__);
-		goto error;
-	}
-
-	if (DTLSv1_get_timeout(ssl, &timeout) == 1 &&
-	    event_add(ev_udpclient, &timeout) < 0) {
-		warn("%s:%d", "event_add", __LINE__);
-		goto error;
-	}
+	event_add(ev_udpclient, NULL);
 
 	return;
 
