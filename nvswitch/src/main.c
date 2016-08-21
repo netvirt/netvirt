@@ -29,19 +29,6 @@ struct event_base	*ev_base;
 static void	usage(void);
 
 void
-usage(void)
-{
-	extern char	*__progname;
-	fprintf(stdout, "%s:\n"
-	    "-q\t\tquiet mode\n"
-	    "-v\t\tshow version\n"
-	    "-h\t\tthis message\n"
-	    ,__progname);
-
-	exit(-1);
-}
-
-void
 sighandler(int signal, short events, void *arg)
 {
 	printf("sighandler\n");
@@ -55,19 +42,6 @@ main(int argc, char *argv[])
 	json_error_t		 error;
 	struct event		 ev_sigint;
 	struct event		 ev_sigterm;
-	int			 ch;
-
-	while ((ch = getopt(argc, argv, "vh")) != -1) {
-		switch (ch) {
-		case 'v':
-			fprintf(stdout, "netvirt-switch %s\n", NVSWITCH_VERSION);
-			return (0);
-		default:
-			usage();
-		}
-	}
-	argc -= optind;
-	argv += optind;
 
 	if ((config = json_load_file(CONFIG_FILE, 0, &error)) == NULL)
 		errx(1, "json_load_file: line: %d - %s",
@@ -84,12 +58,13 @@ main(int argc, char *argv[])
 	if (signal_add(&ev_sigterm, NULL) < 0)
 		errx(1, "signal_add");
 
-	switch_init(config);
 
 /*
 	printf("%s\n", json_dumps(json, JSON_COMPACT|JSON_INDENT(1)|JSON_PRESERVE_ORDER));
 	control_init();
 */
+
+	switch_init(config);
 	event_base_dispatch(ev_base);
 
 	switch_fini();
