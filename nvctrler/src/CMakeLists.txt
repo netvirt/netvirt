@@ -17,18 +17,12 @@ add_executable(netvirt-ctrler
 	request.c
 )
 
-link_directories("${CMAKE_SOURCE_DIR}/libconfig/lib/.libs")
-include_directories("${CMAKE_SOURCE_DIR}/libconfig/lib/")
-
-include_directories("${CMAKE_SOURCE_DIR}/libnvcore/src/protocol/")
 target_link_libraries(netvirt-ctrler
-	${CMAKE_SOURCE_DIR}/libconfig/lib/.libs/libconfig.a
 	nvcore
 	ssl
 	ossp-uuid
 	pq
 	crypto
-	pthread
 	jansson
 	event
 	event_openssl

@@ -19,8 +19,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include <libconfig.h>
-
 #include "ctrler.h"
 #include "dao.h"
 #include "pki.h"
@@ -69,98 +67,10 @@ int daemonize()
 	return 0;
 }
 
-int parse_config(config_t *cfg, struct ctrler_cfg *ctrler_cfg)
-{
-	if (!config_read_file(cfg, CONFIG_FILE)) {
-		//jlog(L_ERROR, "Can't open %s", CONFIG_FILE);
-		return -1;
-	}
-
-        if (config_lookup_string(cfg, "log_file", &ctrler_cfg->log_file)) {
-                //jlog_init_file(ctrler_cfg->log_file);
-        }
-
-	if (config_lookup_string(cfg, "listen_ip", &ctrler_cfg->listen_ip)) {
-		//jlog(L_DEBUG, "listen_ip: %s", ctrler_cfg->listen_ip);
-	}
-	else {
-		//jlog(L_ERROR, "listen_ip is not present !");
-		return -1;
-	}
-
-	if (config_lookup_string(cfg, "listen_port", &ctrler_cfg->listen_port)) {
-		//jlog(L_DEBUG, "listen_port: %s", ctrler_cfg->listen_port);
-	}
-	else {
-		//jlog(L_ERROR, "listen_port is not present !");
-		return -1;
-	}
-
-	if (config_lookup_string(cfg, "db_host", &ctrler_cfg->db_host)) {
-		//jlog(L_DEBUG, "db_host: %s", ctrler_cfg->db_host);
-	}
-	else {
-		//jlog(L_ERROR, "db_host is not present !");
-		return -1;
-	}
-
-	if (config_lookup_string(cfg, "db_user", &ctrler_cfg->db_user)) {
-		//jlog(L_DEBUG, "db_user: %s", ctrler_cfg->db_user);
-	}
-	else {
-		//jlog(L_ERROR, "db_user is not present !");
-		return -1;
-	}
-
-	if (config_lookup_string(cfg, "db_pwd", &ctrler_cfg->db_pwd)) {
-		//jlog(L_DEBUG, "db_pwd: ***");
-	}
-	else {
-		//jlog(L_ERROR, "db_pwd is not present !");
-		return -1;
-	}
-
-	if (config_lookup_string(cfg, "db_name", &ctrler_cfg->db_name)) {
-		//jlog(L_DEBUG, "db_name: %s", ctrler_cfg->db_name);
-	}
-	else {
-		//jlog(L_ERROR, "db_name is not present !");
-		return -1;
-	}
-
-	if (config_lookup_string(cfg, "certificate", &ctrler_cfg->certificate)) {
-		//jlog(L_DEBUG, "certificate: %s", ctrler_cfg->certificate);
-	}
-	else {
-		//jlog(L_ERROR, "certificate is not present !");
-		return -1;
-	}
-
-	if (config_lookup_string(cfg, "privatekey", &ctrler_cfg->privatekey)) {
-		//jlog(L_DEBUG, "privatekey: %s", ctrler_cfg->privatekey);
-	}
-	else {
-		//jlog(L_ERROR, "privatekey is not present !");
-		return -1;
-	}
-
-	if (config_lookup_string(cfg, "trusted_cert", &ctrler_cfg->trusted_cert)) {
-		//jlog(L_DEBUG, "trusted_cert: %s", ctrler_cfg->trusted_cert);
-	}
-	else {
-		//jlog(L_ERROR, "trusted_cert is not present !");
-		return -1;
-	}
-
-	return 0;
-}
-
 int main(int argc, char *argv[])
 {
 	int		 opt;
-	uint8_t		 quiet = 0;
 	uint8_t		 daemon = 0;
-	config_t	 cfg;
 
 	ctrler_cfg = calloc(1, sizeof(struct ctrler_cfg));
 
@@ -172,9 +82,6 @@ int main(int argc, char *argv[])
 		case 'd':
 			daemon = 1;
 			break;
-		case 'q':
-			quiet = 1;
-			break;
 		case 'v':
 			fprintf(stdout, "netvirt-ctrler %s\n", NVCTRLER_VERSION);
 			return 0;
@@ -183,40 +90,26 @@ int main(int argc, char *argv[])
                         fprintf(stdout, "netvirt-ctrler:\n"
 					"-b\t\tbootstrap certificates\n"
 					"-d\t\tdaemonize\n"
-                                        "-q\t\tquiet mode\n"
                                         "-v\t\tshow version\n"
                                         "-h\t\tshow this help\n");
 			return 0;
 		}
 	}
-
-	if (!quiet && !daemon) {
-		//jlog_init_cb(on_log);
-	}
-
-	config_init(&cfg);
-
-	if (parse_config(&cfg, ctrler_cfg)) {
-		//jlog(L_ERROR, "parse_config failed");
-		exit(EXIT_FAILURE);
-	}
-
+/*
 	if (dao_connect(ctrler_cfg)) {
 		//jlog(L_ERROR, "dao_connect failed");
 		exit(EXIT_FAILURE);
 	}
-
+*/
 	if (daemon) {
 		daemonize();
 	}
 
-	ctrler_init(ctrler_cfg);
+//	ctrler_init(ctrler_cfg);
 	//jlog(L_NOTICE, "good bye\n");
 
 	ctrler_fini();
 	dao_disconnect();
-	config_destroy(&cfg);
-	free(ctrler_cfg);
 
 	return 0;
 }
