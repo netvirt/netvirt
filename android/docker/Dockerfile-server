@@ -1,7 +1,7 @@
 FROM debian:jessie
 
 RUN apt-get update && \
-    apt-get install g++
+    apt-get install -y g++
 WORKDIR /usr/src/netvirt/android/server
 
 ADD ./server/ToyVpnServer.cpp /usr/src/netvirt/android/server/ToyVpnServer.cpp
