@@ -174,8 +174,10 @@ static void pki_sign_certificate(EVP_PKEY *keyring, X509 *certificate)
 	X509_sign(certificate, keyring, EVP_sha1());
 }
 
-static void b64enc(const uint8_t *buf, size_t length, char **b64buf)
+static int
+b64enc(const uint8_t *buf, size_t length, char **b64buf)
 {
+	int len;
 	BIO *bio = NULL;
 	BIO *b64 = NULL;
 	BUF_MEM *memptr = NULL;
@@ -194,25 +196,28 @@ static void b64enc(const uint8_t *buf, size_t length, char **b64buf)
 
 	*b64buf = calloc(1, memptr->length+1);
 	strncpy(*b64buf, memptr->data, memptr->length);
+	len = memptr->length;
 
 	*(*b64buf + (memptr->length)) = '\0';
 
 	BUF_MEM_free(memptr);
+	return len;
 }
 
-char *pki_gen_key()
+char
+*pki_gen_key()
 {
-	int ret = 0;
+	uint8_t	 key[36];
+	char	*b64key = NULL;
+	int	 ret;
 
-	char *b64key = NULL;
-	uint8_t key[36];
-
-	ret = RAND_bytes(key, 36);
-	if (ret != 1) {
+	if ((ret = RAND_bytes(key, 36)) != 1)
 		return NULL;
-	}
 
-	b64enc(key, 36, &b64key);
+	int len;
+	len = b64enc(key, 36, &b64key);
+	b64key[0] = 't';
+	b64key[len-1] = 't';
 
 	return b64key;
 }
