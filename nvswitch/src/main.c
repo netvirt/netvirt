@@ -26,8 +26,6 @@
 
 struct event_base	*ev_base;
 
-static void	usage(void);
-
 void
 sighandler(int signal, short events, void *arg)
 {
@@ -42,6 +40,7 @@ main(int argc, char *argv[])
 	json_error_t		 error;
 	struct event		 ev_sigint;
 	struct event		 ev_sigterm;
+	extern	int		 control_initialized;
 
 	if ((config = json_load_file(CONFIG_FILE, 0, &error)) == NULL)
 		errx(1, "json_load_file: line: %d - %s",
@@ -58,13 +57,12 @@ main(int argc, char *argv[])
 	if (signal_add(&ev_sigterm, NULL) < 0)
 		errx(1, "signal_add");
 
-
-/*
-	printf("%s\n", json_dumps(json, JSON_COMPACT|JSON_INDENT(1)|JSON_PRESERVE_ORDER));
 	control_init();
-*/
 
+	while (control_initialized == 0)
+		sleep(1);
 	switch_init(config);
+
 	event_base_dispatch(ev_base);
 
 	switch_fini();
