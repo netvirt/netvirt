@@ -13,11 +13,14 @@
  * GNU Affero General Public License for more details
  */
 
+#include <err.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#include <jansson.h>
 
 #include "ctrler.h"
 #include "dao.h"
@@ -25,91 +28,41 @@
 
 #define CONFIG_FILE "/etc/netvirt/nvctrler.conf"
 
-static struct ctrler_cfg *ctrler_cfg;
-void on_log(const char *logline)
-{
-        fprintf(stdout, "%s", logline);
-}
-
-int daemonize()
-{
-	pid_t pid, sid;
-
-	if (getppid() == 1)
-		return 0;
-
-	pid = fork();
-	if (pid < 0)
-		exit(EXIT_FAILURE);
-
-	if (pid > 0)
-		exit(EXIT_SUCCESS);
-
-	umask(0);
-
-	sid = setsid();
-
-	if (sid < 0)
-		exit(EXIT_FAILURE);
-
-	if ((chdir("/")) < 0)
-		exit(EXIT_FAILURE);
-
-	if (freopen("/dev/null", "r", stdin) == NULL)
-		return -1;
-
-	if (freopen("/dev/null", "w", stdout) == NULL)
-		return -1;
-
-	if (freopen("/dev/null", "w", stderr) == NULL)
-		return -1;
-
-	return 0;
-}
-
 int main(int argc, char *argv[])
 {
-	int		 opt;
-	uint8_t		 daemon = 0;
+	json_t		*config;
+	json_error_t	 error;
+	const char	*dbname;
+	const char	*dbuser;
+	const char	*dbpwd;
+	const char	*dbhost;
 
-	ctrler_cfg = calloc(1, sizeof(struct ctrler_cfg));
+	if ((config = json_load_file(CONFIG_FILE, 0, &error)) == NULL)
+		errx(1, "json_load_file: line: %d - %s",
+		    error.line, error.text);
 
-	while ((opt = getopt(argc, argv, "bdqvh")) != -1) {
-		switch (opt) {
-		case 'b':
-			pki_bootstrap_certs();
-			return 0;
-		case 'd':
-			daemon = 1;
-			break;
-		case 'v':
-			fprintf(stdout, "netvirt-ctrler %s\n", NVCTRLER_VERSION);
-			return 0;
-		default:
-		case 'h':
-                        fprintf(stdout, "netvirt-ctrler:\n"
-					"-b\t\tbootstrap certificates\n"
-					"-d\t\tdaemonize\n"
-                                        "-v\t\tshow version\n"
-                                        "-h\t\tshow this help\n");
-			return 0;
-		}
-	}
-/*
-	if (dao_connect(ctrler_cfg)) {
-		//jlog(L_ERROR, "dao_connect failed");
-		exit(EXIT_FAILURE);
-	}
-*/
-	if (daemon) {
-		daemonize();
-	}
+	if (json_unpack(config, "{s:s}", "dbname", &dbname) < 0)
+		errx(1, "%s:%d", "dbname not found in config", __LINE__);
 
-//	ctrler_init(ctrler_cfg);
-	//jlog(L_NOTICE, "good bye\n");
+	if (json_unpack(config, "{s:s}", "dbuser", &dbuser) < 0)
+		errx(1, "%s:%d", "dbuser not found in config", __LINE__);
 
-	ctrler_fini();
-	dao_disconnect();
+	if (json_unpack(config, "{s:s}", "dbpwd", &dbpwd) < 0)
+		errx(1, "%s:%d", "dbpwd not found in config", __LINE__);
+
+	if (json_unpack(config, "{s:s}", "dbhost", &dbhost) < 0)
+		errx(1, "%s:%d", "dbhost not found in config", __LINE__);
+
+	if (dao_init(dbname, dbuser, dbpwd, dbhost) < 0)
+		errx(1, "dao_init");
+
+	if (controller_init(config) < 0)
+		errx(1, "controller_init");
+
+	warnx("now off");
+
+	controller_fini();
+	dao_fini();
 
 	return 0;
 }
