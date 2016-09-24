@@ -11,16 +11,11 @@ add_executable(netvirt-switch
 	main.c
 	request.c
 	vnetwork.c
-	session.c
 	switch.c
 )
-link_directories("${CMAKE_SOURCE_DIR}/libconfig/lib/.libs")
-include_directories("${CMAKE_SOURCE_DIR}/libconfig/lib/")
 
 include_directories("${CMAKE_SOURCE_DIR}/libnvcore/src/")
-include_directories("${CMAKE_SOURCE_DIR}/libnvcore/src/protocol/")
 target_link_libraries(netvirt-switch
-	${CMAKE_SOURCE_DIR}/libconfig/lib/.libs/libconfig.a
 	nvcore
 	ssl
 	crypto
