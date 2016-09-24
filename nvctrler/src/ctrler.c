@@ -13,6 +13,7 @@
  * GNU Affero General Public License for more details
  */
 
+#include <err.h>
 #include <errno.h>
 #include <signal.h>
 
@@ -33,7 +34,6 @@
 #include "request.h"
 
 struct session_info *switch_sinfo = NULL;
-static struct ctrler_cfg *cfg = NULL;
 
 struct server {
 	struct event		*ev_int;
@@ -83,7 +83,7 @@ dispatch_nvswitch(struct session_info **sinfo, json_t *jmsg)
 	char 	*action;
 
 	dump = json_dumps(jmsg, 0);
-	//jlog(L_DEBUG, "jmsg: %s", dump);
+	warnx("jmsg: %s", dump);
 	free(dump);
 
 	if (json_unpack(jmsg, "{s:s}", "action", &action) == -1) {
@@ -109,7 +109,7 @@ dispatch_nvapi(struct session_info *sinfo, json_t *jmsg)
 	char	*action;
 
 	dump = json_dumps(jmsg, 0);
-	//jlog(L_DEBUG, "jmsg: %s", dump);
+	warnx("jmsg: %s", dump);
 	free(dump);
 
 	if (json_unpack(jmsg, "{s:s}", "action", &action) == -1) {
@@ -160,9 +160,8 @@ on_read_cb(struct bufferevent *bev, void *session)
 	if (str == NULL)
 		return;
 
-	jmsg = json_loadb(str, n_read_out, 0, &error);
-	if (jmsg == NULL) {
-		//jlog(L_ERROR, "json_loadb: %s", error.text);
+	if ((jmsg = json_loadb(str, n_read_out, 0, &error)) == NULL) {
+		warnx("json_loadb: %s", error.text);
 		/* FIXME DISCONNECT */
 		goto out;
 	}
@@ -204,7 +203,7 @@ on_connect_cb(struct bufferevent *bev, void *arg)
 	} else {
 		sinfo->type = NVAPI;
 	}
-	//jlog(L_DEBUG, "cert: %s", sinfo->cert_name);
+	warnx("cert: %s", sinfo->cert_name);
 }
 
 void
@@ -216,15 +215,15 @@ on_event_cb(struct bufferevent *bev, short events, void *arg)
 	if (events & BEV_EVENT_CONNECTED) {
 		on_connect_cb(bev, arg);
 	} else if (events & (BEV_EVENT_TIMEOUT|BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
-		//jlog(L_DEBUG, "event (%x)", events);
+		warnx("event (%x)", events);
 
 		while ((e = bufferevent_get_openssl_error(bev)) > 0) {
-			//jlog(L_ERROR, "%s", ERR_error_string(e, NULL));
+			warnx("%s", ERR_error_string(e, NULL));
 		}
 
 		if (sinfo->type == NVSWITCH) {
 			switch_sinfo = NULL;
-			//jlog(L_DEBUG, "switch disconnected");
+			warnx("switch disconnected");
 			dao_reset_node_state();
 		}
 		sinfo_free(&sinfo);
@@ -260,11 +259,11 @@ accept_conn_cb(struct evconnlistener *listener,
 	if ((bev = bufferevent_openssl_socket_new(base, fd, client_ssl,
 					BUFFEREVENT_SSL_ACCEPTING,
 					BEV_OPT_CLOSE_ON_FREE)) == NULL) {
-		//jlog(L_ERROR, "bufferevent_openssl_socket_new failed");
+		warnx("bufferevent_openssl_socket_new failed");
 		return;
 	}
 
-	//jlog(L_NOTICE, "new connection");
+	warnx("new connection");
 
 	sinfo = sinfo_new();
 	sinfo->bev = bev;
@@ -284,9 +283,11 @@ accept_error_cb(struct evconnlistener *listener, void *ptr)
 	struct event_base	*base;
 
 	base = evconnlistener_get_base(listener);
-	//err = EVUTIL_SOCKET_ERROR();
-	//jlog(L_ERROR, "Got an error %d (%s) on the listener."
-	//	"Shutting down.\n", err, evutil_socket_error_to_string(err));
+/*
+	err = EVUTIL_SOCKET_ERROR();
+	warnx("error %d (%s) on the listener."
+		"Shutting down.\n", err, evutil_socket_error_to_string(err));
+*/
 
 	event_base_loopexit(base, NULL);
 }
@@ -342,6 +343,7 @@ int
 evssl_init(struct server *serv)
 {
 	DH	*dh;
+	EC_KEY	*ecdh;
 
 	SSL_load_error_strings();
 	SSL_library_init();
@@ -349,15 +351,16 @@ evssl_init(struct server *serv)
 	if (!RAND_poll())
 		return -1;
 
-	serv->passport = pki_passport_load_from_file(cfg->certificate, cfg->privatekey, cfg->trusted_cert);
-
 	serv->ctx = SSL_CTX_new(TLSv1_2_server_method());
 	dh = get_dh_1024();
 	SSL_CTX_set_tmp_dh(serv->ctx, dh);
 	DH_free(dh);
 
-	SSL_CTX_set_cipher_list(serv->ctx, "AES256-GCM-SHA384");
-	//SSL_CTX_set_cipher_list(serv.ctx, "ECDHE-ECDSA-AES256-GCM-SHA384");
+	SSL_CTX_set_cipher_list(serv->ctx, "ECDHE-ECDSA-AES256-SHA");
+	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL)
+		warnx("%s:%d", "EC_KEY_new_by_curve_name", __LINE__);
+	SSL_CTX_set_tmp_ecdh(serv->ctx, ecdh);
+	EC_KEY_free(ecdh);
 
 	SSL_CTX_set_cert_store(serv->ctx, serv->passport->cacert_store);
 	SSL_CTX_use_certificate(serv->ctx, serv->passport->certificate);
@@ -369,24 +372,31 @@ evssl_init(struct server *serv)
 }
 
 int
-ctrler_init(struct ctrler_cfg *_cfg)
+controller_init(json_t *config)
 {
 	struct sockaddr_in	 sin;
-
-	cfg = _cfg;
-	cfg->ctrler_running = 1;
+	const char		*cert;
+	const char		*pkey;
+	const char		*cacert;
 
 	dao_reset_node_state();
 
-	if (evssl_init(&s1) != 0) {
-		//jlog(L_ERROR, "evssl_init failed");
-		return -1;
-	}
+	if (json_unpack(config, "{s:s}", "cert", &cert) < 0)
+		errx(1, "%s:%d", "certificate not found in config", __LINE__);
 
-	if ((s1.base = event_base_new()) == NULL) {
-		//jlog(L_ERROR, "event_base_new failed");
-		return -1;
-	}
+	if (json_unpack(config, "{s:s}", "pkey", &pkey) < 0)
+		errx(1, "%s:%d", "privatekey not found in config", __LINE__);
+
+	if (json_unpack(config, "{s:s}", "cacert", &cacert) < 0)
+		errx(1, "%s:%d", "trusted_cert not found in config", __LINE__);
+
+	s1.passport = pki_passport_load_from_file(cert, pkey, cacert);
+
+	if (evssl_init(&s1) != 0)
+		errx(1, "evssl_init failed");
+
+	if ((s1.base = event_base_new()) == NULL)
+		errx(1, "event_base_new failed");
 
 	memset(&sin, 0, sizeof(sin));
 	sin.sin_family = AF_INET;
@@ -395,10 +405,8 @@ ctrler_init(struct ctrler_cfg *_cfg)
 
 	if ((s1.listener = evconnlistener_new_bind(s1.base, accept_conn_cb, s1.ctx,
 	    LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1,
-	    (struct sockaddr*)&sin, sizeof(sin))) == NULL) {
-		//jlog(L_ERROR, "evconnlistener_new_bind failed");
-		return -1;
-	}
+	    (struct sockaddr*)&sin, sizeof(sin))) == NULL)
+		errx(1, "evconnlistener_new_bind failed");
 
 	signal(SIGPIPE, SIG_IGN);
 	s1.ev_int = evsignal_new(s1.base, SIGINT, sighandler, s1.base);
@@ -411,12 +419,13 @@ ctrler_init(struct ctrler_cfg *_cfg)
 }
 
 void
-ctrler_fini()
+controller_fini()
 {
 	if (s1.ev_int != NULL)
 		evsignal_del(s1.ev_int);
 	if (s1.listener != NULL)
 		evconnlistener_free(s1.listener);
+
 	event_base_free(s1.base);
 	pki_passport_free(s1.passport);
 	SSL_CTX_free(s1.ctx);
