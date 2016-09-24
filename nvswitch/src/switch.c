@@ -75,11 +75,6 @@ forward_ethernet(struct session *session, DNDSMessage_t *msg)
 		return;
 	}
 
-	if (macaddr_dst_type == ADDR_MULTICAST) {
-		/* Multicast is not supported yet */
-		return;
-	}
-
 	/* Switch forwarding */
 	if (macaddr_dst_type == ADDR_UNICAST		/* The destination address is unicast */
 		&& session_dst != NULL
@@ -98,6 +93,7 @@ forward_ethernet(struct session *session, DNDSMessage_t *msg)
 
 	/* Switch flooding */
 	} else if (macaddr_dst_type == ADDR_BROADCAST ||	/* This packet has to be broadcasted */
+		    macaddr_dst_type == ADDR_MULTICAST ||
 		session_dst == NULL)  {				/* OR the fib session is down */
 
 			session_list = session->vnetwork->session_list;

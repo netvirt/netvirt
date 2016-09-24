@@ -56,7 +56,7 @@ int inet_get_mac_addr_type(uint8_t *mac_addr)
 	if (memcmp(mac_addr, mac_addr_broadcast, ETHER_ADDR_LEN) == 0) {
 		return ADDR_BROADCAST;
 	}
-	else if (memcmp(mac_addr, mac_addr_multicast, 1) == 0) {
+	else if (memcmp(mac_addr, mac_addr_multicast, 3) == 0) {
 		return ADDR_MULTICAST;
 	}
 
