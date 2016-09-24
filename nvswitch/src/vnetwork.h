@@ -16,30 +16,43 @@
 #ifndef VNETWORK_H
 #define VNETWORK_H
 
+#include <cert.h>
 #include <ftable.h>
 
 #include "ctable.h"
 #include "linkst.h"
 #include "switch.h"
 #include "tree.h"
+#include "queue.h"
 
 #define MAX_NODE 1024	// the maximum of nodes per context
 #define TIMEOUT_SEC 300	// linkstate timeout in second
 
+struct session {
+	LIST_ENTRY(session) entry;
+	struct mac_list	*mac_list;
+	struct vnetwork	*vnetwork;
+	uint8_t	  	 state;
+	uint8_t		 tun_macaddr[6];
+	uint8_t		 macaddr[6];
+	char		*ip;
+	char		*certname;
+	char		 localip[16];
+};
+
+LIST_HEAD(session_list, session);
+
 struct vnetwork {
-	RB_ENTRY(vnetwork)	entry;
-	RB_ENTRY(vnetwork)	entry_id;
-	char			*id;
-	char			*uuid;
+	RB_ENTRY(vnetwork)	 entry;
+	struct session_list	 sessions;
 	ftable_t		*ftable;			// forwarding table
 	ctable_t		*ctable;			// connection table
 	ctable_t		*atable;			// access table
-	uint32_t		 active_node;			// number of connected node
 	linkst_t		*linkst;			// link state between nodes
-	uint8_t			*bitpool;			// bitpool used to generated unique ID per session
-	struct session		*session_list;			// all session open in this context
-	struct session		*access_session;		// store the access session in the access table for every known UUID
+	 //struct session          *access_session;                // store the access session in the access table for every known UUID
 	passport_t		*passport;
+	char			*uuid;
+	uint32_t		 active_node;			// number of connected node
 };
 
 void vnetworks_free();

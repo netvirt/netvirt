@@ -21,7 +21,6 @@
 
 #include "hash.h"
 #include "inet.h"
-#include "session.h"
 #include "tree.h"
 #include "vnetwork.h"
 
@@ -36,56 +35,25 @@ static int vnetwork_cmp(const struct vnetwork *a, const struct vnetwork *b)
 	return strcmp(a->uuid, b->uuid);
 }
 
-void vnetwork_del_session(struct vnetwork *vnet, struct session *session)
+void vnetwork_del_session(struct vnetwork *vnet, struct session *s)
 {
-	if (session->next == NULL) {
-		if (session->prev == NULL)
-			vnet->session_list = NULL;
-		else
-			session->prev->next = NULL;
-	} else {
-		if (session->prev == NULL) {
-			vnet->session_list = session->next;
-			session->next->prev = NULL;
-		}
-		else {
-			session->prev->next = session->next;
-			session->next->prev = session->prev;
-		}
-	}
-
-	bitpool_release_bit(vnet->bitpool, MAX_NODE, session->id-1);
+	LIST_REMOVE(s, entry);
 	vnet->active_node--;
 }
 
-void vnetwork_add_session(struct vnetwork *vnet, struct session *session)
+struct session *
+vnetwork_new_session(struct vnetwork *vnet)
 {
-	if (vnet->session_list == NULL) {
-		vnet->session_list = session;
-		vnet->session_list->next = NULL;
-		vnet->session_list->prev = NULL;
-	}
-	else {
-		session->next = vnet->session_list;
-		vnet->session_list->prev = session;
-		vnet->session_list = session;
-	}
+	struct session *s;
 
-	bitpool_allocate_bit(vnet->bitpool, MAX_NODE, &session->id);
-	session->id+=1;
-	vnet->active_node++;
+	s = malloc(sizeof(*s));
+	LIST_INSERT_HEAD(&vnet->sessions, s, entry);
+
+	return s;
 }
 
 void vnetwork_show_session_list(struct vnetwork *vnet)
 {
-	struct session *itr = NULL;
-	itr = vnet->session_list;
-
-	while (itr != NULL) {
-		//jlog(L_DEBUG, "session: %p:%s\n", itr, itr->ip);
-		itr = itr->next;
-	}
-	//jlog(L_DEBUG, "--\n");
 }
 
 struct vnetwork *vnetwork_lookup(const char *uuid)
@@ -104,8 +72,6 @@ void vnetwork_free(struct vnetwork *vnet)
 		ftable_delete(vnet->ftable);
 		ctable_delete(vnet->ctable);
 		ctable_delete(vnet->atable);
-		bitpool_free(vnet->bitpool);
-		session_free(vnet->access_session);
 		free(vnet->uuid);
 		free(vnet);
 	}
@@ -113,47 +79,48 @@ void vnetwork_free(struct vnetwork *vnet)
 
 void vnetworks_free()
 {
-/*
-	uint32_t i;
-	context_t *context = NULL;
-
-	for (i = 0; i < CONTEXT_LIST_SIZE; i++) {
-		context = context_table[i];
-		context_free(context);
-	}
-*/
 }
 
 struct vnetwork *vnetwork_disable(const char *uuid)
 {
 	struct vnetwork *vnet = NULL;
-	struct vnetwork *vnet_id = NULL;
 	if ((vnet = vnetwork_lookup(uuid)) != NULL)
 		RB_REMOVE(vnetwork_tree, &vnetworks, vnet);
 
 	return vnet;
 }
 
-int vnetwork_create(char *id, char *uuid, char *address, char *netmask,
-			char *serverCert, char *serverPrivkey, char *trustedCert)
+#if 0
+void *
+session_itemdup(const void *item)
+{
+	return (void*)item;
+}
+
+void
+session_itemrel(void *item)
+{
+	(void)item;
+}
+#endif
+
+int
+vnetwork_create(char *id, char *uuid, char *address, char *netmask,
+			char *cert, char *privkey, char *cacert)
 {
 	struct vnetwork *vnet;
 
-	vnet = calloc(1, sizeof(struct vnetwork));
+	vnet = malloc(sizeof(struct vnetwork));
+
 	vnet->uuid = strdup(uuid);
-
-	vnet->passport = pki_passport_load_from_memory(serverCert, serverPrivkey, trustedCert);
-
-	bitpool_new(&vnet->bitpool, MAX_NODE);
+	vnet->passport = pki_passport_load_from_memory(cert, privkey, cacert);
 	vnet->linkst = linkst_new(MAX_NODE, TIMEOUT_SEC);
 	vnet->active_node = 0;
+	LIST_INIT(&vnet->sessions);
 
-	vnet->session_list = NULL;
-	vnet->access_session = session_new();
-
-	vnet->ftable = ftable_new(MAX_NODE, session_itemdup, session_itemrel);
-	vnet->ctable = ctable_new(MAX_NODE, session_itemdup, session_itemrel);
-	vnet->atable = ctable_new(MAX_NODE, session_itemdup, session_itemrel);
+	vnet->ftable = ftable_new(MAX_NODE, NULL, NULL);
+	vnet->ctable = ctable_new(MAX_NODE, NULL, NULL);
+	vnet->atable = ctable_new(MAX_NODE, NULL, NULL);
 
 	RB_INSERT(vnetwork_tree, &vnetworks, vnet);
 
