@@ -343,22 +343,22 @@ switch_init(json_t *config)
 	const char	*port;
 	const char	*cert;
 	const char	*pkey;
-	const char	*trust_cert;
+	const char	*cacert;
 
 	if (json_unpack(config, "{s:s}", "switch_ip", &ip) < 0)
-		err(1, "%s:%d", "switch_ip not found in config", __LINE__);
+		errx(1, "%s:%d", "switch_ip not found in config", __LINE__);
 
 	if (json_unpack(config, "{s:s}", "switch_port", &port) < 0)
-		err(1, "%s:%d", "switch_port not found config", __LINE__);
+		errx(1, "%s:%d", "switch_port not found config", __LINE__);
 
 	if (json_unpack(config, "{s:s}", "certificate", &cert) < 0)
-		err(1, "%s:%d", "certificate not found in config", __LINE__);
+		errx(1, "%s:%d", "certificate not found in config", __LINE__);
 
 	if (json_unpack(config, "{s:s}", "privatekey", &pkey) < 0)
-		err(1, "%s:%d", "privatekey not found in config", __LINE__);
+		errx(1, "%s:%d", "privatekey not found in config", __LINE__);
 
-	if (json_unpack(config, "{s:s}", "trusted_cert", &trust_cert) < 0)
-		err(1, "%s:%d", "trusted_cert not found in config", __LINE__);
+	if (json_unpack(config, "{s:s}", "trusted_cert", &cacert) < 0)
+		errx(1, "%s:%d", "trusted_cert not found in config", __LINE__);
 
 	SSL_load_error_strings();
 	SSL_library_init();
@@ -374,7 +374,7 @@ switch_init(json_t *config)
 	SSL_CTX_set_tlsext_servername_callback(ctx, servername_cb);
 	SSL_CTX_set_tlsext_servername_arg(ctx, NULL);
 
-	if ((passport = pki_passport_load_from_file(cert, pkey, trust_cert)) == NULL)
+	if ((passport = pki_passport_load_from_file(cert, pkey, cacert)) == NULL)
 		err(1, "%s:%d", "pki_passport_load_from_file", __LINE__);
 
 	SSL_CTX_set_cipher_list(ctx, "ECDHE-ECDSA-AES256-SHA");
