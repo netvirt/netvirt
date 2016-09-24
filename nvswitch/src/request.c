@@ -19,7 +19,6 @@
 #include "control.h"
 #include "request.h"
 #include "vnetwork.h"
-#include "session.h"
 
 void
 provRequest(struct session *session, DNDSMessage_t *req_msg)
