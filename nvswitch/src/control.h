@@ -16,16 +16,14 @@
 #ifndef CONTROL_H
 #define CONTROL_H
 
-#if 0
-#include "session.h"
 #include "switch.h"
+#include "vnetwork.h"
 
 int query_provisioning(struct session *, char *);
 int query_list_node();
 int update_node_status(char *, char *, char *, char *);
 int query_list_network();
-int ctrl_init(struct switch_cfg *);
-void ctrl_fini();
-#endif
+int control_init();
+void control_fini();
 
 #endif
