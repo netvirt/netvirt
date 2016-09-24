@@ -38,8 +38,6 @@ static SSL_CTX			*ctx;
 static passport_t		*passport;
 extern struct event_base	*ev_base;
 static struct addrinfo		*ai;
-static int			 cookie_initialized;
-static unsigned char		 cookie_secret[16];
 
 int
 certverify_cb(int ok, X509_STORE_CTX *store)
@@ -57,182 +55,29 @@ certverify_cb(int ok, X509_STORE_CTX *store)
 	return (ok);
 }
 
-int
-servername_cb(SSL *ssl, int *ad, void *arg)
-{
-	(void)ad;
-	(void)arg;
-	const char	*name;
-
-	if ((name = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name)) == NULL)
-		return (SSL_TLSEXT_ERR_NOACK);
-
-	printf(">>> name %s\n", name);
-
-	/* Load the trusted certificate store into our SSL_CTX */
-	SSL_CTX_set_cert_store(ctx, passport->cacert_store);
-
-	/* Set the certificate and key */
-	SSL_use_certificate(ssl, passport->certificate);
-	SSL_use_PrivateKey(ssl, passport->keyring);
-
-	return (SSL_TLSEXT_ERR_OK);
-}
-
-/* generate_cookie and verify_cookie
- * taken from openssl apps/s_cb.c
- */
-int
-generate_cookie(SSL *ssl, unsigned char *cookie, unsigned int *cookie_len)
-{
-	unsigned char	*buffer;
-	unsigned char	 result[EVP_MAX_MD_SIZE];
-	unsigned int	 length, resultlength;
-
-	union {
-		struct sockaddr sa;
-		struct sockaddr_in s4;
-#if OPENSSL_USE_IPV6
-		struct sockaddr_in6 s6;
-#endif
-	} peer;
-
-	/* Initialize a random secret */
-	if (cookie_initialized == 0) {
-		if (RAND_bytes(cookie_secret, sizeof(cookie_secret)) <= 0)
-			return (0);
-		cookie_initialized = 1;
-	}
-
-	/* Read peer information */
-	(void)BIO_dgram_get_peer(SSL_get_rbio(ssl), &peer);
-
-	/* Create buffer with peer's address and port */
-	length = 0;
-	switch (peer.sa.sa_family) {
-	case AF_INET:
-		length += sizeof(struct in_addr);
-		length += sizeof(peer.s4.sin_port);
-		break;
-#if OPENSSL_USE_IPV6
-	case AF_INET6:
-		length += sizeof(struct in6_addr);
-		length += sizeof(peer.s6.sin6_port);
-		break;
-#endif
-	default:
-		return (0);
-	}
-
-	if ((buffer = OPENSSL_malloc(length)) == NULL)
-		return (0);
-
-	switch (peer.sa.sa_family) {
-	case AF_INET:
-		memcpy(buffer, &peer.s4.sin_port, sizeof(peer.s4.sin_port));
-		memcpy(buffer + sizeof(peer.s4.sin_port),
-		    &peer.s4.sin_addr, sizeof(struct in_addr));
-		break;
-#if OPENSSL_USE_IPV6
-	case AF_INET6:
-		memcpy(buffer, &peer.s6.sin6_port, sizeof(peer.s6.sin6_port));
-		memcpy(buffer + sizeof(peer.s6.sin6_port),
-		    &peer.s6.sin6_addr, sizeof(struct in6_addr));
-		break;
-#endif
-	default:
-		return (0);
-	}
-
-	/* Calculate HMAC of buffer using the secret */
-	HMAC(EVP_sha1(), cookie_secret, sizeof(cookie_secret),
-	    buffer, length, result, &resultlength);
-	OPENSSL_free(buffer);
-
-	memcpy(cookie, result, resultlength);
-	*cookie_len = resultlength;
-
-    return (1);
-}
-
-int
-verify_cookie(SSL *ssl, unsigned char *cookie, unsigned int cookie_len)
-{
-	unsigned char	*buffer;
-	unsigned char	 result[EVP_MAX_MD_SIZE];
-	unsigned int	 length, resultlength;
-
-	union {
-		struct sockaddr sa;
-		struct sockaddr_in s4;
-#if OPENSSL_USE_IPV6
-		struct sockaddr_in6 s6;
-#endif
-	} peer;
-
-	/* If secret isn't initialized yet, the cookie can't be valid */
-	if (cookie_initialized == 0)
-		return (0);
-
-	/* Read peer information */
-	(void)BIO_dgram_get_peer(SSL_get_rbio(ssl), &peer);
-
-	/* Create buffer with peer's address and port */
-	length = 0;
-	switch (peer.sa.sa_family) {
-	case AF_INET:
-		length += sizeof(struct in_addr);
-		length += sizeof(peer.s4.sin_port);
-		break;
-#if OPENSSL_USE_IPV6
-	case AF_INET6:
-		length += sizeof(struct in6_addr);
-		length += sizeof(peer.s6.sin6_port);
-		break;
-#endif
-	default:
-		return (0);
-	}
-
-	if ((buffer = OPENSSL_malloc(length)) == NULL)
-		return (0);
-
-	switch (peer.sa.sa_family) {
-	case AF_INET:
-		memcpy(buffer, &peer.s4.sin_port, sizeof(peer.s4.sin_port));
-		memcpy(buffer + sizeof(peer.s4.sin_port),
-		    &peer.s4.sin_addr, sizeof(struct in_addr));
-		break;
-#if OPENSSL_USE_IPV6
-	case AF_INET6:
-		memcpy(buffer, &peer.s6.sin6_port, sizeof(peer.s6.sin6_port));
-		memcpy(buffer + sizeof(peer.s6.sin6_port),
-		    &peer.s6.sin6_addr, sizeof(struct in6_addr));
-		break;
-#endif
-	default:
-		return (0);
-	}
-
-	/* Calculate HMAC of buffer using the secret */
-	HMAC(EVP_sha1(), cookie_secret, sizeof(cookie_secret),
-	    buffer, length, result, &resultlength);
-	OPENSSL_free(buffer);
-
-	if (cookie_len == resultlength
-	    && memcmp(result, cookie, resultlength) == 0)
-		return (1);
-
-    return (0);
-}
-
 void
 udpclient_cb(int sock, short what, void *arg)
 {
 	(void)sock;
 	(void)what;
 	(void)arg;
-	printf("udpclient_cb\n");
+
+	printf("udpclient_cb %d\n", sock);
+
+	SSL     *ssl;
+	int      ret;
+	char     buf[1500] = {0};
+
+        ssl = arg;
+
+        if ((ret = SSL_read(ssl, &buf, sizeof(buf))) < 0) {
+                ret = SSL_get_error(ssl, ret);
+                fprintf(stderr, "SSL_read: error %d (%d-%d)\n", ret, SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE);
+                ERR_print_errors_fp(stderr);
+                return;
+        }
+        SSL_write(ssl, "hello", 4);
+        fprintf(stderr, "%s %d", buf, ret);
 }
 
 
@@ -247,15 +92,15 @@ agent_init(void)
 	int		 status;
 	int		 sock;
 	int		 flag;
+	int		 ret;
 	const char	*ip = "127.0.0.1";
 	const char	*port = "9090";
 	const char	*cert = "/etc/netvirt/certs/netvirt-app-cert.pem";
 	const char	*pkey = "/etc/netvirt/certs/netvirt-app-privkey.pem";
 	const char	*trust_cert = "/etc/netvirt/certs/netvirt-ctrler-cert.pem";
 
-	OpenSSL_add_all_algorithms();
-	SSL_load_error_strings();
 	SSL_library_init();
+	SSL_load_error_strings();
 
 	if (!RAND_poll())
 		err(1, "%s:%d", "RAND_poll", __LINE__);
@@ -266,7 +111,15 @@ agent_init(void)
 	if ((passport = pki_passport_load_from_file(cert, pkey, trust_cert)) == NULL)
 		err(1, "%s:%d", "pki_passport_load_from_file", __LINE__);
 
-	SSL_CTX_set_cipher_list(ctx, "SHA");
+	/* Load the trusted certificate store into our SSL_CTX */
+	SSL_CTX_set_cert_store(ctx, passport->cacert_store);
+
+	/* Set the certificate and key */
+	SSL_CTX_use_certificate(ctx, passport->certificate);
+	SSL_CTX_use_PrivateKey(ctx, passport->keyring);
+
+	if ((ret = SSL_CTX_set_cipher_list(ctx, "ECDHE-ECDSA-AES256-SHA")) == 0)
+		err(1, "%s:%d", "SSL_CTX_set_cipher_list", __LINE__);
 
 	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL)
 		err(1, "%s:%d", "EC_KEY_new_by_curve_name", __LINE__);
@@ -288,21 +141,16 @@ agent_init(void)
 	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) < 0)
 		errx(1, "%s:%d", "setsockopt", __LINE__);
 
-
-	if (evutil_make_socket_nonblocking(sock) > 0)
-		err(1, "%s:%d", "evutil_make_socket_nonblocking", __LINE__);
-
 	if (connect(sock, ai->ai_addr, ai->ai_addrlen) < 0)
 		warn("%s:%d", "connect", __LINE__);
 
 	if ((ssl = SSL_new(ctx)) == NULL)
 		warnx("%s:%d", "SSL_new", __LINE__);
 
-	SSL_set_connect_state(ssl);
-/*
+	SSL_set_tlsext_host_name(ssl, "test");
 	SSL_set_verify(ssl,
 	    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, certverify_cb);
-*/
+
 	if ((bio = BIO_new_dgram(sock, BIO_NOCLOSE)) == NULL)
 		warnx("%s:%d", "BIO_new_dgram", __LINE__);
 
@@ -310,8 +158,15 @@ agent_init(void)
 
 	SSL_set_bio(ssl, bio, bio);
 
-	int ret;
-	if ((ret = SSL_connect(ssl)) <= 0) {
+	if (evutil_make_socket_nonblocking(sock) > 0)
+		err(1, "%s:%d", "evutil_make_socket_nonblocking", __LINE__);
+
+	char buf[1500] = {0};
+
+	SSL_set_connect_state(ssl);
+	//if ((ret = SSL_connect(ssl)) <= 0) {
+//        if ((ret = SSL_read(ssl, &buf, sizeof(buf))) < 0) {
+        if ((ret = SSL_write(ssl, "hello", 4)) < 0) {
 		ret = SSL_get_error(ssl, ret);
 		fprintf(stderr, "SSL_read: error %d (%d-%d)\n", ret, SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE);
 		ERR_print_errors_fp(stderr);
@@ -321,7 +176,7 @@ agent_init(void)
 	if ((ev_udpclient = event_new(ev_base, sock,
 	    EV_READ | EV_PERSIST, udpclient_cb, ssl)) == NULL)
 		warn("%s:%d", "event_new", __LINE__);
-
+	event_add(ev_udpclient, NULL);
 
 	return (0);
 }
