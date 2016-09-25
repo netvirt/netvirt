@@ -44,7 +44,7 @@ char *uuid_v4(void)
 	return str;
 }
 
-__inline__ int check_result_status(PGresult *result)
+int check_result_status(PGresult *result)
 {
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
