@@ -566,7 +566,7 @@ dispatch_op(json_t *jmsg)
 			/* all network are now fetched */
 			if (cfg->ctrl_initialized == 0) {
 				jlog(L_DEBUG, "networks initalized");
-				ret = query_list_node(jmsg);
+				ret = query_list_node();
 			}
 		}
 	} else if (strcmp(action, "listall-node") == 0) {
