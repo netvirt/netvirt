@@ -162,13 +162,15 @@ void transmit_register(netc_t *netc)
 	subj_ptr = X509_get_subject_name(session->passport->certificate);
 	X509_NAME_get_text_by_NID(subj_ptr, NID_commonName, subj, 256);
 	jlog(L_NOTICE, "CN=%s", subj);
+	AuthRequest_set_certName(msg, subj, strlen(subj));
 
-
-	uri = cert_uri(session->passport->certificate);
-	jlog(L_NOTICE, "URI:%s", uri);
-        AuthRequest_set_certName(msg, uri, strlen(uri));
-	free(uri);
-
+/*
+	if ((uri = cert_altname_uri(session->passport->certificate)) != NULL) {
+		jlog(L_NOTICE, "URI:%s", uri);
+		AuthRequest_set_certName(msg, uri, strlen(uri));
+		free(uri);
+	}
+*/
         nbyte = net_send_msg(netc, msg);
 	DNDSMessage_del(msg);
         if (nbyte == -1) {
