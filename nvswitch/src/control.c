@@ -551,7 +551,6 @@ sighandler(evutil_socket_t sk, short t, void *ptr)
 int
 dispatch_op(json_t *jmsg)
 {
-	char	*dump;
 	char	*action;
 	int	 ret = 0;
 /*

@@ -39,10 +39,7 @@ update_node_status(struct session_info **sinfo, json_t *jmsg)
 	char	*local_ipaddr = NULL;
 	char	*uuid = NULL;
 	char	*network_uuid = NULL;
-	char	*ptr = NULL;
-
 	json_t	*node;
-
 
 	node = json_object_get(jmsg, "node");
 	json_unpack(node, "{s:s}", "status", &status);
