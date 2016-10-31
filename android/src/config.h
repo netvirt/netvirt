@@ -6,6 +6,9 @@
 class Config {
     public:
         Config();
+
+        QString controllerHost();
+        int controllerPort();
         void provision();
         bool isProvisioned();
 

@@ -1,0 +1,22 @@
+client:
+  image: netvirt/android-client
+  links:
+    - "server"
+  cap_add:
+    - NET_ADMIN
+  devices:
+    - "/dev/net/tun:/dev/net/tun"
+  environment:
+    "provisioning_key": "${provisioning_key}"
+  volumes:
+    - "./etc/agent.conf:/tmp/netvirt-config/init.ini"
+
+server:
+  image: p0bailey/docker-flask
+  expose:
+    - "6388"
+  ports:
+    - "6388"
+  volumes:
+    - "../server:/usr/src/netvirt"
+  command: "python /usr/src/netvirt/mock.py"

@@ -15,13 +15,32 @@
  */
 
 #include <QCoreApplication>
+#include <QDebug>
+#include <QDir>
+#include <QFile>
+#include <QProcessEnvironment>
+#include <stdio.h>
 
 #include "agent.h"
 
 int main(int argc, char *argv[])
 {
+    // The config file will be rewritten when provisioning is completed. But we
+    // don't want the config file coming from the tests to be modified, so we
+    // make a copy and modify it.
+    char source[] = "/tmp/netvirt-config/init.ini";
+    char destination_dir[] = "/root/.config/netvirt";
+    char destination[] = "/root/.config/netvirt/config.ini";
+    printf("Copying %s to %s...\n", source, destination);
+    QDir::root().mkpath(destination_dir);
+    QFile::copy(source, destination);
+
+    printf("Netvirt-client for tests starting...\n");
     QCoreApplication app(argc, argv);
     NetvirtAgent agent;
-    agent.connect_("server", "8000", "test");
+    QObject::connect(&agent, SIGNAL(provisioned()), &app, SLOT(quit()));
+    qDebug() << QProcessEnvironment::systemEnvironment().keys();
+    QString provisioning_key = QProcessEnvironment::systemEnvironment().value("provisioning_key");
+    agent.provision(provisioning_key);
     return app.exec();
 }

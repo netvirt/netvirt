@@ -65,3 +65,26 @@ C++:
 __android_log_write(ANDROID_LOG_INFO, "ToyVpnService", "message");
 
 ```
+
+Integration tests
+-----------------
+
+Prerequisites:
+- Docker
+- run:
+```
+cd integration_tests
+pip install -r requirements.txt
+```
+
+To run the tests:
+
+```
+make test-setup  # recompile client code changes
+cd integration_tests
+nosetests -x suite
+```
+
+Nosetests is a Python executable that looks for any Python function `test_*` or any method `Test*.test_*`, and run them.
+
+Tests use a slightly modified version of the client: it uses the "native" implementation (meaning: no Java) with a different "main_test.c" entry point.
