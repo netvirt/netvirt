@@ -26,4 +26,7 @@ else()
 	set(CPACK_PACKAGE_NAME "netvirt-agent-cli")
 endif()
 
+string(TIMESTAMP TODAY "%Y.%m.%d")
+set(CPACK_PACKAGE_VERSION ${TODAY})
+
 include(CPack)
