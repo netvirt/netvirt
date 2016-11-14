@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 project(netvirt)
 
 SET(CPACK_PACKAGE_VERSION "0.6.2")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 enable_testing()
 
@@ -61,3 +62,5 @@ endif()
 if (WITH_NVSWITCH)
 	add_subdirectory(nvswitch)
 endif()
+
+

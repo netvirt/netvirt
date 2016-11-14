@@ -68,8 +68,8 @@ else()
 	add_executable(netvirt-agent MACOSX_BUNDLE ${nvagent_sources} ${cli_sources})
 endif()
 
-find_package(OpenSSL REQUIRED)
-include_directories(${OPENSSL_INCLUDE_DIR})
+find_package(LibreSSL REQUIRED)
+include_directories(${LibreSSL_INCLUDE_DIR})
 
 include_directories("${CMAKE_SOURCE_DIR}/libnvcore/src/protocol/")
 
@@ -91,7 +91,7 @@ elseif (WIN32)
 		nvcore
 		pthread
 		${CMAKE_SOURCE_DIR}/tapcfg/build/tapcfg.dll
-		${OPENSSL_LIBRARIES}
+		${LibreSSL_LIBRARIES}
 	)
 else()
 	target_link_libraries(netvirt-agent

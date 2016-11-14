@@ -83,8 +83,8 @@ SetCompressor /FINAL /SOLID lzma
 		File ${MINGW_PATH}/libstdc++-6.dll
 		File ${MINGW_PATH}/libssp-0.dll
 		File ${PTHREAD_PATH}/pthreadGC2.dll
-		File ${OPENSSL_PATH}/libeay32.dll
-		File ${OPENSSL_PATH}/ssleay32.dll
+		File ${OPENSSL_PATH}/libcrypto-*.dll
+		File ${OPENSSL_PATH}/libssl-*.dll
 		File ${QT_PATH}/bin/libgcc_s_dw2-1.dll
 		File ${QT_PATH}/bin/mingwm10.dll
 		File ${QT_PATH}/bin/QtCore4.dll

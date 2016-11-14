@@ -29,8 +29,8 @@ include_directories(${CMAKE_SOURCE_DIR}/udt4/src/)
 
 if(WIN32)
 
-	find_package(OpenSSL REQUIRED)
-	include_directories(${OPENSSL_INCLUDE_DIR})
+	find_package(LibreSSL REQUIRED)
+	include_directories(${LibreSSL_INCLUDE_DIR})
 
 	set(UDT_LIBRARIES ${CMAKE_SOURCE_DIR}/udt4/src/libudt.dll)
 	target_link_libraries(nvcore
