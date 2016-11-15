@@ -68,8 +68,14 @@ else()
 	add_executable(netvirt-agent MACOSX_BUNDLE ${nvagent_sources} ${cli_sources})
 endif()
 
-find_package(LibreSSL REQUIRED)
-include_directories(${LibreSSL_INCLUDE_DIR})
+
+if (WIN32)
+	find_package(LibreSSL REQUIRED)
+	include_directories(${LibreSSL_INCLUDE_DIR})
+else()
+	find_package(OpenSSL REQUIRED)
+	include_directories(${OPENSSL_INCLUDE_DIR})
+endif()
 
 include_directories("${CMAKE_SOURCE_DIR}/libnvcore/src/protocol/")
 
