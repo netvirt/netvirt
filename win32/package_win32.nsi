@@ -4,8 +4,8 @@
 !ifndef PTHREAD_PATH
 	!define PTHREAD_PATH /usr/i686-w64-mingw32/lib
 !endif
-!ifndef LIBRESSL_PATH
-	!define LIBRESSL_PATH /opt/mingw32/mingw32/bin
+!ifndef LibreSSL_PATH
+	!define LibreSSL_PATH /opt/mingw32/mingw32/bin
 !endif
 !ifndef QT_PATH
 	!define QT_PATH /media/nib/Windows7_OS/Qt/4.8.4
@@ -83,8 +83,8 @@ SetCompressor /FINAL /SOLID lzma
 		File ${MINGW_PATH}/libstdc++-6.dll
 		File ${MINGW_PATH}/libssp-0.dll
 		File ${PTHREAD_PATH}/pthreadGC2.dll
-		File ${LIBRESSL_PATH}/libcrypto-*.dll
-		File ${LIBRESSL_PATH}/libssl-*.dll
+		File ${LibreSSL_PATH}/libcrypto-*.dll
+		File ${LibreSSL_PATH}/libssl-*.dll
 		File ${QT_PATH}/bin/libgcc_s_dw2-1.dll
 		File ${QT_PATH}/bin/mingwm10.dll
 		File ${QT_PATH}/bin/QtCore4.dll

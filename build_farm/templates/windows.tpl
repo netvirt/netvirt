@@ -70,12 +70,12 @@ function build_nvagent () {
     rm -rf *
     set -e
     cmake -DCMAKE_TOOLCHAIN_FILE=win32/toolchain-mingw32.cmake \
-          -DLIBRESSL_ROOT_DIR="$libressl_dir/$libressl_pathname" \
+          -DLibreSSL_ROOT_DIR="$libressl_dir/$libressl_pathname" \
           -DCROSS_COMPILER="i686-w64-mingw32" \
           -DCMAKE_FIND_ROOT_PATH="$qt_root" \
           ..
     make netvirt-agent
-    makensis -DLIBRESSL_PATH="$libressl_dir/$libressl_pathname/x86" \
+    makensis -DLibreSSL_PATH="$libressl_dir/$libressl_pathname/x86" \
              -DQT_PATH="$qt_root" \
              -DUDT4_PATH="../udt4" \
              -DLIBCONFIG_PATH="../libconfig" \
