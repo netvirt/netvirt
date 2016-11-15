@@ -4,8 +4,8 @@
 !ifndef PTHREAD_PATH
 	!define PTHREAD_PATH /usr/i686-w64-mingw32/lib
 !endif
-!ifndef OPENSSL_PATH
-	!define OPENSSL_PATH /opt/mingw32/mingw32/bin
+!ifndef LibreSSL_PATH
+	!define LibreSSL_PATH /opt/mingw32/mingw32/bin
 !endif
 
 # Define the path of the build directory
@@ -73,8 +73,8 @@ SetCompressor /FINAL /SOLID lzma
 		File ${MINGW_PATH}/libstdc++-6.dll
 		File ${MINGW_PATH}/libssp-0.dll
 		File ${PTHREAD_PATH}/pthreadGC2.dll
-		File ${OPENSSL_PATH}/libeay32.dll
-		File ${OPENSSL_PATH}/ssleay32.dll
+		File ${LibreSSL_PATH}/libcrypto-*.dll
+		File ${LibreSSL_PATH}/libssl-*.dll
 
 		CreateDirectory $APPDATA\netvirt\default
 
