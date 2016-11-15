@@ -30,12 +30,12 @@ find_path(LibreSSL_INCLUDE_DIR
 
 find_library(LibreSSL_SSL_LIBRARY
         NAMES libssl-39
-        HINTS ${LibreSSL_ROOT_DIR}/lib
+        HINTS ${LibreSSL_ROOT_DIR}/x86
         )
 
 find_library(LibreSSL_CRYPTO_LIBRARY
         NAMES libcrypto-38
-        HINTS ${LibreSSL_ROOT_DIR}/lib
+        HINTS ${LibreSSL_ROOT_DIR}/x86
         )
 
 set(LibreSSL_LIBRARIES ${LibreSSL_SSL_LIBRARY} ${LibreSSL_CRYPTO_LIBRARY}
