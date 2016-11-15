@@ -2,7 +2,7 @@
 
 from jinja2 import FileSystemLoader, Environment
 
-env = Environment(loader=FileSystemLoader('templates'), lstrip_blocks=True, trim_blocks=True)
+env = Environment(loader=FileSystemLoader('templates'), trim_blocks=True)
 
 for platform in ['debian', 'mac', 'mac-cli', 'windows', 'windows-cli']:
     template = env.get_template(platform + '.tpl')

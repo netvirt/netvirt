@@ -58,17 +58,17 @@ function fix_libconfig_git () {
 
 function build_dependencies () {
     pushd udt4
-    [ -f src/libudt.dylib ] || make os=OSX arch=AMD64
+        [ -f src/libudt.dylib ] || make os=OSX arch=AMD64
     popd
 
     pushd libconfig
     fix_libconfig_git
-    [ ! -f Makefile ] && ./configure
+        [ ! -f Makefile ] && ./configure
     [ -d lib/.libs ] || make -s
     popd
 
     pushd tapcfg
-    [ -d build ] || scons
+        [ -d build ] || scons
     popd
 }
 

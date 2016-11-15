@@ -45,17 +45,17 @@ function fix_libconfig_git () {
 
 function build_dependencies () {
     pushd udt4
-    make
+        make
     popd
 
     pushd libconfig
     fix_libconfig_git
-    [ ! -f Makefile ] && ./configure
+        [ ! -f Makefile ] && ./configure
     make
     popd
 
     pushd tapcfg
-    ./buildall.sh
+        ./buildall.sh
     popd
 }
 

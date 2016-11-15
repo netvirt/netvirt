@@ -4,19 +4,19 @@ set -x
 
 release_dir="$1"
 
-openssl_dir="/data/netvirt/openssl"
-openssl_root="$openssl_dir/mingw32"
+libressl_version="2.5.0"
+libressl_dir="/data/netvirt/"
+libressl_pathname=libressl-${libressl_version}-window
 wine_dir="/data/netvirt/wine"
 qt_root="$wine_dir/drive_c/Qt/4.8.4"
 pthreads_dir="/data/netvirt/pthreads"
 
-function install_openssl () {
-    openssl_archive="/tmp/openssl-mingw32.tar.gz"
-    openssl_url="http://www.blogcompiler.com/wp-content/uploads/2011/12/openssl-1.0.0e-mingw32.tar.gz"
-    [ -r "$openssl_archive" ] || wget "$openssl_url" -O "$openssl_archive"
-    mkdir -p "$openssl_dir"
-    tar -C "$openssl_dir" -xzf "$openssl_archive"
-    cp "$openssl_root"/bin/{ssl,lib}eay32.dll "$openssl_root/lib"
+function install_libressl () {
+    libressl_archive="/tmp/libressl.zip"
+    libressl_url="https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-${libressl_version}-windows.zip"
+    [ -r "$libressl_archive" ] || curl -o "$libressl_archive" "$libressl_url"
+    mkdir -p "$libressl_dir"
+    unzip "$libressl_archive" -d "$libressl_dir"
 }
 
 function install_qt () {
@@ -37,12 +37,12 @@ function install_pthreads_win32 () {
     ln -f "/usr/i686-w64-mingw32/lib/"libpthread{GC2,}.a
     cp "$pthreads_dir/dll/x86/pthreadGC2.dll" "/usr/i686-w64-mingw32/lib"
     ln -f "/usr/i686-w64-mingw32/lib/"pthread{GC2,}.dll
-    cp "$pthreads_dir"/include/* "$openssl_root/include"
+    cp "$pthreads_dir"/include/* "$libressl_dir/$libressl_pathname/include"
 }
 
 function install_build_dependencies() {
     apt-get install -y git scons cmake build-essential libqt4-dev mingw-w64 nsis wine
-    [ -d "$openssl_dir" ] || install_openssl
+    [ -d "$libressl_dir" ] || install_libressl
     [ -d "$wine_dir" ] || install_qt
     [ -d "$pthreads_dir" ] || install_pthreads_win32
 }
@@ -83,17 +83,17 @@ function fix_libconfig_git () {
 
 function build_dependencies () {
     pushd udt4
-    [ -f src/libudt.dll ] || make CXX='i686-w64-mingw32-g++' os=WIN32 -s
+        [ -f src/libudt.dll ] || make CXX='i686-w64-mingw32-g++' os=WIN32 -s
     popd
 
     pushd libconfig
     fix_libconfig_git
-    [ -f Makefile ] || ./configure --host=i686-w64-mingw32
+        [ -f Makefile ] || ./configure --host=i686-w64-mingw32
     [ -d lib/.libs ] || make -s
     popd
 
     pushd tapcfg
-    [ -d build ] || scons --force-mingw32
+        [ -d build ] || scons --force-mingw32
     popd
 }
 
@@ -103,12 +103,12 @@ function build_nvagent () {
     rm -rf *
     set -e
     cmake -DCMAKE_TOOLCHAIN_FILE=win32/toolchain-mingw32.cmake \
-          -DOPENSSL_ROOT_DIR="$openssl_dir/mingw32" \
+          -DLIBRESSL_ROOT_DIR="$libressl_dir/$libressl_pathname" \
           -DCROSS_COMPILER="i686-w64-mingw32" \
           -DCMAKE_FIND_ROOT_PATH="$qt_root" \
           ..
     make netvirt-agent
-    makensis -DOPENSSL_PATH="$openssl_dir/mingw32/lib" \
+    makensis -DLIBRESSL_PATH="$libressl_dir/$libressl_pathname/x86" \
              -DQT_PATH="$qt_root" \
              -DUDT4_PATH="../udt4" \
              -DLIBCONFIG_PATH="../libconfig" \
