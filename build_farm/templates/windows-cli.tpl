@@ -6,7 +6,7 @@
 {% block global_variables %}
 libressl_version="2.5.0"
 libressl_dir="/data/netvirt/"
-libressl_pathname=libressl-${libressl_version}-window
+libressl_pathname=libressl-${libressl_version}-windows
 pthreads_dir="/data/netvirt/pthreads"
 {% endblock %}
 

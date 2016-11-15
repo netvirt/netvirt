@@ -6,7 +6,7 @@
 {% block global_variables %}
 libressl_version="2.5.0"
 libressl_dir="/data/netvirt/"
-libressl_pathname=libressl-${libressl_version}-window
+libressl_pathname=libressl-${libressl_version}-windows
 wine_dir="/data/netvirt/wine"
 qt_root="$wine_dir/drive_c/Qt/4.8.4"
 pthreads_dir="/data/netvirt/pthreads"
