@@ -7,6 +7,8 @@ add_subdirectory(src)
 
 if (APPLE)
 	set(CPACK_GENERATOR "DragNDrop")
+	string(TIMESTAMP TODAY "%Y.%m.%d")
+	set(CPACK_PACKAGE_VERSION ${TODAY})
 else()
 	set(CPACK_GENERATOR "DEB")
 	if (WITH_GUI)
@@ -25,8 +27,5 @@ if (WITH_GUI)
 else()
 	set(CPACK_PACKAGE_NAME "netvirt-agent-cli")
 endif()
-
-string(TIMESTAMP TODAY "%Y.%m.%d")
-set(CPACK_PACKAGE_VERSION ${TODAY})
 
 include(CPack)
