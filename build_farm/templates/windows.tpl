@@ -44,7 +44,7 @@ function install_pthreads_win32 () {
 
 function install_build_dependencies() {
     apt-get install -y git scons cmake build-essential libqt4-dev mingw-w64 nsis wine
-    [ -d "$libressl_dir" ] || install_libressl
+    [ -d "$libressl_dir/$libressl_pathname" ] || install_libressl
     [ -d "$wine_dir" ] || install_qt
     [ -d "$pthreads_dir" ] || install_pthreads_win32
 }
