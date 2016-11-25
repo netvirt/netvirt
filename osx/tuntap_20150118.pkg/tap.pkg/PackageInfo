@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<pkg-info overwrite-permissions="true" relocatable="false" identifier="net.sf.tuntaposx.tap" postinstall-action="none" version="20150118.0.0" format-version="2" generator-version="InstallCmds-403 (13F34)" auth="root">
+    <payload numberOfFiles="12" installKBytes="57"/>
+    <bundle path="./Library/Extensions/tap.kext" id="net.sf.tuntaposx.tap" CFBundleShortVersionString="20150118" CFBundleVersion="1.0"/>
+    <bundle-version>
+        <bundle id="net.sf.tuntaposx.tap"/>
+    </bundle-version>
+    <upgrade-bundle>
+        <bundle id="net.sf.tuntaposx.tap"/>
+    </upgrade-bundle>
+    <update-bundle/>
+    <atomic-update-bundle/>
+    <strict-identifier/>
+    <relocate/>
+    <scripts>
+        <postinstall file="./postinstall"/>
+    </scripts>
+</pkg-info>
