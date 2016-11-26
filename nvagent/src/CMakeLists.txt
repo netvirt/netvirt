@@ -119,7 +119,7 @@ install(TARGETS netvirt-agent
 
 if (APPLE)
     set(APPS "\${CMAKE_INSTALL_PREFIX}/${apple_package}")
-    install(DIRECTORY ${CMAKE_SOURCE_DIR}/osx/tuntap_20150118.pkg DESTINATION . USE_SOURCE_PERMISSIONS COMPONENT Runtime)
+    install(PROGRAMS ${CMAKE_SOURCE_DIR}/osx/tuntap_20150118.pkg DESTINATION . COMPONENT Runtime)
     if (WITH_GUI)
         install(CODE "
             file(WRITE \"\${CMAKE_INSTALL_PREFIX}/${qtconf_dest_dir}/qt.conf\" \"\")
