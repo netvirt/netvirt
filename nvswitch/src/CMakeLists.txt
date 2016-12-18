@@ -1,5 +1,4 @@
-set(CMAKE_C_FLAGS "-g -W -Wall -Wno-unused-parameter -DNVSWITCH_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
-set(CMAKE_CXX_FLAGS "-g -W -Wall -Wno-unused-parameter -DNVSWITCH_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
+set(CMAKE_C_FLAGS "-I/usr/local/include -L/usr/local/lib -g -W -Wall -Wno-unused-parameter -DNVSWITCH_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
 
 add_subdirectory(tests)
 
@@ -17,11 +16,9 @@ add_executable(netvirt-switch
 include_directories("${CMAKE_SOURCE_DIR}/libnvcore/src/")
 target_link_libraries(netvirt-switch
 	nvcore
-	ssl
-	crypto
-	pthread
 	jansson
-	event
+	event_core
+	event_extra
 	event_openssl
 )
 
