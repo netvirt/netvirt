@@ -12,7 +12,6 @@ add_executable(netvirt-ctrler
 	dao.c
 	ippool.c
 	main.c
-	pki.c
 	prov.c
 	request.c
 )

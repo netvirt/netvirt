@@ -24,8 +24,9 @@
 #include <postgresql/libpq-fe.h>
 #include <ossp/uuid.h>
 
+#include <pki.h>
+
 #include "ctrler.h"
-#include "pki.h"
 
 PGconn *dbconn = NULL;
 

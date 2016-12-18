@@ -28,9 +28,10 @@
 #include <event2/listener.h>
 #include <jansson.h>
 
+#include <pki.h>
+
 #include "ctrler.h"
 #include "dao.h"
-#include "pki.h"
 #include "request.h"
 
 struct session_info *switch_sinfo = NULL;

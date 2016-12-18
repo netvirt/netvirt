@@ -21,12 +21,12 @@
 #include <unistd.h>
 
 #include <event2/event.h>
-
 #include <jansson.h>
+
+#include <pki.h>
 
 #include "ctrler.h"
 #include "dao.h"
-#include "pki.h"
 
 #define CONFIG_FILE "/etc/netvirt/nvctrler.conf"
 

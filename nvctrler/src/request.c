@@ -17,12 +17,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <jansson.h>
 #include <event2/bufferevent.h>
+#include <jansson.h>
+
+#include <pki.h>
 
 #include "dao.h"
 #include "ippool.h"
-#include "pki.h"
 #include "request.h"
 
 extern struct session_info *switch_sinfo;
