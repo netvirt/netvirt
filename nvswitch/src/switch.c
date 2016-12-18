@@ -27,10 +27,10 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <openssl/rand.h>
-
 #include <event2/event.h>
 
-#include "cert.h"
+#include <pki.h>
+
 #include "switch.h"
 
 static SSL_CTX			*ctx;

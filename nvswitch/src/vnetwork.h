@@ -16,8 +16,8 @@
 #ifndef VNETWORK_H
 #define VNETWORK_H
 
-#include <cert.h>
 #include <ftable.h>
+#include <pki.h>
 
 #include "ctable.h"
 #include "linkst.h"

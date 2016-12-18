@@ -18,7 +18,7 @@
 
 #include <inttypes.h>
 
-#include <cert.h>
+#include <pki.h>
 #include "vnetwork.h"
 
 #define SESSION_STATE_AUTHED		0x1
