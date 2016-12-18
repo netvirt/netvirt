@@ -27,7 +27,6 @@ elseif(APPLE)
 elseif(UNIX)
     set(HARDENING_OPTIONS_LINUX
         ${HARDENING_OPTIONS_COMMON}
-        -Wl,-z,relro
     )
     set(compiler_options "${HARDENING_OPTIONS_LINUX} -O1")
 endif()
