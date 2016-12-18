@@ -20,18 +20,18 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
-#include <openssl/bio.h>
-#include <openssl/err.h>
-#include <openssl/ssl.h>
-#include <openssl/rand.h>
-
 #include <err.h>
 #include <string.h>
 #include <unistd.h>
 
+#include <openssl/bio.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+#include <openssl/rand.h>
 #include <event2/event.h>
 
-#include "cert.h"
+#include <pki.h>
+
 #include "agent.h"
 
 static SSL_CTX			*ctx;
@@ -78,6 +78,13 @@ udpclient_cb(int sock, short what, void *arg)
         }
         SSL_write(ssl, "hello", 4);
         fprintf(stderr, "%s %d", buf, ret);
+}
+
+int
+agent_prov(void)
+{
+
+
 }
 
 
