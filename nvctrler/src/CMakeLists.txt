@@ -3,8 +3,7 @@ else (PostgreSQL_TYPE_INCLUDE_DIR)
 	set (PostgreSQL_TYPE_INCLUDE_DIR ${PostgreSQL_INCLUDE_DIR})
 endif (PostgreSQL_TYPE_INCLUDE_DIR)
 
-set(CMAKE_C_FLAGS "-g -W -Wall -Wno-unused-parameter -DNVCTRLER_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
-set(CMAKE_CXX_FLAGS "-g -W -Wall -Wno-unused-parameter -DNVCTRLER_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
+set(CMAKE_C_FLAGS "-I/usr/local/include -L/usr/local/lib -g -W -Wall -Wno-unused-parameter -DNVCTRLER_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
 
 add_subdirectory(tests)
 
@@ -14,17 +13,17 @@ add_executable(netvirt-ctrler
 	ippool.c
 	main.c
 	pki.c
+	prov.c
 	request.c
 )
 
 target_link_libraries(netvirt-ctrler
 	nvcore
-	ssl
 	ossp-uuid
 	pq
-	crypto
 	jansson
-	event
+	event_core
+	event_extra
 	event_openssl
 )
 
