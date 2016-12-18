@@ -20,6 +20,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <event2/event.h>
+
 #include <jansson.h>
 
 #include "ctrler.h"
@@ -30,15 +32,16 @@
 
 int main(int argc, char *argv[])
 {
-	json_t		*config;
-	json_error_t	 error;
-	const char	*dbname;
-	const char	*dbuser;
-	const char	*dbpwd;
-	const char	*dbhost;
+	struct event_base	*evbase;
+	json_t			*config;
+	json_error_t		 error;
+	const char		*dbname;
+	const char		*dbuser;
+	const char		*dbpwd;
+	const char		*dbhost;
 
 	if ((config = json_load_file(CONFIG_FILE, 0, &error)) == NULL)
-		errx(1, "json_load_file: line: %d - %s",
+		errx(1, "json_load_file line:%d %s",
 		    error.line, error.text);
 
 	if (json_unpack(config, "{s:s}", "dbname", &dbname) < 0)
@@ -53,11 +56,19 @@ int main(int argc, char *argv[])
 	if (json_unpack(config, "{s:s}", "dbhost", &dbhost) < 0)
 		errx(1, "%s:%d", "dbhost not found in config", __LINE__);
 
+	if ((evbase = event_base_new()) == NULL)
+		errx(1, "event_init");
+
 	if (dao_init(dbname, dbuser, dbpwd, dbhost) < 0)
 		errx(1, "dao_init");
 
-	if (controller_init(config) < 0)
+	if (controller_init(config, evbase) < 0)
 		errx(1, "controller_init");
+
+	if (prov_init(config, evbase) < 0)
+		errx(1, "prov_init");
+
+	event_base_dispatch(evbase);
 
 	warnx("now off");
 
