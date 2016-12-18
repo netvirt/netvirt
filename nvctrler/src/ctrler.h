@@ -16,7 +16,9 @@
 #ifndef CTRLER2_H
 #define CTRLER2_H
 
-#include <event2/buffer.h>
+#include <event2/event.h>
+
+#include <jansson.h>
 
 #define SESSION_AUTH		0x1
 #define SESSION_NOT_AUTH	0x2
@@ -50,7 +52,7 @@ struct session_info {
 	struct bufferevent	*bev;
 };
 
-int controller_init();
+int controller_init(json_t *, struct event_base *);
 void controller_fini();
 
 #endif

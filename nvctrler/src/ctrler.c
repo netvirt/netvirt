@@ -21,11 +21,11 @@
 #include <openssl/ssl.h>
 #include <openssl/rand.h>
 
+
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <event2/bufferevent_ssl.h>
 #include <event2/listener.h>
-
 #include <jansson.h>
 
 #include "ctrler.h"
@@ -372,7 +372,7 @@ evssl_init(struct server *serv)
 }
 
 int
-controller_init(json_t *config)
+controller_init(json_t *config, struct event_base *evbase)
 {
 	struct sockaddr_in	 sin;
 	const char		*cert;
@@ -395,8 +395,7 @@ controller_init(json_t *config)
 	if (evssl_init(&s1) != 0)
 		errx(1, "evssl_init failed");
 
-	if ((s1.base = event_base_new()) == NULL)
-		errx(1, "event_base_new failed");
+	s1.base = evbase;
 
 	memset(&sin, 0, sizeof(sin));
 	sin.sin_family = AF_INET;
@@ -413,7 +412,6 @@ controller_init(json_t *config)
 	event_add(s1.ev_int, NULL);
 
 	evconnlistener_set_error_cb(s1.listener, accept_error_cb);
-	event_base_dispatch(s1.base);
 
 	return 0;
 }
