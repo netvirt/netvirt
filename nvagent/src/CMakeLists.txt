@@ -86,6 +86,7 @@ else()
 		ssl
 		crypto
 		event_core
+		event_extra
 	)
 endif()
 

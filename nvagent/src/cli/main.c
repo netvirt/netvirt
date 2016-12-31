@@ -49,9 +49,12 @@ main()
 	if (signal_add(&ev_sigterm, NULL) < 0)
 		errx(1, "signal_add");
 
-	agent_init();
+	agent_prov("network-id$node-id$secret");
+
+//	agent_init();
 
 	event_base_dispatch(ev_base);
+	return 0;
 
 	agent_fini();
 	event_base_free(ev_base);

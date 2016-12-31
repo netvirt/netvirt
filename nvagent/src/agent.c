@@ -29,6 +29,7 @@
 #include <openssl/ssl.h>
 #include <openssl/rand.h>
 #include <event2/event.h>
+#include <event2/http.h>
 
 #include <pki.h>
 
@@ -80,11 +81,81 @@ udpclient_cb(int sock, short what, void *arg)
         fprintf(stderr, "%s %d", buf, ret);
 }
 
+void
+http_prov_cb(struct evhttp_request *req, void *arg) {
+
+	printf("http prov cb\n");
+}
+
 int
-agent_prov(void)
+agent_prov(const char *ps)
 {
 
+	EVP_PKEY	*keyring = NULL;
+	X509_REQ	*certreq = NULL;
+	digital_id_t	*nva_id = NULL;
+	char		*certreq_pem = NULL;
+	char		*pvkey_pem = NULL;
+	char		*secret;
+	char		*nva_uid;
+	char		*prov_secret;
+	long		 size = 0;
 
+	prov_secret = strdup(ps);
+
+	char *code = pki_gen_uid();
+	printf("code: %s\n", code);
+
+	if ((secret = strrchr(prov_secret, '$')) == NULL)
+		return -1;
+
+	*secret = '\0';
+	secret++;
+
+	if (*secret == '\0')
+		return (-1);
+
+	nva_uid = prov_secret;
+
+	nva_id = pki_digital_id(nva_uid,  "", "", "", "contact@dynvpn.com", "www.dynvpn.com");
+
+	/* generate RSA public and private keys */
+	keyring = pki_generate_keyring();
+
+	/* create a certificate signing request */
+	certreq = pki_certificate_request(keyring, nva_id);
+
+	/* write the certreq in PEM format */
+	pki_write_certreq_in_mem(certreq, &certreq_pem, &size);
+
+	/* write the private key in PEM format */
+	pki_write_privatekey_in_mem(keyring, &pvkey_pem, &size);
+
+	printf("certrq_pem: %s\n\n", certreq_pem);
+	printf("pvkey_pem: %s\n\n", pvkey_pem);
+
+
+	struct evhttp_connection	*evhttp_conn;
+	struct evhttp_request		*req;
+	struct evkeyvalq		*output_headers;
+	struct evbuffer			*output_buffer;
+	char				*content_buffer;
+	int				 length;
+
+	evhttp_conn = evhttp_connection_base_new(ev_base, NULL, "127.0.0.1", 8080);
+	req = evhttp_request_new(http_prov_cb, NULL);
+
+	output_headers = evhttp_request_get_output_headers(req);
+	evhttp_add_header(output_headers, "Content-Type", "application/json");
+
+	output_buffer = evhttp_request_get_output_buffer(req);
+	length = asprintf(&content_buffer, "{\"certreq\":\"%s\",\"secret:\"\"%s\"}", certreq_pem, secret);
+	evbuffer_add(output_buffer, content_buffer, length);
+	free(content_buffer);
+
+	evhttp_make_request(evhttp_conn, req, EVHTTP_REQ_POST, "/v1/prov");
+
+	return (0);
 }
 
 
