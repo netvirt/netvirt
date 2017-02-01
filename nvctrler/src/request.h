@@ -19,21 +19,30 @@
 #include <jansson.h>
 #include "ctrler.h"
 
+int client_create(char *);
+int client_activate(char *);
+int client_get_newapikey(char *, char **);
+int client_get_newresetkey(char *, char **); 
+int client_reset_password(char *);
+int client_delete(const char *, const char *);
+
+int network_create(char *, const char *);
+int network_delete(const char *, const char *);
+int network_list(const char *, char **);
+
 void update_node_status(struct session_info **, json_t *);
 void provisioning(struct session_info **, json_t *);
 void listall_network(struct session_info **, json_t *);
 void listall_node(struct session_info **, json_t *);
 
+void add_network(struct session_info *, json_t *);
 void del_network(struct session_info *, json_t *);
+void list_network(struct session_info *, json_t *);
+
 void add_node(struct session_info *, json_t *);
 void del_node(struct session_info *, json_t *);
-void set_new_password(struct session_info *, json_t *);
-void reset_account_password(struct session_info *, json_t *);
-void activate_account(struct session_info *, json_t *);
-void add_account(struct session_info *, json_t *);
-void get_account_apikey(struct session_info *, json_t *);
-void add_network(struct session_info *, json_t *);
-void list_network(struct session_info *, json_t *);
 void list_node(struct session_info *, json_t *);
+
+void reset_account_password(struct session_info *, json_t *);
 
 #endif

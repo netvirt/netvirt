@@ -13,6 +13,7 @@
  * GNU Affero General Public License for more details
  */
 
+#include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,9 +29,458 @@
 
 extern struct session_info *switch_sinfo;
 
+int
+client_create(char *msg)
+{
+	json_t		*jmsg;
+	json_error_t	 error;
+	int		 ret = 0;
+	char		*email = NULL;
+	char		*password = NULL;
+	char		*apikey = NULL;
+
+	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
+		warnx("json_loadb: %s", error.text);
+		return (-1);
+	}
+
+	json_unpack(jmsg, "{s:s}", "email", &email);
+	json_unpack(jmsg, "{s:s}", "password", &password);
+
+	if (email == NULL || password == NULL) {
+		ret = -1;
+		goto cleanup;
+	}
+ 
+	if ((apikey = pki_gen_key()) == NULL) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	printf("apikey: %s\n", apikey);
+	if (dao_client_create(email, password, apikey) == -1) {
+		ret = -1;
+		goto cleanup;
+	}
+
+cleanup:
+	json_decref(jmsg);
+	free(apikey);
+	return (ret);
+}
+
+int
+client_activate(char *msg)
+{
+	json_t		*jmsg;
+	json_error_t	 error;
+	int		 ret = 0;
+	char		*apikey = NULL;
+	char		*new_apikey = NULL;
+
+	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
+		warnx("json_loadb: %s", error.text);
+		return (-1);
+	}
+
+	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
+	if (apikey == NULL) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	if ((new_apikey = pki_gen_key()) == NULL) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	if (dao_client_activate(apikey) == -1) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	if (dao_client_update_apikey(apikey, new_apikey) < 0) {
+		ret = -1;
+		goto cleanup;
+	}
+
+cleanup:
+	json_decref(jmsg);
+	free(new_apikey);
+	return (ret);
+	
+}
+
+int
+client_get_newapikey(char *msg, char **resp)
+{
+	json_t		*jmsg;
+	json_t		*jclient = NULL;
+	json_t		*jresp = NULL;
+	json_error_t	 error;
+	int		 ret = 0;
+	char		*email = NULL;
+	char		*password = NULL;
+	char		*new_apikey = NULL;
+
+	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
+		warnx("json_loadb: %s", error.text);
+		return (-1);
+	}
+
+	json_unpack(jmsg, "{s:s}", "email", &email);
+	if (email == NULL) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	json_unpack(jmsg, "{s:s}", "password", &password);
+	if (password == NULL) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	if ((new_apikey = pki_gen_key()) == NULL) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	if (dao_client_update_apikey2(email, password, new_apikey) < 0) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	jresp = json_object();
+	jclient = json_object();
+	json_object_set_new(jresp, "client", jclient);
+	json_object_set_new(jclient, "apikey", json_string(new_apikey));
+	*resp = json_dumps(jresp, JSON_INDENT(1));
+
+cleanup:
+	json_decref(jmsg);
+	json_decref(jresp);
+	free(new_apikey);
+
+	return (ret);
+}
+
+int
+client_get_newresetkey(char *msg, char **resp)
+{
+	json_t		*jmsg;
+	json_t		*jclient = NULL;
+	json_t		*jresp = NULL;
+	json_error_t	 error;
+	char		*email = NULL;
+	char		*resetkey = NULL;
+	int		 ret = 0;
+
+	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
+		warnx("json_loadb: %s", error.text);
+		return (-1);
+	}
+
+	json_unpack(jmsg, "{s:s}", "email", &email);
+	if (email == NULL) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	if ((resetkey = pki_gen_key()) == NULL) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	if (dao_client_update_resetkey(email, resetkey) < 0) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	jresp = json_object();
+	jclient = json_object();
+	json_object_set_new(jresp, "client", jclient);
+	json_object_set_new(jclient, "resetkey", json_string(resetkey));
+	*resp = json_dumps(jresp, JSON_INDENT(1));
+
+cleanup:
+	json_decref(jmsg);
+	json_decref(jresp);
+	free(resetkey);
+
+	return (ret);
+}
+
+int
+client_reset_password(char *msg)
+{
+	json_t		*jmsg;
+	json_error_t	 error;
+	char		*email = NULL;
+	char		*resetkey = NULL;
+	char		*newpassword = NULL;
+	int		 ret = 0;
+
+	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
+		warnx("json_loadb: %s", error.text);
+		return (-1);
+	}
+
+	json_unpack(jmsg, "{s:s}", "email", &email);
+	if (email == NULL) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	json_unpack(jmsg, "{s:s}", "resetkey", &resetkey);
+	if (resetkey == NULL) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	json_unpack(jmsg, "{s:s}", "newpassword", &newpassword);
+	if (newpassword == NULL) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	if (dao_client_update_password(email, resetkey, newpassword) < 0) {
+		ret = -1;
+		goto cleanup;
+	}
+
+cleanup:
+	json_decref(jmsg);	
+	return (ret);
+}
+
+int
+network_create(char *msg, const char *apikey)
+{
+	passport_t	*nvswitch_passport = NULL;
+	digital_id_t	*server_id = NULL;
+	embassy_t	*emb = NULL;
+	digital_id_t	*embassy_id = NULL;
+	json_t		*jmsg = NULL;
+	json_error_t	 error;
+	struct ippool	*ippool = NULL;
+	long		 size;
+	int		 ret = 0;
+	int		 exp_delay;
+	size_t		 pool_size;
+	char		*network_uid = NULL;
+	char		*client_id = NULL;
+	char		*description = NULL;
+	char		*cidr = NULL;
+	char		*emb_cert_ptr = NULL;
+	char		*emb_pvkey_ptr = NULL;
+	char		*serv_cert_ptr = NULL;
+	char		*serv_pvkey_ptr = NULL;
+	char		 emb_serial[10];
+
+	if (msg == NULL || apikey == NULL)
+		return (-1);
+	
+	if (dao_client_get_id(&client_id, apikey) < 0)
+		return (-1);
+
+	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
+		warnx("json_loadb: %s", error.text);
+		return (-1);
+	}
+
+	json_unpack(jmsg, "{s:s}", "description", &description);
+	if (description == NULL) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	json_unpack(jmsg, "{s:s}", "cidr", &cidr);
+	if (description == NULL) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	/* initialize embassy */
+
+	exp_delay = pki_expiration_delay(10);
+
+	embassy_id = pki_digital_id("embassy", "CA", "Quebec", "", "admin@netvirt.org", "NetVirt");
+
+	emb = pki_embassy_new(embassy_id, exp_delay);
+
+	pki_write_certificate_in_mem(emb->certificate, &emb_cert_ptr, &size);
+	pki_write_privatekey_in_mem(emb->keyring, &emb_pvkey_ptr, &size);
+
+	/* initialize server passport */
+
+	server_id = pki_digital_id("nvswitch", "CA", "Quebec", "", "admin@netvirt.org", "NetVirt");
+
+	nvswitch_passport = pki_embassy_deliver_passport(emb, server_id, exp_delay);
+
+	pki_write_certificate_in_mem(nvswitch_passport->certificate, &serv_cert_ptr, &size);
+	pki_write_privatekey_in_mem(nvswitch_passport->keyring, &serv_pvkey_ptr, &size);
+
+	snprintf(emb_serial, sizeof(emb_serial), "%d", emb->serial);
+
+	/* create an IP pool */
+	ippool = ippool_new("44.128.0.0", "255.255.0.0");
+	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
+
+	network_uid = pki_gen_uid();
+	ret = dao_network_create(client_id,
+				network_uid,
+				description,
+				"44.128.0.0/16",
+				emb_cert_ptr,
+				emb_pvkey_ptr,
+				emb_serial,
+				serv_cert_ptr,
+				serv_pvkey_ptr,
+				ippool->pool,
+				pool_size);
+
+	/* forward new network to nvswitch */
+	char	*fwd_resp_str = NULL;
+	json_t	*array;
+	json_t	*network;
+	json_t	*fwd_resp = NULL;
+
+	if (switch_sinfo != NULL) {
+
+		network = json_object();
+		array = json_array();
+		fwd_resp = json_object();
+
+		json_object_set_new(fwd_resp, "action", json_string("listall-network"));
+		json_object_set_new(fwd_resp, "response", json_string("more-data"));
+
+		json_object_set_new(network, "uid", json_string(network_uid));
+		json_object_set_new(network, "network", json_string("44.128.0.0"));
+		json_object_set_new(network, "netmask", json_string("255.255.0.0"));
+		json_object_set_new(network, "cert", json_string(serv_cert_ptr));
+		json_object_set_new(network, "pkey", json_string(serv_pvkey_ptr));
+		json_object_set_new(network, "tcert", json_string(emb_cert_ptr));
+
+		json_array_append_new(array, network);
+		json_object_set_new(fwd_resp, "networks", array);
+
+		fwd_resp_str = json_dumps(fwd_resp, 0);
+
+		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
+			bufferevent_write(switch_sinfo->bev, fwd_resp_str, strlen(fwd_resp_str));
+		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
+			bufferevent_write(switch_sinfo->bev, "\n", strlen("\n"));
+
+		json_decref(fwd_resp);
+		free(fwd_resp_str);
+	}
+	/* * */
+
+cleanup:
+
+	json_decref(jmsg);
+	pki_free_digital_id(embassy_id);
+	pki_free_digital_id(server_id);
+	pki_passport_free(nvswitch_passport);
+	pki_embassy_free(emb);
+	ippool_free(ippool);
+
+	free(serv_cert_ptr);
+	free(serv_pvkey_ptr);
+	free(emb_cert_ptr);
+	free(emb_pvkey_ptr);
+	free(client_id);
+
+	return (ret);
+}
+
+int
+network_list_cb(const char *uid, const char *description, void *arg)
+{
+	json_t	*array;
+	json_t	*network;
+
+	array = arg;
+	network = json_object();
+
+	json_object_set_new(network, "uid", json_string(uid));
+	json_object_set_new(network, "description", json_string(description));
+	json_array_append_new(array, network);
+
+	return (0);
+}
+
+int
+network_list(const char *apikey, char **resp)
+{
+	json_t	*array;
+	json_t	*jresp = NULL;
+	int	 ret = 0;
+
+	array = json_array();
+	if (dao_network_list(apikey, network_list_cb, array) < 0) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	jresp = json_object();
+	json_object_set_new(jresp, "networks", array);
+	*resp = json_dumps(jresp, JSON_INDENT(1));
+
+cleanup:
+	json_decref(jresp);
+
+	return (ret);
+}
+
+
+int
+network_delete(const char *uid, const char *apikey)
+{
+	int		 ret = 0;
+	char		*client_id = NULL;
+
+	if (uid == NULL || apikey == NULL)
+		return (-1);
+
+/*
+	dao_node_delete_all(network_uid);
+*/
+
+	if (dao_network_delete(uid, apikey) < 0) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	/* Forward del-network to the switch */
+#if 0
+	char *fwd_str = NULL;
+	if (switch_sinfo != NULL) {
+		json_object_del(jmsg, "apikey");
+		json_object_set_new(js_network, "networkuuid", json_string(network_uuid));
+		json_object_del(js_network, "uuid");
+		json_object_del(js_network, "name");
+
+		fwd_str = json_dumps(jmsg, 0);
+		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
+			bufferevent_write(switch_sinfo->bev, fwd_str, strlen(fwd_str));
+		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
+			bufferevent_write(switch_sinfo->bev, "\n", strlen("\n"));
+		free(fwd_str);
+	}
+	/* * */
+#endif
+
+cleanup:
+	free(client_id);
+
+	return (ret);
+}
+
 void
 update_node_status(struct session_info **sinfo, json_t *jmsg)
 {
+#if 0
 	//jlog(L_DEBUG, "update-node-status");
 
 	char	*status;
@@ -50,102 +500,15 @@ update_node_status(struct session_info **sinfo, json_t *jmsg)
 	dao_update_node_status(network_uuid, uuid, status, local_ipaddr);
 
 	json_decref(node);
+#endif
 
 	return;
 }
 
 void
-del_network(struct session_info *sinfo, json_t *jmsg)
-{
-	//jlog(L_DEBUG, "del-network");
-
-	int		ret = 0;
-	char		*client_id = NULL;
-	char		*apikey = NULL;
-	char		*network_uuid = NULL;
-	char		*fwd_str = NULL;
-	char		*resp_str = NULL;
-	json_t		*resp = NULL;
-	json_t		*js_network = NULL;
-
-	if ((js_network = json_object_get(jmsg, "network")) == NULL)
-		return;
-
-	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
-	json_unpack(js_network, "{s:s}", "uuid", &network_uuid);
-
-	/* check apikey and name... */
-
-	resp = json_object();
-	json_object_set_new(resp, "tid", json_string("tid"));
-	json_object_set_new(resp, "action", json_string("response"));
-
-	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
-	if (client_id == NULL) {
-		json_object_set_new(resp, "response", json_string("denied"));
-		goto out;
-	}
-	if (ret == -1) {
-		json_object_set_new(resp, "response", json_string("error"));
-		goto out;
-	}
-/*
-	ret = dao_fetch_network_id(&network_id, client_id, network_uuid);
-	if (ret == -1) {
-		json_object_set_new(resp, "response", json_string("error"));
-		goto out;
-	}
-	if (network_id == NULL) {
-		json_object_set_new(resp, "response", json_string("no-such-object"));
-		goto out;
-	}
-*/
-	//jlog(L_NOTICE, "deleting nodes belonging to context: %s", network_uuid);
-	ret = dao_del_node_by_context_id(network_uuid);
-	if (ret < 0) {
-		//jlog(L_NOTICE, "deleting nodes failed!");
-		return;
-	}
-
-	//jlog(L_NOTICE, "deleting context: %s", network_uuid);
-	ret = dao_del_context(client_id, network_uuid);
-	if (ret < 0) {
-		/* FIXME: multiple DAO calls should be commited to the DB once
-		 * all calls have succeeded.
-		 */
-		//jlog(L_NOTICE, "deleting context failed!");
-		return;
-	}
-
-	/* Forward del-network to the switch */
-	if (switch_sinfo != NULL) {
-		json_object_del(jmsg, "apikey");
-		json_object_set_new(js_network, "networkuuid", json_string(network_uuid));
-		json_object_del(js_network, "uuid");
-		json_object_del(js_network, "name");
-
-		fwd_str = json_dumps(jmsg, 0);
-		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
-			bufferevent_write(switch_sinfo->bev, fwd_str, strlen(fwd_str));
-		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
-			bufferevent_write(switch_sinfo->bev, "\n", strlen("\n"));
-		free(fwd_str);
-	}
-	/* * */
-out:
-	resp_str = json_dumps(resp, 0);
-
-	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
-
-	json_decref(resp);
-	free(resp_str);
-	free(client_id);
-}
-
-void
 add_node(struct session_info *sinfo, json_t *jmsg)
 {
+#if 0
 	//jlog(L_DEBUG, "add-node");
 
 	int		 ret = 0;
@@ -332,11 +695,13 @@ out:
 
 	json_decref(resp);
 	free(resp_str);
+#endif
 }
 
 void
 del_node(struct session_info *sinfo, json_t *jmsg)
 {
+#if 0
 	//jlog(L_DEBUG, "del-node");
 
 	int		ret = 0;
@@ -436,58 +801,7 @@ out:
 	free(client_id);
 	free(ipaddr);
 	ippool_free(ippool);
-}
-
-void
-provisioning(struct session_info **sinfo, json_t *jmsg)
-{
-	//jlog(L_DEBUG, "provisioning");
-
-	char	*cert = NULL;
-	char	*pkey = NULL;
-	char	*tcert = NULL;
-	char	*ipaddr = NULL;
-
-	char	*provcode;
-	char	*tid;
-	char	*resp_str = NULL;
-	json_t	*node;
-	json_t	*resp = NULL;
-
-	json_unpack(jmsg, "{s:s}", "tid", &tid);
-
-	node = json_object_get(jmsg, "node");
-	json_unpack(node, "{s:s}", "provcode", &provcode);
-
-	resp = json_object();
-	json_object_set_new(resp, "tid", json_string(tid));
-	json_object_set_new(resp, "action", json_string("provisioning"));
-
-	if ((dao_fetch_node_from_provcode(provcode, &cert, &pkey, &tcert, &ipaddr)) == 0) {
-		json_object_set_new(resp, "response", json_string("success"));
-		node = json_object();
-		json_object_set_new(node, "cert", json_string(cert));
-		json_object_set_new(node, "pkey", json_string(pkey));
-		json_object_set_new(node, "tcert", json_string(tcert));
-		json_object_set_new(node, "ipaddr", json_string(ipaddr));
-		json_object_set_new(resp, "node", node);
-	} else {
-		json_object_set_new(resp, "response", json_string("error"));
-	}
-
-	resp_str = json_dumps(resp, 0);
-
-	bufferevent_write((*sinfo)->bev, resp_str, strlen(resp_str));
-	bufferevent_write((*sinfo)->bev, "\n", strlen("\n"));
-
-	free(cert);
-	free(pkey);
-	free(tcert);
-	free(ipaddr);
-	free(resp_str);
-	json_decref(resp);
-
-	return;
+#endif
 }
 
 static int
@@ -502,6 +816,7 @@ CB_listall_network(void *arg, int remaining,
 				char *pkey,
 				char *tcert)
 {
+#if 0
 	char			*resp_str = NULL;
 	struct session_info	**sinfo;
 	json_t			*array;
@@ -550,11 +865,13 @@ out:
 	json_decref(resp);
 	free(resp_str);
 	return -1;
+#endif
 }
 
 void
 listall_network(struct session_info **sinfo, json_t *jmsg)
 {
+#if 0
 	//jlog(L_DEBUG, "listallNetwork");
 
 	char	*resp_str = NULL;
@@ -580,13 +897,14 @@ out:
 
 	json_decref(resp);
 	free(resp_str);
-
+#endif
 	return;
 }
 
 static int
 CB_listall_node(void *arg, int remaining, char *network_uuid, char *uuid)
 {
+#if 0
 	char			*resp_str = NULL;
 	struct	session_info	**sinfo;
 	json_t			*array;
@@ -628,12 +946,14 @@ CB_listall_node(void *arg, int remaining, char *network_uuid, char *uuid)
 out:
 	json_decref(resp);
 	free(resp_str);
+#endif
 	return -1;
 }
 
 void
 listall_node(struct session_info **sinfo, json_t *jmsg)
 {
+#if 0
 	//jlog(L_DEBUG, "listallNode");
 
 	char	*resp_str = NULL;
@@ -655,407 +975,16 @@ listall_node(struct session_info **sinfo, json_t *jmsg)
 
 	json_decref(resp);
 	free(resp_str);
-
+#endif
 	return;
 
 }
 
-void
-activate_account(struct session_info *sinfo, json_t *jmsg)
-{
-	//jlog(L_DEBUG, "activate account");
-
-	int	ret = 0;
-	char	*apikey = NULL;
-	char	*new_apikey = NULL;
-	char	*resp_str = NULL;
-	json_t	*resp = NULL;
-	json_t	*js_account = NULL;
-
-	if ((js_account = json_object_get(jmsg, "account")) == NULL)
-		return;
-
-	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
-
-	resp = json_object();
-	json_object_set_new(resp, "tid", json_string("tid"));
-	json_object_set_new(resp, "action", json_string("response"));
-
-	new_apikey = pki_gen_key();
-	if (apikey == NULL) {
-		json_object_set_new(resp, "response", json_string("error"));
-		goto out;
-	}
-
-	ret = dao_activate_client(apikey);
-	if (ret == -1) {
-		json_object_set_new(resp, "response", json_string("denied"));
-		goto out;
-	}
-
-	// XXX check this update ?
-	dao_update_client_apikey(apikey, new_apikey);
-
-	json_object_set_new(resp, "response", json_string("success"));
-
-out:
-	resp_str = json_dumps(resp, 0);
-
-	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
-
-	json_decref(resp);
-	free(resp_str);
-	free(new_apikey);
-	return;
-}
-
-void
-add_account(struct session_info *sinfo, json_t *jmsg)
-{
-	//jlog(L_DEBUG, "add-account");
-
-	int	 ret = 0;
-	char	*email = NULL;
-	char	*password = NULL;
-	char	*apikey = NULL;
-	char 	*resp_str = NULL;
-	json_t	*resp = NULL;
-	json_t	*js_account = NULL;
-
-	if ((js_account = json_object_get(jmsg, "account")) == NULL)
-		return;
-
-	json_unpack(js_account, "{s:s}", "email", &email);
-	json_unpack(js_account, "{s:s}", "password", &password);
-
-	if (email == NULL || password == NULL) {
-		//jlog(L_ERROR, "Invalid message\n");
-		return;
-	}
-
-	resp = json_object();
-	json_object_set_new(resp, "tid", json_string("tid"));
-	json_object_set_new(resp, "action", json_string("response"));
-
-	apikey = pki_gen_key();
-	if (apikey == NULL) {
-		json_object_set_new(resp, "response", json_string("error"));
-		goto out;
-	}
-
-	ret = dao_add_client(email, password, apikey);
-	if (ret == -1) {
-		json_object_set_new(resp, "response", json_string("duplicate"));
-		goto out;
-	}
-
-	json_object_set_new(resp, "response", json_string("success"));
-	json_object_set_new(resp, "apikey", json_string(apikey));
-
-out:
-	resp_str = json_dumps(resp, 0);
-
-	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
-
-	json_decref(resp);
-	free(resp_str);
-	free(apikey);
-	return;
-}
-
-void
-get_account_apikey(struct session_info *sinfo, json_t *jmsg)
-{
-	//jlog(L_DEBUG, "get-account-apikey");
-
-	int	 ret = 0;
-	char	*email = NULL;
-	char	*password = NULL;
-	char	*apikey = NULL;
-	char	*resp_str = NULL;
-	json_t	*resp = NULL;
-	json_t	*js_account = NULL;
-
-	if ((js_account = json_object_get(jmsg, "account")) == NULL)
-		return;
-
-	json_unpack(js_account, "{s:s}", "email", &email);
-	json_unpack(js_account, "{s:s}", "password", &password);
-
-	resp = json_object();
-	json_object_set_new(resp, "tid", json_string("tid"));
-	json_object_set_new(resp, "action", json_string("response"));
-
-	ret = dao_fetch_account_apikey(&apikey, email, password);
-	if (ret == -1) {
-		json_object_set_new(resp, "response", json_string("error"));
-		//jlog(L_DEBUG, "dao_fetch_account_apikey failed");
-		goto out;
-	}
-
-	if (apikey == NULL) {
-		json_object_set_new(resp, "response", json_string("denied"));
-		//jlog(L_DEBUG, "apikey is NULL");
-		goto out;
-	}
-
-	json_object_set_new(resp, "response", json_string("success"));
-	json_object_set_new(resp, "apikey", json_string(apikey));
-
-out:
-	resp_str = json_dumps(resp, 0);
-
-	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
-
-	json_decref(resp);
-	free(resp_str);
-	free(apikey);
-
-	return;
-}
-
-void
-add_network(struct session_info *sinfo, json_t *jmsg)
-{
-	//jlog(L_DEBUG, "add network");
-
-	int		 ret = 0;
-	char		*network_uuid = NULL;
-	char		*client_id = NULL;
-	char		*apikey = NULL;
-	char		*name = NULL;
-	char		*resp_str = NULL;
-	json_t		*resp = NULL;
-	json_t		*js_network = NULL;
-
-	int		exp_delay;
-	char		*emb_cert_ptr = NULL;
-	long		size;
-	char		*emb_pvkey_ptr = NULL;
-	char		*serv_cert_ptr = NULL;
-	char		*serv_pvkey_ptr = NULL;
-	char		emb_serial[10];
-	struct		ippool *ippool = NULL;
-	size_t		pool_size;
-	passport_t	*nvswitch_passport = NULL;
-	digital_id_t	*server_id = NULL;
-	embassy_t	*emb = NULL;
-	digital_id_t	*embassy_id = NULL;
-
-	if ((js_network = json_object_get(jmsg, "network")) == NULL)
-		return;
-
-	resp = json_object();
-	json_object_set_new(resp, "tid", json_string("tid"));
-	json_object_set_new(resp, "action", json_string("response"));
-
-	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
-	json_unpack(js_network, "{s:s}", "name", &name);
-
-	if (apikey == NULL ||
-	    name == NULL) {
-
-		json_object_set_new(resp, "response", json_string("error"));
-		goto out;
-	}
-
-	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
-	if (ret == -1) {
-		json_object_set_new(resp, "response", json_string("error"));
-		goto out;
-	}
-	if (client_id == NULL) {
-		json_object_set_new(resp, "response", json_string("denied"));
-		goto out;
-	}
-
-	/* 3.1- Initialise embassy */
-	exp_delay = pki_expiration_delay(10);
-
-	embassy_id = pki_digital_id("embassy", "CA", "Quebec", "", "admin@netvirt.org", "NetVirt");
-
-	emb = pki_embassy_new(embassy_id, exp_delay);
-
-	pki_write_certificate_in_mem(emb->certificate, &emb_cert_ptr, &size);
-	pki_write_privatekey_in_mem(emb->keyring, &emb_pvkey_ptr, &size);
-
-	/* 3.2- Initialize server passport */
-
-	server_id = pki_digital_id("nvswitch", "CA", "Quebec", "", "admin@netvirt.org", "NetVirt");
-
-	nvswitch_passport = pki_embassy_deliver_passport(emb, server_id, exp_delay);
-
-	pki_write_certificate_in_mem(nvswitch_passport->certificate, &serv_cert_ptr, &size);
-	pki_write_privatekey_in_mem(nvswitch_passport->keyring, &serv_pvkey_ptr, &size);
-
-	snprintf(emb_serial, sizeof(emb_serial), "%d", emb->serial);
-
-	/* Create an IP pool */
-	ippool = ippool_new("44.128.0.0", "255.255.0.0");
-	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
-
-	ret = dao_add_vnetwork(&network_uuid, client_id,
-				name,
-				"44.128.0.0/16",
-				emb_cert_ptr,
-				emb_pvkey_ptr,
-				emb_serial,
-				serv_cert_ptr,
-				serv_pvkey_ptr,
-				ippool->pool,
-				pool_size);
-
-	if (ret == -1) {
-		json_object_set_new(resp, "response", json_string("error"));
-		goto out;
-	}
-
-	if (ret == -2) {
-		json_object_set_new(resp, "response", json_string("duplicate"));
-		goto out;
-	}
-
-	/* forward new network to nvswitch */
-//	char	*netid = NULL;
-	char	*fwd_resp_str = NULL;
-	json_t	*array;
-	json_t	*network;
-	json_t	*fwd_resp = NULL;
-
-	if (switch_sinfo != NULL) {
-//		dao_fetch_network_id(&netid, client_id, name);
-
-		network = json_object();
-		array = json_array();
-		fwd_resp = json_object();
-
-		json_object_set_new(fwd_resp, "action", json_string("listall-network"));
-		json_object_set_new(fwd_resp, "response", json_string("more-data"));
-
-		json_object_set_new(network, "uuid", json_string(network_uuid));
-		json_object_set_new(network, "network", json_string("44.128.0.0"));
-		json_object_set_new(network, "netmask", json_string("255.255.0.0"));
-		json_object_set_new(network, "cert", json_string(serv_cert_ptr));
-		json_object_set_new(network, "pkey", json_string(serv_pvkey_ptr));
-		json_object_set_new(network, "tcert", json_string(emb_cert_ptr));
-
-		json_array_append_new(array, network);
-		json_object_set_new(fwd_resp, "networks", array);
-
-		fwd_resp_str = json_dumps(fwd_resp, 0);
-
-		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
-			bufferevent_write(switch_sinfo->bev, fwd_resp_str, strlen(fwd_resp_str));
-		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
-			bufferevent_write(switch_sinfo->bev, "\n", strlen("\n"));
-
-		json_decref(fwd_resp);
-		free(fwd_resp_str);
-	}
-	/* * */
-
-	json_object_set_new(resp, "response", json_string("success"));
-out:
-	resp_str = json_dumps(resp, 0);
-
-	if (sinfo->bev != NULL)
-		bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	if (sinfo->bev != NULL)
-		bufferevent_write(sinfo->bev, "\n", strlen("\n"));
-
-	pki_free_digital_id(embassy_id);
-	pki_free_digital_id(server_id);
-	pki_passport_free(nvswitch_passport);
-	pki_embassy_free(emb);
-	ippool_free(ippool);
-
-	free(serv_cert_ptr);
-	free(serv_pvkey_ptr);
-	free(emb_cert_ptr);
-	free(emb_pvkey_ptr);
-	free(client_id);
-	free(resp_str);
-
-	json_decref(resp);
-}
-
-static int
-CB_list_network(void *arg, char *name, char *uuid)
-{
-	json_t	*array;
-	json_t	*network;
-
-	array = (json_t*)arg;
-	network = json_object();
-
-	json_object_set_new(network, "name", json_string(name));
-	json_object_set_new(network, "uuid", json_string(uuid));
-	json_array_append_new(array, network);
-
-	return 0;
-}
-
-void
-list_network(struct session_info *sinfo, json_t *jmsg)
-{
-	//jlog(L_DEBUG, "list network");
-
-	int	 ret = 0;
-	char	*client_id = NULL;
-	char	*apikey = NULL;
-	char	*resp_str = NULL;
-	json_t	*array;
-	json_t	*resp = NULL;
-
-	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
-
-	/* XXX check apikey ... */
-
-	resp = json_object();
-	json_object_set_new(resp, "tid", json_string("tid"));
-	json_object_set_new(resp, "action", json_string("response"));
-
-	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
-	if (client_id == NULL) {
-		json_object_set_new(resp, "response", json_string("denied"));
-		goto out;
-	}
-	if (ret == -1) {
-		json_object_set_new(resp, "response", json_string("error"));
-		goto out;
-	}
-
-	array = json_array();
-	ret = dao_fetch_networks_by_client_id(client_id, array, CB_list_network);
-	if (ret == -1) {
-		json_object_set_new(resp, "response", json_string("error"));
-		goto out;
-	}
-
-	json_object_set_new(resp, "networks", array);
-	json_object_set_new(resp, "response", json_string("success"));
-
-out:
-	resp_str = json_dumps(resp, 0);
-
-	if (sinfo->bev != NULL)
-		bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	if (sinfo->bev != NULL)
-		bufferevent_write(sinfo->bev, "\n", strlen("\n"));
-
-	json_decref(resp);
-	free(resp_str);
-	free(client_id);
-
-	return;
-}
 
 static int
 CB_list_node(void *ptr, char *uuid, char *description, char *provcode, char *ipaddress, char *status)
 {
+#if 0
 	json_t	*array;
 	json_t	*node;
 
@@ -1068,13 +997,14 @@ CB_list_node(void *ptr, char *uuid, char *description, char *provcode, char *ipa
 	json_object_set_new(node, "uuid", json_string(uuid));
 
 	json_array_append_new(array, node);
-
+#endif
 	return 0;
 }
 
 void
 list_node(struct session_info *sinfo, json_t *jmsg)
 {
+#if 0
 	//jlog(L_DEBUG, "list-node");
 
 	int	 ret = 0;
@@ -1127,117 +1057,8 @@ out:
 	json_decref(resp);
 	free(resp_str);
 	free(client_id);
-
+#endif
 	return;
 }
 
-void
-set_new_password(struct session_info *sinfo, json_t *jmsg)
-{
-	//jlog(L_DEBUG, "set-new-password");
-	char	*email = NULL;
-	char	*resetkey = NULL;
-	char	*password = NULL;
-	char	*resp_str;
-	json_t	*resp = NULL;
-	json_t	*js_account = NULL;
-	int	 ret;
-
-	if ((js_account = json_object_get(jmsg, "account")) == NULL)
-		return;
-
-	json_unpack(js_account, "{s:s}", "email", &email);
-	if (email == NULL) {
-		//jlog(L_ERROR, "Invalid message\n");
-		return;
-	}
-
-	json_unpack(js_account, "{s:s}", "resetkey", &resetkey);
-	if (resetkey == NULL) {
-		//jlog(L_ERROR, "Invalid message\n");
-		return;
-	}
-	json_unpack(js_account, "{s:s}", "password", &password);
-	if (password == NULL) {
-		//jlog(L_ERROR, "Invalid message\n");
-		return;
-	}
-
-	resp = json_object();
-	json_object_set_new(resp, "tid", json_string("tid"));
-	json_object_set_new(resp, "action", json_string("response"));
-
-	printf("email:%s\n", email);
-	printf("resetkey:%s\n", resetkey);
-	printf("password:%s\n", password);
-
-	if ((ret = dao_set_password(email, resetkey, password)) == -1) {
-		json_object_set_new(resp, "response", json_string("denied"));
-		goto out;
-	}
-
-	json_object_set_new(resp, "response", json_string("success"));
-out:
-	resp_str = json_dumps(resp, 0);
-
-	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
-
-	json_decref(resp);
-	free(resp_str);
-}
-
-void
-reset_account_password(struct session_info *sinfo, json_t *jmsg)
-{
-	//jlog(L_DEBUG, "reset-account-password");
-	char	*email = NULL;
-	char	*resetkey = NULL;
-	char	*resp_str;
-	json_t	*resp = NULL;
-	json_t	*js_account = NULL;
-	int	 ret;
-
-	if ((js_account = json_object_get(jmsg, "account")) == NULL)
-		return;
-
-	json_unpack(js_account, "{s:s}", "email", &email);
-
-	if (email == NULL) {
-		//jlog(L_ERROR, "Invalid message\n");
-		return;
-	}
-
-	resp = json_object();
-	json_object_set_new(resp, "tid", json_string("tid"));
-	json_object_set_new(resp, "action", json_string("response"));
-
-	if ((resetkey = pki_gen_key()) == NULL) {
-		json_object_set_new(resp, "response", json_string("error"));
-		goto out;
-	}
-
-	printf("email: %s\n", email);
-	printf("resetkey: %s\n", resetkey);
-
-
-	if ((ret = dao_set_resetkey(email, resetkey)) == -1) {
-		json_object_set_new(resp, "response", json_string("denied"));
-		goto out;
-	}
-
-	json_object_set_new(resp, "response", json_string("success"));
-	json_object_set_new(js_account, "resetkey", json_string(resetkey));
-	json_object_del(js_account, "email");
-	json_object_set_new(resp, "account", js_account);
-
-out:
-	resp_str = json_dumps(resp, 0);
-
-	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
-
-	json_decref(resp);
-	free(resp_str);
-}
 

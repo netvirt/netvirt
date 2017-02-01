@@ -96,8 +96,6 @@ dispatch_nvswitch(struct session_info **sinfo, json_t *jmsg)
 		listall_network(sinfo, jmsg);
 	} else if (strcmp(action, "listall-node") == 0) {
 		listall_node(sinfo, jmsg);
-	} else if (strcmp(action, "provisioning") == 0) {
-		provisioning(sinfo, jmsg);
 	} else if (strcmp(action, "update-node-status") == 0) {
 		update_node_status(sinfo, jmsg);
 	}
@@ -117,9 +115,10 @@ dispatch_nvapi(struct session_info *sinfo, json_t *jmsg)
 		/* XXX disconnect */
 		return;
 	}
+/*
+	if (strcmp(action, "client-create") == 0) {
+		client_create(sinfo, jmsg);
 
-	if (strcmp(action, "add-account") == 0) {
-		add_account(sinfo, jmsg);
 	} else if (strcmp(action, "activate-account") == 0) {
 		activate_account(sinfo, jmsg);
 	} else if (strcmp(action, "get-account-apikey") == 0) {
@@ -141,6 +140,8 @@ dispatch_nvapi(struct session_info *sinfo, json_t *jmsg)
 	} else if (strcmp(action, "list-node") == 0) {
 		list_node(sinfo, jmsg);
 	}
+
+*/
 }
 
 void
@@ -357,7 +358,7 @@ evssl_init(struct server *serv)
 	SSL_CTX_set_tmp_dh(serv->ctx, dh);
 	DH_free(dh);
 
-	SSL_CTX_set_cipher_list(serv->ctx, "ECDHE-ECDSA-AES256-SHA");
+	SSL_CTX_set_cipher_list(serv->ctx, "ECDHE-ECDSA-AES256-SHA384");
 	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL)
 		warnx("%s:%d", "EC_KEY_new_by_curve_name", __LINE__);
 	SSL_CTX_set_tmp_ecdh(serv->ctx, ecdh);
@@ -391,7 +392,8 @@ controller_init(json_t *config, struct event_base *evbase)
 	if (json_unpack(config, "{s:s}", "cacert", &cacert) < 0)
 		errx(1, "%s:%d", "trusted_cert not found in config", __LINE__);
 
-	s1.passport = pki_passport_load_from_file(cert, pkey, cacert);
+	if ((s1.passport = pki_passport_load_from_file(cert, pkey, cacert)) == NULL)
+		errx(1, "can't load passport from: \n\t%s\n\t%s\n\t%s\n", cert, pkey, cacert);
 
 	if (evssl_init(&s1) != 0)
 		errx(1, "evssl_init failed");

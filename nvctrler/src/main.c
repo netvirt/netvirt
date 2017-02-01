@@ -35,10 +35,27 @@ int main(int argc, char *argv[])
 	struct event_base	*evbase;
 	json_t			*config;
 	json_error_t		 error;
+	int			 ch;
 	const char		*dbname;
 	const char		*dbuser;
 	const char		*dbpwd;
 	const char		*dbhost;
+
+
+	while ((ch = getopt(argc, argv, "bh")) != -1) {
+		switch (ch) {
+		case 'b':
+			pki_bootstrap_certs();
+			return 0;
+		case 'h':
+			fprintf(stdout, "netvirt-ctrler:\n"
+				"-b\t\tbootstrap certificates\n"
+				"-v\t\tshow version\n");
+			return 0;
+		}
+	}
+	argc -= optind;
+	argv += optind;
 
 	if ((config = json_load_file(CONFIG_FILE, 0, &error)) == NULL)
 		errx(1, "json_load_file line:%d %s",
@@ -65,7 +82,7 @@ int main(int argc, char *argv[])
 	if (controller_init(config, evbase) < 0)
 		errx(1, "controller_init");
 
-	if (prov_init(config, evbase) < 0)
+	if (restapi_init(config, evbase) < 0)
 		errx(1, "prov_init");
 
 	event_base_dispatch(evbase);

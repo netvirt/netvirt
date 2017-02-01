@@ -12,8 +12,8 @@ add_executable(netvirt-ctrler
 	dao.c
 	ippool.c
 	main.c
-	prov.c
 	request.c
+	restapi.c
 )
 
 target_link_libraries(netvirt-ctrler
