@@ -83,7 +83,7 @@ void NetvirtAgent::disconnect_() {
 }
 
 
-bool NetvirtAgent::gen_X509Req(QByteArray &result, QByteArray &private_key_text)
+bool NetvirtAgent::gen_X509Req(QByteArray &csr_text, QByteArray &private_key_text)
 {
     int good_so_far = 0;
     RSA *rsa = NULL;
@@ -179,7 +179,7 @@ bool NetvirtAgent::gen_X509Req(QByteArray &result, QByteArray &private_key_text)
     good_so_far = PEM_write_bio_X509_REQ(bio_csr, csr);
     csr_size = BIO_get_mem_data(bio_csr, &csr_ptr);
     *(csr_ptr + csr_size) = '\0';
-    result = QByteArray(csr_ptr, csr_size+1);
+    csr_text = QByteArray(csr_ptr, csr_size+1);
 
     bio_private_key = BIO_new(BIO_s_mem());
     good_so_far = PEM_write_bio_PrivateKey(bio_private_key, key_pair, NULL, NULL, 0, 0, NULL);
