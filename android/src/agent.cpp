@@ -85,19 +85,19 @@ void NetvirtAgent::disconnect_() {
 
 bool NetvirtAgent::gen_X509Req(QByteArray &result)
 {
-    int ret = 0;
-    RSA *r = NULL;
-    BIGNUM *bne = NULL;
+    int good_so_far = 0;
+    RSA *rsa = NULL;
+    BIGNUM *big_number = NULL;
 
     int nVersion = 1;
     int bits = 2048;
-    unsigned long e = RSA_F4;
+    unsigned long factor = RSA_F4;
 
-    X509_REQ *x509_req = NULL;
+    X509_REQ *csr = NULL;
     X509_NAME *x509_name = NULL;
-    EVP_PKEY *pKey = NULL;
+    EVP_PKEY *key_pair = NULL;
     RSA *tem = NULL;
-    BIO *out = NULL, *bio_err = NULL;
+    BIO *bio_csr = NULL, *bio_err = NULL;
 
     long csr_size = 0;
     char *csr_ptr = NULL;
@@ -109,84 +109,84 @@ bool NetvirtAgent::gen_X509Req(QByteArray &result)
     const char *szCommon = "localhost";
 
     // 1. generate rsa key
-    bne = BN_new();
-    ret = BN_set_word(bne,e);
-    if(ret != 1){
+    big_number = BN_new();
+    good_so_far = BN_set_word(big_number,factor);
+    if(good_so_far != 1){
         goto free_all;
     }
 
-    r = RSA_new();
-    ret = RSA_generate_key_ex(r, bits, bne, NULL);
-    if(ret != 1){
+    rsa = RSA_new();
+    good_so_far = RSA_generate_key_ex(rsa, bits, big_number, NULL);
+    if(good_so_far != 1){
         goto free_all;
     }
 
     // 2. set version of x509 req
-    x509_req = X509_REQ_new();
-    ret = X509_REQ_set_version(x509_req, nVersion);
-    if (ret != 1){
+    csr = X509_REQ_new();
+    good_so_far = X509_REQ_set_version(csr, nVersion);
+    if (good_so_far != 1){
         goto free_all;
     }
 
     // 3. set subject of x509 req
-    x509_name = X509_REQ_get_subject_name(x509_req);
+    x509_name = X509_REQ_get_subject_name(csr);
 
-    ret = X509_NAME_add_entry_by_txt(x509_name,"C", MBSTRING_ASC, (const unsigned char*)szCountry, -1, -1, 0);
-    if (ret != 1){
+    good_so_far = X509_NAME_add_entry_by_txt(x509_name,"C", MBSTRING_ASC, (const unsigned char*)szCountry, -1, -1, 0);
+    if (good_so_far != 1){
         goto free_all;
     }
 
-    ret = X509_NAME_add_entry_by_txt(x509_name,"ST", MBSTRING_ASC, (const unsigned char*)szProvince, -1, -1, 0);
-    if (ret != 1){
+    good_so_far = X509_NAME_add_entry_by_txt(x509_name,"ST", MBSTRING_ASC, (const unsigned char*)szProvince, -1, -1, 0);
+    if (good_so_far != 1){
         goto free_all;
     }
 
-    ret = X509_NAME_add_entry_by_txt(x509_name,"L", MBSTRING_ASC, (const unsigned char*)szCity, -1, -1, 0);
-    if (ret != 1){
+    good_so_far = X509_NAME_add_entry_by_txt(x509_name,"L", MBSTRING_ASC, (const unsigned char*)szCity, -1, -1, 0);
+    if (good_so_far != 1){
         goto free_all;
     }
 
-    ret = X509_NAME_add_entry_by_txt(x509_name,"O", MBSTRING_ASC, (const unsigned char*)szOrganization, -1, -1, 0);
-    if (ret != 1){
+    good_so_far = X509_NAME_add_entry_by_txt(x509_name,"O", MBSTRING_ASC, (const unsigned char*)szOrganization, -1, -1, 0);
+    if (good_so_far != 1){
         goto free_all;
     }
 
-    ret = X509_NAME_add_entry_by_txt(x509_name,"CN", MBSTRING_ASC, (const unsigned char*)szCommon, -1, -1, 0);
-    if (ret != 1){
+    good_so_far = X509_NAME_add_entry_by_txt(x509_name,"CN", MBSTRING_ASC, (const unsigned char*)szCommon, -1, -1, 0);
+    if (good_so_far != 1){
         goto free_all;
     }
 
     // 4. set public key of x509 req
-    pKey = EVP_PKEY_new();
-    EVP_PKEY_assign_RSA(pKey, r);
-    r = NULL;   // will be free rsa when EVP_PKEY_free(pKey)
+    key_pair = EVP_PKEY_new();
+    EVP_PKEY_assign_RSA(key_pair, rsa);
+    rsa = NULL;   // will be free rsa when EVP_PKEY_free(key_pair)
 
-    ret = X509_REQ_set_pubkey(x509_req, pKey);
-    if (ret != 1){
+    good_so_far = X509_REQ_set_pubkey(csr, key_pair);
+    if (good_so_far != 1){
         goto free_all;
     }
 
     // 5. set sign key of x509 req
-    ret = X509_REQ_sign(x509_req, pKey, EVP_sha1());    // return x509_req->signature->length
-    if (ret <= 0){
+    good_so_far = X509_REQ_sign(csr, key_pair, EVP_sha1());    // good_so_farurn csr->signature->length
+    if (good_so_far <= 0){
         goto free_all;
     }
 
-    out = BIO_new(BIO_s_mem());
-    ret = PEM_write_bio_X509_REQ(out, x509_req);
+    bio_csr = BIO_new(BIO_s_mem());
+    good_so_far = PEM_write_bio_X509_REQ(bio_csr, csr);
 
-    csr_size = BIO_get_mem_data(out, &csr_ptr);
+    csr_size = BIO_get_mem_data(bio_csr, &csr_ptr);
     *(csr_ptr + csr_size) = '\0';
 
     result = QByteArray(csr_ptr, csr_size+1);
 
     // 6. free
 free_all:
-    X509_REQ_free(x509_req);
-    BIO_free_all(out);
+    X509_REQ_free(csr);
+    BIO_free_all(bio_csr);
 
-    EVP_PKEY_free(pKey);
-    BN_free(bne);
+    EVP_PKEY_free(key_pair);
+    BN_free(big_number);
 
-    return (ret == 1);
+    return (good_so_far == 1);
 }
