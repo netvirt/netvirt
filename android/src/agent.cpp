@@ -27,9 +27,9 @@ void NetvirtAgent::initialize() {
 }
 
 void NetvirtAgent::provision(const QString &provisioning_key) {
-    QByteArray csr;
+    QByteArray csr, private_key;
     qDebug() << "Generating CSR...";
-    this->gen_X509Req(csr);
+    this->gen_X509Req(csr, private_key);
 
     QUrl url;
     url.setScheme("http");
@@ -83,7 +83,7 @@ void NetvirtAgent::disconnect_() {
 }
 
 
-bool NetvirtAgent::gen_X509Req(QByteArray &result)
+bool NetvirtAgent::gen_X509Req(QByteArray &result, QByteArray &private_key_text)
 {
     int good_so_far = 0;
     RSA *rsa = NULL;
@@ -96,10 +96,14 @@ bool NetvirtAgent::gen_X509Req(QByteArray &result)
     X509_REQ *csr = NULL;
     X509_NAME *x509_name = NULL;
     EVP_PKEY *key_pair = NULL;
-    BIO *bio_csr = NULL;
 
+    BIO *bio_csr = NULL;
     long csr_size = 0;
     char *csr_ptr = NULL;
+
+    BIO *bio_private_key = NULL;
+    long private_key_size = 0;
+    char *private_key_ptr = NULL;
 
     const char *country = "CA";
     const char *province = "BC";
@@ -173,11 +177,15 @@ bool NetvirtAgent::gen_X509Req(QByteArray &result)
 
     bio_csr = BIO_new(BIO_s_mem());
     good_so_far = PEM_write_bio_X509_REQ(bio_csr, csr);
-
     csr_size = BIO_get_mem_data(bio_csr, &csr_ptr);
     *(csr_ptr + csr_size) = '\0';
-
     result = QByteArray(csr_ptr, csr_size+1);
+
+    bio_private_key = BIO_new(BIO_s_mem());
+    good_so_far = PEM_write_bio_PrivateKey(bio_private_key, key_pair, NULL, NULL, 0, 0, NULL);
+    private_key_size = BIO_get_mem_data(bio_private_key, &private_key_ptr);
+    *(private_key_ptr + private_key_size) = '\0';
+    private_key_text = QByteArray(private_key_ptr, private_key_size+1);
 
     // 6. free
 free_all:
