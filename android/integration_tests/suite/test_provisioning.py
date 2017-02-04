@@ -6,9 +6,12 @@ import subprocess
 import time
 
 from hamcrest import assert_that
+from hamcrest import all_of
 from hamcrest import contains
+from hamcrest import ends_with
 from hamcrest import has_entries
 from hamcrest import has_entry
+from hamcrest import starts_with
 from requests import RequestException
 from unittest import TestCase
 
@@ -119,4 +122,6 @@ class TestProvisioning(TestCase):
         assert_that(self.mock_controller.requests(), has_entry('requests', contains(
             has_entries({'path': '/provisioning',
                          'body': has_entries({'client_version': '0.6',
+                                              'csr': all_of(starts_with('-----BEGIN CERTIFICATE REQUEST-----\n'),
+                                                            ends_with('-----END CERTIFICATE REQUEST-----\n')),
                                               'provisioning_key': 'my-key'})}))))

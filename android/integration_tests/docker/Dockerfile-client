@@ -1,7 +1,13 @@
 FROM debian:jessie
 
 RUN apt-get update && \
-    apt-get install -y libqt5core5a libqt5network5 make qt5-qmake qtbase5-dev g++
+    apt-get install -y libqt5core5a \
+                       libqt5network5 \
+                       libssl-dev \
+                       make \
+                       qt5-qmake \
+                       qtbase5-dev \
+                       g++
 WORKDIR /usr/src/netvirt/android
 ENV QT_SELECT=5
 

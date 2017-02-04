@@ -2,6 +2,7 @@
 #define __AGENT_H__
 
 #include <QObject>
+#include <QByteArray>
 #include <QNetworkReply>
 #include <QUdpSocket>
 
@@ -32,6 +33,9 @@ class NetvirtAgent : public QObject {
     protected:
         Config *_config;
         QNetworkReply *_provisioning_reply;
+
+    private:
+        bool gen_X509Req(QByteArray &result);
 };
 
 #endif

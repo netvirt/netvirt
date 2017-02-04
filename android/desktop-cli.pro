@@ -1,6 +1,7 @@
 TEMPLATE = app
 TARGET = netvirt
 QT += network
+LIBS += -lssl -lcrypto
 
 SOURCES = src/main_test.cpp
 HEADERS = src/logging.h
