@@ -35,7 +35,7 @@ class NetvirtAgent : public QObject {
         QNetworkReply *_provisioning_reply;
 
     private:
-        bool gen_X509Req(QByteArray &csr_text, QByteArray &private_key_text);
+        bool generate_csr(QByteArray &csr_text, QByteArray &private_key_text);
 };
 
 #endif

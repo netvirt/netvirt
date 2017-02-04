@@ -29,7 +29,7 @@ void NetvirtAgent::initialize() {
 void NetvirtAgent::provision(const QString &provisioning_key) {
     QByteArray csr, private_key;
     qDebug() << "Generating CSR...";
-    this->gen_X509Req(csr, private_key);
+    this->generate_csr(csr, private_key);
 
     QUrl url;
     url.setScheme("http");
@@ -83,7 +83,7 @@ void NetvirtAgent::disconnect_() {
 }
 
 
-bool NetvirtAgent::gen_X509Req(QByteArray &csr_text, QByteArray &private_key_text)
+bool NetvirtAgent::generate_csr(QByteArray &csr_text, QByteArray &private_key_text)
 {
     int good_so_far = 0;
     RSA *rsa = NULL;
