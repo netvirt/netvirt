@@ -1,10 +1,10 @@
+import docker
 import logging
 import os
 import requests
 import subprocess
 import time
 
-from docker import Client
 from hamcrest import assert_that
 from hamcrest import contains
 from hamcrest import has_entries
@@ -26,8 +26,8 @@ class DockerCompose(object):
         self._env = {}
 
     def port(self, container_name, container_port):
-        with Client(base_url='unix://var/run/docker.sock') as docker:
-            ports = docker.inspect_container(self._container_id(container_name))['NetworkSettings']['Ports']
+        client = docker.from_env()
+        ports = client.containers.get(self._container_id(container_name)).attrs['NetworkSettings']['Ports']
 
         exposed_ports = ports.get('{}/tcp'.format(container_port))
         if exposed_ports:
