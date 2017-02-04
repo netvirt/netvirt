@@ -89,24 +89,23 @@ bool NetvirtAgent::gen_X509Req(QByteArray &result)
     RSA *rsa = NULL;
     BIGNUM *big_number = NULL;
 
-    int nVersion = 1;
+    int version = 1;
     int bits = 2048;
     unsigned long factor = RSA_F4;
 
     X509_REQ *csr = NULL;
     X509_NAME *x509_name = NULL;
     EVP_PKEY *key_pair = NULL;
-    RSA *tem = NULL;
-    BIO *bio_csr = NULL, *bio_err = NULL;
+    BIO *bio_csr = NULL;
 
     long csr_size = 0;
     char *csr_ptr = NULL;
 
-    const char *szCountry = "CA";
-    const char *szProvince = "BC";
-    const char *szCity = "Vancouver";
-    const char *szOrganization = "Netvirt";
-    const char *szCommon = "localhost";
+    const char *country = "CA";
+    const char *province = "BC";
+    const char *city = "Vancouver";
+    const char *organization = "Netvirt";
+    const char *common_name = "localhost";
 
     // 1. generate rsa key
     big_number = BN_new();
@@ -123,7 +122,7 @@ bool NetvirtAgent::gen_X509Req(QByteArray &result)
 
     // 2. set version of x509 req
     csr = X509_REQ_new();
-    good_so_far = X509_REQ_set_version(csr, nVersion);
+    good_so_far = X509_REQ_set_version(csr, version);
     if (good_so_far != 1){
         goto free_all;
     }
@@ -131,27 +130,27 @@ bool NetvirtAgent::gen_X509Req(QByteArray &result)
     // 3. set subject of x509 req
     x509_name = X509_REQ_get_subject_name(csr);
 
-    good_so_far = X509_NAME_add_entry_by_txt(x509_name,"C", MBSTRING_ASC, (const unsigned char*)szCountry, -1, -1, 0);
+    good_so_far = X509_NAME_add_entry_by_txt(x509_name,"C", MBSTRING_ASC, (const unsigned char*)country, -1, -1, 0);
     if (good_so_far != 1){
         goto free_all;
     }
 
-    good_so_far = X509_NAME_add_entry_by_txt(x509_name,"ST", MBSTRING_ASC, (const unsigned char*)szProvince, -1, -1, 0);
+    good_so_far = X509_NAME_add_entry_by_txt(x509_name,"ST", MBSTRING_ASC, (const unsigned char*)province, -1, -1, 0);
     if (good_so_far != 1){
         goto free_all;
     }
 
-    good_so_far = X509_NAME_add_entry_by_txt(x509_name,"L", MBSTRING_ASC, (const unsigned char*)szCity, -1, -1, 0);
+    good_so_far = X509_NAME_add_entry_by_txt(x509_name,"L", MBSTRING_ASC, (const unsigned char*)city, -1, -1, 0);
     if (good_so_far != 1){
         goto free_all;
     }
 
-    good_so_far = X509_NAME_add_entry_by_txt(x509_name,"O", MBSTRING_ASC, (const unsigned char*)szOrganization, -1, -1, 0);
+    good_so_far = X509_NAME_add_entry_by_txt(x509_name,"O", MBSTRING_ASC, (const unsigned char*)organization, -1, -1, 0);
     if (good_so_far != 1){
         goto free_all;
     }
 
-    good_so_far = X509_NAME_add_entry_by_txt(x509_name,"CN", MBSTRING_ASC, (const unsigned char*)szCommon, -1, -1, 0);
+    good_so_far = X509_NAME_add_entry_by_txt(x509_name,"CN", MBSTRING_ASC, (const unsigned char*)common_name, -1, -1, 0);
     if (good_so_far != 1){
         goto free_all;
     }
