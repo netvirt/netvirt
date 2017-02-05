@@ -379,6 +379,100 @@ v1_network_cb(struct evhttp_request *req, void *arg)
 		evhttp_send_reply(req, HTTP_BADREQUEST, "Bad Request", NULL);
 }
 
+void
+v1_node_delete(struct evhttp_requeset *req, void *arg)
+{
+	struct evkeyvalq	 qheaders = TAILQ_HEAD_INITIALIZER(qheaders);
+	struct evkeyvalq	*headers;
+	const struct evhttp_uri	*uri;
+	int			 code = HTTP_BADREQUEST;
+	const char		*apikey;
+	const char		*phrase = "Bad Request";
+	const char		*uid;
+	const char		*query;
+
+	if ((headers = evhttp_request_get_input_headers(req)) == NULL)
+		goto cleanup;
+
+	if ((apikey = evhttp_find_header(headers, "X-netvirt-apikey")) == NULL)
+		goto cleanup;
+
+	if ((uri = evhttp_request_get_evhttp_uri(req)) == NULL)
+		goto cleanup;
+
+	if ((query = evhttp_uri_get_query(uri)) == NULL)
+		goto cleanup;
+
+	if (evhttp_prase_query_str(query, &qheaders) < 0)
+		goto cleanup;
+
+	if ((uid = evhttp_find_header(&qheaders, "uid")) == NULL)
+		goto cleanup;
+
+	if (node_delete(uid, apikey) == -1) {
+		code = 403;
+		phrase = "Forbidden";
+		goto cleanup;
+	}
+
+	code = 204;
+	phrase = "No Content";
+
+cleanup:
+	evhttp_send_reply(req, code, phrase, NULL);
+	evhttp_clear_headers(&qheaders);
+}
+
+void
+v1_node_create(struct evhttp_request *req, void *arg)
+{
+	struct evkeyvalq	*headers;
+	struct evbuffer		*buf;
+	int			 code = HTTP_BADREQUEST;
+	const char		*apikey;
+	const char		*type;
+	const char		*phrase = "Bad Request";
+	void			*p;
+
+	if ((headers = evhttp_request_get_input_headers(req)) == NULL)
+		goto cleanup;
+
+	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
+	    strncmp(type, "application/json", 16) != 0)
+		goto cleanup;
+
+	buf = evhttp_request_get_input_buffer(req);
+	evbuffer_add(buf, "\0", 1);
+	if ((p = evbuffer_pullup(buf, -1)) == NULL)
+		goto cleanup;
+
+	if ((apikey = evhttp_find_header(headers, "X-netvirt-apikey")) == NULL)
+		goto cleanup;
+
+	if (node_create(p, apikey) == -1) {
+		code = 403;
+		phrase = "Forbidden";
+		goto cleanup;
+	}
+
+	code = 201;
+	phrase = "Created";
+
+cleanup:
+	evhttp_send_reply(req, code, phrase, NULL);
+}
+
+void
+v1_node_cb(struct evhttp_request *req, void *arg)
+{
+	if (evhttp_request_get_command(req) == EVHTTP_REQ_POST)
+		v1_node_create(req, arg);
+	else if (evhttp_request_get_command(req) == EVHTTP_REQ_DELETE)
+		v1_node_delete(req, arg);
+	else
+		evhttp_send_reply(req, HTTP_BADREQUEST, "Bad Request", NULL);
+}
+
 int
 restapi_init(json_t *config, struct event_base *evbase)
 {
@@ -405,6 +499,9 @@ restapi_init(json_t *config, struct event_base *evbase)
 
 	if (evhttp_set_cb(http, "/v1/network", v1_network_cb, NULL) < 0)
 		errx(1, "evhttp_set_cb /v1/network");
+
+	if (evhttp_set_cb(http, "/v1/node", v1_node_cb, NULL) < 0)
+		errx(1, "evhttp_set_cb /v1/node");
 
 	if ((handle = evhttp_bind_socket_with_handle(http, "0.0.0.0", 8080)) == NULL)
 		errx(1, "evhttp_bind_socket_with_handle");

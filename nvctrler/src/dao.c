@@ -192,6 +192,17 @@ dao_prepare_statements()
 		goto error;
 	PQclear(result);
 
+	result = PQprepare(dbconn,
+			"dao_node_create",
+			"INSERT INTO node "
+			"(network_uid, uid, provkey, description, ipaddress) "
+			"VALUES ($1, $2, $3, $4, $5);",
+			0,
+			NULL);
+
+	if (check_result_status(result) == -1)
+		goto error;
+	PQclear(result);
 
 
 
@@ -266,18 +277,6 @@ dao_prepare_statements()
 			"dao_del_node_by_network_uid",
 			"DELETE FROM node "
 			"WHERE network_uid = $1",
-			0,
-			NULL);
-
-	if (check_result_status(result) == -1)
-		goto error;
-
-	PQclear(result);
-	result = PQprepare(dbconn,
-			"dao_add_node",
-			"INSERT INTO node "
-			"(network_uid, uid, provkey, description, ipaddress) "
-			"VALUES ($1, $2, $3, $4, $5);",
 			0,
 			NULL);
 
@@ -797,6 +796,44 @@ dao_network_list(const char *apikey,
 	return (0);
 }
 
+int
+dao_node_create(const char *network_uid, const char *uid, const char *provkey,
+	    const char *description, const char *ipaddress)
+{
+	PGresult	*result;
+	int		 paramLengths[5];
+	const char	*paramValues[5];
+
+	if (network_uid == NULL || uid == NULL || provkey == NULL ||
+	    description == NULL || ipaddress == NULL) {
+		warnx("invalid NULL parameter");
+		return (-1);
+	}
+
+	paramValues[0] = network_uid;
+	paramValues[1] = uid;
+	paramValues[2] = provkey;
+	paramValues[3] = description;
+	paramValues[4] = ipaddress;
+
+	paramLengths[0] = strlen(network_uid);
+	paramLengths[1] = strlen(uid);
+	paramLengths[2] = strlen(provkey);
+	paramLengths[3] = strlen(description);
+	paramLengths[4] = strlen(ipaddress);
+
+	result = PQexecPrepared(dbconn, "dao_node_create", 5, paramValues, paramLengths, NULL, 0);
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return (-1);
+	}
+
+	PQclear(result);
+
+	return (0);
+}
+
 
 
 int dao_fetch_client_id(char **client_id, char *email, char *password)
@@ -939,51 +976,6 @@ int dao_del_node_by_network_uid(char *network_uuid)
 
 	return 0;
 }
-
-int dao_add_node(char *network_uuid, char *uuid, char *certificate, char *privatekey, char *provkey, char *description, char *ipaddress)
-{
-	const char *paramValues[7];
-	int paramLengths[7];
-	PGresult *result;
-
-	if (!network_uuid || !uuid || !certificate || !privatekey || !provkey || !description || !ipaddress) {
-		warnx("invalid NULL parameter");
-		return -1;
-	}
-
-	paramValues[0] = network_uuid;
-	paramValues[1] = uuid;
-	paramValues[2] = certificate;
-	paramValues[3] = privatekey;
-	paramValues[4] = provkey;
-	paramValues[5] = description;
-	paramValues[6] = ipaddress;
-
-	paramLengths[0] = strlen(network_uuid);
-	paramLengths[1] = strlen(uuid);
-	paramLengths[2] = strlen(certificate);
-	paramLengths[3] = strlen(privatekey);
-	paramLengths[4] = strlen(provkey);
-	paramLengths[5] = strlen(description);
-	paramLengths[6] = strlen(ipaddress);
-
-	result = PQexecPrepared(dbconn, "dao_add_node", 7, paramValues, paramLengths, NULL, 0);
-
-	if (!result) {
-		warnx("PQexec command failed: %s", PQerrorMessage(dbconn));
-		return -1;
-	}
-
-	if (check_result_status(result) == -1) {
-		PQclear(result);
-		return -1;
-	}
-
-	PQclear(result);
-
-	return 0;
-}
-
 
 int dao_fetch_network_ippool(char *network_uuid, unsigned char **ippool)
 {

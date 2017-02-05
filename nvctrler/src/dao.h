@@ -34,8 +34,8 @@ int dao_network_delete(const char *, const char *);
 int dao_network_list(const char *, int (*)(const char *, const char *, void *), void *);
 int dao_network_update();
 
-int dao_node_create();
-int dao_node_delete();
+int dao_node_create(const char *, const char *, const char *, const char *, const char *);
+int dao_node_delete(const char *, const char *);
 int dao_node_list();
 int dao_node_update();
 

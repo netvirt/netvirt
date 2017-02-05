@@ -477,161 +477,74 @@ cleanup:
 	return (ret);
 }
 
-void
-update_node_status(struct session_info **sinfo, json_t *jmsg)
+int
+node_create(const char *msg, const char *apikey)
 {
-#if 0
-	//jlog(L_DEBUG, "update-node-status");
-
-	char	*status;
-	char	*local_ipaddr = NULL;
-	char	*uuid = NULL;
-	char	*network_uuid = NULL;
-
-	json_t	*node;
-
-
-	node = json_object_get(jmsg, "node");
-	json_unpack(node, "{s:s}", "status", &status);
-	json_unpack(node, "{s:s}", "local-ipaddr", &local_ipaddr);
-	json_unpack(node, "{s:s}", "uuid", &uuid);
-	json_unpack(node, "{s:s}", "networkuuid", &network_uuid);
-
-	dao_update_node_status(network_uuid, uuid, status, local_ipaddr);
-
-	json_decref(node);
-#endif
-
-	return;
-}
-
-void
-add_node(struct session_info *sinfo, json_t *jmsg)
-{
-#if 0
-	//jlog(L_DEBUG, "add-node");
-
-	int		 ret = 0;
-	char		*network_uuid = NULL;
-	char		*client_id = NULL;
-	char		*description = NULL;
-
-	int		 exp_delay;
-	embassy_t	*emb = NULL;
-	char		*emb_cert_ptr = NULL;
-	char		*emb_pvkey_ptr = NULL;
-	char		*serial = NULL;
-	unsigned char	*ippool_bin = NULL;
-	long		 size;
-
-	char		*apikey = NULL;
-	char		*uuid = NULL;
-	char		*provcode = NULL;
-	char		 common_name[64] = {0};
-	char		 alt_name[256] = {0};
-	char		*node_cert_ptr = NULL;
-	char		*node_pvkey_ptr = NULL;
-	char		 emb_serial[10];
-
-	char		*resp_str = NULL;
-	json_t		*resp = NULL;
-	json_t		*js_node = NULL;
-
+	json_t		*jmsg;
+	json_error_t	 error;
 	struct ippool	*ippool = NULL;
-	char		*ip = NULL;
+	long		 size;
+	int		 ret = 0;
 	int		 pool_size;
+	char		*client_id = NULL;
+	char		*uid;
+	char		*provkey = NULL;
+	char		*network_uid = NULL;
+	char		*description = NULL;
+	char		*ip = NULL;
+	unsigned char	*ippool_bin = NULL;
 
-	if ((js_node = json_object_get(jmsg, "node")) == NULL)
-		return;
+	if (msg == NULL || apikey == NULL)
+		return (-1);
 
-	resp = json_object();
-	json_object_set_new(resp, "tid", json_string("tid"));
-	json_object_set_new(resp, "action", json_string("response"));
+	if (dao_client_get_id(&client_id, apikey) < 0)
+		return (-1);
 
-	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
-	json_unpack(js_node, "{s:s}", "networkuuid", &network_uuid);
-	json_unpack(js_node, "{s:s}", "description", &description);
-
-	if (apikey == NULL ||
-	    network_uuid == NULL ||
-	    description == NULL) {
-
-		json_object_set_new(resp, "response", json_string("error"));
-		goto out;
+	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
+		warnx("json_loadb: %s", error.text);
+		return (-1);
 	}
 
-	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
-	if (ret != 0) {
-		json_object_set_new(resp, "response", json_string("denied"));
-		goto out;
-	}
-/*
-	ret = dao_fetch_network_id(&context_id, client_id, network_uuid);
-	if (ret != 0) {
-		json_object_set_new(resp, "response", json_string("no-such-object"));
-		goto out;
-	}
-*/
-	exp_delay = pki_expiration_delay(10);
-	ret = dao_fetch_context_embassy(network_uuid, &emb_cert_ptr, &emb_pvkey_ptr, &serial, &ippool_bin);
-	//jlog(L_DEBUG, "serial: %s", serial);
-	if (ret != 0) {
-		//jlog(L_ERROR, "failed to fetch context embassy");
-		json_object_set_new(resp, "response", json_string("error"));
-		goto out;
+	json_unpack(jmsg, "{s:s}", "network_uid", &network_uid);
+	if (network_uid == NULL) {
+		ret = -1;
+		goto cleanup;
 	}
 
-	emb = pki_embassy_load_from_memory(emb_cert_ptr, emb_pvkey_ptr, atoi(serial));
-
-	uuid = uuid_v4();
-	provcode = uuid_v4();
-
-	snprintf(common_name, sizeof(common_name), "nva2-%s", network_uuid);
-	//jlog(L_DEBUG, "common_name: %s", common_name);
-
-	snprintf(alt_name, sizeof(alt_name), "URI:%s@%s", uuid, network_uuid);
-	//jlog(L_DEBUG, "alt_name: %s", alt_name);
-
-	digital_id_t *node_ident = NULL;
-	node_ident = pki_digital_id(common_name, alt_name, "", "", "admin@netvirt.org", "NetVirt");
-
-	passport_t *node_passport = NULL;
-	node_passport = pki_embassy_deliver_passport(emb, node_ident, exp_delay);
-
-	/* FIXME verify is the value is freed or not via BIO_free() */
-	pki_write_certificate_in_mem(node_passport->certificate, &node_cert_ptr, &size);
-	pki_write_privatekey_in_mem(node_passport->keyring, &node_pvkey_ptr, &size);
-
-	snprintf(emb_serial, sizeof(emb_serial), "%d", emb->serial);
-	printf("serial: %s\n", emb_serial);
-	ret = dao_update_embassy_serial(network_uuid, emb_serial);
-	if (ret == -1) {
-		//jlog(L_ERROR, "failed to update embassy serial");
-		json_object_set_new(resp, "response", json_string("error"));
-		goto free1;
+	json_unpack(jmsg, "{s:s}", "description", &description);
+	if (description == NULL) {
+		ret = -1;
+		goto cleanup;
 	}
 
-	/* handle ip pool */
+	/* handle ip pool 
 	ippool = ippool_new("44.128.0.0", "255.255.0.0");
 	free(ippool->pool);
 	ippool->pool = (uint8_t*)ippool_bin;
 	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
 	ip = ippool_get_ip(ippool);
 
-	ret = dao_add_node(network_uuid, uuid, node_cert_ptr, node_pvkey_ptr, provcode, description, ip);
+	ret = dao_network_update_ippool(network_uid, ippool->pool, pool_size);
 	if (ret == -1) {
-		//jlog(L_ERROR, "failed to add node");
-		json_object_set_new(resp, "response", json_string("error"));
-		goto free2;
 	}
 
-	ret = dao_update_context_ippool(network_uuid, ippool->pool, pool_size);
-	if (ret == -1) {
-		//jlog(L_ERROR, "failed to update embassy ippool");
-		json_object_set_new(resp, "response", json_string("error"));
-		goto free2;
+	*/
+
+	if ((uid = pki_gen_uid()) == NULL) {
+		ret = -1;
+		goto cleanup;
 	}
 
+	if ((provkey = pki_gen_key()) == NULL) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	if (dao_node_create(network_uid, uid, provkey, description, "192.168.1.1") < 0) {
+		ret = -1;
+		goto cleanup;
+	}
+#if 0
 	/* forward new node to nvswitch */
 	char	*fwd_resp_str = NULL;
 	json_t	*array = NULL;
@@ -664,46 +577,21 @@ add_node(struct session_info *sinfo, json_t *jmsg)
 	}
 
 	/* * */
+#endif
 
-	json_object_set_new(resp, "response", json_string("success"));
-
-free2:
+cleanup:
 	ippool_free(ippool);
-
-free1:
-	pki_passport_free(node_passport);
-	pki_embassy_free(emb);
-	pki_free_digital_id(node_ident);
-
+	free(provkey);
+	json_decref(jmsg);
 	free(client_id);
 
-
-	free(uuid);
-	free(provcode);
-	free(node_cert_ptr);
-
-	free(node_pvkey_ptr);
-	free(serial);
-	free(emb_cert_ptr);
-	free(emb_pvkey_ptr);
-
-out:
-	resp_str = json_dumps(resp, 0);
-
-	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
-
-	json_decref(resp);
-	free(resp_str);
-#endif
+	return (ret);
 }
 
-void
-del_node(struct session_info *sinfo, json_t *jmsg)
+int
+node_delete(const char *uid, const char *apikey)
 {
 #if 0
-	//jlog(L_DEBUG, "del-node");
-
 	int		ret = 0;
 	char		*client_id = NULL;
 	char		*network_uuid = NULL;
@@ -802,6 +690,36 @@ out:
 	free(ipaddr);
 	ippool_free(ippool);
 #endif
+}
+
+
+
+void
+update_node_status(struct session_info **sinfo, json_t *jmsg)
+{
+#if 0
+	//jlog(L_DEBUG, "update-node-status");
+
+	char	*status;
+	char	*local_ipaddr = NULL;
+	char	*uuid = NULL;
+	char	*network_uuid = NULL;
+
+	json_t	*node;
+
+
+	node = json_object_get(jmsg, "node");
+	json_unpack(node, "{s:s}", "status", &status);
+	json_unpack(node, "{s:s}", "local-ipaddr", &local_ipaddr);
+	json_unpack(node, "{s:s}", "uuid", &uuid);
+	json_unpack(node, "{s:s}", "networkuuid", &network_uuid);
+
+	dao_update_node_status(network_uuid, uuid, status, local_ipaddr);
+
+	json_decref(node);
+#endif
+
+	return;
 }
 
 static int
