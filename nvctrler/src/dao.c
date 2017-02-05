@@ -204,6 +204,17 @@ dao_prepare_statements()
 		goto error;
 	PQclear(result);
 
+	result = PQprepare(dbconn,
+			"dao_node_delete",
+			"DELETE FROM node "
+			"WHERE uid = $1 "
+			"AND node.network_uid IN (SELECT uid FROM network WHERE client_id = (SELECT id FROM client WHERE apikey = crypt($2, apikey)))",
+			0,
+			NULL);
+
+	if (check_result_status(result) == -1)
+		goto error;
+	PQclear(result);
 
 
 
@@ -260,18 +271,6 @@ dao_prepare_statements()
 	if (check_result_status(result) == -1)
 		goto error;
 
-	PQclear(result);
-	result = PQprepare(dbconn,
-			"dao_del_node",
-			"DELETE FROM node "
-			"WHERE network_uid = $1 AND uid = $2;",
-			0,
-			NULL);
-
-	if (check_result_status(result) == -1)
-		goto error;
-
-	// XXX delete all nodes ?
 	PQclear(result);
 	result = PQprepare(dbconn,
 			"dao_del_node_by_network_uid",
@@ -834,6 +833,41 @@ dao_node_create(const char *network_uid, const char *uid, const char *provkey,
 	return (0);
 }
 
+int
+dao_node_delete(const char *uid, const char *apikey)
+{
+	const char *paramValues[2];
+	int paramLengths[2];
+	PGresult *result;
+
+	if (uid == NULL || apikey == NULL) {
+		warnx("invalid NULL parameter");
+		return (-1);
+	}
+
+	paramValues[0] = uid;
+	paramValues[1] = apikey;
+
+	paramLengths[0] = strlen(uid);
+	paramLengths[1] = strlen(apikey);
+
+	result = PQexecPrepared(dbconn, "dao_node_delete", 2, paramValues, paramLengths, NULL, 0);
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return (-1);
+	}
+
+	/* if no row is deleted, return an error */
+	if (strcmp(PQcmdTuples(result), "0") == 0) {
+		PQclear(result);
+		return (-1);
+	}
+
+	PQclear(result);
+
+	return (0);
+}
 
 
 int dao_fetch_client_id(char **client_id, char *email, char *password)
@@ -919,36 +953,6 @@ int dao_update_node_status(char *network_uuid, char *uuid, char *status, char *i
 	return 0;
 }
 
-
-int dao_del_node(char *network_uuid, char *uuid)
-{
-	const char *paramValues[2];
-	int paramLengths[2];
-	PGresult *result;
-
-	if (!network_uuid || !uuid) {
-		warnx("invalid parameter");
-		return -1;
-	}
-
-	paramValues[0] = network_uuid;
-	paramValues[1] = uuid;
-
-	paramLengths[0] = strlen(network_uuid);
-	paramLengths[1] = strlen(uuid);
-
-	result = PQexecPrepared(dbconn, "dao_del_node", 2, paramValues, paramLengths, NULL, 0);
-
-	if (!result) {
-		warnx("PQexec command failed: %s", PQerrorMessage(dbconn));
-		PQclear(result);
-		return -1;
-	}
-
-	PQclear(result);
-
-	return 0;
-}
 
 int dao_del_node_by_network_uid(char *network_uuid)
 {

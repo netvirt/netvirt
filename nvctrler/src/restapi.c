@@ -380,7 +380,7 @@ v1_network_cb(struct evhttp_request *req, void *arg)
 }
 
 void
-v1_node_delete(struct evhttp_requeset *req, void *arg)
+v1_node_delete(struct evhttp_request *req, void *arg)
 {
 	struct evkeyvalq	 qheaders = TAILQ_HEAD_INITIALIZER(qheaders);
 	struct evkeyvalq	*headers;
@@ -403,7 +403,7 @@ v1_node_delete(struct evhttp_requeset *req, void *arg)
 	if ((query = evhttp_uri_get_query(uri)) == NULL)
 		goto cleanup;
 
-	if (evhttp_prase_query_str(query, &qheaders) < 0)
+	if (evhttp_parse_query_str(query, &qheaders) < 0)
 		goto cleanup;
 
 	if ((uid = evhttp_find_header(&qheaders, "uid")) == NULL)
@@ -473,6 +473,58 @@ v1_node_cb(struct evhttp_request *req, void *arg)
 		evhttp_send_reply(req, HTTP_BADREQUEST, "Bad Request", NULL);
 }
 
+void
+v1_provisioning_cb(struct evhttp_request *req, void *arg)
+{
+	struct evkeyvalq	*headers;
+	struct evbuffer		*buf;
+	struct evbuffer		*respbuffer = NULL;
+	int			 msglen;
+	int			 code = HTTP_BADREQUEST;
+	const char		*type;
+	const char		*provkey;
+	const char		*phrase = "Bad Request";
+	char			*msg = NULL;
+	char			 str_msglen[10];
+	void			 *p;
+
+	if ((headers = evhttp_request_get_input_headers(req)) == NULL)
+		goto cleanup;
+
+	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
+	    strncmp(type, "application/json", 16) != 0)
+		goto cleanup;
+
+	buf = evhttp_request_get_input_buffer(req);
+	evbuffer_add(buf, "\0", 1);
+	if ((p = evbuffer_pullup(buf, -1)) == NULL)
+		goto cleanup;
+
+/*
+	if (provisioning(p, &msg) == -1) {
+		code = 403;
+		phrase = "Forbidden";
+		goto cleanup;
+	}
+*/
+
+	msglen = strlen(msg);
+	snprintf(str_msglen, sizeof(msglen), "%d", msglen);
+	evhttp_add_header(req->output_headers, "Content-Type", "application/json");
+	evhttp_add_header(req->output_headers, "Content-Lenght", str_msglen);
+
+	respbuffer = evbuffer_new();
+	evbuffer_add(respbuffer, msg, msglen);
+
+	code = HTTP_OK;
+	phrase = "OK";
+
+cleanup:
+	evhttp_send_reply(req, code, phrase, respbuffer);
+	if (respbuffer != NULL)
+		evbuffer_free(respbuffer);
+}
+
 int
 restapi_init(json_t *config, struct event_base *evbase)
 {
@@ -502,6 +554,9 @@ restapi_init(json_t *config, struct event_base *evbase)
 
 	if (evhttp_set_cb(http, "/v1/node", v1_node_cb, NULL) < 0)
 		errx(1, "evhttp_set_cb /v1/node");
+
+	if (evhttp_set_cb(http, "/v1/provisioning", v1_provisioning_cb, NULL) < 0)
+		errx(1, "evhttp_set_cb /v1/provisioning");
 
 	if ((handle = evhttp_bind_socket_with_handle(http, "0.0.0.0", 8080)) == NULL)
 		errx(1, "evhttp_bind_socket_with_handle");

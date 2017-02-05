@@ -438,7 +438,6 @@ int
 network_delete(const char *uid, const char *apikey)
 {
 	int		 ret = 0;
-	char		*client_id = NULL;
 
 	if (uid == NULL || apikey == NULL)
 		return (-1);
@@ -470,10 +469,7 @@ network_delete(const char *uid, const char *apikey)
 	}
 	/* * */
 #endif
-
 cleanup:
-	free(client_id);
-
 	return (ret);
 }
 
@@ -591,67 +587,20 @@ cleanup:
 int
 node_delete(const char *uid, const char *apikey)
 {
-#if 0
 	int		ret = 0;
-	char		*client_id = NULL;
-	char		*network_uuid = NULL;
-	char		*node_uuid = NULL;
-	char		*apikey = NULL;
-	char		*resp_str = NULL;
-	char		*fwd_str = NULL;
 	char		*ipaddr = NULL;
-	json_t		*js_node = NULL;
-	json_t		*resp = NULL;
 	struct ippool	*ippool = NULL;
 	int		 pool_size;
 
 
-	if ((js_node = json_object_get(jmsg, "node")) == NULL)
-		return;
+	if (uid == NULL || apikey == NULL)
+		return (-1);
 
-	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
-	json_unpack(js_node, "{s:s}", "networkuuid", &network_uuid);
-	json_unpack(js_node, "{s:s}", "uuid", &node_uuid);
-
-	/* check network_uuid and node_uuid */
-	resp = json_object();
-	json_object_set_new(resp, "tid", json_string("tid"));
-	json_object_set_new(resp, "action", json_string("response"));
-
-	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
-	if (ret != 0) {
-		json_object_set_new(resp, "response", json_string("denied"));
-		goto out;
-	}
-/*
-	ret = dao_fetch_network_id(&network_id, client_id, network_uuid);
-	if (ret != 0) {
-		json_object_set_new(resp, "response", json_string("no-such-object"));
-		goto out;
-	}
-*/
+#if 0
 	ret = dao_fetch_node_ip(network_uuid, node_uuid, &ipaddr);
-	if (ret != 0) {
-		//jlog(L_ERROR, "failed to fetch node ip");
-		json_object_set_new(resp, "response", json_string("no-such-object"));
-		goto out;
-	}
-
-	//jlog(L_NOTICE, "revoking node: %s, ip:%s, network:%s", node_uuid, ipaddr, network_uuid);
-	ret = dao_del_node(network_uuid, node_uuid);
-	if (ret != 0) {
-		//jlog(L_ERROR, "failed to del node");
-		json_object_set_new(resp, "response", json_string("error"));
-		goto out;
-	}
 
 	unsigned char *ippool_bin = NULL;
 	ret = dao_fetch_context_ippool(network_uuid, &ippool_bin);
-	if (ret == -1) {
-		//jlog(L_ERROR, "failed to fetch context ippool");
-		json_object_set_new(resp, "response", json_string("error"));
-		goto out;
-	}
 
 	/* update ip pool */
 	ippool = ippool_new("44.128.0.0", "255.255.0.0");
@@ -661,10 +610,14 @@ node_delete(const char *uid, const char *apikey)
 	ippool_release_ip(ippool, ipaddr);
 
 	ret = dao_update_context_ippool(network_uuid, ippool->pool, pool_size);
-	if (ret == -1) {
-		//jlog(L_ERROR, "failed to update embassy ippool");
+#endif
+
+	if (dao_node_delete(uid, apikey) < 0) {
+		ret = -1;
+		goto cleanup;
 	}
 
+#if 0
 	/* Forward del-node to the switch */
 	if (switch_sinfo != NULL) {
 		json_object_del(jmsg, "apikey");
@@ -677,19 +630,9 @@ node_delete(const char *uid, const char *apikey)
 		free(fwd_str);
 	}
 	/* * */
-
-out:
-	resp_str = json_dumps(resp, 0);
-
-	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
-
-	json_decref(resp);
-	free(resp_str);
-	free(client_id);
-	free(ipaddr);
-	ippool_free(ippool);
 #endif
+cleanup:
+	return (ret);
 }
 
 
