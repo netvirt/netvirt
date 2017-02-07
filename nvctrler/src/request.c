@@ -433,7 +433,6 @@ cleanup:
 	return (ret);
 }
 
-
 int
 network_delete(const char *uid, const char *apikey)
 {
@@ -632,6 +631,49 @@ node_delete(const char *uid, const char *apikey)
 	/* * */
 #endif
 cleanup:
+	return (ret);
+}
+
+int
+node_list_cb(const char *uid, const char *description, const char *provkey, const char *ipaddress, const char *status, void *arg)
+{
+	json_t	*array;
+	json_t	*node;
+
+	array = arg;
+	node = json_object();
+
+	json_object_set_new(node, "uid", json_string(uid));
+	json_object_set_new(node, "description", json_string(description));
+	json_object_set_new(node, "ipaddress", json_string(ipaddress));
+	json_object_set_new(node, "provcode", json_string(provkey));
+	json_object_set_new(node, "status", json_string(status));
+	json_array_append_new(array, node);
+
+	return (0);
+}
+
+int
+node_list(const char *network_uid, const char *apikey, char **resp)
+{
+	json_t	*array;
+	json_t	*jresp = NULL;
+	int	 ret = 0;
+
+	array = json_array();
+
+	if (dao_node_list(network_uid, apikey, node_list_cb, array) < 0) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	jresp = json_object();
+	json_object_set_new(jresp, "nodes", array);
+	*resp = json_dumps(jresp, JSON_INDENT(1));
+
+cleanup:
+	json_decref(jresp);
+
 	return (ret);
 }
 
@@ -841,85 +883,5 @@ listall_node(struct session_info **sinfo, json_t *jmsg)
 
 }
 
-
-static int
-CB_list_node(void *ptr, char *uuid, char *description, char *provcode, char *ipaddress, char *status)
-{
-#if 0
-	json_t	*array;
-	json_t	*node;
-
-	array = (json_t*)ptr;
-	node = json_object();
-	json_object_set_new(node, "status", json_string(status));
-	json_object_set_new(node, "ipaddress", json_string(ipaddress));
-	json_object_set_new(node, "provcode", json_string(provcode));
-	json_object_set_new(node, "description", json_string(description));
-	json_object_set_new(node, "uuid", json_string(uuid));
-
-	json_array_append_new(array, node);
-#endif
-	return 0;
-}
-
-void
-list_node(struct session_info *sinfo, json_t *jmsg)
-{
-#if 0
-	//jlog(L_DEBUG, "list-node");
-
-	int	 ret = 0;
-	char	*client_id = NULL;
-	char	*apikey = NULL;
-	char	*network_uuid = NULL;
-	char	*resp_str = NULL;
-	json_t	*js_network = NULL;
-	json_t	*array = NULL;
-	json_t	*resp = NULL;
-
-	if ((js_network = json_object_get(jmsg, "network")) == NULL)
-		return;
-
-	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
-	json_unpack(js_network, "{s:s}", "uuid", &network_uuid);
-
-	resp = json_object();
-	json_object_set_new(resp, "tid", json_string("tid"));
-	json_object_set_new(resp, "action", json_string("response"));
-
-	ret = dao_fetch_client_id_by_apikey(&client_id, apikey);
-	if (client_id == NULL) {
-		json_object_set_new(resp, "response", json_string("denied"));
-		goto out;
-	}
-/*
-	ret = dao_fetch_network_id(&context_id, client_id, network_uuid);
-	if (context_id == NULL) {
-		json_object_set_new(resp, "response", json_string("no-such-object"));
-		goto out;
-	}
-*/
-	array = json_array();
-	ret = dao_fetch_node_from_context_id(network_uuid, array, CB_list_node);
-	if (ret != 0) {
-		//jlog(L_WARNING, "dao fetch node from context id failed: %s", network_uuid);
-		json_object_set_new(resp, "response", json_string("denied"));
-		goto out;
-	}
-	json_object_set_new(resp, "nodes", array);
-	json_object_set_new(resp, "response", json_string("success"));
-
-out:
-	resp_str = json_dumps(resp, 0);
-
-	bufferevent_write(sinfo->bev, resp_str, strlen(resp_str));
-	bufferevent_write(sinfo->bev, "\n", strlen("\n"));
-
-	json_decref(resp);
-	free(resp_str);
-	free(client_id);
-#endif
-	return;
-}
 
 

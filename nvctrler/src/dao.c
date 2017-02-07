@@ -216,6 +216,22 @@ dao_prepare_statements()
 		goto error;
 	PQclear(result);
 
+	result = PQprepare(dbconn,
+			"dao_node_list",
+			"SELECT node.uid, node.description, node.provkey, node.ipaddress, node.status "
+			"FROM node, network "
+			"WHERE network.uid = $1 "
+			"AND network.client_id = (SELECT id FROM client where apikey = crypt($2, apikey));",
+			0,
+			NULL);
+
+	if (check_result_status(result) == -1)
+		goto error;
+	PQclear(result);
+
+
+
+
 
 
 
@@ -362,18 +378,6 @@ dao_prepare_statements()
 			"FROM node "
 			"WHERE network_uid = $1 "
 			"AND uid = $2;",
-			0,
-			NULL);
-
-	if (check_result_status(result) == -1)
-		goto error;
-
-	PQclear(result);
-	result = PQprepare(dbconn,
-			"dao_fetch_node_from_network_uid",
-			"SELECT uid, description, provkey, ipaddress, status "
-			"FROM node "
-			"WHERE network_uid = $1;",
 			0,
 			NULL);
 
@@ -762,7 +766,8 @@ dao_network_delete(const char *uid, const char *apikey)
 
 int
 dao_network_list(const char *apikey,
-	    int (*cb)(const char *, const char *, void *), void *arg)
+	    int (*cb)(const char *, const char *, void *),
+	    void *arg)
 {
 	PGresult	*result;
 	int		 paramLengths[1];
@@ -868,6 +873,57 @@ dao_node_delete(const char *uid, const char *apikey)
 
 	return (0);
 }
+
+int
+dao_node_list(const char *network_uid, const char *apikey,
+	    int (*cb)(const char *, const char *, const char *, const char *, const char *, void *),
+	    void *arg)
+{
+	PGresult	*result;
+	int		 paramLengths[2];
+	int		 tuples;
+	int		 i;
+	const char 	*paramValues[2];
+
+	if (network_uid == NULL) {
+		warnx("invalid NULL parameter");
+		return (-1);
+	}
+
+	paramValues[0] = network_uid;
+	paramValues[1] = apikey;
+
+	paramLengths[0] = strlen(network_uid);
+	paramLengths[1] = strlen(apikey);
+
+	result = PQexecPrepared(dbconn, "dao_node_list", 2, paramValues, paramLengths, NULL, 0);
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return (-1);
+	}
+
+	tuples = PQntuples(result);
+
+	for (i = 0; i < tuples; i++) {
+		cb(PQgetvalue(result, i, 0),
+		    PQgetvalue(result, i, 1),
+		    PQgetvalue(result, i, 2),
+		    PQgetvalue(result, i, 3),
+		    PQgetvalue(result, i, 4), arg);
+	}
+
+	PQclear(result);
+
+	return (0);
+}
+
+
+
+
+
+
+
 
 
 int dao_fetch_client_id(char **client_id, char *email, char *password)
@@ -1363,55 +1419,6 @@ int dao_fetch_node_ip(char *network_uuid, char *uuid, char **ipaddress)
 	} else {
 		PQclear(result);
 		return -1;
-	}
-
-	PQclear(result);
-
-	return 0;
-}
-
-int dao_fetch_node_from_network_id(char *network_id, void *data, int (*cb_data_handler)(void *data,
-								char *uuid,
-								char *description,
-								char *provkey,
-								char *ipaddress,
-								char *status))
-{
-	const char *paramValues[1];
-	int paramLengths[1];
-	int tuples;
-	PGresult *result;
-
-	if (!network_id) {
-		warnx("invalid NULL parameter");
-		return -1;
-	}
-
-	paramValues[0] = network_id;
-	paramLengths[0] = strlen(network_id);
-
-	result = PQexecPrepared(dbconn, "dao_fetch_node_from_network_id", 1, paramValues, paramLengths, NULL, 0);
-
-	if (!result) {
-		warnx("PQexec command failed: %s", PQerrorMessage(dbconn));
-		return -1;
-	}
-
-	if (check_result_status(result) == -1) {
-		PQclear(result);
-		return -1;
-	}
-
-	tuples = PQntuples(result);
-
-	int i;
-	for (i = 0; i < tuples; i++) {
-		cb_data_handler(data,
-			PQgetvalue(result, i, 0),
-			PQgetvalue(result, i, 1),
-			PQgetvalue(result, i, 2),
-			PQgetvalue(result, i, 3),
-			PQgetvalue(result, i, 4));
 	}
 
 	PQclear(result);

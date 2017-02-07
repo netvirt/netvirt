@@ -32,7 +32,7 @@ int network_list(const char *, char **);
 
 int node_create(const char *, const char *);
 int node_delete(const char *, const char *);
-int node_list(struct session_info *, json_t *);
+int node_list(const char *, const char *, char **);
 
 void update_node_status(struct session_info **, json_t *);
 void provisioning(struct session_info **, json_t *);

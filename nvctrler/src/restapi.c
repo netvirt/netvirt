@@ -380,6 +380,45 @@ v1_network_cb(struct evhttp_request *req, void *arg)
 }
 
 void
+v1_node_create(struct evhttp_request *req, void *arg)
+{
+	struct evkeyvalq	*headers;
+	struct evbuffer		*buf;
+	int			 code = HTTP_BADREQUEST;
+	const char		*apikey;
+	const char		*type;
+	const char		*phrase = "Bad Request";
+	void			*p;
+
+	if ((headers = evhttp_request_get_input_headers(req)) == NULL)
+		goto cleanup;
+
+	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
+	    strncmp(type, "application/json", 16) != 0)
+		goto cleanup;
+
+	buf = evhttp_request_get_input_buffer(req);
+	evbuffer_add(buf, "\0", 1);
+	if ((p = evbuffer_pullup(buf, -1)) == NULL)
+		goto cleanup;
+
+	if ((apikey = evhttp_find_header(headers, "X-netvirt-apikey")) == NULL)
+		goto cleanup;
+
+	if (node_create(p, apikey) == -1) {
+		code = 403;
+		phrase = "Forbidden";
+		goto cleanup;
+	}
+
+	code = 201;
+	phrase = "Created";
+
+cleanup:
+	evhttp_send_reply(req, code, phrase, NULL);
+}
+
+void
 v1_node_delete(struct evhttp_request *req, void *arg)
 {
 	struct evkeyvalq	 qheaders = TAILQ_HEAD_INITIALIZER(qheaders);
@@ -424,48 +463,68 @@ cleanup:
 }
 
 void
-v1_node_create(struct evhttp_request *req, void *arg)
+v1_node_list(struct evhttp_request *req, void *arg)
 {
+	struct evkeyvalq	 qheaders = TAILQ_HEAD_INITIALIZER(qheaders);
 	struct evkeyvalq	*headers;
-	struct evbuffer		*buf;
+	struct evbuffer		*respbuffer = NULL;
+	const struct evhttp_uri	*uri;
+	int			 msglen;
 	int			 code = HTTP_BADREQUEST;
 	const char		*apikey;
-	const char		*type;
 	const char		*phrase = "Bad Request";
-	void			*p;
+	const char		*query;
+	const char		*network_uid;
+	char			*msg = NULL;
+	char			 str_msglen[10];
 
 	if ((headers = evhttp_request_get_input_headers(req)) == NULL)
-		goto cleanup;
-
-	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
-	    strncmp(type, "application/json", 16) != 0)
-		goto cleanup;
-
-	buf = evhttp_request_get_input_buffer(req);
-	evbuffer_add(buf, "\0", 1);
-	if ((p = evbuffer_pullup(buf, -1)) == NULL)
 		goto cleanup;
 
 	if ((apikey = evhttp_find_header(headers, "X-netvirt-apikey")) == NULL)
 		goto cleanup;
 
-	if (node_create(p, apikey) == -1) {
+	if ((uri = evhttp_request_get_evhttp_uri(req)) == NULL)
+		goto cleanup;
+
+	if ((query = evhttp_uri_get_query(uri)) == NULL)
+		goto cleanup;
+
+	if (evhttp_parse_query_str(query, &qheaders) < 0)
+		goto cleanup;
+
+	if ((network_uid = evhttp_find_header(&qheaders, "network_uid")) == NULL)
+		goto cleanup;
+
+	if (node_list(network_uid, apikey, &msg) == -1) {
 		code = 403;
 		phrase = "Forbidden";
 		goto cleanup;
 	}
 
-	code = 201;
-	phrase = "Created";
+	msglen = strlen(msg);
+	snprintf(str_msglen, sizeof(msglen), "%d", msglen);
+	evhttp_add_header(req->output_headers, "Content-Type", "application/json");
+	evhttp_add_header(req->output_headers, "Content-Lenght", str_msglen);
+
+	respbuffer = evbuffer_new();
+	evbuffer_add(respbuffer, msg, msglen);
+
+	code = HTTP_OK;
+	phrase = "OK";
 
 cleanup:
-	evhttp_send_reply(req, code, phrase, NULL);
+	evhttp_send_reply(req, code, phrase, respbuffer);
+	if (respbuffer != NULL)
+		evbuffer_free(respbuffer);
 }
 
 void
 v1_node_cb(struct evhttp_request *req, void *arg)
 {
-	if (evhttp_request_get_command(req) == EVHTTP_REQ_POST)
+	if (evhttp_request_get_command(req) == EVHTTP_REQ_GET)
+		v1_node_list(req, arg);
+	else if (evhttp_request_get_command(req) == EVHTTP_REQ_POST)
 		v1_node_create(req, arg);
 	else if (evhttp_request_get_command(req) == EVHTTP_REQ_DELETE)
 		v1_node_delete(req, arg);
