@@ -1,7 +1,7 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2017
- * Nicolas J. Bouliane <admin@netvirt.org>
+ * Copyright (C) 2009-2017 Mind4Networks inc.
+ * Nicolas J. Bouliane <nib@m4nt.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -107,22 +107,20 @@ v1_client_get_newapikey_cb(struct evhttp_request *req, void *arg)
 {
 	struct evkeyvalq	*headers;
 	struct evbuffer		*buf;
-	struct evbuffer		*respbuffer = NULL;
-	int			 msglen;
+	struct evbuffer		*respbuf = NULL;
 	int			 code = HTTP_BADREQUEST;
 	const char		*type;
 	const char		*phrase = "Bad Request";
 	char			*msg;
-	char			 str_msglen[10];
 	void			*p;
 
-//	if (evhttp_request_get_command(req) != EVHTTP_REQ_GET)
-//		goto cleanup;
+	if (evhttp_request_get_command(req) != EVHTTP_REQ_GET)
+		goto cleanup;
 
 	headers = evhttp_request_get_input_headers(req);
 
 	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
-		strncmp(type, "application/json", 16) != 0)
+		strncasecmp(type, "application/json", 16) != 0)
 		goto cleanup;
 
 	buf = evhttp_request_get_input_buffer(req);
@@ -136,21 +134,23 @@ v1_client_get_newapikey_cb(struct evhttp_request *req, void *arg)
 		goto cleanup;
 	}
 
-	msglen = strlen(msg);
-	snprintf(str_msglen, sizeof(msglen), "%d", msglen);
-	evhttp_add_header(req->output_headers, "Content-Type", "application/json");
-	evhttp_add_header(req->output_headers, "Content-Lenght", str_msglen);
+	if (evhttp_add_header(req->output_headers, "Content-Type",
+	    "application/json") < 0)
+		goto cleanup;
 
-	respbuffer = evbuffer_new();
-	evbuffer_add(respbuffer, msg, msglen);
+	if ((respbuf = evbuffer_new()) == NULL)
+		goto cleanup;
+
+	if (evbuffer_add_reference(respbuf, msg, strlen(msg), NULL, NULL) < 0)
+		goto cleanup;
 
 	code = HTTP_OK;
 	phrase = "OK";
 
 cleanup:
-	evhttp_send_reply(req, code, phrase, respbuffer);
-	if (respbuffer != NULL)
-		evbuffer_free(respbuffer);
+	evhttp_send_reply(req, code, phrase, respbuf);
+	if (respbuf != NULL)
+		evbuffer_free(respbuf);
 }
 
 void
@@ -158,22 +158,20 @@ v1_client_get_newresetkey_cb(struct evhttp_request *req, void *arg)
 {
 	struct evkeyvalq	*headers;
 	struct evbuffer		*buf;
-	struct evbuffer		*respbuffer = NULL;
-	int			 msglen;
+	struct evbuffer		*respbuf = NULL;
 	int			 code = HTTP_BADREQUEST;
 	const char		*type;
 	const char		*phrase = "Bad Request";
 	char			*msg;
-	char			*str_msglen[10];
 	void			*p;
-/*
+
 	if (evhttp_request_get_command(req) != EVHTTP_REQ_GET)
 		goto cleanup;
-*/
+
 	headers = evhttp_request_get_input_headers(req);
 
 	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
-		strncmp(type, "application/json", 16) != 0)
+		strncasecmp(type, "application/json", 16) != 0)
 		goto cleanup;
 
 	buf = evhttp_request_get_input_buffer(req);
@@ -187,21 +185,23 @@ v1_client_get_newresetkey_cb(struct evhttp_request *req, void *arg)
 		goto cleanup;
 	}
 
-	msglen = strlen(msg);
-	snprintf((char *)str_msglen, sizeof(msglen), "%d", msglen);
-	evhttp_add_header(req->output_headers, "Content-Type", "application/json");
-	evhttp_add_header(req->output_headers, "Content-Lenght", (const char *)str_msglen);
+	if (evhttp_add_header(req->output_headers, "Content-Type",
+	    "application/json") < 0)
+		goto cleanup;
 
-	respbuffer = evbuffer_new();
-	evbuffer_add(respbuffer, msg, msglen);
+	if ((respbuf = evbuffer_new()) == NULL)
+		goto cleanup;
+
+	if (evbuffer_add_reference(respbuf, msg, strlen(msg), NULL, NULL) < 0)
+		goto cleanup;
 
 	code = HTTP_OK; 
 	phrase = "OK";
 
 cleanup:
-	evhttp_send_reply(req, code, phrase, respbuffer);
-	if (respbuffer != NULL)
-		evbuffer_free(respbuffer);
+	evhttp_send_reply(req, code, phrase, respbuf);
+	if (respbuf != NULL)
+		evbuffer_free(respbuf);
 }
 
 void
@@ -213,10 +213,10 @@ v1_client_update_password_cb(struct evhttp_request *req, void *arg)
 	const char		*type;
 	const char		*phrase = "Bad Request";
 	void			*p;
-/*
-	if (evhttp_request_get_command(req) != EVHTTP_REQ_PUT)
+
+	if (evhttp_request_get_command(req) != EVHTTP_REQ_POST)
 		goto cleanup;
-*/
+
 	headers = evhttp_request_get_input_headers(req);
 
 	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
@@ -327,13 +327,11 @@ void
 v1_network_list(struct evhttp_request *req, void *arg)
 {
 	struct evkeyvalq	*headers;
-	struct evbuffer		*respbuffer = NULL;
-	int			 msglen;
+	struct evbuffer		*respbuf = NULL;
 	int			 code = HTTP_BADREQUEST;
 	const char		*apikey;
 	const char		*phrase = "Bad Request";
 	char			*msg = NULL;
-	char			 str_msglen[10];
 
 	if ((headers = evhttp_request_get_input_headers(req)) == NULL)
 		goto cleanup;
@@ -347,23 +345,24 @@ v1_network_list(struct evhttp_request *req, void *arg)
 		goto cleanup;
 	}
 
-	msglen = strlen(msg);
-	snprintf(str_msglen, sizeof(msglen), "%d", msglen);
-	evhttp_add_header(req->output_headers, "Content-Type", "application/json");
-	evhttp_add_header(req->output_headers, "Content-Lenght", str_msglen);
+	if (evhttp_add_header(req->output_headers, "Content-Type",
+	    "application/json") < 0)
+		goto cleanup;
 
-	respbuffer = evbuffer_new();
-	evbuffer_add(respbuffer, msg, msglen);
+	if ((respbuf = evbuffer_new()) == NULL)
+		goto cleanup;
+
+	if (evbuffer_add_reference(respbuf, msg, strlen(msg), NULL, NULL) < 0)
+		goto cleanup;
 
 	code = HTTP_OK;
 	phrase = "OK";
 
 cleanup:
-	evhttp_send_reply(req, code, phrase, respbuffer);
+	evhttp_send_reply(req, code, phrase, respbuf);
+	if (respbuf != NULL)
+		evbuffer_free(respbuf);
 	free(msg);
-	if (respbuffer != NULL)
-		evbuffer_free(respbuffer);
-
 }
 
 void
@@ -467,16 +466,14 @@ v1_node_list(struct evhttp_request *req, void *arg)
 {
 	struct evkeyvalq	 qheaders = TAILQ_HEAD_INITIALIZER(qheaders);
 	struct evkeyvalq	*headers;
-	struct evbuffer		*respbuffer = NULL;
+	struct evbuffer		*respbuf = NULL;
 	const struct evhttp_uri	*uri;
-	int			 msglen;
 	int			 code = HTTP_BADREQUEST;
 	const char		*apikey;
 	const char		*phrase = "Bad Request";
 	const char		*query;
 	const char		*network_uid;
 	char			*msg = NULL;
-	char			 str_msglen[10];
 
 	if ((headers = evhttp_request_get_input_headers(req)) == NULL)
 		goto cleanup;
@@ -493,7 +490,8 @@ v1_node_list(struct evhttp_request *req, void *arg)
 	if (evhttp_parse_query_str(query, &qheaders) < 0)
 		goto cleanup;
 
-	if ((network_uid = evhttp_find_header(&qheaders, "network_uid")) == NULL)
+	if ((network_uid = evhttp_find_header(&qheaders, "network_uid"))
+	    == NULL)
 		goto cleanup;
 
 	if (node_list(network_uid, apikey, &msg) == -1) {
@@ -502,21 +500,25 @@ v1_node_list(struct evhttp_request *req, void *arg)
 		goto cleanup;
 	}
 
-	msglen = strlen(msg);
-	snprintf(str_msglen, sizeof(msglen), "%d", msglen);
-	evhttp_add_header(req->output_headers, "Content-Type", "application/json");
-	evhttp_add_header(req->output_headers, "Content-Lenght", str_msglen);
+	if (evhttp_add_header(req->output_headers, "Content-Type",
+	    "application/json") < 0)
+		goto cleanup;
 
-	respbuffer = evbuffer_new();
-	evbuffer_add(respbuffer, msg, msglen);
+	if ((respbuf = evbuffer_new()) == NULL)
+		goto cleanup;
+
+	if (evbuffer_add_reference(respbuf, msg, strlen(msg), NULL, NULL) < 0)
+		goto cleanup;
 
 	code = HTTP_OK;
 	phrase = "OK";
 
 cleanup:
-	evhttp_send_reply(req, code, phrase, respbuffer);
-	if (respbuffer != NULL)
-		evbuffer_free(respbuffer);
+	evhttp_send_reply(req, code, phrase, respbuf);
+	if (respbuf != NULL)
+		evbuffer_free(respbuf);
+	evhttp_clear_headers(&qheaders);
+	free(msg);
 }
 
 void
@@ -537,15 +539,12 @@ v1_provisioning_cb(struct evhttp_request *req, void *arg)
 {
 	struct evkeyvalq	*headers;
 	struct evbuffer		*buf;
-	struct evbuffer		*respbuffer = NULL;
-	int			 msglen;
+	struct evbuffer		*respbuf = NULL;
 	int			 code = HTTP_BADREQUEST;
 	const char		*type;
-	const char		*provkey;
 	const char		*phrase = "Bad Request";
 	char			*msg = NULL;
-	char			 str_msglen[10];
-	void			 *p;
+	void			*p;
 
 	if ((headers = evhttp_request_get_input_headers(req)) == NULL)
 		goto cleanup;
@@ -559,29 +558,27 @@ v1_provisioning_cb(struct evhttp_request *req, void *arg)
 	if ((p = evbuffer_pullup(buf, -1)) == NULL)
 		goto cleanup;
 
-/*
-	if (provisioning(p, &msg) == -1) {
-		code = 403;
-		phrase = "Forbidden";
+	if (provisioning(p, &msg) < 0)
 		goto cleanup;
-	}
-*/
 
-	msglen = strlen(msg);
-	snprintf(str_msglen, sizeof(msglen), "%d", msglen);
-	evhttp_add_header(req->output_headers, "Content-Type", "application/json");
-	evhttp_add_header(req->output_headers, "Content-Lenght", str_msglen);
+	if (evhttp_add_header(req->output_headers, "Content-Type",
+	    "application/json") < 0)
+		goto cleanup;
 
-	respbuffer = evbuffer_new();
-	evbuffer_add(respbuffer, msg, msglen);
+	if ((respbuf = evbuffer_new()) == NULL)
+		goto cleanup;
+
+	if (evbuffer_add_reference(respbuf, msg, strlen(msg), NULL, NULL) < 0)
+		goto cleanup;
 
 	code = HTTP_OK;
 	phrase = "OK";
 
 cleanup:
-	evhttp_send_reply(req, code, phrase, respbuffer);
-	if (respbuffer != NULL)
-		evbuffer_free(respbuffer);
+	evhttp_send_reply(req, code, phrase, respbuf);
+	if (respbuf != NULL)
+		evbuffer_free(respbuf);
+	free(msg);
 }
 
 int
@@ -596,16 +593,20 @@ restapi_init(json_t *config, struct event_base *evbase)
 	if (evhttp_set_cb(http, "/v1/client", v1_client_create_cb, NULL) < 0)
 		errx(1, "evhttp_set_cb /v1/client");
 
-	if (evhttp_set_cb(http, "/v1/client/activate", v1_client_activate_cb, NULL) < 0)
+	if (evhttp_set_cb(http, "/v1/client/activate",
+	    v1_client_activate_cb, NULL) < 0)
 		errx(1, "evhttp_set_cb /v1/client/activate");
 
-	if (evhttp_set_cb(http, "/v1/client/newapikey", v1_client_get_newapikey_cb, NULL) < 0)
+	if (evhttp_set_cb(http, "/v1/client/newapikey",
+	    v1_client_get_newapikey_cb, NULL) < 0)
 		errx(1, "evhttp_set_cb /v1/client/newapikey");
 
-	if (evhttp_set_cb(http, "/v1/client/newresetkey", v1_client_get_newresetkey_cb, NULL) < 0)
+	if (evhttp_set_cb(http, "/v1/client/newresetkey",
+	    v1_client_get_newresetkey_cb, NULL) < 0)
 		errx(1, "evhttp_set_cb /v1/client/newresetkey");
 
-	if (evhttp_set_cb(http, "/v1/client/password", v1_client_update_password_cb, NULL) < 0)
+	if (evhttp_set_cb(http, "/v1/client/password",
+	    v1_client_update_password_cb, NULL) < 0)
 		errx(1, "evhttp_set_cb /v1/client/password");
 
 	if (evhttp_set_cb(http, "/v1/network", v1_network_cb, NULL) < 0)
@@ -614,10 +615,12 @@ restapi_init(json_t *config, struct event_base *evbase)
 	if (evhttp_set_cb(http, "/v1/node", v1_node_cb, NULL) < 0)
 		errx(1, "evhttp_set_cb /v1/node");
 
-	if (evhttp_set_cb(http, "/v1/provisioning", v1_provisioning_cb, NULL) < 0)
+	if (evhttp_set_cb(http, "/v1/provisioning",
+	    v1_provisioning_cb, NULL) < 0)
 		errx(1, "evhttp_set_cb /v1/provisioning");
 
-	if ((handle = evhttp_bind_socket_with_handle(http, "0.0.0.0", 8080)) == NULL)
+	if ((handle = evhttp_bind_socket_with_handle(http,
+	    "0.0.0.0", 8080)) == NULL)
 		errx(1, "evhttp_bind_socket_with_handle");
 
 	return (0);
