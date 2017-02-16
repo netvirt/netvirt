@@ -44,7 +44,7 @@ v1_client_create_cb(struct evhttp_request *req, void *arg)
 	headers = evhttp_request_get_input_headers(req);
 
 	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
-		strncmp(type, "application/json", 16) != 0)
+		strncasecmp(type, "application/json", 16) != 0)
 		goto cleanup;
 
 	buf = evhttp_request_get_input_buffer(req);
@@ -81,7 +81,7 @@ v1_client_activate_cb(struct evhttp_request *req, void *arg)
 	headers = evhttp_request_get_input_headers(req);
 
 	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
-		strncmp(type, "application/json", 16) != 0)
+		strncasecmp(type, "application/json", 16) != 0)
 		goto cleanup;
 
 	buf = evhttp_request_get_input_buffer(req);
@@ -220,7 +220,7 @@ v1_client_update_password_cb(struct evhttp_request *req, void *arg)
 	headers = evhttp_request_get_input_headers(req);
 
 	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
-		strncmp(type, "application/json", 16) != 0)
+		strncasecmp(type, "application/json", 16) != 0)
 		goto cleanup;
 
 	buf = evhttp_request_get_input_buffer(req);
@@ -255,7 +255,7 @@ v1_network_create(struct evhttp_request *req, void *arg)
 	headers = evhttp_request_get_input_headers(req);
 
 	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
-		strncmp(type, "application/json", 16) != 0)
+		strncasecmp(type, "application/json", 16) != 0)
 		goto cleanup;
 
 	buf = evhttp_request_get_input_buffer(req);
@@ -393,7 +393,7 @@ v1_node_create(struct evhttp_request *req, void *arg)
 		goto cleanup;
 
 	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
-	    strncmp(type, "application/json", 16) != 0)
+	    strncasecmp(type, "application/json", 16) != 0)
 		goto cleanup;
 
 	buf = evhttp_request_get_input_buffer(req);
@@ -550,7 +550,7 @@ v1_provisioning_cb(struct evhttp_request *req, void *arg)
 		goto cleanup;
 
 	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
-	    strncmp(type, "application/json", 16) != 0)
+	    strncasecmp(type, "application/json", 16) != 0)
 		goto cleanup;
 
 	buf = evhttp_request_get_input_buffer(req);
