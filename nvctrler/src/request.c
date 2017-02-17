@@ -641,8 +641,8 @@ provisioning(const char *msg, char **resp)
 	json_t		*jresp;
 	json_error_t	 error;
 	int		 ret = 0;
-	int		 i = 0;
-	char		*cn;
+	uint8_t		 i;
+	char		*cn = NULL;
 	char		*csr;
 	char		*provkey;
 	char		*str;
@@ -662,10 +662,13 @@ provisioning(const char *msg, char **resp)
 		return (-1);
 	}
 
-	json_unpack(jmsg, "{s:s,s:s}", "csr", &csr, "provkey", &provkey);
+	if (json_unpack(jmsg, "{s:s,s:s}", "csr", &csr, "provkey", &provkey)
+	    < 0)
+		return (-1);
 
-	str = strdup(provkey);
-        for ((p = strtok_r(str, "$", &last)); p;
+	if ((str = strdup(provkey)) == NULL)
+		return (-1);
+        for ((i = 0, p = strtok_r(str, "$", &last)); p;
             (p = strtok_r(NULL, "$", &last))) {
                 if (i < sizeof(tokens))
                         tokens[i++] = p;
@@ -683,13 +686,33 @@ provisioning(const char *msg, char **resp)
 	if (dao_network_get_embassy(network_uid, &cert, &pvkey, &serial) < 0)
 		return (-1);
 
-	asprintf(&cn, "1$nva$%s$%s", network_uid, node_uid);
-	node_cert = pki_deliver_cert_from_certreq(csr, cert, pvkey, atoi(serial), cn);
+	if (asprintf(&cn, "1$nva$%s$%s", network_uid, node_uid) < 0) {
+		ret = -1;
+		goto cleanup;
+	}
 
-	jresp = json_object();
-	json_object_set_new(jresp, "cert", json_string(node_cert));
-	*resp = json_dumps(jresp, JSON_INDENT(1));
+	if ((node_cert = pki_deliver_cert_from_certreq(csr, cert, pvkey,
+	    atoi(serial), cn)) == NULL) { // XXX remove atoi()
+		ret = -1;
+		goto cleanup;
+	}
 
+	if ((jresp = json_object()) == NULL) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	if (json_object_set_new(jresp, "cert", json_string(node_cert)) < 0) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	if ((*resp = json_dumps(jresp, JSON_INDENT(1))) == NULL) {
+		ret = -1;
+		goto cleanup;
+	}
+
+cleanup:
 	free(cn);
 	return (ret);
 }
