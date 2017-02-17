@@ -1,6 +1,6 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2017 Mind4Networks INC.
+ * Copyright (C) 2009-2017 Mind4Networks inc.
  * Nicolas J. Bouliane <nib@m4nt.com>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -13,19 +13,12 @@
  * GNU Affero General Public License for more details
  */
 
-/* gcc dao.c -lpq -lnvcore -lossp-uuid
- */
-
 #include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <postgresql/libpq-fe.h>
-
-#include <pki.h>
-
-#include "ctrler.h"
 
 PGconn *dbconn = NULL;
 
@@ -171,7 +164,7 @@ dao_prepare_statements()
 	result = PQprepare(dbconn,
 			"dao_network_delete",
 			"DELETE FROM network "
-			"WHERE client_id = (SELECT id FROM client where apikey = crypt($2, apikey)) "
+			"WHERE client_id = (SELECT id FROM client WHERE apikey = crypt($2, apikey) AND status = 1) "
 			"AND uid = $1;",
 			0,
 			NULL);
@@ -184,7 +177,19 @@ dao_prepare_statements()
 			"dao_network_list",
 			"SELECT uid, description "
 			"FROM network "
-			"WHERE client_id = (SELECT id FROM client where apikey = crypt($1, apikey));",
+			"WHERE client_id = (SELECT id FROM client WHERE apikey = crypt($1, apikey) AND status = 1);",
+			0,
+			NULL);
+
+	if (check_result_status(result) == -1)
+		goto error;
+	PQclear(result);
+
+	result = PQprepare(dbconn,
+			"dao_network_get_embassy",
+			"SELECT embassy_certificate, embassy_privatekey, embassy_serial "
+			"FROM network "
+			"WHERE uid = $1;",
 			0,
 			NULL);
 
@@ -208,7 +213,7 @@ dao_prepare_statements()
 			"dao_node_delete",
 			"DELETE FROM node "
 			"WHERE uid = $1 "
-			"AND node.network_uid IN (SELECT uid FROM network WHERE client_id = (SELECT id FROM client WHERE apikey = crypt($2, apikey)))",
+			"AND node.network_uid IN (SELECT uid FROM network WHERE client_id = (SELECT id FROM client WHERE apikey = crypt($2, apikey) AND status = 1))",
 			0,
 			NULL);
 
@@ -221,7 +226,21 @@ dao_prepare_statements()
 			"SELECT node.uid, node.description, node.provkey, node.ipaddress, node.status "
 			"FROM node, network "
 			"WHERE network.uid = $1 "
-			"AND network.client_id = (SELECT id FROM client where apikey = crypt($2, apikey));",
+			"AND network.client_id = (SELECT id FROM client WHERE apikey = crypt($2, apikey) AND status = 1);",
+			0,
+			NULL);
+
+	if (check_result_status(result) == -1)
+		goto error;
+	PQclear(result);
+
+	result = PQprepare(dbconn,
+			"dao_node_delete_provkey",
+			"UPDATE node "
+			"SET provkey = $3 "  // FIXME set this to NULL
+			"WHERE network_uid = $1 "
+			"AND uid = $2 "
+			"AND provkey = $3;",
 			0,
 			NULL);
 
@@ -233,8 +252,7 @@ dao_prepare_statements()
 
 
 
-
-
+#if 0
 	// XXX
 	result = PQprepare(dbconn,
 			"dao_fetch_client_id",
@@ -383,6 +401,7 @@ dao_prepare_statements()
 
 	if (check_result_status(result) == -1)
 		goto error;
+#endif
 
 	PQclear(result);
 
@@ -395,7 +414,7 @@ error:
 int
 dao_init(const char *dbname, const char *dbuser, const char *dbpwd, const char *dbhost)
 {
-	char	conn_str[128];
+	char	 conn_str[128];
 
 	snprintf(conn_str, sizeof(conn_str), "dbname = %s user = %s password = %s host = %s",
 	    dbname, dbuser, dbpwd, dbhost);
@@ -406,9 +425,8 @@ dao_init(const char *dbname, const char *dbuser, const char *dbpwd, const char *
 		warnx("Connection to database failed: %s", PQerrorMessage(dbconn));
 		PQfinish(dbconn);
 		return (-1);
-	} else {
+	} else
 		warnx("DAO connected");
-	}
 
 	dao_prepare_statements();
 
@@ -420,6 +438,15 @@ dao_fini()
 {
 	PQfinish(dbconn);
 	dbconn = NULL;
+}
+
+void
+dao_reset_node_state()
+{
+	PGresult *result;
+
+	result = PQexec(dbconn, "UPDATE node SET status = 0 WHERE status = 1;");
+	check_result_status(result);
 }
 
 int
@@ -626,7 +653,7 @@ dao_client_update_resetkey(char *email, char *resetkey)
 	return (0);
 }
 
-int /// XXX used ?
+int 
 dao_client_get_id(char **id, const char *apikey)
 {
 	PGresult	*result = NULL;
@@ -652,10 +679,8 @@ dao_client_get_id(char **id, const char *apikey)
 	tuples = PQntuples(result);
 	fields = PQnfields(result);
 
-	if (tuples > 0 && fields > 0) {
+	if (tuples > 0 && fields > 0) 
 		*id = strdup(PQgetvalue(result, 0, 0));
-		printf("id: %s\n", *id);
-	}
 
 	PQclear(result);
 
@@ -801,6 +826,50 @@ dao_network_list(const char *apikey,
 }
 
 int
+dao_network_get_embassy(
+    const char *network_uid,
+    char **cert,
+    char **pvkey,
+    char **serial)
+{
+	PGresult	*result;
+	int		 paramLengths[1];
+	int		 tuples;
+	int		 fields;
+	const char	*paramValues[1];
+
+	if (network_uid == NULL) {
+		warnx("invalid NULL parameter");
+		return (-1);
+	}
+
+	paramValues[0] = network_uid;
+	paramLengths[0] = strlen(network_uid);
+
+	result = PQexecPrepared(dbconn, "dao_network_get_embassy", 1, paramValues, paramLengths, NULL, 0);
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return (-1);
+	}
+
+	if ((tuples = PQntuples(result)) > 0 &&
+	    (fields = PQnfields(result)) > 0) {
+		*cert = strdup(PQgetvalue(result, 0, 0));
+		*pvkey = strdup(PQgetvalue(result, 0, 1));
+		*serial = strdup(PQgetvalue(result, 0, 2));
+	} else {
+		PQclear(result);
+		return (-1);
+	}
+
+	PQclear(result);
+
+	return (0);
+}
+
+
+int
 dao_node_create(const char *network_uid, const char *uid, const char *provkey,
 	    const char *description, const char *ipaddress)
 {
@@ -918,6 +987,38 @@ dao_node_list(const char *network_uid, const char *apikey,
 	return (0);
 }
 
+int
+dao_node_delete_provkey(const char *network_uid, const char *node_uid, const char *provkey)
+{
+	PGresult	*result = NULL;
+	int		 paramLengths[3];
+	const char	*paramValues[3];
+
+	paramValues[0] = network_uid;
+	paramValues[1] = node_uid;
+	paramValues[2] = provkey;
+
+	paramLengths[0] = strlen(network_uid);
+	paramLengths[1] = strlen(node_uid);
+	paramLengths[2] = strlen(provkey);
+
+	result = PQexecPrepared(dbconn, "dao_node_delete_provkey", 3, paramValues, paramLengths, NULL, 0);
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return (-1);
+	}
+
+	/* if no row is updated, return an error */
+	if (strcmp(PQcmdTuples(result), "0") == 0) {
+		PQclear(result);
+		return (-1);
+	}
+
+	PQclear(result);
+
+	return (0);
+}
 
 
 
@@ -926,6 +1027,16 @@ dao_node_list(const char *network_uid, const char *apikey,
 
 
 
+
+
+
+
+
+
+
+
+
+#if 0
 int dao_fetch_client_id(char **client_id, char *email, char *password)
 {
 	const char *paramValues[2];
@@ -1257,48 +1368,7 @@ int dao_update_embassy_serial(char *network_uuid, char *serial)
 	return 0;
 }
 
-int dao_fetch_embassy(char *network_id,
-			char **certificate,
-			char **private_key,
-			char **issue_serial)
-{
-	PGresult *result;
-	char fetch_req[512];
 
-	snprintf(fetch_req, 512, "SELECT certificate, private_key, issue_serial "
-				"FROM EMBASSY "
-				"WHERE network_id = '%s';",
-				network_id);
-
-	warnx("fetch_req: %s", fetch_req);
-
-	result = PQexec(dbconn, fetch_req);
-	*certificate = strdup(PQgetvalue(result, 0, 0));
-	*private_key = strdup(PQgetvalue(result, 0, 1));
-	*issue_serial = strdup(PQgetvalue(result, 0, 2));
-
-	if (!result) {
-		warnx("PQexec command failed: %s", PQerrorMessage(dbconn));
-	}
-
-	if (check_result_status(result) == -1) {
-		PQclear(result);
-		return -1;
-	}
-
-	PQclear(result);
-
-	return 0;
-}
-
-void
-dao_reset_node_state()
-{
-	PGresult *result;
-
-	result = PQexec(dbconn, "update node SET status = 0 where node.status = 1;");
-	check_result_status(result);
-}
 
 int dao_fetch_node_sequence(uint32_t *network_id_list, uint32_t list_size, void *data, void (*cb_data_handler)(void *data, int remaining,
 								char *uuid, char *networkId))
@@ -1590,3 +1660,4 @@ out:
 	PQclear(result);
 	return -1;
 }
+#endif

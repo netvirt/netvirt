@@ -1,7 +1,7 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2016
- * Nicolas J. Bouliane <admin@netvirt.org>
+ * Copyright (C) 2009-2017 Mind4Networks inc.
+ * Nicolas J. Bouliane <nib@m4nt.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -16,10 +16,9 @@
 #ifndef DAO_H
 #define DAO_H
 
-#include "ctrler.h"
-
 int dao_init(const char *, const char *, const char *, const char *);
 void dao_fini();
+void dao_reset_node_state();
 
 int dao_client_create(char *, char *, char *);
 int dao_client_activate(char *);
@@ -29,15 +28,20 @@ int dao_client_update_resetkey(char *, char *);
 int dao_client_update_password(char *, char *, char *);
 int dao_client_get_id(char **, const char *);
 
-int dao_network_create(char *, char *, char *, char *, char *, char *, char *, char *, char *, const unsigned char *, size_t);
+int dao_network_create(char *, char *, char *, char *, char *, char *, char *,
+    char *, char *, const unsigned char *, size_t);
 int dao_network_delete(const char *, const char *);
-int dao_network_list(const char *, int (*)(const char *, const char *, void *), void *);
-int dao_network_update();
+int dao_network_list(const char *, int (*)(const char *, const char *, void *),
+    void *);
+//int dao_network_update();
+int dao_network_get_embassy(const char *, char **, char **, char **);
 
-int dao_node_create(const char *, const char *, const char *, const char *, const char *);
+int dao_node_create(const char *, const char *, const char *, const char *,
+    const char *);
 int dao_node_delete(const char *, const char *);
-int dao_node_list(const char *, const char *, int (*)(const char *, const char *, const char *, const char *, const char *, void *), void *);
+int dao_node_list(const char *, const char *, int (*)(const char *,
+    const char *, const char *, const char *, const char *, void *), void *);
 int dao_node_update();
+int dao_node_delete_provkey(const char *, const char *, const char *);
 
-void dao_reset_node_state();
 #endif
