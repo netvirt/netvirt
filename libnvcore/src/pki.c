@@ -29,8 +29,6 @@
 
 // openssl x509 -in ./certificate.pem -text
 
-static X509_REQ *pki_csr_load_from_memory(char *);
-
 char *cert_cname(X509 *cert)
 {
 	X509_NAME	*subj_ptr;
@@ -319,16 +317,11 @@ X509_REQ
 	// create a certificate request
 	cert_req = X509_REQ_new();
 
-	// add extensions
-	if (strcmp(digital_id->commonName, "embassy") != 0
-	    && strcmp(digital_id->commonName, "nvswitch") != 0) {
-
 		extlist = sk_X509_EXTENSION_new_null();
 		ext = X509V3_EXT_conf(NULL, NULL, "subjectAltName", digital_id->altName);
 		sk_X509_EXTENSION_push(extlist, ext);
 		X509_REQ_add_extensions(cert_req, extlist);
 		sk_X509_EXTENSION_pop_free(extlist, X509_EXTENSION_free);
-	}
 
 	// set certificate request 'Subject:'
 	subject = X509_NAME_new();
@@ -637,15 +630,15 @@ passport_t *pki_embassy_deliver_passport(embassy_t *embassy, digital_id_t *digit
 }
 
 char *
-pki_deliver_cert_from_certreq(char *certreq_pem, char *emb_cert, char *emb_pvkey, uint32_t emb_serial)
+pki_deliver_cert_from_certreq(char *certreq_pem, char *emb_cert, char *emb_pvkey, uint32_t emb_serial, const char *cn)
 {
-        char *cert_pem = NULL;
-        long cert_pem_len = 0;
-        X509 *cert = NULL;
-        X509_NAME *issuer = NULL;
-        X509_REQ *certreq = NULL;
-        embassy_t *embassy = NULL;
-        int exp_delay = 0;
+        X509		*cert = NULL;
+        X509_NAME	*issuer = NULL;
+        X509_REQ	*certreq = NULL;
+        embassy_t	*embassy = NULL;
+        long		 cert_pem_len = 0;
+        int		 exp_delay = 0;
+        char		*cert_pem = NULL;
 
         /* convert from PEM format */
         certreq = pki_csr_load_from_memory(certreq_pem);
@@ -659,12 +652,19 @@ pki_deliver_cert_from_certreq(char *certreq_pem, char *emb_cert, char *emb_pvkey
         issuer = X509_get_subject_name(embassy->certificate);
 
         cert = pki_certificate(issuer, certreq, false, embassy->serial, exp_delay);
+
+	/* set certificate request 'Subject:' */
+	X509_NAME *subject = X509_NAME_new();
+	X509_NAME_add_entry_by_txt(subject, "commonName", MBSTRING_ASC, (unsigned char*)cn, -1, -1, 0);
+	X509_set_subject_name(cert, subject);
+	X509_NAME_free(subject);
+
         pki_sign_certificate(embassy->keyring, cert);
 
         /* convert to PEM format */
         pki_write_certificate_in_mem(cert, &cert_pem, &cert_pem_len);
 
-        return cert_pem;
+        return (cert_pem);
 }
 
 

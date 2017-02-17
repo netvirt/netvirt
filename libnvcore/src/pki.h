@@ -98,4 +98,9 @@ passport_t *pki_embassy_deliver_passport(embassy_t *embassy, digital_id_t *digit
 
 embassy_t *pki_embassy_load_from_memory(char *certificate, char *privatekey, uint32_t serial);
 int pki_bootstrap_certs();
+
+X509_REQ *pki_csr_load_from_memory(char *);
+
+char *pki_deliver_cert_from_certreq(char *, char *, char *, uint32_t, const char *);
+
 #endif
