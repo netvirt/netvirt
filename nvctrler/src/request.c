@@ -1,7 +1,7 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2016
- * Nicolas J. Bouliane <admin@netvirt.org>
+ * Copyright (C) 2009-2017 Mind4Networks inc.
+ * Nicolas J. Bouliane <nib@m4nt.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -631,6 +631,66 @@ node_delete(const char *uid, const char *apikey)
 	/* * */
 #endif
 cleanup:
+	return (ret);
+}
+
+int
+provisioning(const char *msg, char **resp)
+{
+	json_t		*jmsg;
+	json_t		*jresp;
+	json_error_t	 error;
+	int		 ret = 0;
+	int		 i = 0;
+	char		*cn;
+	char		*csr;
+	char		*provkey;
+	char		*str;
+	char		*network_uid;
+	char		*node_uid;
+	char		*key;
+	char		*tokens[3];
+	char		*p;
+	char		*last;
+	char		*cert;
+	char		*pvkey;
+	char		*serial;
+	char		*node_cert;
+
+	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
+		warnx("json_loadb: %s", error.text);
+		return (-1);
+	}
+
+	json_unpack(jmsg, "{s:s,s:s}", "csr", &csr, "provkey", &provkey);
+
+	str = strdup(provkey);
+        for ((p = strtok_r(str, "$", &last)); p;
+            (p = strtok_r(NULL, "$", &last))) {
+                if (i < sizeof(tokens))
+                        tokens[i++] = p;
+        }
+        tokens[i] = NULL;
+
+        if ((network_uid = tokens[0]) == NULL ||
+	    (node_uid = tokens[1]) == NULL ||
+	    (key = tokens[2]) == NULL)
+		return (-1);
+
+	if (dao_node_delete_provkey(network_uid, node_uid, provkey) < 0)
+		return (-1);
+
+	if (dao_network_get_embassy(network_uid, &cert, &pvkey, &serial) < 0)
+		return (-1);
+
+	asprintf(&cn, "1$nva$%s$%s", network_uid, node_uid);
+	node_cert = pki_deliver_cert_from_certreq(csr, cert, pvkey, atoi(serial), cn);
+
+	jresp = json_object();
+	json_object_set_new(jresp, "cert", json_string(node_cert));
+	*resp = json_dumps(jresp, JSON_INDENT(1));
+
+	free(cn);
 	return (ret);
 }
 

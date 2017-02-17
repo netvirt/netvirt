@@ -1,7 +1,7 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2016
- * Nicolas J. Bouliane <admin@netvirt.org>
+ * Copyright (C) 2009-2017 Mind4Networks inc.
+ * Nicolas J. Bouliane <nib@m4nt.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -34,8 +34,11 @@ int node_create(const char *, const char *);
 int node_delete(const char *, const char *);
 int node_list(const char *, const char *, char **);
 
+int provisioning(const char *, char **);
+
+
+
 void update_node_status(struct session_info **, json_t *);
-void provisioning(struct session_info **, json_t *);
 void listall_network(struct session_info **, json_t *);
 void listall_node(struct session_info **, json_t *);
 
