@@ -1,7 +1,7 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2016
- * Nicolas J. Bouliane <admin@netvirt.org>
+ * Copyright (C) mind4networks inc. 2009-2016
+ * Nicolas J. Bouliane <nib@dynvpn.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,6 +13,9 @@
  * GNU Affero General Public License for more details
  */
 
+#include <sys/types.h>
+#include <sys/socket.h>
+
 #include <err.h>
 #include <errno.h>
 #include <signal.h>
@@ -20,8 +23,6 @@
 #include <unistd.h>
 
 #include <netinet/tcp.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
@@ -35,26 +36,37 @@
 
 #include <jansson.h>
 
-#include "vnetwork.h"
-#include "control.h"
+#include <log.h>
 
-static struct event_base		*base;
+#include "vnetwork.h"
+
+extern json_t				*config;
+extern struct event_base		*ev_base;
 static struct bufferevent		*bufev_sock;
-static struct switch_cfg		*cfg;
 static passport_t			*passport;
 int					 control_initialized;
 
-static int new_peer();
-static int del_node(json_t *);
-static int del_network(json_t *);
-static int listall_node(json_t *);
-static int listall_network(json_t *);
-static void sighandler(evutil_socket_t, short, void *);
-static int dispatch_op(json_t *);
-static void on_read_cb(struct bufferevent *, void *);
-static void on_event_cb(struct bufferevent *, short, void *);
-static DH *get_dh_1024();
-static SSL_CTX *evssl_init();
+int	 query_provisioning(struct session *, char *);
+int	 query_list_node();
+int	 update_node_status(char *, char *, char *, char *);
+int	 query_list_network();
+
+void	 control_init();
+void	 control_fini();
+
+static int	 del_node(json_t *);
+static int	 del_network(json_t *);
+static int	 listall_node(json_t *);
+static int	 listall_network(json_t *);
+static int	 dispatch_op(json_t *);
+
+static void	 on_read_cb(struct bufferevent *, void *);
+static void	 on_event_cb(struct bufferevent *, short, void *);
+
+static int	 new_peer();
+
+static DH	*get_dh_1024();
+static SSL_CTX	*evssl_init();
 
 int
 del_node(json_t *jmsg)
@@ -369,8 +381,8 @@ query_list_network()
 {
 	warn("list network");
 
-	char	*query_str = NULL;
 	json_t	*query = NULL;
+	char	*query_str = NULL;
 
 	if ((query = json_object()) == NULL) {
 		warn("json_object failed");
@@ -397,30 +409,17 @@ query_list_network()
 		goto error;
 	}
 
-	json_decref(query);
-	free(query_str);
-	return 0;
-
 error:
+cleanup:
 	json_decref(query);
 	free(query_str);
 	return -1;
 }
 
-void
-sighandler(evutil_socket_t sk, short t, void *ptr)
-{
-	struct event_base	*ev_base;
-	warn("sighandler!");
-
-	ev_base = (struct event_base *)ptr;
-	event_base_loopbreak(ev_base);
-}
-
 int
 dispatch_op(json_t *jmsg)
 {
-	char	*dump;
+	//char	*dump;
 	char	*action;
 	int	 ret = 0;
 /*
@@ -462,6 +461,7 @@ on_read_cb(struct bufferevent *bev, void *arg)
 	json_error_t		error;
 	json_t			*jmsg = NULL;
 
+	printf("on read cb\n");
 	while (evbuffer_get_length(bufferevent_get_input(bev)) > 0) {
 		if ((str = evbuffer_readln(bufferevent_get_input(bev),
 		    &n_read_out, EVBUFFER_EOL_LF)) == NULL) {
@@ -483,20 +483,23 @@ on_read_cb(struct bufferevent *bev, void *arg)
 void
 on_timeout_cb(evutil_socket_t fd, short what, void *arg)
 {
+	printf("on timeout cb\n");
 	new_peer();
 }
 
 void
 on_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
 {
-	unsigned long	 e = 0;
 	struct event	*ev;
 	struct timeval	 tv = {1, 0};
+	unsigned long	 e = 0;
+
+	printf("on_event_cb\n");
 
 	if (events & BEV_EVENT_CONNECTED) {
-		warn("connected");
+		printf("connected !\n");
 		control_initialized = 0;
-		query_list_network();
+		//query_list_network();
 	} else if (events & (BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
 		warn("event (%x)", events);
 		while ((e = bufferevent_get_openssl_error(bufev_sock)) > 0) {
@@ -504,7 +507,7 @@ on_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
 		}
 		bufferevent_free(bufev_sock);
 
-		ev = event_new(base, -1, EV_TIMEOUT, on_timeout_cb, NULL);
+		ev = event_new(ev_base, -1, EV_TIMEOUT, on_timeout_cb, NULL);
 		event_add(ev, &tv);
 	}
 }
@@ -547,174 +550,174 @@ get_dh_1024() {
 }
 
 SSL_CTX *
-envssl_init()
+evssl_init()
 {
-	DH		*dh;
-	SSL_CTX		*ctx;
+	DH		*dh = NULL;
+	EC_KEY		*ecdh = NULL;
+	SSL_CTX		*ctx = NULL;
 
 	SSL_load_error_strings();
 	SSL_library_init();
-	RAND_poll();
 
-	if ((ctx = SSL_CTX_new(TLSv1_2_client_method())) == NULL) {
-		warn("SSL_CTX_new failed");
+	if (!RAND_poll())
+		return NULL;
+
+	if ((ctx = SSL_CTX_new(TLSv1_2_method())) == NULL) {
+		log_warn("SSL_CTX_new");
 		return NULL;
 	}
 
 	if ((dh = get_dh_1024()) == NULL) {
-		warn("get_dh_1024 failed");
+		log_warn("get_dh_1024");
 		goto error;
 	}
 
-	if ((SSL_CTX_set_tmp_dh(ctx, dh)) == 0) {
-		warn("SSL_CTX_set_tmp_dh failed");
+	if ((SSL_CTX_set_tmp_dh(ctx, dh)) != 1) {
+		log_warn("SSL_CTX_set_tmp_dh");
 		goto error;
 	}
 
-	//SSL_CTX_set_cipher_list(ctx, "ECDHE-ECDSA-AES256-GCM-SHA384");
-	if ((SSL_CTX_set_cipher_list(ctx, "AES256-GCM-SHA384")) == 0) {
-		warn("SSL_CTX_set_cipher failed");
+	if (SSL_CTX_set_cipher_list(ctx, "ECDHE-ECDSA-CHACHA20-POLY1305") != 1) {
+		log_warn("SSL_CTX_set_cipher");
+		goto error;
+	}
+
+	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL) {
+		log_warn("EC_KEY_new_by_curve_name");
+		goto error;
+	}
+
+	if (SSL_CTX_set_tmp_ecdh(ctx, ecdh) != 1) {
+		log_warn("SSL_CTX_set_tmp_ecdh");
 		goto error;
 	}
 
 	SSL_CTX_set_cert_store(ctx, passport->cacert_store);
 
-	if ((SSL_CTX_use_certificate(ctx, passport->certificate)) == 0) {
-		warn("SSL_CTX_use_certificate failed");
+	if ((SSL_CTX_use_certificate(ctx, passport->certificate)) != 1) {
+		log_warn("SSL_CTX_use_certificate");
 		goto error;
 	}
 
-	if ((SSL_CTX_use_PrivateKey(ctx, passport->keyring)) == 0) {
-		warn("SSL_CTX_use_PrivateKey failed");
+	if ((SSL_CTX_use_PrivateKey(ctx, passport->keyring)) != 1) {
+		log_warn("SSL_CTX_use_PrivateKey");
 		goto error;
 	}
 
 	DH_free(dh);
+	EC_KEY_free(ecdh);
 	return ctx;
 
 error:
 	DH_free(dh);
-	SSL_CTX_free(ctx);
+	EC_KEY_free(ecdh);
 	return NULL;
 }
 
 static int
 new_peer()
 {
+	SSL			*ssl;
+	SSL_CTX			*ctx;
+	struct addrinfo		*res;
+	struct addrinfo		 hints;
+	int			 ret = 0;
 	int			 flag = 1;
 	int			 fd = -1;
-	struct sockaddr_in	 sin;
-	SSL_CTX			*ctx;
-	SSL			*ssl;
 
-	memset(&sin, 0, sizeof(sin));
-	sin.sin_family = AF_INET;
-	sin.sin_addr.s_addr = htonl(0);
-	sin.sin_port = htons(9093);
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
 
-	if ((fd = socket(sin.sin_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+	getaddrinfo("127.0.0.1", "9093", &hints, &res);
+
+	if ((fd = socket(res->ai_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
 		warn("socket failed");
-		goto error;
+		ret = -1;
+		goto cleanup;
 	}
 
 	if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(flag)) < 0 ||
 	    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
 		warn("setsockopt failed");
-		goto error;
+		ret = -1;
+		goto cleanup;
 	}
 
 	if (evutil_make_socket_nonblocking(fd) < 0) {
 		warn("evutil_make_socket_nonblocking failed");
-		goto error;
+		ret = -1;
+		goto cleanup;
 	}	
 
-	if ((ctx = envssl_init()) == NULL) {
+	if ((ctx = evssl_init()) == NULL) {
 		warn("evssl_init failed");
-		goto error;
+		ret = -1;
+		goto cleanup;
 	}
 
 	if ((ssl = SSL_new(ctx)) == NULL) {
 		warn("SSL_new failed");
-		goto error;
+		ret = -1;
+		goto cleanup;
 	}
 
-	if ((bufev_sock = bufferevent_openssl_socket_new(base, fd, ssl,
+	if ((bufev_sock = bufferevent_openssl_socket_new(ev_base, fd, ssl,
 	    BUFFEREVENT_SSL_CONNECTING, BEV_OPT_CLOSE_ON_FREE)) == NULL) {
 		warn("bufferevent_socket_new failed");
-		goto error;
+		ret = -1;
+		goto cleanup;
 	}
 
 	bufferevent_enable(bufev_sock, EV_READ|EV_WRITE);
 	bufferevent_setcb(bufev_sock, on_read_cb, NULL, on_event_cb, NULL);
 
-	if (bufferevent_socket_connect(bufev_sock,
-	    (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+	if (bufferevent_socket_connect(bufev_sock, res->ai_addr,
+	    res->ai_addrlen) < 0) {
 		warn("bufferevent_socket_connected failed");
-		goto error;
+		ret = -1;
+		goto cleanup;
 	}
 
-	return 0;
+	return (0);
 
-error:
+cleanup:
 	if (bufev_sock != NULL)
 		bufferevent_free(bufev_sock);
-	return -1;
+
+	return (ret);
 }
 
-int
-control_init(json_t *config)
+void
+control_init()
 {
-	static struct event	*ev_int;
 	const char		*cert;
 	const char		*pkey;
 	const char		*cacert;
 
 	if (json_unpack(config, "{s:s}", "certificate", &cert) < 0)
-		err(1, "%s:%d", "certificate not found in config", __LINE__);
+		fatalx("certificate not found in config");
 
 	if (json_unpack(config, "{s:s}", "privatekey", &pkey) < 0)
-		err(1, "%s:%d", "privatekey not found in config", __LINE__);
+		fatalx("privatekey not found in config");
 
 	if (json_unpack(config, "{s:s}", "cacertificate", &cacert) < 0)
-		err(1, "%s:%d", "trusted_cert not found in config", __LINE__);
+		fatalx("trusted_cert not found in config");
 
 	if ((passport = pki_passport_load_from_file(cert,
 	    pkey, cacert)) == NULL)
-		err(1, "%s:%d", "pki_passport_load_from_file", __LINE__);
+		fatalx("pki_passport_load_from_file");
 
-	if ((base = event_base_new()) == NULL) {
-		goto error;
-	}
-
-	if ((ev_int = evsignal_new(base, SIGHUP, sighandler, NULL)) == NULL) {
-		goto error;
-	}
-
-	if (event_add(ev_int, NULL) < 0) {
-		goto error;
-	}
-
-	if (new_peer() == -1) {
-		goto error;
-	}
-
-	event_base_dispatch(base);
-
-	if (bufev_sock != NULL) {
-		bufferevent_free(bufev_sock);
-	}
-
-	event_base_free(base);
-	return 0;
-
-error:
-	event_base_free(base);
-	return -1;
+	if (new_peer() < 0)
+		fatalx("new_peer");
 }
 
 void
 control_fini()
 {
+	if (bufev_sock != NULL) {
+		bufferevent_free(bufev_sock);
+	}
 	pki_passport_destroy(passport);
 	vnetworks_free();
 }
