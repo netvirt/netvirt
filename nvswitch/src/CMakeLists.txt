@@ -13,7 +13,6 @@ add_executable(netvirt-switch
 	switch.c
 )
 
-include_directories("${CMAKE_SOURCE_DIR}/libnvcore/src/")
 target_link_libraries(netvirt-switch
 	nvcore
 	jansson
