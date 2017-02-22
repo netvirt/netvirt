@@ -29,6 +29,8 @@
 
 // openssl x509 -in ./certificate.pem -text
 
+
+// XXX still needed ?
 char *cert_cname(X509 *cert)
 {
 	X509_NAME	*subj_ptr;
@@ -43,6 +45,7 @@ char *cert_cname(X509 *cert)
 	return strdup(cn);
 }
 
+// XXX still needed ?
 char *cert_altname_uri(X509 *cert)
 {
 	GENERAL_NAMES *alt;
@@ -64,11 +67,13 @@ char *cert_altname_uri(X509 *cert)
 	return str;
 }
 
+// XXX still needed ?
 void node_info_destroy(node_info_t *node_info)
 {
 	free(node_info);
 }
 
+// XXX still needed ?
 node_info_t *altname2node_info(char *altn)
 {
 	// XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX@XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
@@ -91,6 +96,7 @@ node_info_t *altname2node_info(char *altn)
 	return ninfo;
 }
 
+// XXX still needed ?
 node_info_t *cn2node_info(char *cn)
 {
 	node_info_t *ninfo = NULL;
@@ -490,6 +496,7 @@ char *pki_gen_key()
 	return b64key;
 }
 
+// XXX still needed ?
 void pki_free_digital_id(digital_id_t *digital_id)
 {
 	if (digital_id == NULL)
@@ -505,6 +512,7 @@ void pki_free_digital_id(digital_id_t *digital_id)
 	free(digital_id);
 }
 
+// XXX still needed ?
 digital_id_t *pki_digital_id(char *commonName,
 				char *altName,
 				char *stateOrProvinceName,
