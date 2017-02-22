@@ -1,7 +1,7 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2016
- * Nicolas J. Bouliane <admin@netvirt.org>
+ * Copyright (C) 2009-2017 Mind4Networks inc.
+ * Nicolas J. Bouliane <nib@m4nt.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,28 +21,30 @@
 #include <openssl/ssl.h>
 #include <openssl/rand.h>
 
-
+#include <event2/event.h>
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <event2/bufferevent_ssl.h>
 #include <event2/listener.h>
 #include <jansson.h>
 
+#include <log.h>
 #include <pki.h>
 
 #include "ctrler.h"
 #include "dao.h"
 #include "request.h"
 
-struct session_info *switch_sinfo = NULL;
+extern json_t			*config;
+extern struct event_base	*ev_base;
+struct session_info		*switch_sinfo = NULL;
 
-struct server {
-	struct event		*ev_int;
-	struct event_base	*base;
-	struct evconnlistener	*listener;
-	SSL_CTX			*ctx;
-	passport_t		*passport;
-} s1;
+static passport_t		*passport;
+static struct evconnlistener	*listener;
+static SSL_CTX			*ctx;
+
+void controller_init();
+void controller_fini();
 
 void
 sinfo_free(struct session_info **sinfo)
@@ -92,56 +94,13 @@ dispatch_nvswitch(struct session_info **sinfo, json_t *jmsg)
 		return;
 	}
 
-	if (strcmp(action, "listall-network") == 0) {
+	if (strcmp(action, "network-listall") == 0) {
 		listall_network(sinfo, jmsg);
-	} else if (strcmp(action, "listall-node") == 0) {
+	} else if (strcmp(action, "node-listall") == 0) {
 		listall_node(sinfo, jmsg);
-	} else if (strcmp(action, "update-node-status") == 0) {
+	} else if (strcmp(action, "node-update-status") == 0) {
 		update_node_status(sinfo, jmsg);
 	}
-}
-
-void
-dispatch_nvapi(struct session_info *sinfo, json_t *jmsg)
-{
-	char	*dump;
-	char	*action;
-
-	dump = json_dumps(jmsg, 0);
-	warnx("jmsg: %s", dump);
-	free(dump);
-
-	if (json_unpack(jmsg, "{s:s}", "action", &action) == -1) {
-		/* XXX disconnect */
-		return;
-	}
-/*
-	if (strcmp(action, "client-create") == 0) {
-		client_create(sinfo, jmsg);
-
-	} else if (strcmp(action, "activate-account") == 0) {
-		activate_account(sinfo, jmsg);
-	} else if (strcmp(action, "get-account-apikey") == 0) {
-		get_account_apikey(sinfo, jmsg);
-	} else if (strcmp(action, "reset-account-password") == 0) {
-		reset_account_password(sinfo, jmsg);
-	} else if (strcmp(action, "set-new-password") == 0) {
-		set_new_password(sinfo, jmsg);
-	} else if (strcmp(action, "add-network") == 0) {
-		add_network(sinfo, jmsg);
-	} else if (strcmp(action, "del-network") == 0) {
-		del_network(sinfo, jmsg);
-	} else if (strcmp(action, "list-network") == 0) {
-		list_network(sinfo, jmsg);
-	} else if (strcmp(action, "add-node") == 0) {
-		add_node(sinfo, jmsg);
-	} else if (strcmp(action, "del-node") == 0) {
-		del_node(sinfo, jmsg);
-	} else if (strcmp(action, "list-node") == 0) {
-		list_node(sinfo, jmsg);
-	}
-
-*/
 }
 
 void
@@ -152,6 +111,8 @@ on_read_cb(struct bufferevent *bev, void *session)
 	json_error_t		 error;
 	json_t			*jmsg = NULL;
 	struct session_info	*sinfo;
+
+	printf("on read cb\n");
 
 	sinfo = session;
 
@@ -170,8 +131,6 @@ on_read_cb(struct bufferevent *bev, void *session)
 
 	if (sinfo->type == NVSWITCH)
 		dispatch_nvswitch(&sinfo, jmsg);
-	else if (sinfo->type == NVAPI)
-		dispatch_nvapi(sinfo, jmsg);
 	else {
 		bufferevent_free(bev);
 		sinfo_free(&sinfo);
@@ -202,8 +161,6 @@ on_connect_cb(struct bufferevent *bev, void *arg)
 	if (strncmp("netvirt-switch", sinfo->cert_name, strlen("netvirt-switch")) == 0) {
 		sinfo->type = NVSWITCH;
 		switch_sinfo = sinfo;
-	} else {
-		sinfo->type = NVAPI;
 	}
 	warnx("cert: %s", sinfo->cert_name);
 }
@@ -214,6 +171,7 @@ on_event_cb(struct bufferevent *bev, short events, void *arg)
 	struct session_info	*sinfo = arg;
 	unsigned long e = 0;
 
+	printf("on event cb\n");
 	if (events & BEV_EVENT_CONNECTED) {
 		on_connect_cb(bev, arg);
 	} else if (events & (BEV_EVENT_TIMEOUT|BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
@@ -251,11 +209,9 @@ accept_conn_cb(struct evconnlistener *listener,
 	struct bufferevent	*bev;
 	struct session_info	*sinfo;
 //	struct event		*ev;
-	SSL_CTX			*server_ctx;
 	SSL			*client_ssl;
 
-	server_ctx = (SSL_CTX *)arg;
-	client_ssl = SSL_new(server_ctx);
+	client_ssl = SSL_new(ctx);
 	base = evconnlistener_get_base(listener);
 
 	if ((bev = bufferevent_openssl_socket_new(base, fd, client_ssl,
@@ -341,95 +297,121 @@ get_dh_1024() {
 	return dh;
 }
 
-int
-evssl_init(struct server *serv)
+SSL_CTX *
+evssl_init()
 {
-	DH	*dh;
-	EC_KEY	*ecdh;
+	DH	*dh = NULL;
+	EC_KEY	*ecdh = NULL;
+	SSL_CTX	*ctx = NULL;
 
 	SSL_load_error_strings();
 	SSL_library_init();
 
 	if (!RAND_poll())
-		return -1;
+		goto error;
 
-	serv->ctx = SSL_CTX_new(TLSv1_2_server_method());
-	dh = get_dh_1024();
-	SSL_CTX_set_tmp_dh(serv->ctx, dh);
+	if ((ctx = SSL_CTX_new(TLSv1_2_server_method())) == NULL) {
+		log_warn("SSL_CTX_new");
+		goto error;
+	}
+
+	if ((dh = get_dh_1024()) == NULL) {
+		log_warn("get_dh_1024");
+		goto error;
+	}
+
+	if ((SSL_CTX_set_tmp_dh(ctx, dh)) != 1) {
+		log_warn("SSL_CTX_set_tmp");
+		goto error;
+	}
+
+	if (SSL_CTX_set_cipher_list(ctx, "ECDHE-ECDSA-CHACHA20-POLY1305") != 1) {
+		log_warn("SSL_CTX_set_cipher");
+		goto error;
+	}
+
+	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL) {
+		log_warn("EC_KEY_new_by_curve_name");
+		goto error;
+	}
+
+	if (SSL_CTX_set_tmp_ecdh(ctx, ecdh) != 1) {
+		log_warn("SSL_CTX_set_tmp_ecdh");
+		goto error;
+	}
+
+	SSL_CTX_set_cert_store(ctx, passport->cacert_store);
+
+	if (SSL_CTX_use_certificate(ctx, passport->certificate) != 1) {
+		log_warn("SSL_CTX_use_certificate");
+		goto error;
+	}
+
+	if (SSL_CTX_use_PrivateKey(ctx, passport->keyring) != 1) {
+		log_warn("SSL_CTX_use_PrivateKey");
+		goto error;
+	}
+
+	SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+
 	DH_free(dh);
-
-	SSL_CTX_set_cipher_list(serv->ctx, "ECDHE-ECDSA-AES256-SHA384");
-	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL)
-		warnx("%s:%d", "EC_KEY_new_by_curve_name", __LINE__);
-	SSL_CTX_set_tmp_ecdh(serv->ctx, ecdh);
 	EC_KEY_free(ecdh);
+	return ctx;
 
-	SSL_CTX_set_cert_store(serv->ctx, serv->passport->cacert_store);
-	SSL_CTX_use_certificate(serv->ctx, serv->passport->certificate);
-	SSL_CTX_use_PrivateKey(serv->ctx, serv->passport->keyring);
+error:
+	DH_free(dh);
+	EC_KEY_free(ecdh);
+	SSL_CTX_free(ctx);
+	return NULL;
 
-	SSL_CTX_set_verify(serv->ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
 
-	return 0;
 }
 
-int
-controller_init(json_t *config, struct event_base *evbase)
+void
+controller_init()
 {
-	struct sockaddr_in	 sin;
+	struct addrinfo		*res;
+	struct addrinfo		 hints;
 	const char		*cert;
-	const char		*pkey;
+	const char		*pvkey;
 	const char		*cacert;
 
 	dao_reset_node_state();
 
 	if (json_unpack(config, "{s:s}", "cert", &cert) < 0)
-		errx(1, "%s:%d", "certificate not found in config", __LINE__);
+		fatalx("certificate not found in config");
 
-	if (json_unpack(config, "{s:s}", "pkey", &pkey) < 0)
-		errx(1, "%s:%d", "privatekey not found in config", __LINE__);
+	if (json_unpack(config, "{s:s}", "pvkey", &pvkey) < 0)
+		fatalx("privatekey not found in config");
 
 	if (json_unpack(config, "{s:s}", "cacert", &cacert) < 0)
-		errx(1, "%s:%d", "trusted_cert not found in config", __LINE__);
+		fatalx("trusted_cert not found in config");
 
-	if ((s1.passport = pki_passport_load_from_file(cert, pkey, cacert)) == NULL)
-		errx(1, "can't load passport from: \n\t%s\n\t%s\n\t%s\n", cert, pkey, cacert);
+	if ((passport = pki_passport_load_from_file(cert, pvkey, cacert)) == NULL)
+		fatalx("can't load passport from: \n\t%s\n\t%s\n\t%s\n", cert, pvkey, cacert);
 
-	if (evssl_init(&s1) != 0)
-		errx(1, "evssl_init failed");
+	if ((ctx = evssl_init()) == NULL)
+		fatalx("evssl_init");
 
-	s1.base = evbase;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+	getaddrinfo("0.0.0.0", "9093", &hints, &res);
 
-	memset(&sin, 0, sizeof(sin));
-	sin.sin_family = AF_INET;
-	sin.sin_addr.s_addr = htonl(0);
-	sin.sin_port = htons(9093);
-
-	if ((s1.listener = evconnlistener_new_bind(s1.base, accept_conn_cb, s1.ctx,
+	if ((listener = evconnlistener_new_bind(ev_base, accept_conn_cb, NULL,
 	    LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1,
-	    (struct sockaddr*)&sin, sizeof(sin))) == NULL)
+	    res->ai_addr, res->ai_addrlen)) == NULL)
 		errx(1, "evconnlistener_new_bind failed");
 
-	signal(SIGPIPE, SIG_IGN);
-	s1.ev_int = evsignal_new(s1.base, SIGINT, sighandler, s1.base);
-	event_add(s1.ev_int, NULL);
-
-	evconnlistener_set_error_cb(s1.listener, accept_error_cb);
-
-	return 0;
+	evconnlistener_set_error_cb(listener, accept_error_cb);
 }
 
 void
 controller_fini()
 {
-	if (s1.ev_int != NULL)
-		evsignal_del(s1.ev_int);
-	if (s1.listener != NULL)
-		evconnlistener_free(s1.listener);
-
-	event_base_free(s1.base);
-	pki_passport_free(s1.passport);
-	SSL_CTX_free(s1.ctx);
-
+	pki_passport_free(passport);
+	SSL_CTX_free(ctx);
 	dao_reset_node_state();
+	if  (listener != NULL)
+		evconnlistener_free(listener);
 }

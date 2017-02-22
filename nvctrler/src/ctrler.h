@@ -1,7 +1,7 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2016
- * Nicolas J. Bouliane <admin@netvirt.org>
+ * Copyright (C) 2009-2017 Mind4Networks inc.
+ * Nicolas J. Bouliane <nib@m4nt.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,8 +13,8 @@
  * GNU Affero General Public License for more details
  */
 
-#ifndef CTRLER2_H
-#define CTRLER2_H
+#ifndef CTRLER_H
+#define CTRLER_H
 
 #include <event2/event.h>
 
@@ -24,7 +24,7 @@
 #define SESSION_NOT_AUTH	0x2
 
 #define NVSWITCH		0x1
-#define NVAPI			0x2
+
 
 struct ctrler_cfg {
 
@@ -46,13 +46,10 @@ struct ctrler_cfg {
 };
 
 struct session_info {
-	char			 cert_name[256];
+	struct bufferevent	*bev;
 	uint8_t			 type;
 	uint8_t			 state;
-	struct bufferevent	*bev;
+	char			 cert_name[256];
 };
-
-int controller_init(json_t *, struct event_base *);
-void controller_fini();
 
 #endif
