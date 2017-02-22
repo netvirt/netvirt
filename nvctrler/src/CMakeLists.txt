@@ -7,8 +7,8 @@ set(CMAKE_C_FLAGS "-I/usr/local/include -L/usr/local/lib -g -W -Wall -Wno-unused
 
 add_subdirectory(tests)
 
-add_executable(netvirt-ctrler
-	ctrler.c
+add_executable(netvirt-controller
+	controller.c
 	dao.c
 	ippool.c
 	main.c
@@ -16,7 +16,7 @@ add_executable(netvirt-ctrler
 	restapi.c
 )
 
-target_link_libraries(netvirt-ctrler
+target_link_libraries(netvirt-controller
 	nvcore
 	ossp-uuid
 	pq
@@ -26,6 +26,6 @@ target_link_libraries(netvirt-ctrler
 	event_openssl
 )
 
-install(TARGETS netvirt-ctrler
+install(TARGETS netvirt-controller
 	DESTINATION bin)
 

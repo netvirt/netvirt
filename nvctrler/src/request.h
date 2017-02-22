@@ -17,7 +17,8 @@
 #define REQUEST_H
 
 #include <jansson.h>
-#include "ctrler.h"
+
+#include "controller.h"
 
 int client_create(char *);
 int client_activate(char *);

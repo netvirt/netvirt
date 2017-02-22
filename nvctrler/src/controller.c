@@ -31,7 +31,7 @@
 #include <log.h>
 #include <pki.h>
 
-#include "ctrler.h"
+#include "controller.h"
 #include "dao.h"
 #include "request.h"
 

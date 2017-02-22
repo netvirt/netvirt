@@ -28,7 +28,7 @@
 #include <log.h>
 #include <pki.h>
 
-#include "ctrler.h"
+#include "controller.h"
 #include "dao.h"
 
 #define CONFIG_FILE "/etc/netvirt/nvctrler.conf"
@@ -63,7 +63,7 @@ main(int argc, char *argv[])
 			pki_bootstrap_certs();
 			return 0;
 		case 'h':
-			fprintf(stdout, "netvirt-ctrler:\n"
+			fprintf(stdout, "netvirt-controller:\n"
 				"-b\t\tbootstrap certificates\n"
 				"-v\t\tshow version\n");
 			return 0;

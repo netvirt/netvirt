@@ -21,6 +21,7 @@
 #include <event2/bufferevent.h>
 #include <jansson.h>
 
+#include <log.h>
 #include <pki.h>
 
 #include "dao.h"
@@ -441,7 +442,7 @@ network_delete(const char *uid, const char *apikey)
 	if (uid == NULL || apikey == NULL)
 		return (-1);
 
-/*
+/*	FIXME
 	dao_node_delete_all(network_uid);
 */
 
