@@ -401,9 +401,10 @@ dao_prepare_statements()
 
 	if (check_result_status(result) == -1)
 		goto error;
-#endif
 
 	PQclear(result);
+#endif
+
 
 	return (0);
 error:
