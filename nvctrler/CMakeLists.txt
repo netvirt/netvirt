@@ -5,7 +5,6 @@ if(COMMAND cmake_policy)
 endif(COMMAND cmake_policy)
 
 include_directories("../libnvcore/src/")
-include_directories("../libnvcore/protocol/")
 
 add_subdirectory(src)
 
