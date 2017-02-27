@@ -30,6 +30,7 @@ static void sighandler(int, short, void *);
 
 json_t			*config = NULL;
 struct event_base	*ev_base = NULL;
+int			 control_init_done = 0;
 
 void
 sighandler(int signal, short events, void *arg)
@@ -43,7 +44,6 @@ main(int argc, char *argv[])
 	json_error_t		 error;
 	struct event		*ev_sigint;
 	struct event		*ev_sigterm;
-//	extern	int		 control_init_done;
 
 	log_init(2, LOG_DAEMON);
 

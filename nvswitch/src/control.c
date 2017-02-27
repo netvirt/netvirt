@@ -59,8 +59,6 @@ static SSL_CTX	*evssl_init();
 static struct bufferevent	*bufev_sock;
 static passport_t		*passport;
 
-int	control_init_done;
-
 int
 response_node_delete(json_t *jmsg)
 {

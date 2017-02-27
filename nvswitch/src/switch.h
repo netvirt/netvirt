@@ -41,5 +41,6 @@ void	 control_fini(void);
 
 extern json_t			*config;
 extern struct event_base	*ev_base;
+extern int			 control_init_done;
 
 #endif
