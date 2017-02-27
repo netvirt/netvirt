@@ -39,10 +39,7 @@
 #include <log.h>
 
 #include "vnetwork.h"
-
-extern json_t			*config;
-extern struct event_base	*ev_base;
-
+#include "switch.h"
 
 static int	 request_node_list();
 static int	 request_network_list();
@@ -643,7 +640,7 @@ new_peer()
 	ret = 0;
 
 error:
-	if (bufev_sock != NULL)
+	if (ret < 0 && bufev_sock != NULL)
 		bufferevent_free(bufev_sock);
 	freeaddrinfo(res);
 	return (ret);
