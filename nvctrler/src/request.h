@@ -38,11 +38,9 @@ int node_list(const char *, const char *, char **);
 int provisioning(const char *, char **);
 
 
+void switch_network_list(struct session_info *, json_t *);
+void switch_node_list(struct session_info *, json_t *);
+void switch_node_update_status(struct session_info *, json_t *);
 
-void update_node_status(struct session_info **, json_t *);
-void listall_network(struct session_info **, json_t *);
-void listall_node(struct session_info **, json_t *);
-
-void reset_account_password(struct session_info *, json_t *);
 
 #endif

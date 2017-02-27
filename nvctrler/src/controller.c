@@ -46,15 +46,6 @@ static SSL_CTX			*ctx;
 void controller_init();
 void controller_fini();
 
-void
-sinfo_free(struct session_info **sinfo)
-{
-	(*sinfo)->bev = NULL;
-	memset((*sinfo)->cert_name, 0, sizeof((*sinfo)->cert_name));
-	free(*sinfo);
-	*sinfo = NULL;
-}
-
 struct session_info *
 sinfo_new()
 {
@@ -62,6 +53,14 @@ sinfo_new()
 	sinfo->state = SESSION_NOT_AUTH;
 
 	return sinfo;
+}
+void
+sinfo_free(struct session_info **sinfo)
+{
+	(*sinfo)->bev = NULL;
+	memset((*sinfo)->cert_name, 0, sizeof((*sinfo)->cert_name));
+	free(*sinfo);
+	*sinfo = NULL;
 }
 
 char *
@@ -80,113 +79,98 @@ response()
 }
 
 void
-dispatch_nvswitch(struct session_info **sinfo, json_t *jmsg)
+on_read_cb(struct bufferevent *bev, void *arg)
 {
-	char	*dump;
-	char 	*action;
-
-	dump = json_dumps(jmsg, 0);
-	warnx("jmsg: %s", dump);
-	free(dump);
-
-	if (json_unpack(jmsg, "{s:s}", "action", &action) == -1) {
-		/* XXX disconnect */
-		return;
-	}
-
-	if (strcmp(action, "network-listall") == 0) {
-		listall_network(sinfo, jmsg);
-	} else if (strcmp(action, "node-listall") == 0) {
-		listall_node(sinfo, jmsg);
-	} else if (strcmp(action, "node-update-status") == 0) {
-		update_node_status(sinfo, jmsg);
-	}
-}
-
-void
-on_read_cb(struct bufferevent *bev, void *session)
-{
-	char			*str;
-	size_t			 n_read_out;
-	json_error_t		 error;
+	struct session_info	*session;
 	json_t			*jmsg = NULL;
-	struct session_info	*sinfo;
+	json_error_t		 error;
+	size_t			 n_read_out;
+	const char		*action;
+	char			*msg;
 
 	printf("on read cb\n");
 
-	sinfo = session;
+	session = arg;
 
-	str = evbuffer_readln(bufferevent_get_input(bev),
-			&n_read_out,
-			EVBUFFER_EOL_LF);
-
-	if (str == NULL)
+	if ((msg = evbuffer_readln(bufferevent_get_input(bev),
+			&n_read_out, EVBUFFER_EOL_LF)) == NULL)
 		return;
 
-	if ((jmsg = json_loadb(str, n_read_out, 0, &error)) == NULL) {
-		warnx("json_loadb: %s", error.text);
+	if ((jmsg = json_loadb(msg, n_read_out, 0, &error)) == NULL) {
+		log_warnx("%s: json_loadb: %s", __func__, error.text);
 		/* FIXME DISCONNECT */
-		goto out;
+		return;
 	}
 
-	if (sinfo->type == NVSWITCH)
-		dispatch_nvswitch(&sinfo, jmsg);
-	else {
-		bufferevent_free(bev);
-		sinfo_free(&sinfo);
+	if (json_unpack(jmsg, "{s:s}", "action", &action) < 0) {
+		return;
 	}
+
+	if (strcmp(action, "switch-network-list") == 0) {
+		switch_network_list(session, jmsg);
+	} else if (strcmp(action, "switch-node-list") == 0) {
+		switch_node_list(session, jmsg);
+	} else {
+		/* XXX */
+	}
+
+
 	json_decref(jmsg);
-out:
-	free(str);
+	free(msg);
 }
 
 void
 on_connect_cb(struct bufferevent *bev, void *arg)
 {
+	struct session_info	*session;
 	SSL			*client_ssl;
 	X509			*cert;
 	X509_NAME		*subj_ptr;
-	struct session_info	*sinfo = arg;
+
+	session = arg;
 
 	client_ssl = bufferevent_openssl_get_ssl(bev);
-	cert = SSL_get_peer_certificate(client_ssl);
-	if (cert == NULL)
+	if ((cert = SSL_get_peer_certificate(client_ssl)) == NULL)
 		return;
 
 	subj_ptr = X509_get_subject_name(cert);
 	X509_NAME_get_text_by_NID(subj_ptr, NID_commonName,
-		sinfo->cert_name, sizeof(sinfo->cert_name));
+		session->cert_name, sizeof(session->cert_name));
 	X509_free(cert);
 
-	if (strncmp("netvirt-switch", sinfo->cert_name, strlen("netvirt-switch")) == 0) {
-		sinfo->type = NVSWITCH;
-		switch_sinfo = sinfo;
+	if (strncmp("netvirt-switch", session->cert_name,
+	    strlen("netvirt-switch")) == 0) {
+		session->type = NVSWITCH;
+		switch_sinfo = session;
 	}
-	warnx("cert: %s", sinfo->cert_name);
+
+	log_warnx("%s: cert: %s", __func__, session->cert_name);
 }
 
 void
 on_event_cb(struct bufferevent *bev, short events, void *arg)
 {
-	struct session_info	*sinfo = arg;
+	struct session_info	*session;
 	unsigned long e = 0;
 
 	printf("on event cb\n");
+
+	session = arg;
+
 	if (events & BEV_EVENT_CONNECTED) {
 		on_connect_cb(bev, arg);
 	} else if (events & (BEV_EVENT_TIMEOUT|BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
-		warnx("event (%x)", events);
+		log_warnx("%s: event (%x)", __func__, events);
 
 		while ((e = bufferevent_get_openssl_error(bev)) > 0) {
-			warnx("%s", ERR_error_string(e, NULL));
+			log_warnx("%s: %s", __func__,
+			    ERR_error_string(e, NULL));
 		}
 
-		if (sinfo->type == NVSWITCH) {
-			switch_sinfo = NULL;
-			warnx("switch disconnected");
-			dao_reset_node_state();
-		}
-		sinfo_free(&sinfo);
+		switch_sinfo = NULL;
+		log_warnx("%s: switch disconnected", __func__);
+		dao_reset_node_state();
+		sinfo_free(&session);
 		bufferevent_free(bev);
 	}
 }
@@ -204,11 +188,9 @@ accept_conn_cb(struct evconnlistener *listener,
 	evutil_socket_t fd, struct sockaddr *address, int socklen,
 	void *arg)
 {
-//	struct timeval		 tv = {1, 0};
 	struct event_base	*base;
 	struct bufferevent	*bev;
 	struct session_info	*sinfo;
-//	struct event		*ev;
 	SSL			*client_ssl;
 
 	client_ssl = SSL_new(ctx);
@@ -217,8 +199,8 @@ accept_conn_cb(struct evconnlistener *listener,
 	if ((bev = bufferevent_openssl_socket_new(base, fd, client_ssl,
 					BUFFEREVENT_SSL_ACCEPTING,
 					BEV_OPT_CLOSE_ON_FREE)) == NULL) {
-		warnx("bufferevent_openssl_socket_new failed");
-		return;
+		log_warnx("%s: bufferevent_openssl_socket_new", __func__);
+		/* XXX */
 	}
 
 	warnx("new connection");
@@ -228,26 +210,12 @@ accept_conn_cb(struct evconnlistener *listener,
 
 	bufferevent_enable(bev, EV_READ|EV_WRITE);
 	bufferevent_setcb(bev, on_read_cb, NULL, on_event_cb, sinfo);
-
-	/* Disconnect stalled session */
-//	ev = event_new(base, -1, EV_TIMEOUT, on_timeout_cb, bev);
-//	event_add(ev, &tv);
-
 }
 
 void
 accept_error_cb(struct evconnlistener *listener, void *ptr)
 {
-	struct event_base	*base;
 
-	base = evconnlistener_get_base(listener);
-/*
-	err = EVUTIL_SOCKET_ERROR();
-	warnx("error %d (%s) on the listener."
-		"Shutting down.\n", err, evutil_socket_error_to_string(err));
-*/
-
-	event_base_loopexit(base, NULL);
 }
 
 void

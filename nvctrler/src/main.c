@@ -96,10 +96,12 @@ main(int argc, char *argv[])
 	if ((ev_sigint = evsignal_new(ev_base, SIGINT, sighandler, ev_base))
 	    == NULL)
 		fatalx("evsignal_new SIGINT");
+	event_add(ev_sigint, NULL);
 
 	if ((ev_sigterm = evsignal_new(ev_base, SIGTERM, sighandler, ev_base))
 	    == NULL)
 		fatalx("evsignal_new SIGTERM");
+	event_add(ev_sigterm, NULL);
 
 	if (dao_init(dbname, dbuser, dbpwd, dbhost) < 0)
 		fatalx("dao_init");

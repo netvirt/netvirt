@@ -764,7 +764,7 @@ cleanup:
 
 
 void
-update_node_status(struct session_info **sinfo, json_t *jmsg)
+switch_node_update_status(struct session_info *sinfo, json_t *jmsg)
 {
 #if 0
 	//jlog(L_DEBUG, "update-node-status");
@@ -856,11 +856,11 @@ out:
 }
 
 void
-listall_network(struct session_info **sinfo, json_t *jmsg)
+switch_network_list(struct session_info *sinfo, json_t *jmsg)
 {
-#if 0
-	//jlog(L_DEBUG, "listallNetwork");
+	warnx("listallNetwork");
 
+#if 0
 	char	*resp_str = NULL;
 	json_t	*resp = NULL;
 
@@ -938,7 +938,7 @@ out:
 }
 
 void
-listall_node(struct session_info **sinfo, json_t *jmsg)
+switch_node_list(struct session_info *sinfo, json_t *jmsg)
 {
 #if 0
 	//jlog(L_DEBUG, "listallNode");
