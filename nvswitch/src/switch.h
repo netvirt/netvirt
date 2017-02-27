@@ -16,6 +16,7 @@
 #ifndef SWITCH_H
 #define SWITCH_H
 
+#include <event2/event.h>
 #include <jansson.h>
 
 struct switch_config {
@@ -34,5 +35,11 @@ struct switch_config {
 
 void	 switch_init(json_t *);
 void	 switch_fini(void);
+
+void	 control_init(void);
+void	 control_fini(void);
+
+extern json_t			*config;
+extern struct event_base	*ev_base;
 
 #endif
