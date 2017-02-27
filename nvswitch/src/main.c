@@ -1,6 +1,6 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) mind4networks inc. 2009-2016
+ * Copyright (C) mind4networks inc. 2009-2017
  * Nicolas J. Bouliane <nib@dynvpn.com>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -54,13 +54,15 @@ main(int argc, char *argv[])
 	if ((ev_base = event_base_new()) == NULL)
 		fatalx("event_base_new");
 
-	if ((ev_sigint = evsignal_new(ev_base, SIGINT, sighandler, NULL))
+	if ((ev_sigint = evsignal_new(ev_base, SIGINT, sighandler, ev_base))
 	    == NULL)
 		fatalx("evsignal_new SIGINT");
+	event_add(ev_sigint, NULL);
 
-	if ((ev_sigterm = evsignal_new(ev_base, SIGTERM, sighandler, NULL))
+	if ((ev_sigterm = evsignal_new(ev_base, SIGTERM, sighandler, ev_base))
 	    == NULL)
 		fatalx("evsignal_new SIGTERM");
+	event_add(ev_sigterm, NULL);
 
 	control_init();
 

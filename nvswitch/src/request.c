@@ -16,7 +16,6 @@
 #include <dnds.h>
 #include <logger.h>
 
-#include "control.h"
 #include "request.h"
 #include "vnetwork.h"
 

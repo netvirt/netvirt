@@ -29,13 +29,14 @@
 #include <openssl/rand.h>
 #include <event2/event.h>
 
+#include <log.h>
 #include <pki.h>
 
 #include "switch.h"
 
+extern struct event_base	*ev_base;
 static SSL_CTX			*ctx;
 static passport_t		*passport;
-extern struct event_base	*ev_base;
 static struct event		*ev_udplisten;
 static struct addrinfo		*ai;
 static int			 cookie_initialized;
