@@ -13,16 +13,18 @@
  * GNU Affero General Public License for more details
  */
 
+#include <sys/stat.h>
+
 #include <err.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <syslog.h>
 #include <stdarg.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
 #include <event2/event.h>
+
 #include <jansson.h>
 
 #include <log.h>
@@ -35,8 +37,8 @@
 
 static void sighandler(int, short, void *);
 
-json_t			*config;
-struct event_base	*ev_base;
+json_t			*config = NULL;
+struct event_base	*ev_base = NULL;
 
 void
 sighandler(int signal, short events, void *arg)

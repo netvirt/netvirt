@@ -558,7 +558,7 @@ v1_provisioning_cb(struct evhttp_request *req, void *arg)
 	if ((p = evbuffer_pullup(buf, -1)) == NULL)
 		goto cleanup;
 
-	if (provisioning(p, &msg) < 0)
+	if (node_provisioning(p, &msg) < 0)
 		goto cleanup;
 
 	if (evhttp_add_header(req->output_headers, "Content-Type",

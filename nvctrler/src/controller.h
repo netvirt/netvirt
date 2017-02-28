@@ -52,4 +52,7 @@ struct session_info {
 	char			 cert_name[256];
 };
 
+extern json_t			*config;
+extern struct event_base	*ev_base;
+
 #endif

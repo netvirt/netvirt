@@ -636,7 +636,7 @@ cleanup:
 }
 
 int
-provisioning(const char *msg, char **resp)
+node_provisioning(const char *msg, char **resp)
 {
 	json_t		*jmsg;
 	json_t		*jresp;
@@ -719,7 +719,8 @@ cleanup:
 }
 
 int
-node_list_cb(const char *uid, const char *description, const char *provkey, const char *ipaddress, const char *status, void *arg)
+node_list_cb(const char *uid, const char *description, const char *provkey,
+    const char *ipaddress, const char *status, void *arg)
 {
 	json_t	*array;
 	json_t	*node;
@@ -761,47 +762,9 @@ cleanup:
 	return (ret);
 }
 
-
-
-void
-switch_node_update_status(struct session_info *sinfo, json_t *jmsg)
-{
-#if 0
-	//jlog(L_DEBUG, "update-node-status");
-
-	char	*status;
-	char	*local_ipaddr = NULL;
-	char	*uuid = NULL;
-	char	*network_uuid = NULL;
-
-	json_t	*node;
-
-
-	node = json_object_get(jmsg, "node");
-	json_unpack(node, "{s:s}", "status", &status);
-	json_unpack(node, "{s:s}", "local-ipaddr", &local_ipaddr);
-	json_unpack(node, "{s:s}", "uuid", &uuid);
-	json_unpack(node, "{s:s}", "networkuuid", &network_uuid);
-
-	dao_update_node_status(network_uuid, uuid, status, local_ipaddr);
-
-	json_decref(node);
-#endif
-
-	return;
-}
-
-static int
-CB_listall_network(void *arg, int remaining,
-				char *id,
-				char *uuid,
-				char *description,
-				char *client_id,
-				char *subnet,
-				char *netmask,
-				char *cert,
-				char *pkey,
-				char *tcert)
+int
+switch_network_list_cb(void *arg, int remaining,
+    char *uid, char *cert, char *pvkey, char *cacert)
 {
 #if 0
 	char			*resp_str = NULL;
@@ -855,7 +818,7 @@ out:
 #endif
 }
 
-void
+int
 switch_network_list(struct session_info *sinfo, json_t *jmsg)
 {
 	warnx("listallNetwork");
@@ -888,8 +851,36 @@ out:
 	return;
 }
 
-static int
-CB_listall_node(void *arg, int remaining, char *network_uuid, char *uuid)
+int
+switch_node_update_status(struct session_info *sinfo, json_t *jmsg)
+{
+#if 0
+	//jlog(L_DEBUG, "update-node-status");
+
+	char	*status;
+	char	*local_ipaddr = NULL;
+	char	*uuid = NULL;
+	char	*network_uuid = NULL;
+
+	json_t	*node;
+
+
+	node = json_object_get(jmsg, "node");
+	json_unpack(node, "{s:s}", "status", &status);
+	json_unpack(node, "{s:s}", "local-ipaddr", &local_ipaddr);
+	json_unpack(node, "{s:s}", "uuid", &uuid);
+	json_unpack(node, "{s:s}", "networkuuid", &network_uuid);
+
+	dao_update_node_status(network_uuid, uuid, status, local_ipaddr);
+
+	json_decref(node);
+#endif
+
+	return;
+}
+
+int
+switch_node_list_cb(void *arg, int remaining, char *network_uuid, char *uuid)
 {
 #if 0
 	char			*resp_str = NULL;
@@ -937,7 +928,7 @@ out:
 	return -1;
 }
 
-void
+int
 switch_node_list(struct session_info *sinfo, json_t *jmsg)
 {
 #if 0

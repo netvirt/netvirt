@@ -26,6 +26,7 @@
 #include <event2/bufferevent.h>
 #include <event2/bufferevent_ssl.h>
 #include <event2/listener.h>
+
 #include <jansson.h>
 
 #include <log.h>
@@ -35,8 +36,6 @@
 #include "dao.h"
 #include "request.h"
 
-extern json_t			*config;
-extern struct event_base	*ev_base;
 struct session_info		*switch_sinfo = NULL;
 
 static passport_t		*passport;
@@ -63,21 +62,6 @@ sinfo_free(struct session_info **sinfo)
 	*sinfo = NULL;
 }
 
-char *
-response()
-{
-	char	*ret_strings = NULL;
-	json_t	*root = json_object();
-
-	json_object_set_new(root, "reponse", json_string("malformed"));
-	json_object_set_new(root, "action", json_string("response"));
-
-	ret_strings = json_dumps(root, 0);
-	json_decref(root);
-
-	return ret_strings;
-}
-
 void
 on_read_cb(struct bufferevent *bev, void *arg)
 {
@@ -92,31 +76,45 @@ on_read_cb(struct bufferevent *bev, void *arg)
 
 	session = arg;
 
-	if ((msg = evbuffer_readln(bufferevent_get_input(bev),
-			&n_read_out, EVBUFFER_EOL_LF)) == NULL)
-		return;
+	while (evbuffer_get_length(bufferevent_get_input(bev)) > 0) {
+		if ((msg = evbuffer_readln(bufferevent_get_input(bev),
+				&n_read_out, EVBUFFER_EOL_LF)) == NULL)
+			return;
 
-	if ((jmsg = json_loadb(msg, n_read_out, 0, &error)) == NULL) {
-		log_warnx("%s: json_loadb: %s", __func__, error.text);
-		/* FIXME DISCONNECT */
-		return;
+		if ((jmsg = json_loadb(msg, n_read_out, 0, &error)) == NULL) {
+			log_warnx("%s: json_loadb: %s", __func__, error.text);
+			goto error;
+		}
+
+		if (json_unpack(jmsg, "{s:s}", "action", &action) < 0) {
+			log_warnx("%s: json_unpack", __func__);
+			goto error;
+		}
+
+		if (strcmp(action, "switch-network-list") == 0) {
+			if (switch_network_list(session, jmsg) < 0) {
+				log_warnx("%s: switch_network_list", __func__);
+				goto error;
+			}
+		} else if (strcmp(action, "switch-node-list") == 0) {
+			if (switch_node_list(session, jmsg) < 0) {
+				log_warnx("%s: switch_node_list", __func__);
+				goto error;
+			}
+		} else
+			goto error;
+
+		json_decref(jmsg);
+		free(msg);
 	}
 
-	if (json_unpack(jmsg, "{s:s}", "action", &action) < 0) {
-		return;
-	}
+	return;
 
-	if (strcmp(action, "switch-network-list") == 0) {
-		switch_network_list(session, jmsg);
-	} else if (strcmp(action, "switch-node-list") == 0) {
-		switch_node_list(session, jmsg);
-	} else {
-		/* XXX */
-	}
-
-
+error:
 	json_decref(jmsg);
 	free(msg);
+	/* Disconnect */
+	bufferevent_free(bev);
 }
 
 void
@@ -138,30 +136,29 @@ on_connect_cb(struct bufferevent *bev, void *arg)
 		session->cert_name, sizeof(session->cert_name));
 	X509_free(cert);
 
-	if (strncmp("netvirt-switch", session->cert_name,
-	    strlen("netvirt-switch")) == 0) {
+	if (strncmp("netvirt-switch", session->cert_name, 14)== 0) {
 		session->type = NVSWITCH;
 		switch_sinfo = session;
 	}
 
-	log_warnx("%s: cert: %s", __func__, session->cert_name);
+	log_info("%s: cert: %s", __func__, session->cert_name);
 }
 
 void
 on_event_cb(struct bufferevent *bev, short events, void *arg)
 {
 	struct session_info	*session;
-	unsigned long e = 0;
+	unsigned long		 e;
 
 	printf("on event cb\n");
 
 	session = arg;
+	e = 0;
 
 	if (events & BEV_EVENT_CONNECTED) {
 		on_connect_cb(bev, arg);
 	} else if (events & (BEV_EVENT_TIMEOUT|BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
 		log_warnx("%s: event (%x)", __func__, events);
-
 		while ((e = bufferevent_get_openssl_error(bev)) > 0) {
 			log_warnx("%s: %s", __func__,
 			    ERR_error_string(e, NULL));
@@ -178,9 +175,7 @@ on_event_cb(struct bufferevent *bev, short events, void *arg)
 void
 on_timeout_cb(evutil_socket_t fd, short what, void *arg)
 {
-	struct bufferevent *bev = (struct bufferevent *)arg;
-	printf("timeout!\n");
-	bufferevent_free(bev);
+	bufferevent_free(arg);
 }
 
 void
@@ -218,15 +213,6 @@ accept_error_cb(struct evconnlistener *listener, void *ptr)
 
 }
 
-void
-sighandler(evutil_socket_t sk, short t, void *ptr)
-{
-	struct event_base	*ev_base;
-
-	ev_base = (struct event_base *)ptr;
-	event_base_loopbreak(ev_base);
-}
-
 DH *
 get_dh_1024() {
 
@@ -251,7 +237,7 @@ get_dh_1024() {
 
 	dh = DH_new();
 	if (dh == NULL) {
-		return NULL;
+		return (NULL);
 	}
 
 	dh->p = BN_bin2bn(dh1024_p, sizeof(dh1024_p), NULL);
@@ -259,10 +245,10 @@ get_dh_1024() {
 
 	if (dh->p == NULL || dh->g == NULL) {
 		DH_free(dh);
-		return NULL;
+		return (NULL);
 	}
 
-	return dh;
+	return (dh);
 }
 
 SSL_CTX *
@@ -271,6 +257,7 @@ evssl_init()
 	DH	*dh = NULL;
 	EC_KEY	*ecdh = NULL;
 	SSL_CTX	*ctx = NULL;
+	int	 ret;
 
 	SSL_load_error_strings();
 	SSL_library_init();
@@ -278,6 +265,7 @@ evssl_init()
 	if (!RAND_poll())
 		goto error;
 
+	ret = -1;
 	if ((ctx = SSL_CTX_new(TLSv1_2_server_method())) == NULL) {
 		log_warn("SSL_CTX_new");
 		goto error;
@@ -320,19 +308,19 @@ evssl_init()
 		goto error;
 	}
 
-	SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+	SSL_CTX_set_verify(ctx,
+	    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
 
-	DH_free(dh);
-	EC_KEY_free(ecdh);
-	return ctx;
+	ret = 0;
 
 error:
+	if (ret < 0) {
+		SSL_CTX_free(ctx);
+		ctx = NULL;
+	}
 	DH_free(dh);
 	EC_KEY_free(ecdh);
-	SSL_CTX_free(ctx);
-	return NULL;
-
-
+	return (ctx);
 }
 
 void
@@ -355,8 +343,10 @@ controller_init()
 	if (json_unpack(config, "{s:s}", "cacert", &cacert) < 0)
 		fatalx("trusted_cert not found in config");
 
-	if ((passport = pki_passport_load_from_file(cert, pvkey, cacert)) == NULL)
-		fatalx("can't load passport from: \n\t%s\n\t%s\n\t%s\n", cert, pvkey, cacert);
+	if ((passport = pki_passport_load_from_file(cert, pvkey, cacert))
+	    == NULL)
+		fatalx("can't load passport from: \n\t%s\n\t%s\n\t%s\n",
+		    cert, pvkey, cacert);
 
 	if ((ctx = evssl_init()) == NULL)
 		fatalx("evssl_init");

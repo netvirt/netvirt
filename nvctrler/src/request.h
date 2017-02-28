@@ -34,13 +34,10 @@ int network_list(const char *, char **);
 int node_create(const char *, const char *);
 int node_delete(const char *, const char *);
 int node_list(const char *, const char *, char **);
+int node_provisioning(const char *, char **);
 
-int provisioning(const char *, char **);
-
-
-void switch_network_list(struct session_info *, json_t *);
-void switch_node_list(struct session_info *, json_t *);
-void switch_node_update_status(struct session_info *, json_t *);
-
+int switch_network_list(struct session_info *, json_t *);
+int switch_node_list(struct session_info *, json_t *);
+int switch_node_update_status(struct session_info *, json_t *);
 
 #endif
