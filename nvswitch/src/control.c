@@ -1,7 +1,7 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) mind4networks inc. 2009-2016
- * Nicolas J. Bouliane <nib@dynvpn.com>
+ * Copyright (C) 2009-2017 Mind4Networks inc.
+ * Nicolas J. Bouliane <nib@m4nt.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -374,15 +374,15 @@ on_read_cb(struct bufferevent *bev, void *arg)
 	json_t			*jmsg = NULL;
 	size_t			n_read_out;
 	const char		*action;
-	char			*str = NULL;
+	char			*msg = NULL;
 
 	while (evbuffer_get_length(bufferevent_get_input(bev)) > 0) {
 
-		if ((str = evbuffer_readln(bufferevent_get_input(bev),
+		if ((msg = evbuffer_readln(bufferevent_get_input(bev),
 		    &n_read_out, EVBUFFER_EOL_LF)) == NULL)
 			return;
 
-		if ((jmsg = json_loadb(str, n_read_out, 0, &error)) == NULL) {
+		if ((jmsg = json_loadb(msg, n_read_out, 0, &error)) == NULL) {
 			log_warn("%s: json_loadb: %s", __func__, error.text);
 			goto error;
 		}
@@ -428,14 +428,14 @@ on_read_cb(struct bufferevent *bev, void *arg)
 		}
 
 		json_decref(jmsg);
-		free(str);
+		free(msg);
 	}
 
 	return;
 
 error:
 	json_decref(jmsg);
-	free(str);
+	free(msg);
 	/* Disconnect */
 	bufferevent_free(bev);
 }
@@ -590,7 +590,6 @@ new_peer()
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
-
 	getaddrinfo("127.0.0.1", "9093", &hints, &res);
 
 	ret = -1;
