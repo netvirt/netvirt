@@ -209,6 +209,7 @@ response_network_list(json_t *jmsg)
 	static	size_t	 total = 1;
 
 	ret = 0;
+
 	if ((json_unpack(jmsg, "{s:s}", "response", &response)) < 0) {
 		log_warnx("%s: json_unpack", __func__);
 		ret = -1;
@@ -231,9 +232,10 @@ response_network_list(json_t *jmsg)
 	}
 
 
-	if (strncmp(response, "success", 7) == 0)
+	if (strncmp(response, "success", 7) == 0) {
 		log_debug("fetched %d network", total);
-	else if (strncmp(response, "more-data", 9) == 0)
+		ret = 1;
+	} else if (strncmp(response, "more-data", 9) == 0)
 		total++;
 	else
 		ret = -1;
@@ -257,7 +259,7 @@ request_node_list()
 	}
 
 	if (json_object_set_new(request, "action",
-	    json_string("switch-node-list")) == -1) {
+	    json_string("switch-node-list")) < 0) {
 		log_warnx("%s: json_object_set_new", __func__);
 		goto error;
 	}
@@ -360,6 +362,7 @@ on_read_cb(struct bufferevent *bev, void *arg)
 	json_error_t		error;
 	json_t			*jmsg = NULL;
 	size_t			n_read_out;
+	int			 ret;
 	const char		*action;
 	char			*msg = NULL;
 
@@ -380,11 +383,11 @@ on_read_cb(struct bufferevent *bev, void *arg)
 		}
 
 		if (strcmp(action, "switch-network-list") == 0) {
-			if (response_network_list(jmsg) < 0) {
+			if ((ret = response_network_list(jmsg)) < 0) {
 				log_warnx("%s: response_network_list", __func__);
 				goto error;
 			}
-			if (control_init_done == 0) {
+			if (ret == 1 && control_init_done == 0) {
 				log_info("networks initalized");
 				if (request_node_list(jmsg) < 0) {
 					log_warnx("%s: request_node_list",
