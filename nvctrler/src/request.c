@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <jansson.h>
 
@@ -763,92 +764,170 @@ cleanup:
 }
 
 int
-switch_network_list_cb(void *arg, int remaining,
+switch_network_list_cb(void *arg, int left,
     char *uid, char *cert, char *pvkey, char *cacert)
 {
-#if 0
-	char			*resp_str = NULL;
-	struct session_info	**sinfo;
+	struct evbuffer		*buf = NULL;
+	struct session_info	*sinfo;
 	json_t			*array;
 	json_t			*network;
 	json_t			*resp = NULL;
+	int			 ret;
+	char			*resp_str = NULL;
 
 	sinfo = arg;
-	network = json_object();
-	array = json_array();
-	resp = json_object();
 
-	json_object_set_new(resp, "tid", json_string("tid"));
-	json_object_set_new(resp, "action", json_string("listall-network"));
+	ret = -1;
 
-	json_object_set_new(network, "id", json_string(id));
-	json_object_set_new(network, "uuid", json_string(uuid));
-	json_object_set_new(network, "network", json_string(subnet));
-	json_object_set_new(network, "netmask", json_string(netmask));
-	json_object_set_new(network, "cert", json_string(cert));
-	json_object_set_new(network, "pkey", json_string(pkey));
-	json_object_set_new(network, "tcert", json_string(tcert));
+	if ((network = json_object()) == NULL) {
+		log_warnx("%s: json_object", __func__);
+		goto error;
+	}
 
-	json_array_append_new(array, network);
-	json_object_set_new(resp, "networks", array);
+	if ((array = json_array()) == NULL) {
+		log_warnx("%s: json_array", __func__);
+		goto error;
+	}
 
-	if (remaining > 0)
-		json_object_set_new(resp, "response", json_string("more-data"));
-	else
-		json_object_set_new(resp, "response", json_string("success"));
+	if ((resp = json_object()) == NULL) {
+		log_warnx("%s: json_object", __func__);
+		goto error;
+	}
 
-	if ((resp_str = json_dumps(resp, 0)) == NULL)
-		goto out;
+	if (json_object_set_new_nocheck(resp, "action",
+	    json_string("switch-network-list")) < 0 ||
+	    json_object_set_new_nocheck(network, "uid", json_string(uid)) < 0 ||
+	    json_object_set_new_nocheck(network, "cert", json_string(cert)) < 0
+	    || json_object_set_new_nocheck(network, "pvkey", json_string(pvkey))
+	    < 0 || json_object_set_new_nocheck(network, "cacert",
+	    json_string(cacert)) < 0) {
+		log_warnx("%s: json_object_set_new_nocheck", __func__);
+		goto error;
+	}
 
-	if (*sinfo == NULL || (*sinfo)->bev == NULL)
-		goto out;
-	bufferevent_write((*sinfo)->bev, resp_str, strlen(resp_str));
+	if (json_array_append_new(array, network) < 0) {
+		log_warnx("%s: json_array_append_new", __func__);
+		goto error;
+	}
 
-	if (*sinfo == NULL || (*sinfo)->bev == NULL)
-		goto out;
-	bufferevent_write((*sinfo)->bev, "\n", strlen("\n"));
+	if (json_object_set_new_nocheck(resp, "networks", array) < 0) {
+		log_warnx("%s: json_object_set_new_nocheck", __func__);
+		goto error;
+	}
 
+	if (left > 0) {
+		if (json_object_set_new_nocheck(resp, "response",
+		    json_string("more-data")) < 0) {
+			log_warnx("%s: json_object_set_new_nocheck", __func__);
+			goto error;
+		}
+	} else {
+		if (json_object_set_new_nocheck(resp, "response",
+		    json_string("success")) < 0) {
+			log_warnx("%s: json_object_set_new_nocheck", __func__);
+			goto error;
+		}
+	}
+
+	if ((resp_str = json_dumps(resp, 0)) == NULL) {
+		log_warnx("%s: json_dumps", __func__);
+		goto error;
+	}
+
+	if ((buf = evbuffer_new()) == NULL) {
+		log_warnx("%s: evbuffer_new", __func__);
+		goto error;
+	}
+
+	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str), NULL, NULL)
+	    < 0) {
+		log_warnx("%s: evbuffer_add_reference", __func__);
+		goto error;
+	}
+
+	if (evbuffer_add(buf, "\n", 1) < 0) {
+		log_warnx("%s: evbuffer_add", __func__);
+		goto error;
+	}
+
+	if (sinfo != NULL && sinfo->bev != NULL)
+		if (bufferevent_write_buffer(sinfo->bev, buf) < 0) {
+			log_warnx("%s: bufferevent_write_buffer", __func__);
+			goto error;
+		}
+
+	ret = 0;
+
+error:
+	if (buf != NULL)
+		evbuffer_free(buf);
 	json_decref(resp);
 	free(resp_str);
-	return 0;
-out:
-	json_decref(resp);
-	free(resp_str);
-	return -1;
-#endif
+	return (ret);
 }
 
 int
 switch_network_list(struct session_info *sinfo, json_t *jmsg)
 {
-	warnx("listallNetwork");
+	struct evbuffer	*buf = NULL;
+	json_t		*resp = NULL;
+	char		*resp_str = NULL;
 
-#if 0
-	char	*resp_str = NULL;
-	json_t	*resp = NULL;
+	if ((resp = json_object()) == NULL) {
+		log_warnx("%s: json_object", __func__);
+		goto error;
+	}
 
-	resp = json_object();
-	json_object_set_new(resp, "tid", json_string("tid"));
-	json_object_set_new(resp, "action", json_string("listall-network"));
+	if (json_object_set_new_nocheck(resp, "action",
+	    json_string_nocheck("switch-network-list")) < 0) {
+		log_warnx("%s: json_object_set_new_nocheck", __func__);
+		goto error;
+	}
 
-	if (dao_fetch_context(sinfo, CB_listall_network) == -1) {
-		json_object_set_new(resp, "response", json_string("error"));
-		goto out;
+	if (dao_switch_network_list(sinfo, switch_network_list_cb) < 0) {
+		json_object_set_new_nocheck(resp, "response",
+		    json_string_nocheck("error"));
+		goto error;
 	}
 
 	json_decref(resp);
-	return;
-out:
-	resp_str = json_dumps(resp, 0);
-	if (*sinfo && (*sinfo)->bev != NULL)
-		bufferevent_write((*sinfo)->bev, resp_str, strlen(resp_str));
-	if (*sinfo && (*sinfo)->bev != NULL)
-		bufferevent_write((*sinfo)->bev, "\n", strlen("\n"));
+	return (0);
 
+error:
+
+	if ((resp_str = json_dumps(resp, 0)) == NULL) {
+		log_warnx("%s: json_dumps", __func__);
+		goto cleanup;
+	}
+
+	if ((buf = evbuffer_new()) == NULL) {
+		log_warnx("%s: evbuffer_new", __func__);
+		goto cleanup;
+	}
+
+	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str), NULL, NULL)
+	    < 0) {
+		log_warnx("%s: evbuffer_add_reference", __func__);
+		goto cleanup;
+	}
+
+	if (evbuffer_add(buf, "\n", 1) < 0) {
+		log_warnx("%s: evbuffer_add", __func__);
+		goto cleanup;
+	}
+
+	if (sinfo != NULL && sinfo->bev != NULL)
+		if (bufferevent_write_buffer(sinfo->bev, buf) < 0) {
+			log_warnx("%s: bufferevent_write_buffer", __func__);
+			goto cleanup;
+		}
+cleanup:
+	if (buf != NULL)
+		evbuffer_free(buf);
 	json_decref(resp);
 	free(resp_str);
-#endif
-	return;
+
+	return (-1);
 }
 
 int
