@@ -151,12 +151,12 @@ static	size_t		 total = 1;
 	struct vnetwork	*vnet;
 
 	if ((js_nodes = json_object_get(jmsg, "nodes")) == NULL) {
-		warn("json_object_get failed");
+		log_warnx("json_object_get failed");
 		return -1;
 	}
 
 	if ((array_size = json_array_size(js_nodes)) == 0) {
-		warn("json_array_size failed");
+		log_warnx("json_array_size failed");
 		return -1;
 	}
 
@@ -195,64 +195,51 @@ static	size_t		 total = 1;
 int
 response_network_list(json_t *jmsg)
 {
-	char	*network_id;
-	char	*network_uuid;
-	char	*subnet;
-	char	*netmask;
-	char	*cert;
-	char	*pkey;
-	char	*tcert;
+	json_t	*jnetworks;
+	json_t	*jnetwork;
+	size_t	 index;
+
+	int	 ret;
 	char	*response;
-	size_t	 i;
-	size_t	 array_size;
-static	size_t	 total = 1;
-	json_t	*js_networks;
-	json_t	*elm;
+	char	*uid;
+	char	*cert;
+	char	*pvkey;
+	char	*cacert;
 
-	if ((json_unpack(jmsg, "{s:s}", "response", &response)) == -1) {
-		warn("json_unpack failed");
-		return -1;
+	static	size_t	 total = 1;
+
+	ret = 0;
+	if ((json_unpack(jmsg, "{s:s}", "response", &response)) < 0) {
+		log_warnx("%s: json_unpack", __func__);
+		ret = -1;
+		goto out;
 	}
 
-	if ((js_networks = json_object_get(jmsg, "networks")) == NULL) {
-		warn("json_object_get failed");
-		return -1;
+	if ((jnetworks = json_object_get(jmsg, "networks")) == NULL) {
+		log_warnx("%s: json_object_get", __func__);
+		ret = -1;
+		goto out;
 	}
 
-	if ((array_size = json_array_size(js_networks)) == 0) {
-		warn("json_array_size failed");
-		return -1;
+	json_array_foreach(jnetworks, index, jnetwork) {
+
+		if (json_unpack(jnetwork, "{s:s,s:s,s:s,s:s}", "uid", &uid,
+		    "cert", &cert, "pvkey", &pvkey, "cacert", &cacert) < 0)
+			log_warnx("%s: json_unpack", __func__);
+
+		//vnetwork_create(uid, cert, pvkey, cacert);
 	}
 
-	for (i = 0; i < array_size; i++) {
 
-		if ((elm = json_array_get(js_networks, i)) == NULL) {
-			warn("json_array_get failed");
-			return -1;
-		}
+	if (strncmp(response, "success", 7) == 0)
+		log_debug("fetched %d network", total);
+	else if (strncmp(response, "more-data", 9) == 0)
+		total++;
+	else
+		ret = -1;
 
-		json_unpack(elm, "{s:s}", "id", &network_id);
-
-		if (json_unpack(elm, "{s:s}", "uuid", &network_uuid) == -1 ||
-		    json_unpack(elm, "{s:s}", "network", &subnet) == -1 ||
-		    json_unpack(elm, "{s:s}", "netmask", &netmask) == -1 ||
-		    json_unpack(elm, "{s:s}", "cert", &cert) == -1 ||
-		    json_unpack(elm, "{s:s}", "pkey", &pkey) == -1 ||
-		    json_unpack(elm, "{s:s}", "tcert", &tcert) == -1) {
-			warn("NULL parameter");
-			return -1;
-		}
-		vnetwork_create(network_id?network_id:"", network_uuid, subnet, netmask, cert, pkey, tcert);
-	}
-
-	warn("fetched %d network", total);
-	if (strcmp(response, "success") == 0) {
-		warn("fetched %d network", total);
-		return 0;
-	}
-
-	total++;
-	return 1;
+out:
+	return (ret);
 }
 
 int
@@ -265,39 +252,39 @@ request_node_list()
 
 	ret = -1;
 	if ((request = json_object()) == NULL) {
-		log_warn("%s: json_object", __func__);
+		log_warnx("%s: json_object", __func__);
 		goto error;
 	}
 
 	if (json_object_set_new(request, "action",
 	    json_string("switch-node-list")) == -1) {
-		log_warn("%s: json_object_set_new", __func__);
+		log_warnx("%s: json_object_set_new", __func__);
 		goto error;
 	}
 
 	if ((request_str = json_dumps(request, 0)) == NULL) {
-		log_warn("%s: json_dumps", __func__);
+		log_warnx("%s: json_dumps", __func__);
 		goto error;
 	}
 
 	if ((buf = evbuffer_new()) == NULL) {
-		log_warn("%s: evbuffer_new", __func__);
+		log_warnx("%s: evbuffer_new", __func__);
 		goto error;
 	}
 
 	if (evbuffer_add_reference(buf, request_str,
 	    strlen(request_str), NULL, NULL) < 0) {
-		log_warn("%s: evbuffer_add_reference", __func__);
+		log_warnx("%s: evbuffer_add_reference", __func__);
 		goto error;
 	}
 
 	if (evbuffer_add(buf, "\n", 1) < 0) {
-		log_warn("%s: evbuffer_add", __func__);
+		log_warnx("%s: evbuffer_add", __func__);
 		goto error;
 	}
 
 	if (bufferevent_write_buffer(bufev_sock, buf) < 0) {
-		log_warn("%s: bufferevent_write_buffer", __func__);
+		log_warnx("%s: bufferevent_write_buffer", __func__);
 		goto error;
 	}
 
@@ -321,39 +308,39 @@ request_network_list()
 
 	ret = -1;
 	if ((request = json_object()) == NULL) {
-		log_warn("%s: json_object", __func__);
+		log_warnx("%s: json_object", __func__);
 		goto error;
 	}
 
 	if (json_object_set_new_nocheck(request, "action",
 	    json_string("switch-network-list")) == -1) {
-		log_warn("%s: json_object_set_new_nocheck", __func__);
+		log_warnx("%s: json_object_set_new_nocheck", __func__);
 		goto error;
 	}
 
 	if ((request_str = json_dumps(request, 0)) == NULL) {
-		log_warn("%s: json_dumps", __func__);
+		log_warnx("%s: json_dumps", __func__);
 		goto error;
 	}
 
 	if ((buf = evbuffer_new()) == NULL) {
-		log_warn("%s: evbuffer_new", __func__);
+		log_warnx("%s: evbuffer_new", __func__);
 		goto error;
 	}
 
 	if (evbuffer_add_reference(buf, request_str, strlen(request_str), NULL,
 	    NULL) < 0) {
-		log_warn("%s: evbuffer_add_reference", __func__);
+		log_warnx("%s: evbuffer_add_reference", __func__);
 		goto error;
 	}
 
 	if (evbuffer_add(buf, "\n", 1) < 0) {
-		log_warn("%s: evbuffer_add", __func__);
+		log_warnx("%s: evbuffer_add", __func__);
 		goto error;
 	}
 
 	if (bufferevent_write_buffer(bufev_sock, buf) < 0) {
-		log_warn("%s: bufferevent_write_buffer", __func__);
+		log_warnx("%s: bufferevent_write_buffer", __func__);
 		goto error;
 	}
 
@@ -383,31 +370,31 @@ on_read_cb(struct bufferevent *bev, void *arg)
 			return;
 
 		if ((jmsg = json_loadb(msg, n_read_out, 0, &error)) == NULL) {
-			log_warn("%s: json_loadb: %s", __func__, error.text);
+			log_warnx("%s: json_loadb: %s", __func__, error.text);
 			goto error;
 		}
 
 		if (json_unpack(jmsg, "{s:s}", "action", &action) < 0) {
-			log_warn("%s: json_unpack", __func__);
+			log_warnx("%s: json_unpack", __func__);
 			goto error;
 		}
 
 		if (strcmp(action, "switch-network-list") == 0) {
 			if (response_network_list(jmsg) < 0) {
-				log_warn("%s: response_network_list", __func__);
+				log_warnx("%s: response_network_list", __func__);
 				goto error;
 			}
 			if (control_init_done == 0) {
 				log_info("networks initalized");
 				if (request_node_list(jmsg) < 0) {
-					log_warn("%s: request_node_list",
+					log_warnx("%s: request_node_list",
 					    __func__);
 					goto error;
 				}
 			}
 		} else if (strcmp(action, "switch-node-list") == 0) {
 			if (response_node_list(jmsg) < 0) {
-				log_warn("%s: response_node_list", __func__);
+				log_warnx("%s: response_node_list", __func__);
 				goto error;
 			}
 			if (control_init_done == 0) {
@@ -416,13 +403,13 @@ on_read_cb(struct bufferevent *bev, void *arg)
 			}
 		} else if (strcmp(action, "switch-network-delete") == 0) {
 			if (response_network_delete(jmsg) < 0) {
-				log_warn("%s: response_network_delete",
+				log_warnx("%s: response_network_delete",
 				    __func__);
 				goto error;
 			}
 		} else if (strcmp(action, "switch-node-delete") == 0) {
 			if (response_node_delete(jmsg) < 0) {
-				log_warn("%s: response_node_delete", __func__);
+				log_warnx("%s: response_node_delete", __func__);
 				goto error;
 			}
 		}
@@ -461,7 +448,7 @@ on_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
 	} else if (events & (BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
 
 		while ((e = bufferevent_get_openssl_error(bufev_sock)) > 0)
-			log_warn("%s: ssl error: %s", __func__,
+			log_warnx("%s: ssl error: %s", __func__,
 			    ERR_error_string(e, NULL));
 
 		bufferevent_free(bufev_sock);
@@ -523,44 +510,44 @@ evssl_init()
 
 	ret = -1;
 	if ((ctx = SSL_CTX_new(TLSv1_2_method())) == NULL) {
-		log_warn("SSL_CTX_new");
+		log_warnx("SSL_CTX_new");
 		return (NULL);
 	}
 
 	if ((dh = get_dh_1024()) == NULL) {
-		log_warn("get_dh_1024");
+		log_warnx("get_dh_1024");
 		goto error;
 	}
 
 	if ((SSL_CTX_set_tmp_dh(ctx, dh)) != 1) {
-		log_warn("SSL_CTX_set_tmp_dh");
+		log_warnx("SSL_CTX_set_tmp_dh");
 		goto error;
 	}
 
 	if (SSL_CTX_set_cipher_list(ctx, "ECDHE-ECDSA-CHACHA20-POLY1305") != 1) {
-		log_warn("SSL_CTX_set_cipher");
+		log_warnx("SSL_CTX_set_cipher");
 		goto error;
 	}
 
 	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL) {
-		log_warn("EC_KEY_new_by_curve_name");
+		log_warnx("EC_KEY_new_by_curve_name");
 		goto error;
 	}
 
 	if (SSL_CTX_set_tmp_ecdh(ctx, ecdh) != 1) {
-		log_warn("SSL_CTX_set_tmp_ecdh");
+		log_warnx("SSL_CTX_set_tmp_ecdh");
 		goto error;
 	}
 
 	SSL_CTX_set_cert_store(ctx, passport->cacert_store);
 
 	if ((SSL_CTX_use_certificate(ctx, passport->certificate)) != 1) {
-		log_warn("SSL_CTX_use_certificate");
+		log_warnx("SSL_CTX_use_certificate");
 		goto error;
 	}
 
 	if ((SSL_CTX_use_PrivateKey(ctx, passport->keyring)) != 1) {
-		log_warn("SSL_CTX_use_PrivateKey");
+		log_warnx("SSL_CTX_use_PrivateKey");
 		goto error;
 	}
 
@@ -610,18 +597,18 @@ new_peer()
 	}	
 
 	if ((ctx = evssl_init()) == NULL) {
-		log_warn("%s: evssl_init", __func__);
+		log_warnx("%s: evssl_init", __func__);
 		goto error;
 	}
 
 	if ((ssl = SSL_new(ctx)) == NULL) {
-		log_warn("%s: SSL_new", __func__);
+		log_warnx("%s: SSL_new", __func__);
 		goto error;
 	}
 
 	if ((bufev_sock = bufferevent_openssl_socket_new(ev_base, fd, ssl,
 	    BUFFEREVENT_SSL_CONNECTING, BEV_OPT_CLOSE_ON_FREE)) == NULL) {
-		log_warn("%s: bufferevent_socket_new failed", __func__);
+		log_warnx("%s: bufferevent_socket_new failed", __func__);
 		goto error;
 	}
 
@@ -630,7 +617,7 @@ new_peer()
 
 	if (bufferevent_socket_connect(bufev_sock, res->ai_addr,
 	    res->ai_addrlen) < 0) {
-		log_warn("%s: bufferevent_socket_connected failed", __func__);
+		log_warnx("%s: bufferevent_socket_connected failed", __func__);
 		goto error;
 	}
 
