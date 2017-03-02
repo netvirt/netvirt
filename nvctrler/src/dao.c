@@ -248,6 +248,16 @@ dao_prepare_statements()
 		goto error;
 	PQclear(result);
 
+	result = PQprepare(dbconn,
+			"dao_switch_network_list",
+			"SELECT uid, passport_certificate, passport_privatekey, embassy_certificate "
+			"FROM network;",
+			0,
+			NULL);
+
+	if (check_result_status(result) == -1)
+		goto error;
+	PQclear(result);
 
 
 
@@ -365,8 +375,8 @@ dao_prepare_statements()
 
 	if (check_result_status(result) == -1)
 		goto error;
-
 	PQclear(result);
+
 	result = PQprepare(dbconn,
 			"dao_fetch_network",
 			"SELECT id, uid, description, client_id, host(cidr), netmask(cidr), passport_certificate, passport_privatekey, embassy_certificate "
@@ -376,9 +386,8 @@ dao_prepare_statements()
 
 	if (check_result_status(result) == -1)
 		goto error;
-
-	// WTF ?
 	PQclear(result);
+
 	result = PQprepare(dbconn,
 			"dao_fetch_node_uuid_networkuuid",
 			"SELECT network_uid, uid "
@@ -1021,7 +1030,33 @@ dao_node_delete_provkey(const char *network_uid, const char *node_uid, const cha
 	return (0);
 }
 
+int
+dao_switch_network_list(void *data,
+    int (*cb)(void *, int , char *, char *, char *, char *))
+{
+	int		 i, ret, tuples;
+	PGresult	*result;
 
+	result = PQexecPrepared(dbconn, "dao_switch_network_list", 0, NULL, NULL, NULL, 0);
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return (-1);
+	}
+
+	for (tuples = PQntuples(result), i = 0; i < tuples; i++) {
+		if ((ret = cb(data, tuples - i - 1,
+		    PQgetvalue(result, i, 0),
+		    PQgetvalue(result, i, 1),
+		    PQgetvalue(result, i, 2),
+		    PQgetvalue(result, i, 3))) < 0)
+			goto out;
+	}
+
+out:
+	PQclear(result);
+	return (ret);
+}
 
 
 
@@ -1603,62 +1638,5 @@ int dao_fetch_network_by_client_id_desc(char *client_id, char *description,
 	PQclear(result);
 
 	return 0;
-}
-int dao_fetch_network(void *data, int (*cb_data_handler)(void *data, int remaining,
-							char *id,
-							char *uuid,
-							char *description,
-							char *client_id,
-							char *network,
-							char *netmask,
-							char *serverCert,
-							char *serverPrivkey,
-							char *trustedCert))
-{
-	int ret;
-	int tuples;
-	PGresult *result;
-
-	result = PQexecPrepared(dbconn, "dao_fetch_network", 0, NULL, NULL, NULL, 0);
-
-	if (!result) {
-		warnx("PQexec command failed: %s", PQerrorMessage(dbconn));
-		return -1;
-	}
-
-	if (check_result_status(result) == -1) {
-		PQclear(result);
-		return -1;
-	}
-
-	tuples = PQntuples(result);
-	if (tuples == 0) {
-		PQclear(result);
-		return 0;
-	}
-
-	int i;
-	for (i = 0; i < tuples; i++) {
-		ret = cb_data_handler(data, tuples - i - 1,
-			PQgetvalue(result, i, 0),
-			PQgetvalue(result, i, 1),
-			PQgetvalue(result, i, 2),
-			PQgetvalue(result, i, 3),
-			PQgetvalue(result, i, 4),
-			PQgetvalue(result, i, 5),
-			PQgetvalue(result, i, 6),
-			PQgetvalue(result, i, 7),
-			PQgetvalue(result, i, 8));
-
-		if (ret == -1) {
-			goto out;
-		}
-	}
-
-	PQclear(result);
-	return 0;
-out:
-	PQclear(result);
-	return -1;
 }
 #endif

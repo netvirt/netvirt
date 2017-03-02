@@ -44,4 +44,7 @@ int dao_node_list(const char *, const char *, int (*)(const char *,
 int dao_node_update();
 int dao_node_delete_provkey(const char *, const char *, const char *);
 
+int dao_switch_network_list(void *data,
+    int (*cb)(void *, int , char *, char *, char *, char *));
+
 #endif
