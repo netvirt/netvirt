@@ -26,6 +26,8 @@
 #include <string.h>
 #include <err.h>
 
+#include <log.h>
+
 #include "request.h"
 
 void
@@ -534,6 +536,11 @@ v1_node_cb(struct evhttp_request *req, void *arg)
 		evhttp_send_reply(req, HTTP_BADREQUEST, "Bad Request", NULL);
 }
 
+cleanup_cb(const void *data, size_t datalen, void *extra)
+{
+	free((void*)data);
+}
+
 void
 v1_provisioning_cb(struct evhttp_request *req, void *arg)
 {
@@ -568,9 +575,10 @@ v1_provisioning_cb(struct evhttp_request *req, void *arg)
 	if ((respbuf = evbuffer_new()) == NULL)
 		goto cleanup;
 
-	if (evbuffer_add_reference(respbuf, msg, strlen(msg), NULL, NULL) < 0)
+	if (evbuffer_add_reference(respbuf, msg, strlen(msg), cleanup_cb, NULL) < 0) {
+		log_warnx("%s: evbuffer_add_reference", __func__);
 		goto cleanup;
-
+	}
 	code = HTTP_OK;
 	phrase = "OK";
 
@@ -578,7 +586,6 @@ cleanup:
 	evhttp_send_reply(req, code, phrase, respbuf);
 	if (respbuf != NULL)
 		evbuffer_free(respbuf);
-	free(msg);
 }
 
 int
