@@ -654,7 +654,7 @@ node_provisioning(const char *msg, char **resp)
 	char		*tokens[3];
 	char		*p;
 	char		*last;
-	char		*cert;
+	char		*cacert;
 	char		*pvkey;
 	char		*serial;
 	char		*node_cert;
@@ -679,13 +679,15 @@ node_provisioning(const char *msg, char **resp)
 
         if ((network_uid = tokens[0]) == NULL ||
 	    (node_uid = tokens[1]) == NULL ||
-	    (key = tokens[2]) == NULL)
+	    (key = tokens[2]) == NULL) {
+		log_warnx("%s: Invalid provkey tokens", __func__);
 		return (-1);
+	}
 
 	if (dao_node_delete_provkey(network_uid, node_uid, provkey) < 0)
 		return (-1);
 
-	if (dao_network_get_embassy(network_uid, &cert, &pvkey, &serial) < 0)
+	if (dao_network_get_embassy(network_uid, &cacert, &pvkey, &serial) < 0)
 		return (-1);
 
 	if (asprintf(&cn, "1$nva$%s$%s", network_uid, node_uid) < 0) {
@@ -693,7 +695,7 @@ node_provisioning(const char *msg, char **resp)
 		goto cleanup;
 	}
 
-	if ((node_cert = pki_deliver_cert_from_certreq(csr, cert, pvkey,
+	if ((node_cert = pki_deliver_cert_from_certreq(csr, cacert, pvkey,
 	    atoi(serial), cn)) == NULL) { // XXX remove atoi()
 		ret = -1;
 		goto cleanup;
@@ -704,7 +706,12 @@ node_provisioning(const char *msg, char **resp)
 		goto cleanup;
 	}
 
-	if (json_object_set_new(jresp, "cert", json_string(node_cert)) < 0) {
+	if (json_object_set_new_nocheck(jresp, "cert", json_string(node_cert)) < 0) {
+		ret = -1;
+		goto cleanup;
+	}
+
+	if (json_object_set_new_nocheck(jresp, "cacert", json_string(cacert)) < 0) {
 		ret = -1;
 		goto cleanup;
 	}
