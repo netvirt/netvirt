@@ -87,6 +87,7 @@ else()
 		crypto
 		event_core
 		event_extra
+		jansson
 	)
 endif()
 

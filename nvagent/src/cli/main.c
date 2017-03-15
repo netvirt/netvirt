@@ -17,11 +17,8 @@
 #include <err.h>
 #include <signal.h>
 
-#include <event.h>
-
 #include "../agent.h"
 
-struct event_base	*ev_base;
 
 void
 sighandler(int signal, short events, void *arg)
@@ -35,12 +32,10 @@ sighandler(int signal, short events, void *arg)
 int
 main()
 {
-	struct event	ev_sigint;
-	struct event	ev_sigterm;
+//	struct event	ev_sigint;
+//	struct event	ev_sigterm;
 
-	if ((ev_base = event_init()) == NULL)
-		errx(1, "event_base_new");
-
+/*
 	signal_set(&ev_sigint, SIGINT, sighandler, ev_base);
 	if (signal_add(&ev_sigint, NULL) < 0)
 		errx(1, "signal_add");
@@ -48,12 +43,13 @@ main()
 	signal_set(&ev_sigterm, SIGTERM, sighandler, ev_base);
 	if (signal_add(&ev_sigterm, NULL) < 0)
 		errx(1, "signal_add");
+*/
 
-	agent_prov("network-id$node-id$secret");
+//	agent_prov("W1mOpl6pYICUB1-Il8B26HlP$-XkALcRaZxMyhnId9BYQ6qvf$MxsLgHrNU7z088EToITDBfTe0jrTACxo9WSltn6r7J1EfFDp");
 
-//	agent_init();
+	agent_init();
 
-	event_base_dispatch(ev_base);
+	printf("here\n");
 	return 0;
 
 	agent_fini();

@@ -15,12 +15,15 @@
  */
 
 #ifndef NVAGENT_H
-#define nvAGENT_H
+#define NVAGENT_H
+
+#include <event2/event.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+extern struct event_base 	*ev_base;
 void	agent_fini(void);
 int	agent_init(void);
 
