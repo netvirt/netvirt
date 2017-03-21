@@ -1,7 +1,7 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2016
- * Nicolas J. Bouliane <admin@netvirt.org>
+ * Copyright (C) 2009-2017 Mind4Networks inc.
+ * Nicolas J. Bouliane <nib@m4nt.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,124 +13,95 @@
  * GNU Affero General Public License for more details
  */
 
+#include <sys/tree.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
+#include <log.h>
 #include <bitv.h>
 
-#include "hash.h"
 #include "inet.h"
-#include "tree.h"
 #include "vnetwork.h"
 
 RB_HEAD(vnetwork_tree, vnetwork);
-static struct vnetwork_tree	vnetworks;
 
-static int vnetwork_cmp(const struct vnetwork *, const struct vnetwork *);
+/* static func here */
+
+static int	vnetwork_cmp(const struct vnetwork *, const struct vnetwork *);
 RB_PROTOTYPE_STATIC(vnetwork_tree, vnetwork, entry, vnetwork_cmp);
 
-static int vnetwork_cmp(const struct vnetwork *a, const struct vnetwork *b)
+static struct vnetwork_tree	vnetworks;
+
+int
+vnetwork_cmp(const struct vnetwork *a, const struct vnetwork *b)
 {
-	return strcmp(a->uuid, b->uuid);
+	return strcmp(a->uid, b->uid);
 }
 
-void vnetwork_del_session(struct vnetwork *vnet, struct session *s)
+void
+vnetwork_del_session(struct vnetwork *vnet, struct session *s)
 {
 	LIST_REMOVE(s, entry);
 	vnet->active_node--;
 }
 
 struct session *
-vnetwork_new_session(struct vnetwork *vnet)
+vnetwork_add_session(struct vnetwork *vnet)
 {
 	struct session *s;
 
 	s = malloc(sizeof(*s));
 	LIST_INSERT_HEAD(&vnet->sessions, s, entry);
 
-	return s;
+	return (s);
 }
 
-void vnetwork_show_session_list(struct vnetwork *vnet)
+struct vnetwork
+*vnetwork_lookup(const char *uid)
 {
-}
+	struct vnetwork	match;
 
-struct vnetwork *vnetwork_lookup(const char *uuid)
-{
-	struct vnetwork match;
-
-	match.uuid = (char *)uuid;
+	match.uid = (char *)uid;
 	return RB_FIND(vnetwork_tree, &vnetworks, &match);
 }
 
-void vnetwork_free(struct vnetwork *vnet)
+void
+vnetwork_free(struct vnetwork *vnet)
 {
 	if (vnet) {
 		pki_passport_destroy(vnet->passport);
-		linkst_free(vnet->linkst);
-		ftable_delete(vnet->ftable);
-		ctable_delete(vnet->ctable);
-		ctable_delete(vnet->atable);
-		free(vnet->uuid);
+		free(vnet->uid);
 		free(vnet);
 	}
 }
 
-void vnetworks_free()
-{
-}
-
-struct vnetwork *vnetwork_disable(const char *uuid)
-{
-	struct vnetwork *vnet = NULL;
-	if ((vnet = vnetwork_lookup(uuid)) != NULL)
-		RB_REMOVE(vnetwork_tree, &vnetworks, vnet);
-
-	return vnet;
-}
-
-#if 0
-void *
-session_itemdup(const void *item)
-{
-	return (void*)item;
-}
-
-void
-session_itemrel(void *item)
-{
-	(void)item;
-}
-#endif
-
 int
-vnetwork_create(char *id, char *uuid, char *address, char *netmask,
-			char *cert, char *privkey, char *cacert)
+vnetwork_create(char *uid, char *cert, char *pvkey, char *cacert)
 {
 	struct vnetwork *vnet;
 
-	vnet = malloc(sizeof(struct vnetwork));
+	if ((vnet = malloc(sizeof(*vnet))) == NULL) {
+		log_warnx("%s: malloc", __func__);
+		return (-1);
+	}
 
-	vnet->uuid = strdup(uuid);
-	vnet->passport = pki_passport_load_from_memory(cert, privkey, cacert);
-	vnet->linkst = linkst_new(MAX_NODE, TIMEOUT_SEC);
+	vnet->uid = strdup(uid);
+	vnet->passport = pki_passport_load_from_memory(cert, pvkey, cacert);
 	vnet->active_node = 0;
+
 	LIST_INIT(&vnet->sessions);
-
-	vnet->ftable = ftable_new(MAX_NODE, NULL, NULL);
-	vnet->ctable = ctable_new(MAX_NODE, NULL, NULL);
-	vnet->atable = ctable_new(MAX_NODE, NULL, NULL);
-
 	RB_INSERT(vnetwork_tree, &vnetworks, vnet);
 
-	return 0;
+	return (0);
 }
 
-int vnetwork_init()
+int
+vnetwork_init(void)
 {
 	RB_INIT(&vnetworks);
-	return 0;
+	return (0);
 }
 
 RB_GENERATE_STATIC(vnetwork_tree, vnetwork, entry, vnetwork_cmp);

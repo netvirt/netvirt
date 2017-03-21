@@ -1,7 +1,7 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) 2009-2016
- * Nicolas J. Bouliane <admin@netvirt.org>
+ * Copyright (C) 2009-2017 Mind4Networks inc.
+ * Nicolas J. Bouliane <nib@m4nt.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -16,17 +16,11 @@
 #ifndef VNETWORK_H
 #define VNETWORK_H
 
-#include <ftable.h>
 #include <pki.h>
 
-#include "ctable.h"
-#include "linkst.h"
 #include "switch.h"
 #include "tree.h"
 #include "queue.h"
-
-#define MAX_NODE 1024	// the maximum of nodes per context
-#define TIMEOUT_SEC 300	// linkstate timeout in second
 
 struct session {
 	LIST_ENTRY(session) entry;
@@ -45,25 +39,20 @@ LIST_HEAD(session_list, session);
 struct vnetwork {
 	RB_ENTRY(vnetwork)	 entry;
 	struct session_list	 sessions;
-	ftable_t		*ftable;			// forwarding table
-	ctable_t		*ctable;			// connection table
-	ctable_t		*atable;			// access table
-	linkst_t		*linkst;			// link state between nodes
-	 //struct session          *access_session;                // store the access session in the access table for every known UUID
+//	ftable_t		*ftable;			// forwarding table
+//	ctable_t		*ctable;			// connection table
+//	ctable_t		*atable;			// access table
 	passport_t		*passport;
-	char			*uuid;
+	char			*uid;
 	uint32_t		 active_node;			// number of connected node
 };
 
-void vnetworks_free();
-void vnetwork_free(struct vnetwork *);
-void vnetwork_del_session(struct vnetwork *, struct session *);
-void vnetwork_add_session(struct vnetwork *, struct session *);
-struct vnetwork *vnetwork_disable(const char *);
-struct vnetwork *vnetwork_lookup(const char *);
-struct vnetwork *vnetwork_lookup_id(const char *id);
-int vnetwork_create(char *, char *, char *, char *, char *, char *, char *);
-void vnetwork_fini(void *);
-int vnetwork_init();
+void		 vnetwork_free(struct vnetwork *);
+void		 vnetwork_del_session(struct vnetwork *, struct session *);
+struct session	*vnetwork_add_session(struct vnetwork *);
+struct vnetwork	*vnetwork_lookup(const char *);
+void		 vnetworks_free(void);
+int		 vnetwork_create(char *, char *, char *, char *);
+int		 vnetwork_init(void);
 
 #endif
