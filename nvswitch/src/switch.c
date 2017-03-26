@@ -13,10 +13,11 @@
  * GNU Affero General Public License for more details
  */
 
-#include <arpa/inet.h>
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/tree.h>
 
+#include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netdb.h>
 
@@ -37,12 +38,44 @@
 #include "switch.h"
 #include "vnetwork.h"
 
+struct dtls_peer {
+	RB_ENTRY(dtls_peer)	 entry;
+	SSL			*ssl;
+	struct sockaddr_storage  ss;
+	socklen_t		 ss_len;
+};
+
+RB_HEAD(dtls_peer_tree, dtls_peer);
+
+static struct dtls_peer_tree	 dtls_peers;
 static SSL_CTX			*ctx;
 static passport_t		*passport;
 static struct event		*ev_udplisten;
 static struct addrinfo		*ai;
 static int			 cookie_initialized;
 static unsigned char		 cookie_secret[16];
+
+static struct dtls_peer	*dtls_peer_new();
+static void		 dtls_peer_free(struct dtls_peer *);
+static int		 dtls_peer_cmp(const struct dtls_peer *,
+			    const struct dtls_peer *);
+int
+dtls_peer_cmp(const struct dtls_peer *a, const struct dtls_peer *b)
+{
+
+}
+
+struct dtls_peer *
+dtls_peer_new()
+{
+
+}
+
+void
+dtls_peer_free(struct dtls_peer *p)
+{
+
+}
 
 int
 certverify_cb(int ok, X509_STORE_CTX *store)
@@ -62,8 +95,6 @@ certverify_cb(int ok, X509_STORE_CTX *store)
 	return (ok);
 }
 
-static SSL_CTX	*newctx;
-
 int
 servername_cb(SSL *ssl, int *ad, void *arg)
 {
@@ -81,14 +112,6 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 		printf("vnet is NULL!\n");
 	}
 
-//	if ((newctx = SSL_CTX_new(DTLSv1_server_method())) == NULL)
-//		warn("%s:%d", "SSL_CTX_new", __LINE__);
-/*
-	SSL_CTX_set_cookie_generate_cb(ctx, generate_cookie);
-	SSL_CTX_set_cookie_verify_cb(ctx, verify_cookie);
-	SSL_CTX_set_tlsext_servername_callback(ctx, servername_cb);
-	SSL_CTX_set_tlsext_servername_arg(ctx, NULL);
-*/
 	/* Load the trusted certificate store into our SSL_CTX */
 	SSL_CTX_set_cert_store(ctx, vnet->passport->cacert_store);
 
@@ -250,120 +273,92 @@ verify_cookie(SSL *ssl, unsigned char *cookie, unsigned int cookie_len)
     return (0);
 }
 
-void
-udpclient_cb(int sock, short what, void *arg)
-{
-	printf("udpclient_cb %d\n", sock);
-
-	SSL	*ssl;
-	int	 ret;
-	char	 buf[1500] = {0};
-
-	ssl = arg;
-
-	if ((ret = SSL_read(ssl, &buf, sizeof(buf))) < 0) {
-		ret = SSL_get_error(ssl, ret);
-		fprintf(stderr, "SSL_read: error %d (%d-%d)\n", ret, SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE);
-		ERR_print_errors_fp(stderr);
-		return;
-	}
-	fprintf(stderr, "%s %d", buf, ret);
-}
+int t = 0;
+SSL		*ssl = NULL;
+BIO		*bio = NULL;
 
 void
-udplisten_cb(int sock, short what, void *arg)
+udplisten_cb(int sock, short what, void *ctx)
 {
-	// XXX clean that function...
-	BIO		*bio = NULL;
-	SSL		*ssl = NULL;
-	SSL_CTX		*ctx;
-	struct event	*ev_udpclient;
 	struct sockaddr	 caddr;
-	int		 csock = -1;
-	int		 flag;
 	int		 ret;
+	char		 buf[1500] = {0};
 
 	printf("udplisten_cb\n");
 
-	ctx = arg;
+	struct sockaddr_storage client;
+	socklen_t len = sizeof(client);
+	char s[INET6_ADDRSTRLEN];
 
-	SSL_CTX_set_read_ahead(ctx, 1);
+	recvfrom(sock, NULL, 0, MSG_PEEK, (struct sockaddr *)&client, &len);
+	printf("got packet from %s :: %d\n",
+		inet_ntop(client.ss_family,
+		&((struct sockaddr_in*)&client)->sin_addr, s, sizeof(s)),
+		ntohs(&((struct sockaddr_in*)&client)->sin_port));
 
-	if ((ssl = SSL_new(ctx)) == NULL) {
-		log_warnx("%s: SSL_new", __func__);
-		goto error;
+	// dtls_peer = FIND() ...
+	// if exist ... readto...
+		// else try to handshake
+
+	if (t == 1) {
+		printf("SSL READ !\n");
+		ret = SSL_read(ssl, buf, sizeof(buf));
+		printf("buf %s\n", buf);
+		return;
 	}
 
-	SSL_set_accept_state(ssl);
-//	SSL_set_verify(ssl,
-//	    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, certverify_cb);
+	if (ssl == NULL) {
+		printf("create ssl !\n");
+		if ((ssl = SSL_new(ctx)) == NULL) {
+			log_warnx("%s: SSL_new", __func__);
+			goto error;
+		}
 
-	if ((bio = BIO_new_dgram(sock, BIO_NOCLOSE)) == NULL) {
-		log_warnx("%s: BIO_new_dgram", __func__);
-		goto error;
+		SSL_set_accept_state(ssl);
+		SSL_set_verify(ssl,
+		    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, certverify_cb);
+
+		if ((bio = BIO_new_dgram(sock, BIO_NOCLOSE)) == NULL) {
+			log_warnx("%s: BIO_new_dgram", __func__);
+			goto error;
+		}
+
+		SSL_set_bio(ssl, bio, bio);
 	}
 
-	SSL_set_bio(ssl, bio, bio);
+	if ((ret = DTLSv1_listen(ssl, &caddr)) <=0 ) {
+		switch (SSL_get_error(ssl, ret)) {
+		case SSL_ERROR_NONE:
+			printf("no error...\n");
+			break;
+		case SSL_ERROR_WANT_READ:
+			printf("want read...\n");
+			// XXX handle timeout here
+			break;
+		default:
+			printf("default...?\n");
+			break;
+		}
 
-	if ((ret = DTLSv1_listen(ssl, &caddr)) <= 0) {
-		printf("%d :: %d\n", ret, __LINE__);
-		ret = SSL_get_error(ssl, ret);
-		printf("%s\n", ERR_error_string(ERR_get_error(), NULL));
-		printf("%s\n", SSL_state_string(ssl));
-		sleep(1);
-		goto error;
+		goto out;
 	}
 
 	SSL_accept(ssl);
+	t = 1;
 
-
-	/* XXX below this line, under construction... */
-	if ((csock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
-		warnx("%s:%d", "socket", __LINE__);
-		goto error;
-	}
-
-	flag = 1;
-	if (setsockopt(csock, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) < 0) {
-		warnx("%s:%d", "setsockopt", __LINE__);
-		goto error;
-	}
-
-//	if (evutil_make_socket_nonblocking(csock) > 0) {
-//		warn("%s:%d", "evutil_make_socket_nonblocking", __LINE__);
-//		goto error;
-//	}
-
-	if (bind(csock, ai->ai_addr, ai->ai_addrlen) < 0) {
-		warnx("%s:%d", "bind", __LINE__);
-		goto error;
-	}
-
-	if (connect(csock, &caddr, sizeof(caddr)) < 0) {
-		warn("%s:%d", "connect", __LINE__);
-		goto error;
-	}
-
-	BIO_set_fd(SSL_get_rbio(ssl), csock, BIO_NOCLOSE);
-
-	if ((ev_udpclient = event_new(ev_base, csock,
-	    EV_READ | EV_PERSIST, udpclient_cb, ssl)) == NULL)
-		warn("%s:%d", "event_new", __LINE__);
-	event_add(ev_udpclient, NULL);
-
+out:
 	return;
 
 error:
-	printf("error...\n");
 	SSL_free(ssl);
-	//BIO_free(bio);
-	close(csock);
+	ssl = NULL;
+	BIO_free(bio);
+	bio = NULL;
 }
 
 void
 switch_init(json_t *config)
 {
-	DH		*dh = NULL;
 	EC_KEY		*ecdh;
 	struct addrinfo	 hints;
 	int		 status;
@@ -399,19 +394,24 @@ switch_init(json_t *config)
 	if ((ctx = SSL_CTX_new(DTLSv1_server_method())) == NULL)
 		fatalx("%s: SSL_CTX_new", __func__);
 
+	SSL_CTX_set_read_ahead(ctx, 1);
+
+	SSL_CTX_set_options(ctx, SSL_OP_SINGLE_ECDH_USE);
+
 	SSL_CTX_set_cookie_generate_cb(ctx, generate_cookie);
 	SSL_CTX_set_cookie_verify_cb(ctx, verify_cookie);
 	SSL_CTX_set_tlsext_servername_callback(ctx, servername_cb);
 	SSL_CTX_set_tlsext_servername_arg(ctx, NULL);
-
-	if (SSL_CTX_set_cipher_list(ctx, "ECDH-ECDSA-AES256-SHA") == 0)
-		fatalx("%s: SSL_CTX_set_cipher_list", __func__);
 
 	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL)
 		fatalx("%s: EC_KEY_new_by_curve_name", __func__);
 
 	SSL_CTX_set_tmp_ecdh(ctx, ecdh);
 	EC_KEY_free(ecdh);
+
+	if (SSL_CTX_set_cipher_list(ctx, "ECDH-ECDSA-AES256-SHA") == 0)
+		fatalx("%s: SSL_CTX_set_cipher_list", __func__);
+
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
@@ -420,15 +420,16 @@ switch_init(json_t *config)
 	if ((status = getaddrinfo(ip, port, &hints, &ai)) != 0)
 		fatalx("%s: getaddrinfo: %s", __func__, gai_strerror(status));
 
-	if ((sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) < 0)
+	if ((sock = socket(ai->ai_family, ai->ai_socktype,
+	    ai->ai_protocol)) < 0)
 		fatal("%s: socket", __func__);
 
 	flag = 1;
 	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) < 0)
 		fatal("%s: setsockopt", __func__);
 
-//	if (evutil_make_socket_nonblocking(sock) > 0)
-//		fatalx("%s: evutil_make_socket_nonblocking", __func__);
+	if (evutil_make_socket_nonblocking(sock) > 0)
+		fatalx("%s: evutil_make_socket_nonblocking", __func__);
 
 	if (bind(sock, ai->ai_addr, ai->ai_addrlen) < 0)
 		fatal("%s: bind", __func__);
@@ -454,3 +455,5 @@ switch_fini()
 	EVP_cleanup();
 	CRYPTO_cleanup_all_ex_data();
 }
+
+RB_GENERATE_STATIC(dtls_peer_tree, dtls_peer, entry, dtls_peer_cmp);
