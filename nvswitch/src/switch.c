@@ -38,11 +38,18 @@
 #include "switch.h"
 #include "vnetwork.h"
 
+enum dtls_state {
+	DTLS_LISTEN,
+	DTLS_ACCEPT,
+	DTLS_ESTABLISHED
+};
+
 struct dtls_peer {
 	RB_ENTRY(dtls_peer)	 entry;
 	SSL			*ssl;
 	struct sockaddr_storage  ss;
 	socklen_t		 ss_len;
+	enum dtls_state		 state;
 };
 
 RB_HEAD(dtls_peer_tree, dtls_peer);
@@ -68,7 +75,18 @@ dtls_peer_cmp(const struct dtls_peer *a, const struct dtls_peer *b)
 struct dtls_peer *
 dtls_peer_new()
 {
+	struct dtls_peer	*p = NULL;
 
+	if ((p = malloc(sizeof(*p))) == NULL) {
+		log_warn("%s: malloc", __func__);
+		goto error;
+	}
+
+	return (p);
+
+error:
+	dtls_peer_free(p);
+	return (NULL);
 }
 
 void
@@ -78,7 +96,7 @@ dtls_peer_free(struct dtls_peer *p)
 }
 
 int
-certverify_cb(int ok, X509_STORE_CTX *store)
+cert_verify_cb(int ok, X509_STORE_CTX *store)
 {
 	X509		*cert;
 	X509_NAME	*name;
@@ -273,85 +291,98 @@ verify_cookie(SSL *ssl, unsigned char *cookie, unsigned int cookie_len)
     return (0);
 }
 
-int t = 0;
-SSL		*ssl = NULL;
 BIO		*bio = NULL;
+
+struct dtls_peer	 dtls_peer;
 
 void
 udplisten_cb(int sock, short what, void *ctx)
 {
-	struct sockaddr	 caddr;
-	int		 ret;
-	char		 buf[1500] = {0};
+	struct sockaddr		 caddr;
+	int			 ret;
+	enum dtls_state		 next;
+	char			 buf[1500] = {0};
 
 	printf("udplisten_cb\n");
 
-	struct sockaddr_storage client;
-	socklen_t len = sizeof(client);
+	dtls_peer.ss_len = sizeof(struct dtls_peer);
 	char s[INET6_ADDRSTRLEN];
 
-	recvfrom(sock, NULL, 0, MSG_PEEK, (struct sockaddr *)&client, &len);
+	recvfrom(sock, NULL, 0, MSG_PEEK, (struct sockaddr *)&dtls_peer.ss, &dtls_peer.ss_len);
 	printf("got packet from %s :: %d\n",
-		inet_ntop(client.ss_family,
-		&((struct sockaddr_in*)&client)->sin_addr, s, sizeof(s)),
-		ntohs(&((struct sockaddr_in*)&client)->sin_port));
+		inet_ntop(dtls_peer.ss.ss_family,
+		&((struct sockaddr_in*)&dtls_peer.ss)->sin_addr, s, sizeof(s)),
+		ntohs(&((struct sockaddr_in*)&dtls_peer.ss)->sin_port));
 
 	// dtls_peer = FIND() ...
 	// if exist ... readto...
 		// else try to handshake
 
-	if (t == 1) {
-		printf("SSL READ !\n");
-		ret = SSL_read(ssl, buf, sizeof(buf));
-		printf("buf %s\n", buf);
-		return;
-	}
-
-	if (ssl == NULL) {
+	// XXX WIP of dtls_peer_new()
+	if (dtls_peer.ssl == NULL) {
 		printf("create ssl !\n");
-		if ((ssl = SSL_new(ctx)) == NULL) {
+		if ((dtls_peer.ssl = SSL_new(ctx)) == NULL) {
 			log_warnx("%s: SSL_new", __func__);
 			goto error;
 		}
 
-		SSL_set_accept_state(ssl);
-		SSL_set_verify(ssl,
-		    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, certverify_cb);
+		SSL_set_accept_state(dtls_peer.ssl);
+		SSL_set_verify(dtls_peer.ssl,
+		    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
+		    cert_verify_cb);
 
 		if ((bio = BIO_new_dgram(sock, BIO_NOCLOSE)) == NULL) {
 			log_warnx("%s: BIO_new_dgram", __func__);
 			goto error;
 		}
 
-		SSL_set_bio(ssl, bio, bio);
+		SSL_set_bio(dtls_peer.ssl, bio, bio);
+
+		dtls_peer.state = DTLS_LISTEN;
 	}
 
-	if ((ret = DTLSv1_listen(ssl, &caddr)) <=0 ) {
-		switch (SSL_get_error(ssl, ret)) {
-		case SSL_ERROR_NONE:
-			printf("no error...\n");
-			break;
-		case SSL_ERROR_WANT_READ:
-			printf("want read...\n");
-			// XXX handle timeout here
-			break;
-		default:
-			printf("default...?\n");
-			break;
-		}
+	switch (dtls_peer.state) {
+	case DTLS_LISTEN:
+		ret = DTLSv1_listen(dtls_peer.ssl, &caddr);
+		next = DTLS_ACCEPT;
+		break;
 
-		goto out;
+	case DTLS_ACCEPT:
+		ret = SSL_accept(dtls_peer.ssl);
+		next = DTLS_ESTABLISHED;
+		break;
+
+	case DTLS_ESTABLISHED:
+		ret = SSL_read(dtls_peer.ssl, buf, sizeof(buf));
+		printf("buf: %s\n", ret, buf);
+		next = DTLS_ESTABLISHED;
+		break;
+
+	default:
+		log_warnx("invalid DTLS peer state");
+		// logs and disconnect
+		return;
+
 	}
 
-	SSL_accept(ssl);
-	t = 1;
+	switch (SSL_get_error(dtls_peer.ssl, ret)) {
+	case SSL_ERROR_NONE:
+		break;
+	case SSL_ERROR_WANT_READ:
+		// XXX timeout
+		return;
+	default:
+		// XXX logs... and disconnect
+		return;
+	}
 
-out:
+	dtls_peer.state = next;
+
 	return;
 
 error:
-	SSL_free(ssl);
-	ssl = NULL;
+	SSL_free(dtls_peer.ssl);
+	dtls_peer.ssl = NULL;
 	BIO_free(bio);
 	bio = NULL;
 }
@@ -411,7 +442,6 @@ switch_init(json_t *config)
 
 	if (SSL_CTX_set_cipher_list(ctx, "ECDH-ECDSA-AES256-SHA") == 0)
 		fatalx("%s: SSL_CTX_set_cipher_list", __func__);
-
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
