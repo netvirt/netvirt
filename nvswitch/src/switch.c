@@ -46,10 +46,11 @@ enum dtls_state {
 
 struct dtls_peer {
 	RB_ENTRY(dtls_peer)	 entry;
-	SSL			*ssl;
 	struct sockaddr_storage  ss;
-	socklen_t		 ss_len;
+	struct event		*timer;
 	enum dtls_state		 state;
+	socklen_t		 ss_len;
+	SSL			*ssl;
 };
 
 RB_HEAD(dtls_peer_tree, dtls_peer);
@@ -62,25 +63,58 @@ static struct addrinfo		*ai;
 static int			 cookie_initialized;
 static unsigned char		 cookie_secret[16];
 
-static struct dtls_peer	*dtls_peer_new();
+static int		 cert_verify_cb(int, X509_STORE_CTX *);
+static struct dtls_peer	*dtls_peer_new(int);
 static void		 dtls_peer_free(struct dtls_peer *);
+static int		 dtls_peer_process(struct dtls_peer *);
+static void		 dtls_peer_timeout_cb(int, short, void *);
 static int		 dtls_peer_cmp(const struct dtls_peer *,
 			    const struct dtls_peer *);
+RB_PROTOTYPE_STATIC(dtls_peer_tree, dtls_peer, entry, dtls_peer_cmp);
+
 int
 dtls_peer_cmp(const struct dtls_peer *a, const struct dtls_peer *b)
 {
 
+	if (a->ss_len < b->ss_len)
+		return (-1);
+	if (b->ss_len > b->ss_len)
+		return (1);
+	return (memcmp(&a->ss, &b->ss, a->ss_len));
+
 }
 
 struct dtls_peer *
-dtls_peer_new()
+dtls_peer_new(int sock)
 {
+	BIO			*bio = NULL;
 	struct dtls_peer	*p = NULL;
 
 	if ((p = malloc(sizeof(*p))) == NULL) {
 		log_warn("%s: malloc", __func__);
 		goto error;
 	}
+
+	if ((p->ssl = SSL_new(ctx)) == NULL) {
+		log_warnx("%s: SSL_new", __func__);
+		goto error;
+	}
+
+	SSL_set_accept_state(p->ssl);
+	SSL_set_verify(p->ssl,
+	    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
+	    cert_verify_cb);
+
+	if ((bio = BIO_new_dgram(sock, BIO_NOCLOSE)) == NULL) {
+		log_warnx("%s: BIO_new_dgram", __func__);
+		goto error;
+	}
+
+	SSL_set_bio(p->ssl, bio, bio);
+
+	p->state = DTLS_LISTEN;
+	p->timer = evtimer_new(ev_base, dtls_peer_timeout_cb, p);
+
 
 	return (p);
 
@@ -93,6 +127,69 @@ void
 dtls_peer_free(struct dtls_peer *p)
 {
 
+}
+
+int
+dtls_peer_process(struct dtls_peer *p)
+{
+	struct timeval		 tv;
+	struct sockaddr		 caddr;
+	enum dtls_state		 next_state;
+	int			 ret;
+	char			 buf[1500] = {0};
+
+	switch (p->state) {
+	case DTLS_LISTEN:
+		ret = DTLSv1_listen(p->ssl, &caddr);
+		next_state = DTLS_ACCEPT;
+		break;
+
+	case DTLS_ACCEPT:
+		ret = SSL_accept(p->ssl);
+		next_state = DTLS_ESTABLISHED;
+		break;
+
+	case DTLS_ESTABLISHED:
+		ret = SSL_read(p->ssl, buf, sizeof(buf));
+		printf("buf: %s\n", buf);
+		next_state = DTLS_ESTABLISHED;
+		break;
+
+	default:
+		log_warnx("invalid DTLS peer state");
+		// logs and disconnect
+		return (-1);
+
+	}
+
+	switch (SSL_get_error(p->ssl, ret)) {
+	case SSL_ERROR_NONE:
+		break;
+	case SSL_ERROR_WANT_READ:
+		if (DTLSv1_get_timeout(p->ssl, &tv) == 1 &&
+		    evtimer_add(p->timer, &tv) < 0)
+		return (-1);
+	default:
+		// XXX logs... and disconnect
+		return (-1);
+	}
+
+	p->state = next_state;
+
+	return (0);
+}
+
+void
+dtls_peer_timeout_cb(int fd, short event, void *arg)
+{
+	struct dtls_peer	*p = arg;
+
+	DTLSv1_handle_timeout(p->ssl);
+
+	if (dtls_peer_process(p) < 0) {
+		RB_REMOVE(dtls_peer_tree, &dtls_peers, p);
+		dtls_peer_free(p);
+	}
 }
 
 int
@@ -121,7 +218,8 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 
 	printf("servername_cb\n");
 
-	if ((servername = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name)) == NULL)
+	if ((servername = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name))
+	    == NULL)
 		return (SSL_TLSEXT_ERR_NOACK);
 
 	printf(">>> name %s\n", servername);
@@ -153,6 +251,7 @@ generate_cookie(SSL *ssl, unsigned char *cookie, unsigned int *cookie_len)
 	unsigned int	 length, resultlength;
 
 	printf("generate cookie\n");
+
 	union {
 		struct sockaddr sa;
 		struct sockaddr_in s4;
@@ -227,6 +326,7 @@ verify_cookie(SSL *ssl, unsigned char *cookie, unsigned int cookie_len)
 	unsigned int	 length, resultlength;
 
 	printf("verify cookie\n");
+
 	union {
 		struct sockaddr sa;
 		struct sockaddr_in s4;
@@ -291,100 +391,42 @@ verify_cookie(SSL *ssl, unsigned char *cookie, unsigned int cookie_len)
     return (0);
 }
 
-BIO		*bio = NULL;
-
-struct dtls_peer	 dtls_peer;
-
 void
 udplisten_cb(int sock, short what, void *ctx)
 {
-	struct sockaddr		 caddr;
-	int			 ret;
-	enum dtls_state		 next;
-	char			 buf[1500] = {0};
+	struct dtls_peer	*p, needle;
 
 	printf("udplisten_cb\n");
 
-	dtls_peer.ss_len = sizeof(struct dtls_peer);
+	needle.ss_len = sizeof(struct dtls_peer);
 	char s[INET6_ADDRSTRLEN];
 
-	recvfrom(sock, NULL, 0, MSG_PEEK, (struct sockaddr *)&dtls_peer.ss, &dtls_peer.ss_len);
+	recvfrom(sock, NULL, 0, MSG_PEEK, (struct sockaddr *)&needle.ss,
+	    &needle.ss_len);
+
 	printf("got packet from %s :: %d\n",
-		inet_ntop(dtls_peer.ss.ss_family,
-		&((struct sockaddr_in*)&dtls_peer.ss)->sin_addr, s, sizeof(s)),
-		ntohs(&((struct sockaddr_in*)&dtls_peer.ss)->sin_port));
+		inet_ntop(needle.ss.ss_family,
+		&((struct sockaddr_in*)&needle.ss)->sin_addr, s, sizeof(s)),
+		ntohs(&((struct sockaddr_in*)&needle.ss)->sin_port));
 
-	// dtls_peer = FIND() ...
-	// if exist ... readto...
-		// else try to handshake
+	if ((p = RB_FIND(dtls_peer_tree, &dtls_peers, &needle)) == NULL) {
 
-	// XXX WIP of dtls_peer_new()
-	if (dtls_peer.ssl == NULL) {
-		printf("create ssl !\n");
-		if ((dtls_peer.ssl = SSL_new(ctx)) == NULL) {
-			log_warnx("%s: SSL_new", __func__);
+		if ((p = dtls_peer_new(sock)) == NULL)
 			goto error;
+		else {
+			p->ss = needle.ss;
+			p->ss_len = needle.ss_len;
+			RB_INSERT(dtls_peer_tree, &dtls_peers, p);
 		}
-
-		SSL_set_accept_state(dtls_peer.ssl);
-		SSL_set_verify(dtls_peer.ssl,
-		    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
-		    cert_verify_cb);
-
-		if ((bio = BIO_new_dgram(sock, BIO_NOCLOSE)) == NULL) {
-			log_warnx("%s: BIO_new_dgram", __func__);
-			goto error;
-		}
-
-		SSL_set_bio(dtls_peer.ssl, bio, bio);
-
-		dtls_peer.state = DTLS_LISTEN;
 	}
 
-	switch (dtls_peer.state) {
-	case DTLS_LISTEN:
-		ret = DTLSv1_listen(dtls_peer.ssl, &caddr);
-		next = DTLS_ACCEPT;
-		break;
-
-	case DTLS_ACCEPT:
-		ret = SSL_accept(dtls_peer.ssl);
-		next = DTLS_ESTABLISHED;
-		break;
-
-	case DTLS_ESTABLISHED:
-		ret = SSL_read(dtls_peer.ssl, buf, sizeof(buf));
-		printf("buf: %s\n", ret, buf);
-		next = DTLS_ESTABLISHED;
-		break;
-
-	default:
-		log_warnx("invalid DTLS peer state");
-		// logs and disconnect
-		return;
-
-	}
-
-	switch (SSL_get_error(dtls_peer.ssl, ret)) {
-	case SSL_ERROR_NONE:
-		break;
-	case SSL_ERROR_WANT_READ:
-		// XXX timeout
-		return;
-	default:
-		// XXX logs... and disconnect
-		return;
-	}
-
-	dtls_peer.state = next;
-
+	if (dtls_peer_process(p) < 0)
+		goto error;
 	return;
 
 error:
-	SSL_free(dtls_peer.ssl);
-	dtls_peer.ssl = NULL;
-	BIO_free(bio);
-	bio = NULL;
+	dtls_peer_free(p);
+	return;
 }
 
 void
