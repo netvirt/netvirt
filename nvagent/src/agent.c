@@ -77,8 +77,7 @@ udpclient_cb(int sock, short what, void *arg)
 
         ssl = arg;
 
-//        if ((ret = SSL_read(ssl, &buf, sizeof(buf))) < 0) {
-	while (SSL_connect(ssl) <= 0) {
+        if ((ret = SSL_read(ssl, &buf, sizeof(buf))) < 0) {
                 ret = SSL_get_error(ssl, ret);
                 fprintf(stderr, "SSL_read: error %d (%d-%d)\n", ret, SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE);
                 ERR_print_errors_fp(stderr);
@@ -218,30 +217,31 @@ agent_init(void)
 	SSL_library_init();
 	SSL_load_error_strings();
 
-//	if (!RAND_poll())
-//		err(1, "%s:%d", "RAND_poll", __LINE__);
+	if (!RAND_poll())
+		err(1, "%s:%d", "RAND_poll", __LINE__);
 
 	if ((ctx = SSL_CTX_new(DTLSv1_client_method())) == NULL)
 		errx(1, "%s:%d", "SSL_CTX_new", __LINE__);
 
-//	if ((passport = pki_passport_load_from_file(cert, pkey, trust_cert)) == NULL)
-//		err(1, "%s:%d", "pki_passport_load_from_file", __LINE__);
+	if ((passport = pki_passport_load_from_file(cert, pkey, trust_cert)) == NULL)
+		err(1, "%s:%d", "pki_passport_load_from_file", __LINE__);
 
+	SSL_CTX_set_read_ahead(ctx, 1);
 	/* Load the trusted certificate store into our SSL_CTX */
-//	SSL_CTX_set_cert_store(ctx, passport->cacert_store);
+	SSL_CTX_set_cert_store(ctx, passport->cacert_store);
 
 	/* Set the certificate and key */
-//	SSL_CTX_use_certificate(ctx, passport->certificate);
-//	SSL_CTX_use_PrivateKey(ctx, passport->keyring);
+	SSL_CTX_use_certificate(ctx, passport->certificate);
+	SSL_CTX_use_PrivateKey(ctx, passport->keyring);
 
-//	if ((ret = SSL_CTX_set_cipher_list(ctx, "AES256-SHA")) == 0)
-//		err(1, "%s:%d", "SSL_CTX_set_cipher_list", __LINE__);
+	if ((ret = SSL_CTX_set_cipher_list(ctx, "ECDH-ECDSA-AES256-SHA")) == 0)
+		err(1, "%s:%d", "SSL_CTX_set_cipher_list", __LINE__);
 
-//	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL)
-//		err(1, "%s:%d", "EC_KEY_new_by_curve_name", __LINE__);
+	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL)
+		err(1, "%s:%d", "EC_KEY_new_by_curve_name", __LINE__);
 
-//	SSL_CTX_set_tmp_ecdh(ctx, ecdh);
-//	EC_KEY_free(ecdh);
+	SSL_CTX_set_tmp_ecdh(ctx, ecdh);
+	EC_KEY_free(ecdh);
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
@@ -263,9 +263,9 @@ agent_init(void)
 	if ((ssl = SSL_new(ctx)) == NULL)
 		warnx("%s:%d", "SSL_new", __LINE__);
 
-//	SSL_set_tlsext_host_name(ssl, "W1mOpl6pYICUB1-Il8B26HlP");
-//	SSL_set_verify(ssl,
-//	    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, certverify_cb);
+	SSL_set_tlsext_host_name(ssl, "W1mOpl6pYICUB1-Il8B26HlP");
+	SSL_set_verify(ssl,
+	    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, certverify_cb);
 
 	if ((bio = BIO_new_dgram(sock, BIO_NOCLOSE)) == NULL)
 		warnx("%s:%d", "BIO_new_dgram", __LINE__);
