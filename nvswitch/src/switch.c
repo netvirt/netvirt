@@ -57,7 +57,6 @@ RB_HEAD(dtls_peer_tree, dtls_peer);
 
 static struct dtls_peer_tree	 dtls_peers;
 static SSL_CTX			*ctx;
-static passport_t		*passport;
 static struct event		*ev_udplisten;
 static struct addrinfo		*ai;
 static int			 cookie_initialized;
@@ -140,16 +139,19 @@ dtls_peer_process(struct dtls_peer *p)
 
 	switch (p->state) {
 	case DTLS_LISTEN:
+		printf("listen\n");
 		ret = DTLSv1_listen(p->ssl, &caddr);
 		next_state = DTLS_ACCEPT;
 		break;
 
 	case DTLS_ACCEPT:
+		printf("accept\n");
 		ret = SSL_accept(p->ssl);
 		next_state = DTLS_ESTABLISHED;
 		break;
 
 	case DTLS_ESTABLISHED:
+		printf("ssl read\n");
 		ret = SSL_read(p->ssl, buf, sizeof(buf));
 		printf("buf: %s\n", buf);
 		next_state = DTLS_ESTABLISHED;
@@ -166,14 +168,17 @@ dtls_peer_process(struct dtls_peer *p)
 	case SSL_ERROR_NONE:
 		break;
 	case SSL_ERROR_WANT_READ:
+		printf("want read !\n");
 		if (DTLSv1_get_timeout(p->ssl, &tv) == 1 &&
 		    evtimer_add(p->timer, &tv) < 0)
-		return (-1);
+			return (-1);
+		return (0);
 	default:
 		// XXX logs... and disconnect
 		return (-1);
 	}
 
+	printf("next step\n");
 	p->state = next_state;
 
 	return (0);
@@ -184,6 +189,7 @@ dtls_peer_timeout_cb(int fd, short event, void *arg)
 {
 	struct dtls_peer	*p = arg;
 
+	printf("timeout !\n");
 	DTLSv1_handle_timeout(p->ssl);
 
 	if (dtls_peer_process(p) < 0) {
@@ -410,15 +416,17 @@ udplisten_cb(int sock, short what, void *ctx)
 		ntohs(&((struct sockaddr_in*)&needle.ss)->sin_port));
 
 	if ((p = RB_FIND(dtls_peer_tree, &dtls_peers, &needle)) == NULL) {
-
+		printf("not found\n");
 		if ((p = dtls_peer_new(sock)) == NULL)
 			goto error;
 		else {
+			printf("created\n");
 			p->ss = needle.ss;
 			p->ss_len = needle.ss_len;
 			RB_INSERT(dtls_peer_tree, &dtls_peers, p);
 		}
-	}
+	} else
+		printf("found !\n");
 
 	if (dtls_peer_process(p) < 0)
 		goto error;
@@ -517,7 +525,6 @@ switch_fini()
 {
 	SSL_CTX_free(ctx);
 	freeaddrinfo(ai);
-	pki_passport_destroy(passport);
 	if (ev_udplisten != NULL)
 		evsignal_del(ev_udplisten);
 	event_base_free(ev_base);
