@@ -9,15 +9,15 @@ Debian based system (i586, x86_64):
 
 Add _one_ of the following lines in /etc/apt/sources.list (or in /etc/apt/sources.list.d):
 
-deb http://download.opensuse.org/repositories/home:/netvirt/Debian_6.0 ./
 deb http://download.opensuse.org/repositories/home:/netvirt/Debian_7.0 ./
+deb http://download.opensuse.org/repositories/home:/netvirt/Debian_8.0 ./
 deb http://download.opensuse.org/repositories/home:/netvirt/xUbuntu_12.04 ./
 deb http://download.opensuse.org/repositories/home:/netvirt/xUbuntu_14.10 ./
 
 Then add _one_ the following signature keys:
 
-wget -qO - 'http://download.opensuse.org/repositories/home:netvirt/Debian_6.0/Release.key' | sudo apt-key add -
 wget -qO - 'http://download.opensuse.org/repositories/home:netvirt/Debian_7.0/Release.key' | sudo apt-key add -
+wget -qO - 'http://download.opensuse.org/repositories/home:netvirt/Debian_8.0/Release.key' | sudo apt-key add -
 wget -qO - 'http://download.opensuse.org/repositories/home:netvirt/xUbuntu_12.04/Release.key' | sudo apt-key add -
 wget -qO - 'http://download.opensuse.org/repositories/home:netvirt/xUbuntu_14.10/Release.key' | sudo apt-key add -
 
