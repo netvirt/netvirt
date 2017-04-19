@@ -41,6 +41,7 @@ and see what it does if you need to build the client on another
 Linux distribution/platform.
 
 wget https://raw.githubusercontent.com/netvirt/netvirt/master/build_farm/build-debian.sh
+chmod a+x build-debian.sh
 sudo ./build-debian.sh
 
 NetVirt Server
