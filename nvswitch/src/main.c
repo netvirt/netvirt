@@ -66,9 +66,7 @@ main(int argc, char *argv[])
 
 	control_init();
 
-//	while (control_initialized == 0)
-//		sleep(1);
-//	switch_init(config);
+	switch_init(config);
 
 	json_decref(config);
 	event_base_dispatch(ev_base);
@@ -76,7 +74,7 @@ main(int argc, char *argv[])
 	event_free(ev_sigterm);
 	event_base_free(ev_base);
 
-//	switch_fini();
+	switch_fini();
 
 	warnx("now off");
 
