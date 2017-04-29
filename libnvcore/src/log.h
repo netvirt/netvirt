@@ -1,6 +1,8 @@
 #ifndef LOG_H
 #define LOG_H
 
+#include <stdarg.h>
+
 void	log_init(int, int);
 void	log_procinit(const char *);
 void	log_verbose(int);
