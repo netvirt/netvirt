@@ -89,7 +89,7 @@ response_node_delete(json_t *jmsg)
 	}
 
 	/* remove the node from the access table */
-	ctable_erase(vnet->atable, uuid);
+	//ctable_erase(vnet->atable, uuid);
 
 #if 0
 	/* if the node is connected, mark it to be purged */
@@ -119,10 +119,10 @@ response_network_delete(json_t *jmsg)
 		return -1;
 	}
 
-	if ((vnet = vnetwork_disable(network_uuid)) == NULL) {
-		warn("context_disable failed");
-		return -1;
-	}
+//	if ((vnet = vnetwork_disable(network_uuid)) == NULL) {
+//		warn("context_disable failed");
+//		return -1;
+//	}
 
 #if 0
 	session_list = vnet->session_list;
@@ -228,7 +228,7 @@ response_network_list(json_t *jmsg)
 		    "cert", &cert, "pvkey", &pvkey, "cacert", &cacert) < 0)
 			log_warnx("%s: json_unpack", __func__);
 
-		//vnetwork_create(uid, cert, pvkey, cacert);
+		vnetwork_create(uid, cert, pvkey, cacert);
 	}
 
 
@@ -382,13 +382,15 @@ on_read_cb(struct bufferevent *bev, void *arg)
 			goto error;
 		}
 
+	printf("action: %s\n", action);
 		if (strcmp(action, "switch-network-list") == 0) {
 			if ((ret = response_network_list(jmsg)) < 0) {
 				log_warnx("%s: response_network_list", __func__);
 				goto error;
 			}
+			printf("ret %d\n", ret);
 			if (ret == 1 && control_init_done == 0) {
-				log_info("networks initalized");
+				log_warnx("networks initalized");
 				if (request_node_list(jmsg) < 0) {
 					log_warnx("%s: request_node_list",
 					    __func__);
@@ -645,8 +647,8 @@ control_init()
 	if (json_unpack(config, "{s:s}", "privatekey", &pvkey) < 0)
 		fatalx("privatekey not found in config");
 
-	if (json_unpack(config, "{s:s}", "cacertificate", &cacert) < 0)
-		fatalx("trusted_cert not found in config");
+	if (json_unpack(config, "{s:s}", "cacert", &cacert) < 0)
+		fatalx("cacert not found in config");
 
 	if ((passport = pki_passport_load_from_file(cert,
 	    pvkey, cacert)) == NULL)
@@ -662,5 +664,5 @@ control_fini()
 	if (bufev_sock != NULL)
 		bufferevent_free(bufev_sock);
 	pki_passport_destroy(passport);
-	vnetworks_free();
+	//vnetworks_free();
 }
