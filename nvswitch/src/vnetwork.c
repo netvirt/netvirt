@@ -72,6 +72,7 @@ vnetwork_free(struct vnetwork *vnet)
 {
 	if (vnet) {
 		pki_passport_destroy(vnet->passport);
+		vnet->ctx = NULL;
 		free(vnet->uid);
 		free(vnet);
 	}
@@ -90,6 +91,7 @@ vnetwork_create(char *uid, char *cert, char *pvkey, char *cacert)
 	vnet->uid = strdup(uid);
 	vnet->passport = pki_passport_load_from_memory(cert, pvkey, cacert);
 	vnet->active_node = 0;
+	vnet->ctx = NULL;
 
 	LIST_INIT(&vnet->sessions);
 	RB_INSERT(vnetwork_tree, &vnetworks, vnet);

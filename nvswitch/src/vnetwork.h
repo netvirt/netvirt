@@ -43,6 +43,7 @@ struct vnetwork {
 //	ctable_t		*ctable;			// connection table
 //	ctable_t		*atable;			// access table
 	passport_t		*passport;
+	void			*ctx;
 	char			*uid;
 	uint32_t		 active_node;			// number of connected node
 };

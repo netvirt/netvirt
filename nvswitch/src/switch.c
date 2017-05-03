@@ -56,12 +56,15 @@ struct dtls_peer {
 RB_HEAD(dtls_peer_tree, dtls_peer);
 
 static struct dtls_peer_tree	 dtls_peers;
+static EC_KEY			*ecdh;
 static SSL_CTX			*ctx;
 static struct event		*ev_udplisten;
 static struct addrinfo		*ai;
 static int			 cookie_initialized;
 static unsigned char		 cookie_secret[16];
 
+static int		 generate_cookie(SSL *, unsigned char *, unsigned int *);
+static int		 verify_cookie(SSL *, unsigned char *, unsigned int);
 static int		 cert_verify_cb(int, X509_STORE_CTX *);
 static struct dtls_peer	*dtls_peer_new(int);
 static void		 dtls_peer_free(struct dtls_peer *);
@@ -80,7 +83,6 @@ dtls_peer_cmp(const struct dtls_peer *a, const struct dtls_peer *b)
 	if (b->ss_len > b->ss_len)
 		return (1);
 	return (memcmp(&a->ss, &b->ss, a->ss_len));
-
 }
 
 struct dtls_peer *
@@ -139,36 +141,29 @@ dtls_peer_process(struct dtls_peer *p)
 
 	switch (p->state) {
 	case DTLS_LISTEN:
-		printf("listen\n");
 		ret = DTLSv1_listen(p->ssl, &caddr);
 		next_state = DTLS_ACCEPT;
 		break;
 
 	case DTLS_ACCEPT:
-		printf("accept\n");
 		ret = SSL_accept(p->ssl);
 		next_state = DTLS_ESTABLISHED;
 		break;
 
 	case DTLS_ESTABLISHED:
-		printf("ssl read\n");
 		ret = SSL_read(p->ssl, buf, sizeof(buf));
-		printf("buf: %s\n", buf);
 		next_state = DTLS_ESTABLISHED;
 		break;
 
 	default:
 		log_warnx("invalid DTLS peer state");
-		// logs and disconnect
 		return (-1);
-
 	}
 
 	switch (SSL_get_error(p->ssl, ret)) {
 	case SSL_ERROR_NONE:
 		break;
 	case SSL_ERROR_WANT_READ:
-		printf("want read !\n");
 		if (DTLSv1_get_timeout(p->ssl, &tv) == 1 &&
 		    evtimer_add(p->timer, &tv) < 0)
 			return (-1);
@@ -178,7 +173,6 @@ dtls_peer_process(struct dtls_peer *p)
 		return (-1);
 	}
 
-	printf("next step\n");
 	p->state = next_state;
 
 	return (0);
@@ -189,7 +183,6 @@ dtls_peer_timeout_cb(int fd, short event, void *arg)
 {
 	struct dtls_peer	*p = arg;
 
-	printf("timeout !\n");
 	DTLSv1_handle_timeout(p->ssl);
 
 	if (dtls_peer_process(p) < 0) {
@@ -205,28 +198,27 @@ cert_verify_cb(int ok, X509_STORE_CTX *store)
 	X509_NAME	*name;
 	char		 buf[256];
 
-	printf("certverify_cb\n");
-/*
 	cert = X509_STORE_CTX_get_current_cert(store);
 	name = X509_get_subject_name(cert);
 	X509_NAME_get_text_by_NID(name, NID_commonName, buf, 256);
 
 	printf("CN: %s\n", buf);
-*/
+
 	return (ok);
 }
 
 int
 servername_cb(SSL *ssl, int *ad, void *arg)
 {
+	SSL_CTX		*ctx;
 	struct vnetwork	*vnet;
 	const char	*servername;
 
-	printf("servername_cb\n");
-
 	if ((servername = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name))
-	    == NULL)
-		return (SSL_TLSEXT_ERR_NOACK);
+	    == NULL) {
+		log_warnx("%s: no servername received", __func__);
+		return (SSL_TLSEXT_ERR_ALERT_FATAL);
+	}
 
 	printf(">>> name %s\n", servername);
 
@@ -234,8 +226,30 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 		printf("vnet is NULL!\n");
 	}
 
-	/* Load the trusted certificate store into our SSL_CTX */
-	SSL_CTX_set_cert_store(ctx, vnet->passport->cacert_store);
+	if (vnet->ctx == NULL) {
+
+		if ((ctx = SSL_CTX_new(DTLSv1_method())) == NULL)
+			log_warnx("%s: SSL_CTX_new", __func__);
+
+		SSL_CTX_set_read_ahead(ctx, 1);
+
+		SSL_CTX_set_options(ctx, SSL_OP_SINGLE_ECDH_USE);
+
+		SSL_CTX_set_cookie_generate_cb(ctx, generate_cookie);
+		SSL_CTX_set_cookie_verify_cb(ctx, verify_cookie);
+		SSL_CTX_set_tlsext_servername_callback(ctx, servername_cb);
+		SSL_CTX_set_tlsext_servername_arg(ctx, NULL);
+
+		if (SSL_CTX_set_cipher_list(ctx, "ECDH-ECDSA-AES256-SHA") == 0)
+			log_warnx("%s: SSL_CTX_set_cipher_list", __func__);
+
+		/* Load the trusted certificate store into our SSL_CTX */
+		SSL_CTX_set_cert_store(ctx, vnet->passport->cacert_store);
+
+		vnet->ctx = ctx;
+	} else {
+		ctx = vnet->ctx; /* XXX free me */
+	}
 
 	SSL_set_SSL_CTX(ssl, ctx);
 
@@ -255,8 +269,6 @@ generate_cookie(SSL *ssl, unsigned char *cookie, unsigned int *cookie_len)
 	unsigned char	*buffer;
 	unsigned char	 result[EVP_MAX_MD_SIZE];
 	unsigned int	 length, resultlength;
-
-	printf("generate cookie\n");
 
 	union {
 		struct sockaddr sa;
@@ -331,8 +343,6 @@ verify_cookie(SSL *ssl, unsigned char *cookie, unsigned int cookie_len)
 	unsigned char	 result[EVP_MAX_MD_SIZE];
 	unsigned int	 length, resultlength;
 
-	printf("verify cookie\n");
-
 	union {
 		struct sockaddr sa;
 		struct sockaddr_in s4;
@@ -402,8 +412,6 @@ udplisten_cb(int sock, short what, void *ctx)
 {
 	struct dtls_peer	*p, needle;
 
-	printf("udplisten_cb\n");
-
 	needle.ss_len = sizeof(struct dtls_peer);
 	char s[INET6_ADDRSTRLEN];
 
@@ -416,17 +424,14 @@ udplisten_cb(int sock, short what, void *ctx)
 		ntohs(&((struct sockaddr_in*)&needle.ss)->sin_port));
 
 	if ((p = RB_FIND(dtls_peer_tree, &dtls_peers, &needle)) == NULL) {
-		printf("not found\n");
 		if ((p = dtls_peer_new(sock)) == NULL)
 			goto error;
 		else {
-			printf("created\n");
 			p->ss = needle.ss;
 			p->ss_len = needle.ss_len;
 			RB_INSERT(dtls_peer_tree, &dtls_peers, p);
 		}
-	} else
-		printf("found !\n");
+	}
 
 	if (dtls_peer_process(p) < 0)
 		goto error;
@@ -440,7 +445,6 @@ error:
 void
 switch_init(json_t *config)
 {
-	EC_KEY		*ecdh;
 	struct addrinfo	 hints;
 	int		 status;
 	int		 sock;
@@ -472,7 +476,7 @@ switch_init(json_t *config)
 	if (!RAND_poll())
 		fatalx("%s: RAND_poll", __func__);
 
-	if ((ctx = SSL_CTX_new(DTLSv1_server_method())) == NULL)
+	if ((ctx = SSL_CTX_new(DTLSv1_method())) == NULL)
 		fatalx("%s: SSL_CTX_new", __func__);
 
 	SSL_CTX_set_read_ahead(ctx, 1);
@@ -488,7 +492,6 @@ switch_init(json_t *config)
 		fatalx("%s: EC_KEY_new_by_curve_name", __func__);
 
 	SSL_CTX_set_tmp_ecdh(ctx, ecdh);
-	EC_KEY_free(ecdh);
 
 	if (SSL_CTX_set_cipher_list(ctx, "ECDH-ECDSA-AES256-SHA") == 0)
 		fatalx("%s: SSL_CTX_set_cipher_list", __func__);
@@ -529,6 +532,7 @@ switch_fini()
 		evsignal_del(ev_udplisten);
 	event_base_free(ev_base);
 
+	EC_KEY_free(ecdh);
 	ERR_remove_state(0);
 	ERR_free_strings();
 	EVP_cleanup();
