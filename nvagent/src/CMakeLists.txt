@@ -12,7 +12,8 @@ else()
 endif()
 
 set(nvagent_sources
-	agent.c)
+	agent.c
+	ndb.c)
 
 message(STATUS "CMAKE_SOURCE_DIR" ${CMAKE_SOURCE_DIR})
 
