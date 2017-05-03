@@ -173,9 +173,9 @@ client_get_newresetkey(char *msg, char **resp)
 	json_t		*jclient = NULL;
 	json_t		*jresp = NULL;
 	json_error_t	 error;
+	int		 ret = 0;
 	char		*email = NULL;
 	char		*resetkey = NULL;
-	int		 ret = 0;
 
 	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
 		warnx("json_loadb: %s", error.text);
