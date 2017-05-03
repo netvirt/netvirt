@@ -14,11 +14,34 @@
  * GNU General Public License for more details.
  */
 
-#include <err.h>
 #include <signal.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#include <event2/event.h>
 
 #include "../agent.h"
 
+static void		 usage(void);
+static void		 sighandler(int, short, void *);
+
+struct event_base	*ev_base = NULL;
+
+void
+usage(void)
+{
+	extern char	*__progname;
+	fprintf(stderr, "usage: %s\n"
+	    "\t-p\tprovisioning key\n"
+	    "\t-n\tnetwork name\n"
+	    "\t-l\tlist available network names\n"
+	    "\t-h\thelp\n"
+	    "\n\tProvision a new network: ./%s -p your_provisioning_key "
+	    "-n my_new_network\n"
+	    "\tConnect to a provisioned network: ./%s -n my_new_network\n"
+	    , __progname, __progname, __progname);
+	exit(1);
+}
 
 void
 sighandler(int signal, short events, void *arg)
@@ -30,29 +53,70 @@ sighandler(int signal, short events, void *arg)
 }
 
 int
-main()
+main(int argc, char *argv[])
 {
-//	struct event	ev_sigint;
-//	struct event	ev_sigterm;
+	struct event	*ev_sigint;
+	struct event	*ev_sigterm;
+	int		 ch;
+	char		*provcode = NULL;
+	char		*network_name = NULL;
 
-/*
-	signal_set(&ev_sigint, SIGINT, sighandler, ev_base);
-	if (signal_add(&ev_sigint, NULL) < 0)
-		errx(1, "signal_add");
+	while ((ch = getopt(argc, argv, "hp:n:l")) != -1) {
 
-	signal_set(&ev_sigterm, SIGTERM, sighandler, ev_base);
-	if (signal_add(&ev_sigterm, NULL) < 0)
-		errx(1, "signal_add");
-*/
+		switch (ch) {
+		case 'p':
+			provcode = optarg;
+			break;
+		case 'n':
+			network_name = optarg;
+			break;
+		case 'l':
+			printf("list network names\n");
+			break;
+		case 'h':
+		default:
+			usage();
+		}
+	}
+	argc -= optind;
+	argv += optind;
 
-//	agent_prov("W1mOpl6pYICUB1-Il8B26HlP$-XkALcRaZxMyhnId9BYQ6qvf$MxsLgHrNU7z088EToITDBfTe0jrTACxo9WSltn6r7J1EfFDp");
+	if (provcode != NULL && network_name == NULL) {
+		fprintf(stderr, "%s: You must specify a network name and"
+		    "a provisioning code", __func__);
+		usage();
+	}
 
-	agent_init();
+	ndb_init();
 
-	printf("here\n");
-	return 0;
+	if (provcode != NULL && network_name != NULL) {
+		return agent_provisioning(provcode, network_name);
+		//return agent_prov("W1mOpl6pYICUB1-Il8B26HlP$-XkALcRaZxMyhnId9BYQ6qvf$MxsLgHrNU7z088EToITDBfTe0jrTACxo9WSltn6r7J1EfFDp");
+	}
 
-	agent_fini();
+	if ((ev_base = event_base_new()) == NULL) {
+		fprintf(stderr, "%s: event_init", __func__);
+		exit(-1);
+	}
+
+	if ((ev_sigint = evsignal_new(ev_base, SIGINT, sighandler, ev_base))
+	    == NULL)
+		fprintf(stderr, "%s: evsignal_new", __func__); {
+		exit(-1);
+	}
+	event_add(ev_sigint, NULL);
+
+	if ((ev_sigterm = evsignal_new(ev_base, SIGTERM, sighandler, ev_base))
+	    == NULL) {
+		fprintf(stderr, "%s: evsignal_new", __func__);
+		exit(-1);
+	}
+	event_add(ev_sigterm, NULL);
+
+//	agent_init();
+//	agent_fini();
+
+	event_base_dispatch(ev_base);
 	event_base_free(ev_base);
 
 	return (0);
