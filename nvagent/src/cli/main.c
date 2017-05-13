@@ -65,6 +65,7 @@ main(int argc, char *argv[])
 
 		switch (ch) {
 		case 'p':
+			printf("optarg: %s\n", optarg);
 			provcode = optarg;
 			break;
 		case 'n':
@@ -83,38 +84,39 @@ main(int argc, char *argv[])
 
 	if (provcode != NULL && network_name == NULL) {
 		fprintf(stderr, "%s: You must specify a network name and"
-		    "a provisioning code", __func__);
+		    "a provisioning code\n", __func__);
 		usage();
 	}
 
-	ndb_init();
-
-	if (provcode != NULL && network_name != NULL) {
-		return agent_provisioning(provcode, network_name);
-		//return agent_prov("W1mOpl6pYICUB1-Il8B26HlP$-XkALcRaZxMyhnId9BYQ6qvf$MxsLgHrNU7z088EToITDBfTe0jrTACxo9WSltn6r7J1EfFDp");
-	}
-
 	if ((ev_base = event_base_new()) == NULL) {
-		fprintf(stderr, "%s: event_init", __func__);
+		fprintf(stderr, "%s: event_init\n", __func__);
 		exit(-1);
 	}
 
 	if ((ev_sigint = evsignal_new(ev_base, SIGINT, sighandler, ev_base))
-	    == NULL)
-		fprintf(stderr, "%s: evsignal_new", __func__); {
+	    == NULL) {
+		fprintf(stderr, "%s: evsignal_new\n", __func__); 
 		exit(-1);
 	}
 	event_add(ev_sigint, NULL);
 
 	if ((ev_sigterm = evsignal_new(ev_base, SIGTERM, sighandler, ev_base))
 	    == NULL) {
-		fprintf(stderr, "%s: evsignal_new", __func__);
+		fprintf(stderr, "%s: evsignal_new\n", __func__);
 		exit(-1);
 	}
 	event_add(ev_sigterm, NULL);
 
-//	agent_init();
-//	agent_fini();
+	printf("1\n");
+	ndb_init();
+
+	printf("2\n");
+	if (provcode != NULL && network_name != NULL) {
+		if (agent_provisioning(provcode, network_name) < 0)
+			usage();
+	}
+
+	agent_connect(network_name);
 
 	event_base_dispatch(ev_base);
 	event_base_free(ev_base);

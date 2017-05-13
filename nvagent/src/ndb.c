@@ -41,6 +41,7 @@ json_t			*jnetworks;
 int			 version;
 char			 ndb_path[256];
 
+static int	ndb_save();
 static int	ndb_fullpath(const char *, char *);
 static int	network_cmp(const struct network *, const struct network *);
 RB_PROTOTYPE_STATIC(network_tree, network, entry, network_cmp);
@@ -48,6 +49,8 @@ RB_PROTOTYPE_STATIC(network_tree, network, entry, network_cmp);
 int
 network_cmp(const struct network *a, const struct network *b)
 {
+	printf("a: %s\n", a->name);
+	printf("b: %s\n", b->name);
 	return strcmp(a->name, b->name);
 }
 
@@ -96,7 +99,7 @@ ndb_init(void)
 	size_t		 array_size;
 	size_t		 i;
 	char		 path[256];
-
+	printf("%d\n", __LINE__);
 #if defined(__unix__)
 	{
 		/* Create ~/.config/netvirt/ if it doesn't exist. */
@@ -122,7 +125,7 @@ ndb_init(void)
 		exit(-1);
 	}
 
-	if ((jdb = json_load_file(path, 0, &error)) == NULL)
+	if ((jdb = json_load_file(ndb_path, 0, &error)) == NULL)
 		return (0);
 
 	if ((json_unpack(jdb, "{s:i}", "version", &version)) == -1) {
@@ -142,10 +145,12 @@ ndb_init(void)
 		if ((n = malloc(sizeof(struct network))) == NULL)
 			return (-1);
 
-		json_unpack(jnetwork, "{s:s, s:s, s:s, s:s}", "name", n->name,
-		    "cert", n->cert, "pvkey", n->pvkey, "cacert", n->cacert);
+		json_unpack(jnetwork, "{s:s, s:s, s:s, s:s}", "name", &n->name,
+		    "cert", &n->cert, "pvkey", &n->pvkey, "cacert", &n->cacert);
 		n->idx = i;
 
+	printf("%d\n", __LINE__);
+		printf("name inserted %s\n", n->name);
 		RB_INSERT(network_tree, &networks, n);
 	}
 
@@ -157,6 +162,7 @@ ndb_network_add(const char *network_name, const char *pvkey,
     const char *cert, const char *cacert)
 {
 
+	printf("add new network\n");
 	struct network	*n;
 
 	if ((n = malloc(sizeof(struct network))) == NULL) {
@@ -182,6 +188,24 @@ ndb_network_remove(const char *network_name)
 	return (0);
 }
 
+
+int
+ndb_network(const char *network_name, char **pvkey, char **cert, char **cacert)
+{
+	struct network	needle, *n;
+	needle.name = (char *)network_name;
+	printf("%d\n", __LINE__); 
+	if ((n = RB_FIND(network_tree, &networks, &needle)) == NULL)
+		return (-1);
+
+	printf("%d\n", __LINE__); 
+	*pvkey = n->pvkey;
+	*cert = n->cert;
+	*cacert = n->cacert;
+
+	return (0);
+}
+
 int
 ndb_save()
 {
@@ -202,7 +226,7 @@ ndb_save()
 	}
 
 	if (json_object_set_new_nocheck(jdb, "version",
-	    json_string(NDB_VERSION)) < 0 ||
+	    json_integer(NDB_VERSION)) < 0 ||
 	    json_object_set_new_nocheck(jdb, "networks", jnetworks) < 0) {
 		fprintf(stderr, "%s: json_object_set_new_nocheck\n", __func__);
 		goto out;
@@ -236,7 +260,7 @@ ndb_save()
 
 	if (json_dump_file(jdb, ndb_path, JSON_INDENT(2)) < 0) {
 		fprintf(stderr, "%s: json_dump_file\n", __func__);
-		goto error;
+		goto out;
 	}
 
 	ret = 0;

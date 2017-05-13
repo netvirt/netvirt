@@ -23,32 +23,27 @@
 
 #include <openssl/x509_vfy.h>
 
-typedef struct node_info {
-	char type[3+1];
-	char uuid[36+1];
-	char network_uuid[36+1];
-	char network_id[5+1];
-	char v;
-} node_info_t;
+struct nodeinfo {
+	char	*version;
+	char	*type;
+	char	*networkid;
+	char	*nodeid;
+};
 
 typedef struct passport {
-	X509 *certificate;
-	EVP_PKEY *keyring;
-	X509_STORE *cacert_store;
-	X509 *cacert;
+	EVP_PKEY	*keyring;
+	X509		*certificate;
+	X509		*cacert;
+	X509_STORE	*cacert_store;
+	struct nodeinfo	*nodeinfo;
 } passport_t;
 
-char *cert_cname(X509 *);
-char *cert_altname_uri(X509 *);
-char *cert_uri(X509 *);
-void node_info_destroy(node_info_t *node_info);
-node_info_t *altname2node_info(char *altn);
-node_info_t *cn2node_info(char *cn);
-void pki_passport_destroy(passport_t *passport);
-passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, char *trusted_authority);
-passport_t *pki_passport_load_from_file(const char *certificate_filename,
-                                        const char *privatekey_filename,
-                                        const char *trusted_authority_filename);
+void		 nodeinfo_destroy(struct nodeinfo *);
+struct nodeinfo	*cert_get_nodeinfo(X509 *);
+
+void		 pki_passport_destroy(passport_t *);
+passport_t	*pki_passport_load_from_memory(char *, char *, char *);
+passport_t	*pki_passport_load_from_file(const char *, const char *, const char *);
 
 
 typedef struct digital_id {

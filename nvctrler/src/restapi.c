@@ -40,19 +40,26 @@ v1_client_create_cb(struct evhttp_request *req, void *arg)
 	const char		*phrase = "Bad Request";
 	void			*p;
 
-	if (evhttp_request_get_command(req) != EVHTTP_REQ_POST)
+	if (evhttp_request_get_command(req) != EVHTTP_REQ_POST) {
+
+		printf("not post!\n");
 		goto cleanup;
+	}
 
 	headers = evhttp_request_get_input_headers(req);
 
 	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
-		strncasecmp(type, "application/json", 16) != 0)
+		strncasecmp(type, "application/json", 16) != 0) {
+		printf("wrong header\n");
 		goto cleanup;
+	}
 
 	buf = evhttp_request_get_input_buffer(req);
 	evbuffer_add(buf, "\0", 1);
-	if ((p = evbuffer_pullup(buf, -1)) == NULL)
+	if ((p = evbuffer_pullup(buf, -1)) == NULL) {
+		printf("evbuffer...\n");
 		goto cleanup;
+	}
 
 	if (client_create(p) == -1) {
 		code = 403;
@@ -116,19 +123,25 @@ v1_client_get_newapikey_cb(struct evhttp_request *req, void *arg)
 	char			*msg;
 	void			*p;
 
-	if (evhttp_request_get_command(req) != EVHTTP_REQ_GET)
+	if (evhttp_request_get_command(req) != EVHTTP_REQ_POST) {
+		printf("post\n");
 		goto cleanup;
+	}
 
 	headers = evhttp_request_get_input_headers(req);
 
 	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
-		strncasecmp(type, "application/json", 16) != 0)
+		strncasecmp(type, "application/json", 16) != 0) {
+		printf("header\n");
 		goto cleanup;
+	}
 
 	buf = evhttp_request_get_input_buffer(req);
 	evbuffer_add(buf, "\0", 1);
-	if ((p = evbuffer_pullup(buf, -1)) == NULL)
+	if ((p = evbuffer_pullup(buf, -1)) == NULL) {
+		printf("buf\n");
 		goto cleanup;
+	}
 
 	if (client_get_newapikey(p, &msg) == -1) {
 		code = 403;
@@ -354,6 +367,7 @@ v1_network_list(struct evhttp_request *req, void *arg)
 	if ((respbuf = evbuffer_new()) == NULL)
 		goto cleanup;
 
+	/* XXX that doesnt work ... */
 	if (evbuffer_add_reference(respbuf, msg, strlen(msg), NULL, NULL) < 0)
 		goto cleanup;
 

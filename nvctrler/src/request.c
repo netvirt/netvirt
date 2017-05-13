@@ -129,35 +129,41 @@ client_get_newapikey(char *msg, char **resp)
 		warnx("json_loadb: %s", error.text);
 		return (-1);
 	}
-
+	printf("%d\n", __LINE__);
+ 
 	json_unpack(jmsg, "{s:s}", "email", &email);
 	if (email == NULL) {
 		ret = -1;
 		goto cleanup;
 	}
 
+	printf("%d\n", __LINE__);
 	json_unpack(jmsg, "{s:s}", "password", &password);
 	if (password == NULL) {
 		ret = -1;
 		goto cleanup;
 	}
 
+	printf("%d\n", __LINE__);
 	if ((new_apikey = pki_gen_key()) == NULL) {
 		ret = -1;
 		goto cleanup;
 	}
 
+	printf("%d\n", __LINE__);
 	if (dao_client_update_apikey2(email, password, new_apikey) < 0) {
 		ret = -1;
 		goto cleanup;
 	}
 
+	printf("%d\n", __LINE__);
 	jresp = json_object();
 	jclient = json_object();
 	json_object_set_new(jresp, "client", jclient);
 	json_object_set_new(jclient, "apikey", json_string(new_apikey));
 	*resp = json_dumps(jresp, JSON_INDENT(1));
 
+	printf("%d\n", __LINE__);
 cleanup:
 	json_decref(jmsg);
 	json_decref(jresp);
@@ -668,12 +674,16 @@ node_provisioning(const char *msg, char **resp)
 	    < 0)
 		return (-1);
 
+	printf("prov key : %s\n", provkey);
+
 	if ((str = strdup(provkey)) == NULL)
 		return (-1);
-        for ((i = 0, p = strtok_r(str, "$", &last)); p;
-            (p = strtok_r(NULL, "$", &last))) {
-                if (i < sizeof(tokens))
+        for ((i = 0, p = strtok_r(str, ":", &last)); p;
+            (p = strtok_r(NULL, ":", &last))) {
+                if (i < sizeof(tokens)) {
+			printf("%s\n", p);
                         tokens[i++] = p;
+		}
         }
         tokens[i] = NULL;
 
@@ -690,7 +700,7 @@ node_provisioning(const char *msg, char **resp)
 	if (dao_network_get_embassy(network_uid, &cacert, &pvkey, &serial) < 0)
 		return (-1);
 
-	if (asprintf(&cn, "1$nva$%s$%s", network_uid, node_uid) < 0) {
+	if (asprintf(&cn, "1:nva:%s:%s", network_uid, node_uid) < 0) {
 		ret = -1;
 		goto cleanup;
 	}

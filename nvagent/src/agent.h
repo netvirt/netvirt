@@ -23,10 +23,18 @@
 extern "C" {
 #endif
 
-extern struct event_base 	*ev_base;
+int	agent_connect(const char *);
+int	agent_provisioning(const char *, const char *);
 void	agent_fini(void);
 int	agent_init(void);
 
+int	ndb_init(void);
+int	ndb_network_add(const char *, const char *,
+	    const char *, const char *);
+int	ndb_network(const char *, char **, char **, char **);
+
+
+extern struct event_base 	*ev_base;
 #ifdef __cplusplus
 }
 #endif

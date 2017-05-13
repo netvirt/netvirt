@@ -45,105 +45,52 @@ char *cert_cname(X509 *cert)
 	return strdup(cn);
 }
 
-// XXX still needed ?
-char *cert_altname_uri(X509 *cert)
+void
+nodeinfo_destroy(struct nodeinfo *ni)
 {
-	GENERAL_NAMES *alt;
-	GENERAL_NAME *gname;
-	int count, i;
-	char *str = NULL;
+	free(ni->version);
+	free(ni->type);
+	free(ni->networkid);
+	free(ni->nodeid);
+	free(ni);
+}
 
-	alt = X509_get_ext_d2i(cert, NID_subject_alt_name, NULL, NULL);
-	count = sk_GENERAL_NAME_num(alt);
-	for (i = 0; i < count; i++) {
-		gname = sk_GENERAL_NAME_value(alt, i);
-		if (gname->type == GEN_URI) {
-			str = (char *)ASN1_STRING_data(gname->d.uniformResourceIdentifier);
-			str = strdup(str);
-			break;
+struct nodeinfo
+*cert_get_nodeinfo(X509 *cert)
+{
+	X509_NAME	*subj;
+	struct nodeinfo	*ni;
+	size_t		 i;
+	char		 cn[64];
+	char		*tokens[5];
+	char		*tok;
+	char		*last;
+
+	if ((subj = X509_get_subject_name(cert)) == NULL)
+		return (NULL);
+
+	if (X509_NAME_get_text_by_NID(subj, NID_commonName, cn, sizeof(cn)) < 0)
+		return (NULL);
+
+	for ((i = 0, tok = strtok_r(cn, ":", &last)); tok;
+	    (tok = strtok_r(NULL, ":", &last))) {
+		if (i < sizeof(tokens)) {
+			if (tok == NULL)
+				return (NULL);
+			tokens[i++] = tok;
 		}
 	}
-	sk_GENERAL_NAME_pop_free(alt, GENERAL_NAME_free);
-	return str;
-}
+	tokens[i] = NULL;
 
-// XXX still needed ?
-void node_info_destroy(node_info_t *node_info)
-{
-	free(node_info);
-}
+	if ((ni = malloc(sizeof(struct nodeinfo))) == NULL)
+		return (NULL);
 
-// XXX still needed ?
-node_info_t *altname2node_info(char *altn)
-{
-	// XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX@XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+	ni->version = strdup(tokens[0]);
+	ni->type = strdup(tokens[1]);
+	ni->networkid = strdup(tokens[2]);
+	ni->nodeid = strdup(tokens[3]);
 
-	node_info_t *ninfo = NULL;
-
-	ninfo = calloc(1, sizeof(node_info_t));
-
-	strncpy(ninfo->type, "nva", 3);
-	ninfo->type[3] = '\0';
-
-	strncpy(ninfo->uuid, altn, 36);
-	ninfo->uuid[36] = '\0';
-
-	strncpy(ninfo->network_uuid, altn+37, 36);
-	ninfo->uuid[36] = '\0';
-
-	ninfo->v = 2;
-
-	return ninfo;
-}
-
-// XXX still needed ?
-node_info_t *cn2node_info(char *cn)
-{
-	node_info_t *ninfo = NULL;
-	int len;
-
-	if (cn == NULL) {
-		return NULL;
-	}
-
-	if (!strncmp(cn, "nva-", 4) || !strncmp(cn, "dnc-", 4)) {
-
-		// nva-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX@99999
-
-		ninfo = calloc(1, sizeof(node_info_t));
-
-		strncpy(ninfo->type, cn, 3);
-		ninfo->type[3] = '\0';
-
-		strncpy(ninfo->uuid, cn+4, 36);
-		ninfo->uuid[36] = '\0';
-
-		len = strlen(cn) - 41;
-		if (len > 5)
-			len = 5;
-		strncpy(ninfo->network_id, cn+41, len);
-		ninfo->network_id[5] = '\0';
-
-		ninfo->v = 1;
-
-		return ninfo;
-
-	} else if (!strncmp(cn, "nva2-", 5)) {
-
-		ninfo = calloc(1, sizeof(node_info_t));
-
-		strncpy(ninfo->type, cn, 3);
-		ninfo->type[3] = '\0';
-
-		strncpy(ninfo->network_uuid, cn+5, 36);
-		ninfo->uuid[36] = '\0';
-
-		ninfo->v = 2;
-
-		return ninfo;
-	}
-
-	return NULL;
+	return (ni);
 }
 
 void pki_passport_destroy(passport_t *passport)
@@ -152,6 +99,7 @@ void pki_passport_destroy(passport_t *passport)
 	X509_free(passport->certificate);
 	X509_free(passport->cacert);
 	X509_STORE_free(passport->cacert_store);
+	nodeinfo_destroy(passport->nodeinfo);
 	free(passport);
 }
 
@@ -180,6 +128,8 @@ passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, c
 	BIO_free(bio_memory);
 	passport->cacert_store = X509_STORE_new();
 	X509_STORE_add_cert(passport->cacert_store, passport->cacert);
+
+	passport->nodeinfo = cert_get_nodeinfo(passport->certificate);
 
 	return passport;
 }
