@@ -47,6 +47,7 @@ main(int argc, char *argv[])
 
 	log_init(2, LOG_DAEMON);
 
+	/* XXX Use OpenBSD .conf style */
 	if ((config = json_load_file(CONFIG_FILE, 0, &error)) == NULL)
 		fatalx("json_load_file: line: %d error: %s",
 		    error.line, error.text);
