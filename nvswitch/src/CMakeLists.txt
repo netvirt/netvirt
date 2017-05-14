@@ -5,7 +5,6 @@ add_subdirectory(tests)
 add_executable(netvirt-switch
 	control.c
 	inet.c
-	linkst.c
 	main.c
 	request.c
 	vnetwork.c
