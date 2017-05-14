@@ -18,7 +18,6 @@ add_executable(netvirt-controller
 
 target_link_libraries(netvirt-controller
 	nvcore
-	ossp-uuid
 	pq
 	jansson
 	event_core
