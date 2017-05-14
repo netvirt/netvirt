@@ -75,12 +75,17 @@ struct nodeinfo
 	for ((i = 0, tok = strtok_r(cn, ":", &last)); tok;
 	    (tok = strtok_r(NULL, ":", &last))) {
 		if (i < sizeof(tokens)) {
-			if (tok == NULL)
-				return (NULL);
 			tokens[i++] = tok;
 		}
 	}
 	tokens[i] = NULL;
+
+	if (tokens[0] == NULL ||
+	    tokens[1] == NULL ||
+	    tokens[2] == NULL ||
+	    tokens[3] == NULL) {
+		return (NULL);
+	}
 
 	if ((ni = malloc(sizeof(struct nodeinfo))) == NULL)
 		return (NULL);
