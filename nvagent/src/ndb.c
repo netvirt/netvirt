@@ -100,7 +100,7 @@ ndb_init(void)
 	size_t		 array_size;
 	size_t		 i;
 	char		 path[256];
-	printf("%d\n", __LINE__);
+
 #if defined(__unix__)
 	{
 		/* Create ~/.config/netvirt/ if it doesn't exist. */
@@ -150,13 +150,22 @@ ndb_init(void)
 		    "cert", &n->cert, "pvkey", &n->pvkey, "cacert", &n->cacert);
 		n->idx = i;
 
-	printf("%d\n", __LINE__);
-		printf("name inserted %s\n", n->name);
 		RB_INSERT(network_tree, &networks, n);
 	}
 
 	return (0);
 }
+
+void
+ndb_networks(void)
+{
+	struct network	*n;
+	printf("networks:\n");
+	RB_FOREACH(n, network_tree, &networks) {
+		printf("\tname \"%s\"\n", n->name);
+	}
+}
+
 
 int
 ndb_network_add(const char *network_name, const char *pvkey,
@@ -195,11 +204,9 @@ ndb_network(const char *network_name, char **pvkey, char **cert, char **cacert)
 {
 	struct network	needle, *n;
 	needle.name = (char *)network_name;
-	printf("%d\n", __LINE__); 
 	if ((n = RB_FIND(network_tree, &networks, &needle)) == NULL)
 		return (-1);
 
-	printf("%d\n", __LINE__); 
 	*pvkey = n->pvkey;
 	*cert = n->cert;
 	*cacert = n->cacert;
