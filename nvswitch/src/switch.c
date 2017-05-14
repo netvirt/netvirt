@@ -117,7 +117,6 @@ dtls_peer_new(int sock)
 	p->state = DTLS_LISTEN;
 	p->timer = evtimer_new(ev_base, dtls_peer_timeout_cb, p);
 
-
 	return (p);
 
 error:
