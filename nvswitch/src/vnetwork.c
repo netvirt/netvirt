@@ -72,7 +72,7 @@ vnetwork_free(struct vnetwork *vnet)
 {
 	if (vnet) {
 		pki_passport_destroy(vnet->passport);
-		vnet->ctx = NULL;
+		vnet->ctx = NULL; /* XXX free */
 		free(vnet->uid);
 		free(vnet);
 	}
