@@ -128,7 +128,8 @@ error:
 void
 dtls_peer_free(struct dtls_peer *p)
 {
-
+	SSL_free(p->ssl);
+	free(p);
 }
 
 int
