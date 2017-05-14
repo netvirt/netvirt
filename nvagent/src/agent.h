@@ -29,6 +29,7 @@ void	agent_fini(void);
 int	agent_init(void);
 
 int	ndb_init(void);
+void	ndb_networks(void);
 int	ndb_network_add(const char *, const char *,
 	    const char *, const char *);
 int	ndb_network(const char *, char **, char **, char **);
