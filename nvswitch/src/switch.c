@@ -572,9 +572,6 @@ switch_fini()
 {
 	SSL_CTX_free(ctx);
 	freeaddrinfo(ai);
-	if (ev_udplisten != NULL)
-		evsignal_del(ev_udplisten);
-	event_base_free(ev_base);
 
 	EC_KEY_free(ecdh);
 	ERR_remove_state(0);
