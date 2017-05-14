@@ -1,6 +1,6 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) mind4networks inc. 2009-2016
+ * Copyright (C) 2009-2017 Mind4Networks inc.
  * Nicolas J. Bouliane <nib@m4nt.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -41,8 +41,6 @@
 #include <pki.h>
 
 #include "agent.h"
-
-#define DEBUG printf("%d\n", __LINE__);
 
 struct prov_info {
 	const char	*network_name;
@@ -106,9 +104,6 @@ http_prov_cb(struct evhttp_request *req, void *arg)
 	const char		*cert;
         void                    *p;
 
-	printf("http prov cb\n");
-	prov_info = arg;
-	DEBUG
 	buf = evhttp_request_get_input_buffer(req);
 
         p = evbuffer_pullup(buf, -1);
@@ -127,7 +122,6 @@ http_prov_cb(struct evhttp_request *req, void *arg)
 	ndb_network_add(prov_info->network_name, prov_info->pvkey, cert,
 	    cacert);
 
-	DEBUG
 err:
 	return;
 
@@ -180,8 +174,6 @@ agent_provisioning(const char *provkey, const char *network_name)
 
         jresp = json_object();
         json_object_set_new(jresp, "csr", json_string(certreq_pem));
-
-	printf("provkey: %s\n", provkey);
 
 	json_object_set_new(jresp, "provkey", json_string(provkey));
         resp = json_dumps(jresp, 0);

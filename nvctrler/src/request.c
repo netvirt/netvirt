@@ -312,6 +312,7 @@ network_create(char *msg, const char *apikey)
 
 	exp_delay = pki_expiration_delay(10);
 
+	// XXX remove the needs of the embassy_id
 	embassy_id = pki_digital_id("embassy", "CA", "Quebec", "", "admin@netvirt.org", "NetVirt");
 
 	emb = pki_embassy_new(embassy_id, exp_delay);

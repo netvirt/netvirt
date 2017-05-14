@@ -1,6 +1,6 @@
 /*
  * NetVirt - Network Virtualization Platform
- * Copyright (C) mind4networks inc. 2009-2016
+ * Copyright (C) 2009-2017 Mind4Networks inc.
  * Nicolas J. Bouliane <nib@m4nt.com>
  *
  * This program is free software; you can redistribute it and/or
