@@ -184,7 +184,7 @@ static	size_t		 total = 1;
 	}
 
 	if (strcmp(response, "success") == 0) {
-		warn("fetched %d node", total);
+		warn("fetched %zu node", total);
 		return 0;
 	}
 
@@ -233,7 +233,7 @@ response_network_list(json_t *jmsg)
 
 
 	if (strncmp(response, "success", 7) == 0) {
-		log_debug("fetched %d network", total);
+		log_debug("fetched %zu network", total);
 		ret = 1;
 	} else if (strncmp(response, "more-data", 9) == 0)
 		total++;

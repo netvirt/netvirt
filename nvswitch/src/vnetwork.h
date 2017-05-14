@@ -16,11 +16,12 @@
 #ifndef VNETWORK_H
 #define VNETWORK_H
 
+#include <sys/queue.h>
+#include <sys/tree.h>
+
 #include <pki.h>
 
 #include "switch.h"
-#include "tree.h"
-#include "queue.h"
 
 struct session {
 	LIST_ENTRY(session) entry;
