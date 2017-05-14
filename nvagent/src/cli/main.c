@@ -34,11 +34,11 @@ usage(void)
 	fprintf(stderr, "usage: %s\n"
 	    "\t-p\tprovisioning key\n"
 	    "\t-n\tnetwork name\n"
-	    "\t-l\tlist available network names\n"
+	    "\t-l\tlist provisioned networks\n"
 	    "\t-h\thelp\n"
-	    "\n\tProvision a new network: ./%s -p your_provisioning_key "
+	    "\n\tProvisioning a new network: ./%s -p your_provisioning_key "
 	    "-n my_new_network\n"
-	    "\tConnect to a provisioned network: ./%s -n my_new_network\n"
+	    "\tConnecting to a provisioned network: ./%s -n my_new_network\n"
 	    , __progname, __progname, __progname);
 	exit(1);
 }
@@ -58,6 +58,7 @@ main(int argc, char *argv[])
 	struct event	*ev_sigint;
 	struct event	*ev_sigterm;
 	int		 ch;
+	int		 list_networks;
 	char		*provcode = NULL;
 	char		*network_name = NULL;
 
@@ -65,14 +66,13 @@ main(int argc, char *argv[])
 
 		switch (ch) {
 		case 'p':
-			printf("optarg: %s\n", optarg);
 			provcode = optarg;
 			break;
 		case 'n':
 			network_name = optarg;
 			break;
 		case 'l':
-			printf("list network names\n");
+			list_networks = 1;
 			break;
 		case 'h':
 		default:
@@ -86,6 +86,16 @@ main(int argc, char *argv[])
 		fprintf(stderr, "%s: You must specify a network name and"
 		    "a provisioning code\n", __func__);
 		usage();
+	}
+
+	if (ndb_init() < 0) {
+		fprintf(stderr, "%s: db_init\n", __func__);
+		exit(-1);
+	}
+
+	if (list_networks) {
+		ndb_networks();
+		exit(0);
 	}
 
 	if ((ev_base = event_base_new()) == NULL) {
@@ -107,8 +117,6 @@ main(int argc, char *argv[])
 	}
 	event_add(ev_sigterm, NULL);
 
-	printf("1\n");
-	ndb_init();
 
 	printf("2\n");
 	if (provcode != NULL && network_name != NULL) {
