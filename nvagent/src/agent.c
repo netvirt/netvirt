@@ -52,6 +52,19 @@ static passport_t		*passport;
 static struct addrinfo		*ai;
 struct event_base		*ev_base;
 
+enum dtls_state {
+	DTLS_CONNECT,
+	DTLS_ESTABLISHED
+};
+
+struct dtls_peer {
+	struct event	*timer;
+	enum dtls_state	 state;
+	SSL		*ssl;
+};
+
+struct dtls_peer	switch_peer;
+
 int
 certverify_cb(int ok, X509_STORE_CTX *store)
 {
@@ -68,6 +81,48 @@ certverify_cb(int ok, X509_STORE_CTX *store)
 	return (ok);
 }
 
+int
+dtls_peer_process(struct dtls_peer *p)
+{
+
+	struct timeval	tv;
+	enum dtls_state	next_state;
+	int		ret;
+	char		buf[1500] = {0};
+
+	switch (p->state) {
+	case DTLS_CONNECT:
+		ret = SSL_do_handshake(p->ssl);
+		next_state = DTLS_ESTABLISHED;
+		break;
+
+	case DTLS_ESTABLISHED:
+		ret = SSL_read(p->ssl, buf, sizeof(buf));
+		next_state = DTLS_ESTABLISHED;
+		break;
+
+	default:
+		fprintf(stderr, "%s: Invalid DTLS peer state\n", __func__);
+		return (-1);
+	}
+
+	switch (SSL_get_error(p->ssl, ret)) {
+	case SSL_ERROR_NONE:
+		break;
+	case SSL_ERROR_WANT_READ:
+		//if (evtimer_add(p->timer, &tv) < 0)
+		//	return (-1);
+		return (0);
+	default:
+		fprintf(stderr, "%s: ssl error\n", __func__);
+		return (-1);
+	}
+
+	p->state = next_state;
+
+	return (0);
+}
+
 void
 udpclient_cb(int sock, short what, void *arg)
 {
@@ -75,22 +130,13 @@ udpclient_cb(int sock, short what, void *arg)
 	(void)what;
 	(void)arg;
 
+	struct dtls_peer	*p = arg;
+
 	printf("udpclient_cb %d\n", sock);
 
-	SSL     *ssl;
-	int      ret;
-	char     buf[1500] = {0};
-
-        ssl = arg;
-
-        if ((ret = SSL_read(ssl, &buf, sizeof(buf))) < 0) {
-                ret = SSL_get_error(ssl, ret);
-                fprintf(stderr, "SSL_read: error %d (%d-%d)\n", ret, SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE);
-                ERR_print_errors_fp(stderr);
-		sleep(1);
-        }
-        SSL_write(ssl, "hello", 4);
-        fprintf(stderr, "%s %d", buf, ret);
+	if (dtls_peer_process(p) < 0) {
+		//free peer
+	}
 }
 
 void
