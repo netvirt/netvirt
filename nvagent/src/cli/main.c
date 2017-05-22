@@ -117,8 +117,6 @@ main(int argc, char *argv[])
 	}
 	event_add(ev_sigterm, NULL);
 
-
-	printf("2\n");
 	if (provcode != NULL && network_name != NULL) {
 		if (agent_provisioning(provcode, network_name) < 0)
 			usage();
