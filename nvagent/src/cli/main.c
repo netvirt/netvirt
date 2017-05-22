@@ -58,7 +58,7 @@ main(int argc, char *argv[])
 	struct event	*ev_sigint;
 	struct event	*ev_sigterm;
 	int		 ch;
-	int		 list_networks;
+	int		 list_networks = 0;
 	char		*provcode = NULL;
 	char		*network_name = NULL;
 
