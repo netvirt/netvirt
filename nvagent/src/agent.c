@@ -165,6 +165,7 @@ http_prov_cb(struct evhttp_request *req, void *arg)
 		goto err;
 	}
 
+	prov_info = arg;
 	ndb_network_add(prov_info->network_name, prov_info->pvkey, cert,
 	    cacert);
 
