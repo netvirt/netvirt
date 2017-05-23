@@ -250,7 +250,7 @@ agent_connect(const char *network_name)
 
 
 	if (ndb_network(network_name, &pvkey, &cert, &cacert) < 0) {
-		fprintf(stderr, "The network doesn't exist: %s\n", network_name);
+		fprintf(stderr, "The network specified doesn't exist: %s\n", network_name);
 		return (-1);
 	}
 
