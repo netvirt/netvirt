@@ -250,8 +250,6 @@ agent_connect(const char *network_name)
 	const char	*ip = "127.0.0.1";
 	const char	*port = "9090";
 
-	if ((ev_base = event_base_new()) == NULL)
-		errx(1, "event_base_new");
 
 	if (ndb_network(network_name, &pvkey, &cert, &cacert) < 0) {
 		fprintf(stderr, "The network doesn't exist: %s\n", network_name);
@@ -333,7 +331,6 @@ agent_connect(const char *network_name)
 		warn("%s:%d", "event_new", __LINE__);
 	event_add(ev_udpclient, NULL);
 
-	event_base_dispatch(ev_base);
 	return (0);
 }
 
