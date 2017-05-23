@@ -84,7 +84,6 @@ certverify_cb(int ok, X509_STORE_CTX *store)
 int
 dtls_peer_process(struct dtls_peer *p)
 {
-
 	struct timeval	tv;
 	enum dtls_state	next_state;
 	int		ret;
@@ -131,8 +130,6 @@ udpclient_cb(int sock, short what, void *arg)
 	(void)arg;
 
 	struct dtls_peer	*p = arg;
-
-	printf("udpclient_cb %d\n", sock);
 
 	if (dtls_peer_process(p) < 0) {
 		//free peer
