@@ -241,7 +241,7 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 		SSL_CTX_set_tlsext_servername_callback(ctx, servername_cb);
 		SSL_CTX_set_tlsext_servername_arg(ctx, NULL);
 
-		if (SSL_CTX_set_cipher_list(ctx, "ECDH-ECDSA-AES256-SHA") == 0)
+		if (SSL_CTX_set_cipher_list(ctx, "ECDHE-ECDSA-AES256-SHA") == 0)
 			log_warnx("%s: SSL_CTX_set_cipher_list", __func__);
 
 		/* Load the trusted certificate store into our SSL_CTX */
@@ -501,14 +501,14 @@ switch_init(json_t *config)
 	if (json_unpack(config, "{s:s}", "switch_port", &port) < 0)
 		fatalx("%s: switch_port not found config", __func__);
 
-	if (json_unpack(config, "{s:s}", "certificate", &cert) < 0)
-		fatalx("%s: certificate not found in config", __func__);
+	if (json_unpack(config, "{s:s}", "cert", &cert) < 0)
+		fatalx("%s: 'cert' not found in config", __func__);
 
-	if (json_unpack(config, "{s:s}", "privatekey", &pkey) < 0)
-		fatalx("%s: privatekey not found in config", __func__);
+	if (json_unpack(config, "{s:s}", "pvkey", &pkey) < 0)
+		fatalx("%s: 'pvkey' not found in config", __func__);
 
 	if (json_unpack(config, "{s:s}", "cacert", &cacert) < 0)
-		fatalx("%s: cacert not found in config", __func__);
+		fatalx("%s: 'cacert' not found in config", __func__);
 
 	SSL_load_error_strings();
 	SSL_library_init();
