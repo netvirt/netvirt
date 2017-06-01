@@ -492,11 +492,12 @@ node_create(const char *msg, const char *apikey)
 	int		 pool_size;
 	char		*client_id = NULL;
 	char		*uid;
-	char		*provkey = NULL;
+	char		*key = NULL;
 	char		*network_uid = NULL;
 	char		*description = NULL;
 	char		*ip = NULL;
 	unsigned char	*ippool_bin = NULL;
+	char		 provkey[256];
 
 	if (msg == NULL || apikey == NULL)
 		return (-1);
@@ -539,11 +540,12 @@ node_create(const char *msg, const char *apikey)
 		goto cleanup;
 	}
 
-	if ((provkey = pki_gen_key()) == NULL) {
+	if ((key = pki_gen_key()) == NULL) {
 		ret = -1;
 		goto cleanup;
 	}
 
+	snprintf(provkey, sizeof(provkey), "%s:%s:%s", network_uid, uid, provkey);
 	if (dao_node_create(network_uid, uid, provkey, description, "192.168.1.1") < 0) {
 		ret = -1;
 		goto cleanup;
@@ -585,7 +587,7 @@ node_create(const char *msg, const char *apikey)
 
 cleanup:
 	ippool_free(ippool);
-	free(provkey);
+	free(key);
 	json_decref(jmsg);
 	free(client_id);
 
