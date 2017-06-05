@@ -69,7 +69,7 @@ static int		 verify_cookie(SSL *, unsigned char *, unsigned int);
 static int		 cert_verify_cb(int, X509_STORE_CTX *);
 static struct dtls_peer	*dtls_peer_new(int);
 static void		 dtls_peer_free(struct dtls_peer *);
-static int		 dtls_peer_process(struct dtls_peer *);
+static int		 dtls_handle(struct dtls_peer *);
 static void		 dtls_peer_timeout_cb(int, short, void *);
 static int		 dtls_peer_cmp(const struct dtls_peer *,
 			    const struct dtls_peer *);
@@ -132,7 +132,7 @@ dtls_peer_free(struct dtls_peer *p)
 }
 
 int
-dtls_peer_process(struct dtls_peer *p)
+dtls_handle(struct dtls_peer *p)
 {
 	struct timeval		 tv;
 	struct sockaddr		 caddr;
@@ -140,41 +140,50 @@ dtls_peer_process(struct dtls_peer *p)
 	int			 ret;
 	char			 buf[1500] = {0};
 
-	switch (p->state) {
-	case DTLS_LISTEN:
-		ret = DTLSv1_listen(p->ssl, &caddr);
-		next_state = DTLS_ACCEPT;
-		break;
+	for (;;) {
+		switch (p->state) {
+		case DTLS_LISTEN:
+			ret = DTLSv1_listen(p->ssl, &caddr);
+			next_state = DTLS_ACCEPT;
+			break;
 
-	case DTLS_ACCEPT:
-		ret = SSL_accept(p->ssl);
-		next_state = DTLS_ESTABLISHED;
-		break;
+		case DTLS_ACCEPT:
+			ret = SSL_accept(p->ssl);
+			next_state = DTLS_ESTABLISHED;
+			break;
 
-	case DTLS_ESTABLISHED:
-		ret = SSL_read(p->ssl, buf, sizeof(buf));
-		next_state = DTLS_ESTABLISHED;
-		break;
+		case DTLS_ESTABLISHED:
+			ret = SSL_read(p->ssl, buf, sizeof(buf));
+			next_state = DTLS_ESTABLISHED;
+			break;
 
-	default:
-		log_warnx("invalid DTLS peer state");
-		return (-1);
-	}
-
-	switch (SSL_get_error(p->ssl, ret)) {
-	case SSL_ERROR_NONE:
-		break;
-	case SSL_ERROR_WANT_READ:
-		if (DTLSv1_get_timeout(p->ssl, &tv) == 1 &&
-		    evtimer_add(p->timer, &tv) < 0)
+		default:
+			log_warnx("invalid DTLS peer state");
 			return (-1);
-		return (0);
-	default:
-		// XXX logs... and disconnect
-		return (-1);
-	}
+		}
 
-	p->state = next_state;
+		switch (SSL_get_error(p->ssl, ret)) {
+		case SSL_ERROR_NONE:
+			break;
+
+		case SSL_ERROR_WANT_WRITE:
+			return (0);
+
+		case SSL_ERROR_WANT_READ:
+			if (DTLSv1_get_timeout(p->ssl, &tv) == 1 &&
+			    evtimer_add(p->timer, &tv) < 0) {
+				return (-1);
+			}
+			return (0);
+
+		default:
+			printf("something else...%d\n", SSL_get_error(p->ssl, ret));
+			// XXX logs... and disconnect
+			return (0);
+		}
+
+		p->state = next_state;
+	}
 
 	return (0);
 }
@@ -186,7 +195,7 @@ dtls_peer_timeout_cb(int fd, short event, void *arg)
 
 	DTLSv1_handle_timeout(p->ssl);
 
-	if (dtls_peer_process(p) < 0) {
+	if (dtls_handle(p) < 0) {
 		RB_REMOVE(dtls_peer_tree, &dtls_peers, p);
 		dtls_peer_free(p);
 	}
@@ -434,8 +443,10 @@ udplisten_cb(int sock, short what, void *ctx)
 		}
 	}
 
-	if (dtls_peer_process(p) < 0)
+	if (dtls_handle(p) < 0 ) {
 		goto error;
+	}
+
 	return;
 
 error:
