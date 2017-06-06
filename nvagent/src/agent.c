@@ -65,8 +65,15 @@ static SSL_CTX			*ctx;
 static passport_t		*passport;
 static struct addrinfo		*ai;
 struct event_base		*ev_base;
-
 struct dtls_peer		 switch_peer;
+
+static int	 certverify_cb(int, X509_STORE_CTX *);
+static void	 dtls_peer_free(struct dtls_peer *);
+static void	 dtls_peer_timeout_cb(int, short, void *);
+static int	 dtls_handle(struct dtls_peer *);
+static void	 iface_cb(int, short, void *);
+static void	 udpclient_cb(int, short, void *);
+static void	 http_prov_cb(struct evhttp_request *, void *);
 
 int
 certverify_cb(int ok, X509_STORE_CTX *store)
