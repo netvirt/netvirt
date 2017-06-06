@@ -641,15 +641,16 @@ control_init()
 	const char	*cert;
 	const char	*pvkey, *cacert;
 
-	if (json_unpack(config, "{s:s}", "certificate", &cert) < 0)
-		fatalx("certificate not found in config");
+	if (json_unpack(config, "{s:s}", "cert", &cert) < 0)
+		fatalx("'cert' not found in config");
 
-	if (json_unpack(config, "{s:s}", "privatekey", &pvkey) < 0)
-		fatalx("privatekey not found in config");
+	if (json_unpack(config, "{s:s}", "pvkey", &pvkey) < 0)
+		fatalx("'pvkey' not found in config");
 
 	if (json_unpack(config, "{s:s}", "cacert", &cacert) < 0)
-		fatalx("cacert not found in config");
+		fatalx("'cacert' not found in config");
 
+	// XXX show which files doesn't get loaded
 	if ((passport = pki_passport_load_from_file(cert,
 	    pvkey, cacert)) == NULL)
 		fatalx("pki_passport_load_from_file");
