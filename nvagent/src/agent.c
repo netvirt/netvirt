@@ -321,23 +321,23 @@ agent_connect(const char *network_name)
 	p->timer = evtimer_new(ev_base, dtls_peer_timeout_cb, p);
 
 	if (ndb_network(network_name, &pvkey, &cert, &cacert) < 0) {
-		fprintf(stderr, "The network specified doesn't exist: %s\n",
-		    network_name);
+		fprintf(stderr, "%s: The network specified doesn't exist: %s\n",
+		    __func__, network_name);
 		return (-1);
 	}
 
 	if ((passport = pki_passport_load_from_memory(cert, pvkey, cacert))
 	    == NULL)
-		err(1, "%s:%d", "pki_passport_load_from_memory", __LINE__);
+		err(1, "%s: pki_passport_load_from_memory", __func__);
 
 	SSL_library_init();
 	SSL_load_error_strings();
 
 	if (!RAND_poll())
-		err(1, "%s:%d", "RAND_poll", __LINE__);
+		err(1, "%s: RAND_poll", __func__);
 
 	if ((ctx = SSL_CTX_new(DTLSv1_client_method())) == NULL)
-		errx(1, "%s:%d", "SSL_CTX_new", __LINE__);
+		errx(1, "%s: SSL_CTX_new", __func__);
 
 	SSL_CTX_set_read_ahead(ctx, 1);
 
@@ -346,10 +346,10 @@ agent_connect(const char *network_name)
 	SSL_CTX_use_PrivateKey(ctx, passport->keyring);
 
 	if ((ret = SSL_CTX_set_cipher_list(ctx, "ECDHE-ECDSA-AES256-SHA")) == 0)
-		err(1, "%s:%d", "SSL_CTX_set_cipher_list", __LINE__);
+		err(1, "%s: SSL_CTX_set_cipher_list", __func__);
 
 	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL)
-		err(1, "%s:%d", "EC_KEY_new_by_curve_name", __LINE__);
+		err(1, "%s: EC_KEY_new_by_curve_name", __func__);
 
 	SSL_CTX_set_tmp_ecdh(ctx, ecdh);
 	EC_KEY_free(ecdh);
@@ -359,41 +359,41 @@ agent_connect(const char *network_name)
 	hints.ai_socktype = SOCK_DGRAM;
 
 	if ((status = getaddrinfo(ip, port, &hints, &ai)) != 0)
-		errx(1, "%s:%s:%d", "getaddrinfo", gai_strerror(status), __LINE__);
+		errx(1, "%s: getaddrinfo %s", gai_strerror(status), __func__);
 
 	if ((p->sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) < 0)
-		errx(1, "%s:%d", "socket", __LINE__);
+		errx(1, "%s: socket", __func__);
 
 	flag = 1;
 	if (setsockopt(p->sock, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) < 0)
-		errx(1, "%s:%d", "setsockopt", __LINE__);
+		errx(1, "%s: setsockopt", __func__);
 
 	if (connect(p->sock, ai->ai_addr, ai->ai_addrlen) < 0)
-		warn("%s:%d", "connect", __LINE__);
+		warn("%s: connect", __func__);
 
 	if ((p->ssl = SSL_new(ctx)) == NULL)
-		warnx("%s:%d", "SSL_new", __LINE__);
+		warnx("%s: SSL_new", __func__);
 
 	SSL_set_tlsext_host_name(p->ssl, passport->nodeinfo->networkid);
 	SSL_set_verify(p->ssl,
 	    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, certverify_cb);
 
 	if ((bio = BIO_new_dgram(p->sock, BIO_NOCLOSE)) == NULL)
-		warnx("%s:%d", "BIO_new_dgram", __LINE__);
+		warnx("%s: BIO_new_dgram", __func__);
 
 	BIO_ctrl(bio, BIO_CTRL_DGRAM_SET_CONNECTED, 0, &ai->ai_addr);
 
 	SSL_set_bio(p->ssl, bio, bio);
 
 	if (evutil_make_socket_nonblocking(p->sock) > 0)
-		err(1, "%s:%d", "evutil_make_socket_nonblocking", __LINE__);
+		err(1, "%s: evutil_make_socket_nonblocking", __func__);
 
 	SSL_set_connect_state(p->ssl);
 	SSL_connect(p->ssl);
 
 	if ((ev_udpclient = event_new(ev_base, p->sock,
 	    EV_READ|EV_TIMEOUT|EV_PERSIST, udpclient_cb, p)) == NULL)
-		warn("%s:%d", "event_new", __LINE__);
+		warn("%s: event_new", __func__);
 	event_add(ev_udpclient, &timeout);
 
 	return (0);
