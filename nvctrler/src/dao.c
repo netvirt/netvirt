@@ -432,7 +432,7 @@ dao_init(const char *dbname, const char *dbuser, const char *dbpwd, const char *
 	dbconn = PQconnectdb(conn_str);
 
 	if (PQstatus(dbconn) != CONNECTION_OK) {
-		warnx("Connection to database failed: %s", PQerrorMessage(dbconn));
+		warnx("%s: Connection to database failed: %s", __func__, PQerrorMessage(dbconn));
 		PQfinish(dbconn);
 		return (-1);
 	} else

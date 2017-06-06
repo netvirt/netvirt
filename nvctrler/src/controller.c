@@ -335,13 +335,13 @@ controller_init()
 	dao_reset_node_state();
 
 	if (json_unpack(config, "{s:s}", "cert", &cert) < 0)
-		fatalx("certificate not found in config");
+		fatalx("'cert' not found in config");
 
 	if (json_unpack(config, "{s:s}", "pvkey", &pvkey) < 0)
-		fatalx("privatekey not found in config");
+		fatalx("'pvkey' not found in config");
 
 	if (json_unpack(config, "{s:s}", "cacert", &cacert) < 0)
-		fatalx("trusted_cert not found in config");
+		fatalx("'cacert' not found in config");
 
 	if ((passport = pki_passport_load_from_file(cert, pvkey, cacert))
 	    == NULL)

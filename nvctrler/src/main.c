@@ -106,7 +106,7 @@ main(int argc, char *argv[])
 	event_add(ev_sigterm, NULL);
 
 	if (dao_init(dbname, dbuser, dbpwd, dbhost) < 0)
-		fatalx("dao_init");
+		fatalx("%s: dao_init", __func__);
 
 	if (controller_init(config, ev_base) < 0)
 		fatalx("controller_init");
