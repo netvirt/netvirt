@@ -39,6 +39,7 @@
 #include <jansson.h>
 
 #include <pki.h>
+#include <tapcfg.h>
 
 #include "agent.h"
 
@@ -46,11 +47,6 @@ struct prov_info {
 	const char	*network_name;
 	const char	*pvkey;
 };
-
-static SSL_CTX			*ctx;
-static passport_t		*passport;
-static struct addrinfo		*ai;
-struct event_base		*ev_base;
 
 enum dtls_state {
 	DTLS_CONNECT,
@@ -61,9 +57,16 @@ struct dtls_peer {
 	struct event	*timer;
 	enum dtls_state	 state;
 	SSL		*ssl;
+	tapcfg_t	*tapcfg;
+	int		 sock;
 };
 
-struct dtls_peer	switch_peer;
+static SSL_CTX			*ctx;
+static passport_t		*passport;
+static struct addrinfo		*ai;
+struct event_base		*ev_base;
+
+struct dtls_peer		 switch_peer;
 
 int
 certverify_cb(int ok, X509_STORE_CTX *store)
@@ -81,45 +84,93 @@ certverify_cb(int ok, X509_STORE_CTX *store)
 	return (ok);
 }
 
+void
+dtls_peer_free(struct dtls_peer *p)
+{
+
+}
+
+void
+dtls_peer_timeout_cb(int fd, short event, void *arg)
+{
+	struct dtls_peer	*p = arg;
+
+	DTLSv1_handle_timeout(p->ssl);
+
+	if (dtls_handle(p) < 0) {
+		dtls_peer_free(p);
+	}
+}
+
 int
-dtls_peer_process(struct dtls_peer *p)
+dtls_handle(struct dtls_peer *p)
 {
 	struct timeval	tv;
 	enum dtls_state	next_state;
 	int		ret;
 	char		buf[1500] = {0};
 
-	switch (p->state) {
-	case DTLS_CONNECT:
-		ret = SSL_do_handshake(p->ssl);
-		next_state = DTLS_ESTABLISHED;
-		break;
+	for (;;) {
 
-	case DTLS_ESTABLISHED:
-		ret = SSL_read(p->ssl, buf, sizeof(buf));
-		next_state = DTLS_ESTABLISHED;
-		break;
+		switch (p->state) {
+		case DTLS_CONNECT:
+			ret = SSL_do_handshake(p->ssl);
+			next_state = DTLS_ESTABLISHED;
+			break;
 
-	default:
-		fprintf(stderr, "%s: Invalid DTLS peer state\n", __func__);
-		return (-1);
+		case DTLS_ESTABLISHED:
+			ret = SSL_read(p->ssl, buf, sizeof(buf));
+			next_state = DTLS_ESTABLISHED;
+			break;
+
+		default:
+			fprintf(stderr, "%s: invalid DTLS peer state\n", __func__);
+			return (-1);
+		}
+
+		switch (SSL_get_error(p->ssl, ret)) {
+		case SSL_ERROR_NONE:
+			break;
+
+		case SSL_ERROR_WANT_WRITE:
+			return (0);
+
+		case SSL_ERROR_WANT_READ:
+			if (DTLSv1_get_timeout(p->ssl, &tv) == 1 &&
+			    evtimer_add(p->timer, &tv) < 0) {
+				return (-1);
+			}
+			return (0);
+
+		default:
+			fprintf(stderr, "%s: ssl error\n", __func__);
+			return (-1);
+		}
+
+		p->state = next_state;
 	}
-
-	switch (SSL_get_error(p->ssl, ret)) {
-	case SSL_ERROR_NONE:
-		break;
-	case SSL_ERROR_WANT_READ:
-		//if (evtimer_add(p->timer, &tv) < 0)
-		//	return (-1);
-		return (0);
-	default:
-		fprintf(stderr, "%s: ssl error\n", __func__);
-		return (-1);
-	}
-
-	p->state = next_state;
 
 	return (0);
+}
+
+void
+iface_cb(int sock, short what, void *arg)
+{
+	struct dtls_peer	*p;
+	int			 ret;
+	char			 buf[1500] = {0};
+
+	p = arg;
+
+	printf("iface_cb\n");
+
+	ret = tapcfg_read(p->tapcfg, buf, sizeof(buf));
+	// XXX verify ret
+
+	if (p->state == DTLS_ESTABLISHED) {
+		printf("write !\n");
+		SSL_write(p->ssl, buf, ret);
+	}
 }
 
 void
@@ -131,9 +182,13 @@ udpclient_cb(int sock, short what, void *arg)
 
 	struct dtls_peer	*p = arg;
 
-	if (dtls_peer_process(p) < 0) {
-		//free peer
-	}
+	if (what&EV_TIMEOUT || dtls_handle(p) < 0)
+		goto error;
+
+	return;
+
+error:
+	dtls_peer_free(p);
 }
 
 void
@@ -233,28 +288,35 @@ agent_provisioning(const char *provkey, const char *network_name)
 int
 agent_connect(const char *network_name)
 {
-	BIO		*bio = NULL;
-	SSL		*ssl = NULL;
-	EC_KEY		*ecdh;
-	struct event	*ev_udpclient;
-	struct addrinfo	 hints;
-	int		 status;
-	int		 sock;
-	int		 flag;
-	int		 ret;
-	char		*pvkey;
-	char		*cert;
-	char		*cacert;
-	const char	*ip = "127.0.0.1";
-	const char	*port = "9090";
+	BIO			*bio = NULL;
+	EC_KEY			*ecdh;
+	struct timeval		timeout = {5, 0};
+	struct event		*ev_udpclient;
+	struct addrinfo	 	hints;
+	struct dtls_peer	*p;
+	int			 status;
+	int			 flag;
+	int			 ret;
+	char			*pvkey;
+	char			*cert;
+	char			*cacert;
+	const char		*ip = "127.0.0.1";
+	const char		*port = "9090";
 
+	printf("Connecting...\n");
+
+	p = &switch_peer;
+	p->state = DTLS_CONNECT;
+	p->timer = evtimer_new(ev_base, dtls_peer_timeout_cb, p);
 
 	if (ndb_network(network_name, &pvkey, &cert, &cacert) < 0) {
-		fprintf(stderr, "The network specified doesn't exist: %s\n", network_name);
+		fprintf(stderr, "The network specified doesn't exist: %s\n",
+		    network_name);
 		return (-1);
 	}
 
-	if ((passport = pki_passport_load_from_memory(cert, pvkey, cacert)) == NULL)
+	if ((passport = pki_passport_load_from_memory(cert, pvkey, cacert))
+	    == NULL)
 		err(1, "%s:%d", "pki_passport_load_from_memory", __LINE__);
 
 	SSL_library_init();
@@ -267,10 +329,8 @@ agent_connect(const char *network_name)
 		errx(1, "%s:%d", "SSL_CTX_new", __LINE__);
 
 	SSL_CTX_set_read_ahead(ctx, 1);
-	/* Load the trusted certificate store into our SSL_CTX */
-	SSL_CTX_set_cert_store(ctx, passport->cacert_store);
 
-	/* Set the certificate and key */
+	SSL_CTX_set_cert_store(ctx, passport->cacert_store);
 	SSL_CTX_use_certificate(ctx, passport->certificate);
 	SSL_CTX_use_PrivateKey(ctx, passport->keyring);
 
@@ -290,44 +350,40 @@ agent_connect(const char *network_name)
 	if ((status = getaddrinfo(ip, port, &hints, &ai)) != 0)
 		errx(1, "%s:%s:%d", "getaddrinfo", gai_strerror(status), __LINE__);
 
-	if ((sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) < 0)
+	if ((p->sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) < 0)
 		errx(1, "%s:%d", "socket", __LINE__);
 
 	flag = 1;
-	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) < 0)
+	if (setsockopt(p->sock, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) < 0)
 		errx(1, "%s:%d", "setsockopt", __LINE__);
 
-	if (connect(sock, ai->ai_addr, ai->ai_addrlen) < 0)
+	if (connect(p->sock, ai->ai_addr, ai->ai_addrlen) < 0)
 		warn("%s:%d", "connect", __LINE__);
 
-	if ((ssl = SSL_new(ctx)) == NULL)
+	if ((p->ssl = SSL_new(ctx)) == NULL)
 		warnx("%s:%d", "SSL_new", __LINE__);
 
-	SSL_set_tlsext_host_name(ssl, passport->nodeinfo->networkid);
-	SSL_set_verify(ssl,
+	SSL_set_tlsext_host_name(p->ssl, passport->nodeinfo->networkid);
+	SSL_set_verify(p->ssl,
 	    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, certverify_cb);
 
-	if ((bio = BIO_new_dgram(sock, BIO_NOCLOSE)) == NULL)
+	if ((bio = BIO_new_dgram(p->sock, BIO_NOCLOSE)) == NULL)
 		warnx("%s:%d", "BIO_new_dgram", __LINE__);
 
 	BIO_ctrl(bio, BIO_CTRL_DGRAM_SET_CONNECTED, 0, &ai->ai_addr);
 
-	SSL_set_bio(ssl, bio, bio);
+	SSL_set_bio(p->ssl, bio, bio);
 
-	if (evutil_make_socket_nonblocking(sock) > 0)
+	if (evutil_make_socket_nonblocking(p->sock) > 0)
 		err(1, "%s:%d", "evutil_make_socket_nonblocking", __LINE__);
 
-	char buf[1500] = {0};
+	SSL_set_connect_state(p->ssl);
+	SSL_connect(p->ssl);
 
-	SSL_set_connect_state(ssl);
-	if ((ret = SSL_connect(ssl)) <= 0) {
-		ret = SSL_get_error(ssl, ret);
-	}
-	printf("after\n");
-	if ((ev_udpclient = event_new(ev_base, sock,
-	    EV_READ | EV_PERSIST, udpclient_cb, ssl)) == NULL)
+	if ((ev_udpclient = event_new(ev_base, p->sock,
+	    EV_READ|EV_TIMEOUT|EV_PERSIST, udpclient_cb, p)) == NULL)
 		warn("%s:%d", "event_new", __LINE__);
-	event_add(ev_udpclient, NULL);
+	event_add(ev_udpclient, &timeout);
 
 	return (0);
 }
@@ -335,6 +391,26 @@ agent_connect(const char *network_name)
 int
 agent_init()
 {
+	struct event		*ev_iface;
+	struct dtls_peer	*p;
+	int			 iface_fd = 0;
+
+	p = &switch_peer;
+
+	if ((p->tapcfg = tapcfg_init()) == NULL) {
+		fprintf(stderr, "tapcfg_init failed");
+		return (-1);
+	}
+
+	if ((iface_fd = tapcfg_start(p->tapcfg, "netvirt0", 1)) < 0) {
+		fprintf(stderr, "tapcfg_start\n");
+		return (-1);
+	}
+
+	if ((ev_iface = event_new(ev_base, iface_fd,
+	    EV_READ | EV_PERSIST, iface_cb, p)) == NULL)
+		warn("%s:%d", "event_new", __LINE__);
+	event_add(ev_iface, NULL);
 
 	return (0);	
 }
