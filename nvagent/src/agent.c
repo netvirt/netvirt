@@ -93,6 +93,9 @@ dtls_peer_free(struct dtls_peer *p)
 void
 dtls_peer_timeout_cb(int fd, short event, void *arg)
 {
+	(void)fd;
+	(void)event;
+
 	struct dtls_peer	*p = arg;
 
 	DTLSv1_handle_timeout(p->ssl);
@@ -156,6 +159,9 @@ dtls_handle(struct dtls_peer *p)
 void
 iface_cb(int sock, short what, void *arg)
 {
+	(void)sock;
+	(void)what;
+
 	struct dtls_peer	*p;
 	int			 ret;
 	char			 buf[1500] = {0};
@@ -239,8 +245,6 @@ agent_provisioning(const char *provkey, const char *network_name)
 	struct evbuffer			*output_buffer;
 	struct prov_info		*prov_info;
 	long				 size = 0;
-	int				 length;
-	char				*content_buffer;
 	char				*resp;
 	char				*certreq_pem = NULL;
 	char				*pvkey_pem = NULL;
