@@ -19,6 +19,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <openssl/ssl.h>
+
 #include <log.h>
 #include <bitv.h>
 
@@ -26,8 +28,6 @@
 #include "vnetwork.h"
 
 RB_HEAD(vnetwork_tree, vnetwork);
-
-/* static func here */
 
 static int	vnetwork_cmp(const struct vnetwork *, const struct vnetwork *);
 RB_PROTOTYPE_STATIC(vnetwork_tree, vnetwork, entry, vnetwork_cmp);
@@ -70,12 +70,13 @@ struct vnetwork
 void
 vnetwork_free(struct vnetwork *vnet)
 {
-	if (vnet) {
-		pki_passport_destroy(vnet->passport);
-		vnet->ctx = NULL; /* XXX free */
-		free(vnet->uid);
-		free(vnet);
-	}
+	if (vnet == NULL)
+		return;
+
+	pki_passport_destroy(vnet->passport);
+	SSL_CTX_free(vnet->ctx);
+	free(vnet->uid);
+	free(vnet);
 }
 
 int
