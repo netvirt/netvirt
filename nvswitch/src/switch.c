@@ -447,9 +447,8 @@ udplisten_cb(int sock, short what, void *ctx)
 		}
 	}
 
-	if (dtls_handle(p) < 0 ) {
+	if (dtls_handle(p) < 0 )
 		goto error;
-	}
 
 	return;
 
