@@ -58,7 +58,6 @@ RB_HEAD(dtls_peer_tree, dtls_peer);
 
 static struct dtls_peer_tree	 dtls_peers;
 static EC_KEY			*ecdh;
-static DH			*dh;
 static SSL_CTX			*ctx;
 static struct event		*ev_udplisten;
 static struct addrinfo		*ai;
@@ -252,10 +251,12 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 		SSL_CTX_set_read_ahead(vnet->ctx, 1);
 
 		SSL_CTX_set_options(vnet->ctx, SSL_OP_SINGLE_ECDH_USE);
-		if (SSL_CTX_set_cipher_list(vnet->ctx, "ECDHE-ECDSA-AES256-SHA") == 0)
+		if (SSL_CTX_set_cipher_list(vnet->ctx, "ECDHE-ECDSA-AES256-SHA")
+		    == 0)
 			log_warnx("%s: SSL_CTX_set_cipher_list", __func__);
 
-		if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL)
+		if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1))
+		    == NULL)
 			fatalx("%s: EC_KEY_new_by_curve_name", __func__);
 
 		SSL_CTX_set_tmp_ecdh(vnet->ctx, ecdh);
