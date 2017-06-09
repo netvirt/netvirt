@@ -35,6 +35,7 @@
 #include <log.h>
 #include <pki.h>
 
+#include "inet.h"
 #include "switch.h"
 #include "vnetwork.h"
 
@@ -131,6 +132,13 @@ dtls_peer_free(struct dtls_peer *p)
 	free(p);
 }
 
+void
+link_switch_recv(struct dtls_peer *p, uint8_t *frame, size_t len)
+{
+	printf("link switch\n");
+	inet_print_addr(frame);
+}
+
 int
 dtls_handle(struct dtls_peer *p)
 {
@@ -153,7 +161,8 @@ dtls_handle(struct dtls_peer *p)
 			break;
 
 		case DTLS_ESTABLISHED:
-			ret = SSL_read(p->ssl, buf, sizeof(buf));
+			if ((ret = SSL_read(p->ssl, buf, sizeof(buf))) > 0)
+				link_switch_recv(p, buf, ret);
 			next_state = DTLS_ESTABLISHED;
 			break;
 
@@ -220,9 +229,9 @@ cert_verify_cb(int ok, X509_STORE_CTX *store)
 int
 servername_cb(SSL *ssl, int *ad, void *arg)
 {
-	SSL_CTX		*ctx;
 	struct vnetwork	*vnet;
 	const char	*servername;
+	static EC_KEY	*ecdh;
 
 	if ((servername = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name))
 	    == NULL) {
@@ -232,38 +241,32 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 
 	printf(">>> name %s\n", servername);
 
-	if ((vnet = vnetwork_lookup(servername)) == NULL) {
-		printf("vnet is NULL!\n");
-	}
+	if ((vnet = vnetwork_lookup(servername)) == NULL)
+		return (SSL_TLSEXT_ERR_ALERT_FATAL);
 
 	if (vnet->ctx == NULL) {
 
-		if ((ctx = SSL_CTX_new(DTLSv1_method())) == NULL)
+		if ((vnet->ctx = SSL_CTX_new(DTLSv1_method())) == NULL)
 			log_warnx("%s: SSL_CTX_new", __func__);
 
-		SSL_CTX_set_read_ahead(ctx, 1);
+		SSL_CTX_set_read_ahead(vnet->ctx, 1);
 
-		SSL_CTX_set_options(ctx, SSL_OP_SINGLE_ECDH_USE);
-
-		SSL_CTX_set_cookie_generate_cb(ctx, generate_cookie);
-		SSL_CTX_set_cookie_verify_cb(ctx, verify_cookie);
-		SSL_CTX_set_tlsext_servername_callback(ctx, servername_cb);
-		SSL_CTX_set_tlsext_servername_arg(ctx, NULL);
-
-		if (SSL_CTX_set_cipher_list(ctx, "ECDHE-ECDSA-AES256-SHA") == 0)
+		SSL_CTX_set_options(vnet->ctx, SSL_OP_SINGLE_ECDH_USE);
+		if (SSL_CTX_set_cipher_list(vnet->ctx, "ECDHE-ECDSA-AES256-SHA") == 0)
 			log_warnx("%s: SSL_CTX_set_cipher_list", __func__);
 
+		if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL)
+			fatalx("%s: EC_KEY_new_by_curve_name", __func__);
+
+		SSL_CTX_set_tmp_ecdh(vnet->ctx, ecdh);
+
 		/* Load the trusted certificate store into our SSL_CTX */
-		SSL_CTX_set_cert_store(ctx, vnet->passport->cacert_store);
+		SSL_CTX_set_cert_store(vnet->ctx, vnet->passport->cacert_store);
 
-		vnet->ctx = ctx;
-	} else {
+	} else
 		ctx = vnet->ctx; /* XXX free me */
-	}
 
-	SSL_set_SSL_CTX(ssl, ctx);
-
-	/* Set the certificate and key */
+	SSL_set_SSL_CTX(ssl, vnet->ctx);
 	SSL_use_certificate(ssl, vnet->passport->certificate);
 	SSL_use_PrivateKey(ssl, vnet->passport->keyring);
 
@@ -454,44 +457,6 @@ error:
 	return;
 }
 
-DH *
-get_dh_1024() {
-
-        DH *dh = NULL;
-        static unsigned char dh1024_p[]={
-                0xDE,0xD3,0x80,0xD7,0xE1,0x8E,0x1B,0x5D,0x5C,0x76,0x61,0x79,
-                0xCA,0x8E,0xCD,0xAD,0x83,0x49,0x9E,0x0B,0xC0,0x2E,0x67,0x33,
-                0x5F,0x58,0x30,0x9C,0x13,0xE2,0x56,0x54,0x1F,0x65,0x16,0x27,
-                0xD6,0xF0,0xFD,0x0C,0x62,0xC4,0x4F,0x5E,0xF8,0x76,0x93,0x02,
-                0xA3,0x4F,0xDC,0x2F,0x90,0x5D,0x77,0x7E,0xC6,0x22,0xD5,0x60,
-                0x48,0xF5,0xFB,0x5D,0x46,0x5D,0xF5,0x97,0x20,0x35,0xA6,0xEE,
-                0xC0,0xA0,0x89,0xEE,0xAB,0x22,0x68,0x96,0x8B,0x64,0x69,0xC7,
-                0xEB,0x41,0xDF,0x74,0xDF,0x80,0x76,0xCF,0x9B,0x50,0x2F,0x08,
-                0x13,0x16,0x0D,0x2E,0x94,0x0F,0xEE,0x29,0xAC,0x92,0x7F,0xA6,
-                0x62,0x49,0x41,0x0F,0x54,0x39,0xAD,0x91,0x9A,0x23,0x31,0x7B,
-                0xB3,0xC9,0x34,0x13,0xF8,0x36,0x77,0xF3,
-        };
-
-        static unsigned char dh1024_g[]={
-                0x02,
-        };
-
-        dh = DH_new();
-        if (dh == NULL) {
-                return (NULL);
-        }
-
-        dh->p = BN_bin2bn(dh1024_p, sizeof(dh1024_p), NULL);
-        dh->g = BN_bin2bn(dh1024_g, sizeof(dh1024_g), NULL);
-        if (dh->p == NULL || dh->g == NULL) {
-                DH_free(dh);
-                return (NULL);
-        }
-
-        return (dh);
-}
-
-
 
 void
 switch_init(json_t *config)
@@ -532,24 +497,10 @@ switch_init(json_t *config)
 
 	SSL_CTX_set_read_ahead(ctx, 1);
 
-	SSL_CTX_set_options(ctx, SSL_OP_SINGLE_ECDH_USE);
-
 	SSL_CTX_set_cookie_generate_cb(ctx, generate_cookie);
 	SSL_CTX_set_cookie_verify_cb(ctx, verify_cookie);
 	SSL_CTX_set_tlsext_servername_callback(ctx, servername_cb);
 	SSL_CTX_set_tlsext_servername_arg(ctx, NULL);
-
-	dh = get_dh_1024();
-
-	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL)
-		fatalx("%s: EC_KEY_new_by_curve_name", __func__);
-
-	SSL_CTX_set_tmp_dh(ctx, dh);
-
-	SSL_CTX_set_tmp_ecdh(ctx, ecdh);
-
-	if (SSL_CTX_set_cipher_list(ctx, "ECDHE-ECDSA-AES256-SHA") == 0)
-		fatalx("%s: SSL_CTX_set_cipher_list", __func__);
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
