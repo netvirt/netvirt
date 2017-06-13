@@ -16,6 +16,10 @@
 #ifndef INET_H
 #define INET_H
 
+#ifndef ETHER_ADDR_LEN
+#define ETHER_ADDR_LEN 6
+#endif
+
 #define ADDR_UNICAST	0x1
 #define ADDR_BROADCAST	0x2
 #define ADDR_MULTICAST	0x4
