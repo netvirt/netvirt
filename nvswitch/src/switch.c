@@ -85,7 +85,8 @@ static int		 dtls_peer_cmp(const struct dtls_peer *,
 			    const struct dtls_peer *);
 RB_PROTOTYPE_STATIC(dtls_peer_tree, dtls_peer, entry, dtls_peer_cmp);
 
-static int		 vnetwork_cmp(const struct vnetwork *, const struct vnetwork *);
+static int		 vnetwork_cmp(const struct vnetwork *,
+    const struct vnetwork *);
 RB_PROTOTYPE_STATIC(vnetwork_tree, vnetwork, entry, vnetwork_cmp);
 
 int
