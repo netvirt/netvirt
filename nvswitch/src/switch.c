@@ -38,6 +38,17 @@
 #include "inet.h"
 #include "switch.h"
 
+RB_HEAD(vnet_peer_tree, dtls_peer);
+
+struct vnetwork {
+	RB_ENTRY(vnetwork)	 entry;
+	struct vnet_peer_tree	 peers;
+	passport_t		*passport;
+	SSL_CTX			*ctx;
+	char			*uid;
+	uint32_t		 active_node;
+};
+
 enum dtls_state {
 	DTLS_LISTEN,
 	DTLS_ACCEPT,
@@ -52,17 +63,8 @@ struct dtls_peer {
 	enum dtls_state		 state;
 	socklen_t		 ss_len;
 	SSL			*ssl;
-};
-
-RB_HEAD(vnet_peer_tree, dtls_peer);
-
-struct vnetwork {
-	RB_ENTRY(vnetwork)	 entry;
-	struct vnet_peer_tree	 peers;
-	passport_t		*passport;
-	SSL_CTX			*ctx;
-	char			*uid;
-	uint32_t		 active_node;
+	struct vnetwork		*vnet;
+	uint8_t			 macaddr[ETHER_ADDR_LEN];
 };
 
 RB_HEAD(vnet_tree, vnetwork);
@@ -96,6 +98,12 @@ int
 vnetwork_cmp(const struct vnetwork *a, const struct vnetwork *b)
 {
 	return strcmp(a->uid, b->uid);
+}
+
+void
+vnetwork_add_peer(struct vnetwork *vnet, struct dtls_peer *p)
+{
+	RB_INSERT(vnet_peer_tree, &vnet->peers, p);
 }
 
 struct vnetwork
@@ -191,6 +199,7 @@ void
 dtls_peer_free(struct dtls_peer *p)
 {
 	RB_REMOVE(dtls_peer_tree, &dtls_peers, p);
+	RB_REMOVE(vnet_peer_tree, &p->vnet->peers, p);
 	SSL_free(p->ssl);
 	free(p);
 }
@@ -332,6 +341,9 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 	SSL_set_SSL_CTX(ssl, vnet->ctx);
 	SSL_use_certificate(ssl, vnet->passport->certificate);
 	SSL_use_PrivateKey(ssl, vnet->passport->keyring);
+
+	// retrieve p from SSL object
+	//RB_INSERT(vnet_peer_tree, &vnet->peers, p);
 
 	return (SSL_TLSEXT_ERR_OK);
 }
