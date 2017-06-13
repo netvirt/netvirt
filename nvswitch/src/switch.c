@@ -83,11 +83,10 @@ static int		 dtls_handle(struct dtls_peer *);
 static void		 dtls_peer_timeout_cb(int, short, void *);
 static int		 dtls_peer_cmp(const struct dtls_peer *,
 			    const struct dtls_peer *);
-RB_PROTOTYPE_STATIC(dtls_peer_tree, dtls_peer, entry, dtls_peer_cmp);
-
 static int		 vnetwork_cmp(const struct vnetwork *,
     const struct vnetwork *);
 RB_PROTOTYPE_STATIC(vnetwork_tree, vnetwork, entry, vnetwork_cmp);
+RB_PROTOTYPE_STATIC(dtls_peer_tree, dtls_peer, entry, dtls_peer_cmp);
 
 int
 vnetwork_cmp(const struct vnetwork *a, const struct vnetwork *b)
@@ -139,7 +138,6 @@ vnetwork_create(char *uid, char *cert, char *pvkey, char *cacert)
 int
 dtls_peer_cmp(const struct dtls_peer *a, const struct dtls_peer *b)
 {
-
 	if (a->ss_len < b->ss_len)
 		return (-1);
 	if (b->ss_len > b->ss_len)
