@@ -37,28 +37,7 @@ struct switch_config {
 	const char	*trustedcert;
 };
 
-enum dtls_state {
-	DTLS_LISTEN,
-	DTLS_ACCEPT,
-	DTLS_ESTABLISHED
-};
-
-struct dtls_peer {
-	RB_ENTRY(dtls_peer)	 entry;
-	struct sockaddr_storage  ss;
-	struct event		*timer;
-	enum dtls_state		 state;
-	socklen_t		 ss_len;
-	SSL			*ssl;
-};
-
-struct vnetwork {
-	RB_ENTRY(vnetwork)	 entry;
-	passport_t		*passport;
-	void			*ctx;
-	char			*uid;
-	uint32_t		 active_node;
-};
+struct vnetwork;
 
 void		 vnetwork_free(struct vnetwork *);
 struct vnetwork	*vnetwork_lookup(const char *);

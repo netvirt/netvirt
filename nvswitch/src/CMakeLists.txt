@@ -7,7 +7,6 @@ add_executable(netvirt-switch
 	inet.c
 	main.c
 	request.c
-	vnetwork.c
 	switch.c
 )
 
