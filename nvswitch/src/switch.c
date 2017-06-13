@@ -135,7 +135,6 @@ vnetwork_create(char *uid, char *cert, char *pvkey, char *cacert)
 	return (0);
 }
 
-
 int
 dtls_peer_cmp(const struct dtls_peer *a, const struct dtls_peer *b)
 {
@@ -517,7 +516,6 @@ error:
 	dtls_peer_free(p);
 	return;
 }
-
 
 void
 switch_init(json_t *config)
