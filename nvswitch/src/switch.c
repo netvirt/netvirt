@@ -54,18 +54,21 @@ struct dtls_peer {
 	SSL			*ssl;
 };
 
+RB_HEAD(vnet_peer_tree, dtls_peer);
+
 struct vnetwork {
 	RB_ENTRY(vnetwork)	 entry;
+	struct vnet_peer_tree	 peers;
 	passport_t		*passport;
-	void			*ctx;
+	SSL_CTX			*ctx;
 	char			*uid;
 	uint32_t		 active_node;
 };
 
-RB_HEAD(vnetwork_tree, vnetwork);
+RB_HEAD(vnet_tree, vnetwork);
 RB_HEAD(dtls_peer_tree, dtls_peer);
 
-static struct vnetwork_tree	 vnetworks;
+static struct vnet_tree		 vnetworks;
 static struct dtls_peer_tree	 dtls_peers;
 static EC_KEY			*ecdh;
 static SSL_CTX			*ctx;
@@ -85,7 +88,8 @@ static int		 dtls_peer_cmp(const struct dtls_peer *,
 			    const struct dtls_peer *);
 static int		 vnetwork_cmp(const struct vnetwork *,
     const struct vnetwork *);
-RB_PROTOTYPE_STATIC(vnetwork_tree, vnetwork, entry, vnetwork_cmp);
+RB_PROTOTYPE_STATIC(vnet_tree, vnetwork, entry, vnetwork_cmp);
+RB_PROTOTYPE_STATIC(vnet_peer_tree, dtls_peer, vn_entry, dtls_peer_cmp);
 RB_PROTOTYPE_STATIC(dtls_peer_tree, dtls_peer, entry, dtls_peer_cmp);
 
 int
@@ -100,7 +104,7 @@ struct vnetwork
 	struct vnetwork	match;
 
 	match.uid = (char *)uid;
-	return RB_FIND(vnetwork_tree, &vnetworks, &match);
+	return RB_FIND(vnet_tree, &vnetworks, &match);
 }
 
 void
@@ -130,7 +134,7 @@ vnetwork_create(char *uid, char *cert, char *pvkey, char *cacert)
 	vnet->active_node = 0;
 	vnet->ctx = NULL;
 
-	RB_INSERT(vnetwork_tree, &vnetworks, vnet);
+	RB_INSERT(vnet_tree, &vnetworks, vnet);
 
 	return (0);
 }
@@ -186,6 +190,7 @@ error:
 void
 dtls_peer_free(struct dtls_peer *p)
 {
+	RB_REMOVE(dtls_peer_tree, &dtls_peers, p);
 	SSL_free(p->ssl);
 	free(p);
 }
@@ -262,10 +267,8 @@ dtls_peer_timeout_cb(int fd, short event, void *arg)
 
 	DTLSv1_handle_timeout(p->ssl);
 
-	if (dtls_handle(p) < 0) {
-		RB_REMOVE(dtls_peer_tree, &dtls_peers, p);
+	if (dtls_handle(p) < 0)
 		dtls_peer_free(p);
-	}
 }
 
 int
@@ -600,5 +603,6 @@ switch_fini()
 	CRYPTO_cleanup_all_ex_data();
 }
 
+RB_GENERATE_STATIC(vnet_tree, vnetwork, entry, vnetwork_cmp);
+RB_GENERATE_STATIC(vnet_peer_tree, dtls_peer, vn_entry, dtls_peer_cmp);
 RB_GENERATE_STATIC(dtls_peer_tree, dtls_peer, entry, dtls_peer_cmp);
-RB_GENERATE_STATIC(vnetwork_tree, vnetwork, entry, vnetwork_cmp);
