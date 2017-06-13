@@ -17,7 +17,6 @@
 #include <logger.h>
 
 #include "request.h"
-#include "vnetwork.h"
 
 void
 provRequest(struct session *session, DNDSMessage_t *req_msg)

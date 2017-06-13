@@ -38,7 +38,6 @@
 
 #include <log.h>
 
-#include "vnetwork.h"
 #include "switch.h"
 
 static int	 request_node_list();

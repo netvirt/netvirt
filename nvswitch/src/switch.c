@@ -37,22 +37,6 @@
 
 #include "inet.h"
 #include "switch.h"
-#include "vnetwork.h"
-
-enum dtls_state {
-	DTLS_LISTEN,
-	DTLS_ACCEPT,
-	DTLS_ESTABLISHED
-};
-
-struct dtls_peer {
-	RB_ENTRY(dtls_peer)	 entry;
-	struct sockaddr_storage  ss;
-	struct event		*timer;
-	enum dtls_state		 state;
-	socklen_t		 ss_len;
-	SSL			*ssl;
-};
 
 RB_HEAD(dtls_peer_tree, dtls_peer);
 

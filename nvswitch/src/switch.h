@@ -16,8 +16,12 @@
 #ifndef SWITCH_H
 #define SWITCH_H
 
+#include <sys/tree.h>
+
 #include <event2/event.h>
 #include <jansson.h>
+
+#include <pki.h>
 
 struct switch_config {
 
@@ -33,11 +37,40 @@ struct switch_config {
 	const char	*trustedcert;
 };
 
-void	 switch_init(json_t *);
-void	 switch_fini(void);
+enum dtls_state {
+	DTLS_LISTEN,
+	DTLS_ACCEPT,
+	DTLS_ESTABLISHED
+};
 
-void	 control_init(void);
-void	 control_fini(void);
+struct dtls_peer {
+	RB_ENTRY(dtls_peer)	 entry;
+	struct sockaddr_storage  ss;
+	struct event		*timer;
+	enum dtls_state		 state;
+	socklen_t		 ss_len;
+	SSL			*ssl;
+};
+
+struct vnetwork {
+	RB_ENTRY(vnetwork)	 entry;
+	passport_t		*passport;
+	void			*ctx;
+	char			*uid;
+	uint32_t		 active_node;
+};
+
+void		 vnetwork_free(struct vnetwork *);
+struct vnetwork	*vnetwork_lookup(const char *);
+void		 vnetworks_free(void);
+int		 vnetwork_create(char *, char *, char *, char *);
+int		 vnetwork_init(void);
+
+void		 switch_init(json_t *);
+void		 switch_fini(void);
+
+void		 control_init(void);
+void		 control_fini(void);
 
 extern json_t			*config;
 extern struct event_base	*ev_base;

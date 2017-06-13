@@ -25,7 +25,7 @@
 #include <bitv.h>
 
 #include "inet.h"
-#include "vnetwork.h"
+#include "switch.h"
 
 RB_HEAD(vnetwork_tree, vnetwork);
 
@@ -38,24 +38,6 @@ int
 vnetwork_cmp(const struct vnetwork *a, const struct vnetwork *b)
 {
 	return strcmp(a->uid, b->uid);
-}
-
-void
-vnetwork_del_session(struct vnetwork *vnet, struct session *s)
-{
-	LIST_REMOVE(s, entry);
-	vnet->active_node--;
-}
-
-struct session *
-vnetwork_add_session(struct vnetwork *vnet)
-{
-	struct session *s;
-
-	s = malloc(sizeof(*s));
-	LIST_INSERT_HEAD(&vnet->sessions, s, entry);
-
-	return (s);
 }
 
 struct vnetwork
@@ -94,7 +76,6 @@ vnetwork_create(char *uid, char *cert, char *pvkey, char *cacert)
 	vnet->active_node = 0;
 	vnet->ctx = NULL;
 
-	LIST_INIT(&vnet->sessions);
 	RB_INSERT(vnetwork_tree, &vnetworks, vnet);
 
 	return (0);
