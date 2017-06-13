@@ -327,7 +327,7 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 		SSL_CTX_set_cert_store(vnet->ctx, vnet->passport->cacert_store);
 
 	} else
-		ctx = vnet->ctx; /* XXX free me */
+		ctx = vnet->ctx;
 
 	SSL_set_SSL_CTX(ssl, vnet->ctx);
 	SSL_use_certificate(ssl, vnet->passport->certificate);
