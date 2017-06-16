@@ -133,6 +133,7 @@ vnetwork_create(char *uid, char *cert, char *pvkey, char *cacert)
 		return (-1);
 	}
 
+	RB_INIT(&vnet->peers);
 	vnet->uid = strdup(uid);
 	vnet->passport = pki_passport_load_from_memory(cert, pvkey, cacert);
 	vnet->active_node = 0;
@@ -164,7 +165,16 @@ dtls_peer_new(int sock)
 		goto error;
 	}
 
-	if ((p->ssl = SSL_new(ctx)) == NULL) {
+	p->ssl = NULL;
+	p->vnet = NULL;
+	p->ss_len = 0;
+	p->state = DTLS_LISTEN;
+
+	if ((p->timer = evtimer_new(ev_base, dtls_peer_timeout_cb, p)) == NULL)
+		goto error;
+
+	if ((p->ssl = SSL_new(ctx)) == NULL ||
+	    SSL_set_app_data(p->ssl, p) != 1) {
 		log_warnx("%s: SSL_new", __func__);
 		goto error;
 	}
@@ -181,9 +191,6 @@ dtls_peer_new(int sock)
 	}
 
 	SSL_set_bio(p->ssl, bio, bio);
-
-	p->state = DTLS_LISTEN;
-	p->timer = evtimer_new(ev_base, dtls_peer_timeout_cb, p);
 
 	return (p);
 
