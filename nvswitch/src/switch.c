@@ -80,6 +80,7 @@ static int			 cookie_initialized;
 static unsigned char		 cookie_secret[16];
 
 static void		 info_cb(const SSL *, int, int);
+static int		 servername_cb(SSL *, int *, void *);
 static int		 generate_cookie(SSL *, unsigned char *, unsigned int *);
 static int		 verify_cookie(SSL *, unsigned char *, unsigned int);
 static int		 cert_verify_cb(int, X509_STORE_CTX *);
@@ -315,9 +316,10 @@ info_cb(const SSL *ssl, int where, int ret)
 int
 servername_cb(SSL *ssl, int *ad, void *arg)
 {
-	struct vnetwork	*vnet;
-	const char	*servername;
-	static EC_KEY	*ecdh;
+	struct vnetwork		*vnet;
+	struct dtls_peer	*p;
+	static EC_KEY		*ecdh;
+	const char		*servername;
 
 	if ((servername = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name))
 	    == NULL) {
@@ -358,8 +360,8 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 	SSL_use_certificate(ssl, vnet->passport->certificate);
 	SSL_use_PrivateKey(ssl, vnet->passport->keyring);
 
-	// retrieve p from SSL object
-	//RB_INSERT(vnet_peer_tree, &vnet->peers, p);
+	p = SSL_get_app_data(ssl);
+	p->vnet = vnet;
 
 	return (SSL_TLSEXT_ERR_OK);
 }
