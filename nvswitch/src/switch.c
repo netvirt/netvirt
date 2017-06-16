@@ -39,14 +39,22 @@
 #include "switch.h"
 
 RB_HEAD(vnet_peer_tree, dtls_peer);
+RB_HEAD(vnet_lladdr_tree, lladdr);
 
 struct vnetwork {
 	RB_ENTRY(vnetwork)	 entry;
 	struct vnet_peer_tree	 peers;
+	struct vnet_lladdr_tree	 arpcache;
 	passport_t		*passport;
 	SSL_CTX			*ctx;
 	char			*uid;
 	uint32_t		 active_node;
+};
+
+struct lladdr {
+	RB_ENTRY(lladdr)	 entry;
+	uint8_t			 macaddr[ETHER_ADDR_LEN];
+	struct dtls_peer	*peer;
 };
 
 enum dtls_state {
@@ -95,6 +103,13 @@ static int		 vnetwork_cmp(const struct vnetwork *,
 RB_PROTOTYPE_STATIC(vnet_tree, vnetwork, entry, vnetwork_cmp);
 RB_PROTOTYPE_STATIC(vnet_peer_tree, dtls_peer, vn_entry, dtls_peer_cmp);
 RB_PROTOTYPE_STATIC(dtls_peer_tree, dtls_peer, entry, dtls_peer_cmp);
+RB_PROTOTYPE_STATIC(vnet_lladdr_tree, lladdr, entry, lladdr_cmp);
+
+int
+lladdr_cmp(const struct lladdr *a, const struct lladdr *b)
+{
+	return memcmp(&a->macaddr, &b->macaddr, ETHER_ADDR_LEN);
+}
 
 int
 vnetwork_cmp(const struct vnetwork *a, const struct vnetwork *b)
@@ -114,9 +129,13 @@ struct vnetwork
 void
 vnetwork_free(struct vnetwork *vnet)
 {
+	struct lladdr	*lladdr;
+
 	if (vnet == NULL)
 		return;
 
+	while ((lladdr = RB_ROOT(&vnet->arpcache)) != NULL)
+		free(lladdr);
 	pki_passport_destroy(vnet->passport);
 	SSL_CTX_free(vnet->ctx);
 	free(vnet->uid);
@@ -134,6 +153,7 @@ vnetwork_create(char *uid, char *cert, char *pvkey, char *cacert)
 	}
 
 	RB_INIT(&vnet->peers);
+	RB_INIT(&vnet->arpcache);
 	vnet->uid = strdup(uid);
 	vnet->passport = pki_passport_load_from_memory(cert, pvkey, cacert);
 	vnet->active_node = 0;
@@ -646,3 +666,4 @@ switch_fini()
 RB_GENERATE_STATIC(vnet_tree, vnetwork, entry, vnetwork_cmp);
 RB_GENERATE_STATIC(vnet_peer_tree, dtls_peer, vn_entry, dtls_peer_cmp);
 RB_GENERATE_STATIC(dtls_peer_tree, dtls_peer, entry, dtls_peer_cmp);
+RB_GENERATE_STATIC(vnet_lladdr_tree, lladdr, entry, lladdr_cmp);
