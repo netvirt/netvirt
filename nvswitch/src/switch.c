@@ -523,6 +523,7 @@ void
 udplisten_cb(int sock, short what, void *ctx)
 {
 	struct dtls_peer	*p, needle;
+	char			 buf[2000];
 
 	needle.ss_len = sizeof(struct dtls_peer);
 	char s[INET6_ADDRSTRLEN];
@@ -551,6 +552,9 @@ udplisten_cb(int sock, short what, void *ctx)
 	return;
 
 error:
+	recvfrom(sock, buf, sizeof(buf), 0, (struct sockaddr *)&needle.ss,
+	    &needle.ss_len);
+
 	dtls_peer_free(p);
 	return;
 }
