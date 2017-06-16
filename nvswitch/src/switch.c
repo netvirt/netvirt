@@ -202,8 +202,13 @@ error:
 void
 dtls_peer_free(struct dtls_peer *p)
 {
-	RB_REMOVE(dtls_peer_tree, &dtls_peers, p);
-	RB_REMOVE(vnet_peer_tree, &p->vnet->peers, p);
+	if (p == NULL)
+		return;
+
+	if (p->ss_len != 0)
+		RB_REMOVE(dtls_peer_tree, &dtls_peers, p);
+	if (p->vnet != NULL)
+		RB_REMOVE(vnet_peer_tree, &p->vnet->peers, p);
 	SSL_free(p->ssl);
 	free(p);
 }
