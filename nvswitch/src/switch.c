@@ -102,12 +102,6 @@ vnetwork_cmp(const struct vnetwork *a, const struct vnetwork *b)
 	return strcmp(a->uid, b->uid);
 }
 
-void
-vnetwork_add_peer(struct vnetwork *vnet, struct dtls_peer *p)
-{
-	RB_INSERT(vnet_peer_tree, &vnet->peers, p);
-}
-
 struct vnetwork
 *vnetwork_lookup(const char *uid)
 {
