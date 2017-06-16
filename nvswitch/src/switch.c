@@ -79,6 +79,7 @@ static struct addrinfo		*ai;
 static int			 cookie_initialized;
 static unsigned char		 cookie_secret[16];
 
+static void		 info_cb(const SSL *, int, int);
 static int		 generate_cookie(SSL *, unsigned char *, unsigned int *);
 static int		 verify_cookie(SSL *, unsigned char *, unsigned int);
 static int		 cert_verify_cb(int, X509_STORE_CTX *);
@@ -173,6 +174,7 @@ dtls_peer_new(int sock)
 		goto error;
 	}
 
+	SSL_set_info_callback(p->ssl, info_cb);
 	SSL_set_accept_state(p->ssl);
 	SSL_set_verify(p->ssl,
 	    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
@@ -294,6 +296,20 @@ cert_verify_cb(int ok, X509_STORE_CTX *store)
 	printf("CN: %s\n", buf);
 
 	return (ok);
+}
+
+void
+info_cb(const SSL *ssl, int where, int ret)
+{
+	struct dtls_peer	*p;
+
+	if ((where & SSL_CB_HANDSHAKE_DONE) == 0)
+		return;
+
+	p = SSL_get_app_data(ssl);
+	RB_INSERT(vnet_peer_tree, &p->vnet->peers, p);
+
+	printf("connected !\n");
 }
 
 int
