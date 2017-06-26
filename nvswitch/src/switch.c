@@ -247,7 +247,7 @@ dtls_handle(struct dtls_peer *p)
 	struct sockaddr		 caddr;
 	enum dtls_state		 next_state;
 	int			 ret;
-	char			 buf[1500] = {0};
+	char			 buf[5000] = {0};
 
 	for (;;) {
 		switch (p->state) {
