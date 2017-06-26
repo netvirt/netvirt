@@ -98,6 +98,15 @@ dtls_peer_free(struct dtls_peer *p)
 }
 
 void
+info_cb(const SSL *ssl, int where, int ret)
+{
+	if ((where & SSL_CB_HANDSHAKE_DONE) == 0)
+		return;
+
+	printf("connected !\n");
+}
+
+void
 dtls_peer_timeout_cb(int fd, short event, void *arg)
 {
 	(void)fd;
@@ -374,6 +383,7 @@ agent_connect(const char *network_name)
 	if ((p->ssl = SSL_new(ctx)) == NULL)
 		warnx("%s: SSL_new", __func__);
 
+	SSL_set_info_callback(p->ssl, info_cb);
 	SSL_set_tlsext_host_name(p->ssl, passport->nodeinfo->networkid);
 	SSL_set_verify(p->ssl,
 	    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, certverify_cb);
