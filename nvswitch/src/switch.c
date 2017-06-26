@@ -108,7 +108,7 @@ RB_PROTOTYPE_STATIC(vnet_lladdr_tree, lladdr, entry, lladdr_cmp);
 int
 lladdr_cmp(const struct lladdr *a, const struct lladdr *b)
 {
-	return memcmp(&a->macaddr, &b->macaddr, ETHER_ADDR_LEN);
+	return memcmp(a->macaddr, b->macaddr, ETHER_ADDR_LEN);
 }
 
 int
