@@ -617,12 +617,12 @@ udplisten_cb(int sock, short what, void *ctx)
 
 	recvfrom(sock, NULL, 0, MSG_PEEK, (struct sockaddr *)&needle.ss,
 	    &needle.ss_len);
-
+/*
 	printf("got packet from %s :: %d\n",
 		inet_ntop(needle.ss.ss_family,
 		&((struct sockaddr_in*)&needle.ss)->sin_addr, s, sizeof(s)),
 		ntohs(&((struct sockaddr_in*)&needle.ss)->sin_port));
-
+*/
 	if ((p = RB_FIND(dtls_peer_tree, &dtls_peers, &needle)) == NULL) {
 		if ((p = dtls_peer_new(sock)) == NULL)
 			goto error;
