@@ -50,8 +50,6 @@ RB_PROTOTYPE_STATIC(network_tree, network, entry, network_cmp);
 int
 network_cmp(const struct network *a, const struct network *b)
 {
-	printf("a: %s\n", a->name);
-	printf("b: %s\n", b->name);
 	return strcmp(a->name, b->name);
 }
 
