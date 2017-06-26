@@ -278,7 +278,8 @@ link_switch_recv(struct dtls_peer *p, uint8_t *frame, size_t len)
 
 	if ((l = RB_FIND(vnet_lladdr_tree, &p->vnet->arpcache, &needle))
 	    == NULL) {
-		if ((l = lladdr_new(p, &needle.macaddr)) == NULL)
+		if ((l = lladdr_new(p, (uint8_t *)&needle.macaddr))
+		    == NULL)
 			goto cleanup;
 		RB_INSERT(vnet_lladdr_tree, &p->vnet->arpcache, l);
 	}
@@ -613,11 +614,11 @@ udplisten_cb(int sock, short what, void *ctx)
 	char			 buf[2000];
 
 	needle.ss_len = sizeof(struct dtls_peer);
-	char s[INET6_ADDRSTRLEN];
 
 	recvfrom(sock, NULL, 0, MSG_PEEK, (struct sockaddr *)&needle.ss,
 	    &needle.ss_len);
 /*
+	char s[INET6_ADDRSTRLEN];
 	printf("got packet from %s :: %d\n",
 		inet_ntop(needle.ss.ss_family,
 		&((struct sockaddr_in*)&needle.ss)->sin_addr, s, sizeof(s)),
