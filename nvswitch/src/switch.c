@@ -267,8 +267,43 @@ error:
 void
 link_switch_recv(struct dtls_peer *p, uint8_t *frame, size_t len)
 {
-	printf("link switch\n");
-	inet_print_addr(frame);
+	int ret;
+	struct lladdr	*l, *ll, needle;
+	uint8_t	saddr[ETHER_ADDR_LEN];
+
+	inet_macaddr_src(frame, saddr);
+
+	/* Make sure we know the source */
+	inet_macaddr_src(frame, needle.macaddr);
+
+	if ((l = RB_FIND(vnet_lladdr_tree, &p->vnet->arpcache, &needle))
+	    == NULL) {
+		if ((l = lladdr_new(p, &needle.macaddr)) == NULL)
+			goto cleanup;
+		RB_INSERT(vnet_lladdr_tree, &p->vnet->arpcache, l);
+	}
+
+	/* Verify if we know the destination */
+	inet_macaddr_dst(frame, needle.macaddr);
+	if ((ll = RB_FIND(vnet_lladdr_tree, &p->vnet->arpcache, &needle))
+	    != NULL) {
+		ret = SSL_write(ll->peer->ssl, frame, len);
+		// XXX check fail
+	} else {
+		RB_FOREACH(ll, vnet_lladdr_tree, &p->vnet->arpcache) {
+			if (memcmp(ll->macaddr, saddr, sizeof(ll->macaddr))
+			    != 0) {
+				ret = SSL_write(ll->peer->ssl, frame, len);
+				// XXX check fail
+			}
+		}
+	}
+
+	return;
+
+cleanup:
+	// XXX disconnect peer;
+	return;
 }
 
 int
