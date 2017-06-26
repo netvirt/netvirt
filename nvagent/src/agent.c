@@ -127,7 +127,7 @@ dtls_handle(struct dtls_peer *p)
 	struct timeval	tv;
 	enum dtls_state	next_state;
 	int		ret;
-	char		buf[1500] = {0};
+	char		buf[5000] = {0};
 
 	for (;;) {
 
@@ -139,7 +139,13 @@ dtls_handle(struct dtls_peer *p)
 
 		case DTLS_ESTABLISHED:
 			ret = SSL_read(p->ssl, buf, sizeof(buf));
+			// XXX check ret
 			next_state = DTLS_ESTABLISHED;
+			if (ret > 0) {
+				ret = tapcfg_write(p->tapcfg, buf, ret);
+				// XXX check ret
+				return (0);
+			}
 			break;
 
 		default:
@@ -180,18 +186,16 @@ iface_cb(int sock, short what, void *arg)
 
 	struct dtls_peer	*p;
 	int			 ret;
-	char			 buf[1500] = {0};
+	char			 buf[5000] = {0};
 
 	p = arg;
 
-	printf("iface_cb\n");
-
 	ret = tapcfg_read(p->tapcfg, buf, sizeof(buf));
-	// XXX verify ret
+	// XXX check ret
 
 	if (p->state == DTLS_ESTABLISHED) {
-		printf("write !\n");
-		SSL_write(p->ssl, buf, ret);
+		ret = SSL_write(p->ssl, buf, ret);
+		// XXX check ret
 	}
 }
 
