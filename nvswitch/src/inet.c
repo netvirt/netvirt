@@ -71,7 +71,7 @@ void
 inet_macaddr_src(void *frame, uint8_t *macaddr)
 {
 	struct ether_header	*eth_hdr = frame;
-	bcopy(eth_hdr->ether_shost, macaddr, ETHER_ADDR_LEN);
+	memcpy(macaddr, eth_hdr->ether_shost, ETHER_ADDR_LEN);
 }
 
 void
