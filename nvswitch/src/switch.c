@@ -92,6 +92,8 @@ static int		 servername_cb(SSL *, int *, void *);
 static int		 generate_cookie(SSL *, unsigned char *, unsigned int *);
 static int		 verify_cookie(SSL *, unsigned char *, unsigned int);
 static int		 cert_verify_cb(int, X509_STORE_CTX *);
+static struct lladdr	*lladdr_new(struct dtls_peer *, uint8_t *);
+static void		 lladdr_free(struct lladdr *);
 static struct dtls_peer	*dtls_peer_new(int);
 static void		 dtls_peer_free(struct dtls_peer *);
 static int		 dtls_handle(struct dtls_peer *);
@@ -231,6 +233,35 @@ dtls_peer_free(struct dtls_peer *p)
 		RB_REMOVE(vnet_peer_tree, &p->vnet->peers, p);
 	SSL_free(p->ssl);
 	free(p);
+}
+
+void
+lladdr_free(struct lladdr *l)
+{
+	if (l == NULL)
+		return;
+
+	free(l);
+}
+
+struct lladdr *
+lladdr_new(struct dtls_peer *p, uint8_t *macaddr)
+{
+	struct lladdr	*l;
+
+	if ((l = malloc(sizeof(*l))) == NULL) {
+		log_warnx("%s: malloc", __func__);
+		goto error;
+	}
+
+	l->peer = p;
+	memcpy(l->macaddr, macaddr, ETHER_ADDR_LEN);
+
+	return (l);
+
+error:
+	lladdr_free(l);
+	return (NULL);
 }
 
 void
