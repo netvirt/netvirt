@@ -271,7 +271,6 @@ cleanup:
 void
 v1_network_create(struct evhttp_request *req, void *arg)
 {
-	struct evkeyvalq	*headers;
 	struct evbuffer		*buf;
 	int			 code;
 	const char		*apikey;
@@ -297,8 +296,8 @@ v1_network_create(struct evhttp_request *req, void *arg)
 	}
 
 
-	if ((apikey = evhttp_find_header(headers, "X-netvirt-apikey"))
-	    == NULL) {
+	if ((apikey = evhttp_find_header(evhttp_request_get_input_headers(req),
+	    "X-netvirt-apikey")) == NULL) {
 		log_warnx("%s: evhttp_find_header", __func__);
 		goto out;
 	}
@@ -422,39 +421,47 @@ v1_network_cb(struct evhttp_request *req, void *arg)
 void
 v1_node_create(struct evhttp_request *req, void *arg)
 {
-	struct evkeyvalq	*headers;
 	struct evbuffer		*buf;
-	int			 code = HTTP_BADREQUEST;
+	int			 code;
 	const char		*apikey;
 	const char		*type;
-	const char		*phrase = "Bad Request";
+	const char		*phrase;
 	void			*p;
 
-	if ((headers = evhttp_request_get_input_headers(req)) == NULL)
-		goto cleanup;
+	code = 500;
+	phrase = "Internal server error";
 
-	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
-	    strncasecmp(type, "application/json", 16) != 0)
-		goto cleanup;
+	if ((type = evhttp_find_header(evhttp_request_get_input_headers(req),
+	    "Content-Type")) == NULL ||
+	    strncasecmp(type, "application/json", 16) != 0) {
+		log_warnx("%s: evhttp_find_header", __func__);
+		goto out;
+	}
 
 	buf = evhttp_request_get_input_buffer(req);
 	evbuffer_add(buf, "\0", 1);
-	if ((p = evbuffer_pullup(buf, -1)) == NULL)
-		goto cleanup;
+	if ((p = evbuffer_pullup(buf, -1)) == NULL) {
+		log_warnx("%s: evhttp_find_header", __func__);
+		goto out;
+	}
 
-	if ((apikey = evhttp_find_header(headers, "X-netvirt-apikey")) == NULL)
-		goto cleanup;
+	if ((apikey = evhttp_find_header(evhttp_request_get_input_headers(req),
+	    "X-netvirt-apikey")) == NULL) {
+		log_warnx("%s: evhttp_find_header x-netvirt-apikey", __func__);
+		goto out;
+	}
 
 	if (node_create(p, apikey) == -1) {
 		code = 403;
 		phrase = "Forbidden";
-		goto cleanup;
+		log_warnx("%s: node_create", __func__);
+		goto out;
 	}
 
 	code = 201;
 	phrase = "Created";
 
-cleanup:
+out:
 	evhttp_send_reply(req, code, phrase, NULL);
 }
 

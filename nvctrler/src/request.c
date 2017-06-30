@@ -497,43 +497,47 @@ node_create(const char *msg, const char *apikey)
 	int		 ret = 0;
 	int		 pool_size;
 	char		*client_id = NULL;
+	char		*network_uid;
 	char		*uid;
 	char		*key = NULL;
-	char		*network_uid = NULL;
+	char		*network_description = NULL;
 	char		*description = NULL;
-	char		*ip = NULL;
+	char		*ipaddress = NULL;
 	unsigned char	*ippool_bin = NULL;
 	char		 provkey[256];
 
-	if (msg == NULL || apikey == NULL)
-		return (-1);
+	ret = -1;
 
-	if (dao_client_get_id(&client_id, apikey) < 0)
-		return (-1);
+	if (dao_client_get_id(&client_id, apikey) < 0) {
+		log_warnx("%s: dao_client_get_id", __func__);
+		goto cleanup;
+	}
 
 	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
-		warnx("json_loadb: %s", error.text);
-		return (-1);
-	}
-
-	json_unpack(jmsg, "{s:s}", "network_uid", &network_uid);
-	if (network_uid == NULL) {
-		ret = -1;
+		log_warnx("%s: json_loadb: %s", __func__, error.text);
 		goto cleanup;
 	}
 
-	json_unpack(jmsg, "{s:s}", "description", &description);
-	if (description == NULL) {
-		ret = -1;
+	if (json_unpack(jmsg, "{s:s, s:s, s:s}",
+	    "network_description", &network_description,
+	    "description", &description) < 0) {
+		log_warnx("%s: json_unpack", __func__);
 		goto cleanup;
 	}
+
+/*
+	if (dao_network_get_ippool(network_description, &ippool_bin) < 0) {
+		log_warnx("%s: dao_network_get_ippool", __func__);
+		goto cleanup;
+	}
+*/
 
 	/* handle ip pool 
 	ippool = ippool_new("44.128.0.0", "255.255.0.0");
 	free(ippool->pool);
 	ippool->pool = (uint8_t*)ippool_bin;
 	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
-	ip = ippool_get_ip(ippool);
+	ipaddress = ippool_get_ip(ippool);
 
 	ret = dao_network_update_ippool(network_uid, ippool->pool, pool_size);
 	if (ret == -1) {
@@ -542,18 +546,18 @@ node_create(const char *msg, const char *apikey)
 	*/
 
 	if ((uid = pki_gen_uid()) == NULL) {
-		ret = -1;
+		log_warnx("%s: pki_gen_uid", __func__);
 		goto cleanup;
 	}
 
 	if ((key = pki_gen_key()) == NULL) {
-		ret = -1;
+		log_warnx("%s: pki_gen_key", __func__);
 		goto cleanup;
 	}
 
-	snprintf(provkey, sizeof(provkey), "%s:%s:%s", network_uid, uid, provkey);
-	if (dao_node_create(network_uid, uid, provkey, description, "192.168.1.1") < 0) {
-		ret = -1;
+	snprintf(provkey, sizeof(provkey), "%s:%s:%s", network_uid, uid, key);
+	if (dao_node_create(network_uid, uid, provkey, description, ipaddress) < 0) {
+		log_warnx("%s: dao_node_create", __func__);
 		goto cleanup;
 	}
 #if 0
@@ -591,11 +595,14 @@ node_create(const char *msg, const char *apikey)
 	/* * */
 #endif
 
+	ret = 0;
+
 cleanup:
-	ippool_free(ippool);
-	free(key);
 	json_decref(jmsg);
+	ippool_free(ippool);
 	free(client_id);
+	free(key);
+	free(uid);
 
 	return (ret);
 }
