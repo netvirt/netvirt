@@ -83,35 +83,38 @@ client_activate(char *msg)
 {
 	json_t		*jmsg;
 	json_error_t	 error;
-	int		 ret = 0;
+	int		 ret;
 	char		*apikey = NULL;
 	char		*new_apikey = NULL;
 
+	ret = -1;
+
 	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
-		warnx("json_loadb: %s", error.text);
-		return (-1);
+		log_warnx("%s: json_loadb: %s", __func__, error.text);
+		goto cleanup;
 	}
 
-	json_unpack(jmsg, "{s:s}", "apikey", &apikey);
-	if (apikey == NULL) {
-		ret = -1;
+	if (json_unpack(jmsg, "{s:s}", "apikey", &apikey) < 0) {
+		log_warnx("%s: json_unpack", __func__);
 		goto cleanup;
 	}
 
 	if ((new_apikey = pki_gen_key()) == NULL) {
-		ret = -1;
+		log_warnx("%s: pki_gen_key", __func__);
 		goto cleanup;
 	}
 
 	if (dao_client_activate(apikey) == -1) {
-		ret = -1;
+		log_warnx("%s: dao_client_activate", __func__);
 		goto cleanup;
 	}
 
 	if (dao_client_update_apikey(apikey, new_apikey) < 0) {
-		ret = -1;
+		log_warnx("%s: dao_client_update", __func__);
 		goto cleanup;
 	}
+
+	ret = 0;
 
 cleanup:
 	json_decref(jmsg);
