@@ -139,7 +139,6 @@ client_get_newapikey(char *msg, char **resp)
 		warnx("json_loadb: %s", error.text);
 		return (-1);
 	}
-	printf("%d\n", __LINE__);
  
 	json_unpack(jmsg, "{s:s}", "email", &email);
 	if (email == NULL) {
@@ -147,33 +146,28 @@ client_get_newapikey(char *msg, char **resp)
 		goto cleanup;
 	}
 
-	printf("%d\n", __LINE__);
 	json_unpack(jmsg, "{s:s}", "password", &password);
 	if (password == NULL) {
 		ret = -1;
 		goto cleanup;
 	}
 
-	printf("%d\n", __LINE__);
 	if ((new_apikey = pki_gen_key()) == NULL) {
 		ret = -1;
 		goto cleanup;
 	}
 
-	printf("%d\n", __LINE__);
 	if (dao_client_update_apikey2(email, password, new_apikey) < 0) {
 		ret = -1;
 		goto cleanup;
 	}
 
-	printf("%d\n", __LINE__);
 	jresp = json_object();
 	jclient = json_object();
 	json_object_set_new(jresp, "client", jclient);
 	json_object_set_new(jclient, "apikey", json_string(new_apikey));
 	*resp = json_dumps(jresp, JSON_INDENT(1));
 
-	printf("%d\n", __LINE__);
 cleanup:
 	json_decref(jmsg);
 	json_decref(jresp);
