@@ -28,7 +28,7 @@ int dao_client_update_resetkey(char *, char *);
 int dao_client_update_password(char *, char *, char *);
 int dao_client_get_id(char **, const char *);
 
-int dao_network_create(char *, char *, char *, char *, char *, char *, char *,
+int dao_network_create(char *, char *, char *, char *, char *, char *, char *, char *,
     char *, char *, const unsigned char *, size_t);
 int dao_network_delete(const char *, const char *);
 int dao_network_list(const char *, int (*)(const char *, const char *, void *),

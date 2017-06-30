@@ -150,7 +150,7 @@ dao_prepare_statements()
 	result = PQprepare(dbconn,
 			"dao_network_create",
 			"INSERT INTO network "
-			"(client_id, uid, description, cidr, "
+			"(client_id, uid, description, subnet, netmask, "
 				"embassy_certificate, embassy_privatekey, embassy_serial, "
 				"passport_certificate, passport_privatekey, ippool) "
 			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::bytea);",
@@ -367,7 +367,7 @@ dao_prepare_statements()
 	// XXX client id ... and description..
 	result = PQprepare(dbconn,
 			"dao_fetch_network_by_client_id_desc",
-			"SELECT id, description, client_id, host(cidr), netmask(cidr), passport_certificate, passport_privatekey, embassy_certificate "
+			"SELECT id, description, client_id, subnet, netmask, passport_certificate, passport_privatekey, embassy_certificate "
 			"FROM network "
 			"WHERE client_id = $1 and description = $2;",
 			0,
@@ -702,7 +702,8 @@ int
 dao_network_create(char *client_id,
 	char *uid,
 	char *description,
-	char *cidr,
+	char *subnet,
+	char *netmask,
 	char *embassy_certificate,
 	char *embassy_privatekey,
 	char *embassy_serial,
@@ -712,13 +713,13 @@ dao_network_create(char *client_id,
 	size_t pool_size)
 {
 	PGresult	*result;
-	int		 paramLengths[10];
 	size_t		 ippool_str_len;
-	const char	*paramValues[10];
+	int		 paramLengths[11];
+	const char	*paramValues[11];
 	unsigned char	*ippool_str;
 
 	if (uid == NULL || client_id == NULL || description == NULL ||
-	    cidr == NULL || embassy_certificate == NULL ||
+	    subnet == NULL || netmask == NULL || embassy_certificate == NULL ||
 	    embassy_privatekey == NULL || embassy_serial == NULL ||
 	    passport_certificate == NULL || passport_privatekey == NULL) {
 		warnx("invalid NULL parameter");
@@ -730,26 +731,28 @@ dao_network_create(char *client_id,
 	paramValues[0] = client_id;
 	paramValues[1] = uid;
 	paramValues[2] = description;
-	paramValues[3] = cidr;
-	paramValues[4] = embassy_certificate;
-	paramValues[5] = embassy_privatekey;
-	paramValues[6] = embassy_serial;
-	paramValues[7] = passport_certificate;
-	paramValues[8] = passport_privatekey;
-	paramValues[9] = (char *)ippool_str;
+	paramValues[3] = subnet;
+	paramValues[4] = netmask;
+	paramValues[5] = embassy_certificate;
+	paramValues[6] = embassy_privatekey;
+	paramValues[7] = embassy_serial;
+	paramValues[8] = passport_certificate;
+	paramValues[9] = passport_privatekey;
+	paramValues[10] = (char *)ippool_str;
 
 	paramLengths[0] = strlen(client_id);
 	paramLengths[1] = strlen(uid);
 	paramLengths[2] = strlen(description);
-	paramLengths[3] = strlen(cidr);
-	paramLengths[4] = strlen(embassy_certificate);
-	paramLengths[5] = strlen(embassy_privatekey);
-	paramLengths[6] = strlen(embassy_serial);
-	paramLengths[7] = strlen(passport_certificate);
-	paramLengths[8] = strlen(passport_privatekey);
-	paramLengths[9] = ippool_str_len;
+	paramLengths[3] = strlen(subnet);
+	paramLengths[4] = strlen(netmask);
+	paramLengths[5] = strlen(embassy_certificate);
+	paramLengths[6] = strlen(embassy_privatekey);
+	paramLengths[7] = strlen(embassy_serial);
+	paramLengths[8] = strlen(passport_certificate);
+	paramLengths[9] = strlen(passport_privatekey);
+	paramLengths[10] = ippool_str_len;
 
-	result = PQexecPrepared(dbconn, "dao_network_create", 10, paramValues, paramLengths, NULL, 0);
+	result = PQexecPrepared(dbconn, "dao_network_create", 11, paramValues, paramLengths, NULL, 0);
 
 	PQfreemem(ippool_str);
 
@@ -1586,7 +1589,7 @@ int dao_fetch_network_by_client_id_desc(char *client_id, char *description,
 					char *id,
 					char *description,
 					char *client_id,
-					char *network,
+					char *subnet,
 					char *netmask,
 					char *serverCert,
 					char *serverPrivkey,
