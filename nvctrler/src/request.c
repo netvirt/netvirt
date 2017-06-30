@@ -503,6 +503,8 @@ node_create(const char *msg, const char *apikey)
 	char		*network_description = NULL;
 	char		*description = NULL;
 	char		*ipaddress = NULL;
+	char		*subnet;
+	char		*netmask;
 	unsigned char	*ippool_bin = NULL;
 	char		 provkey[256];
 
@@ -518,32 +520,32 @@ node_create(const char *msg, const char *apikey)
 		goto cleanup;
 	}
 
-	if (json_unpack(jmsg, "{s:s, s:s, s:s}",
+	if (json_unpack(jmsg, "{s:s, s:s}",
 	    "network_description", &network_description,
 	    "description", &description) < 0) {
 		log_warnx("%s: json_unpack", __func__);
 		goto cleanup;
 	}
 
-/*
-	if (dao_network_get_ippool(network_description, &ippool_bin) < 0) {
+
+	if (dao_network_get_ippool(network_description, &network_uid,
+	    &subnet, &netmask, &ippool_bin) < 0) {
 		log_warnx("%s: dao_network_get_ippool", __func__);
 		goto cleanup;
 	}
-*/
 
-	/* handle ip pool 
-	ippool = ippool_new("44.128.0.0", "255.255.0.0");
+	/* XXX handle ip pool */
+	ippool = ippool_new(subnet, netmask);
 	free(ippool->pool);
 	ippool->pool = (uint8_t*)ippool_bin;
 	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
 	ipaddress = ippool_get_ip(ippool);
 
+/*
 	ret = dao_network_update_ippool(network_uid, ippool->pool, pool_size);
-	if (ret == -1) {
+		if (ret == -1) {
 	}
-
-	*/
+*/
 
 	if ((uid = pki_gen_uid()) == NULL) {
 		log_warnx("%s: pki_gen_uid", __func__);
@@ -602,7 +604,6 @@ cleanup:
 	ippool_free(ippool);
 	free(client_id);
 	free(key);
-	free(uid);
 
 	return (ret);
 }

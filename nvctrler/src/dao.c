@@ -198,6 +198,18 @@ dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
+			"dao_network_get_ippool",
+			"SELECT uid, subnet, netmask, ippool "
+			"FROM network "
+			"WHERE description = $1;",
+			0,
+			NULL);
+
+	if (check_result_status(result) == -1)
+		goto error;
+	PQclear(result);
+
+	result = PQprepare(dbconn,
 			"dao_node_create",
 			"INSERT INTO node "
 			"(network_uid, uid, provkey, description, ipaddress) "
@@ -881,6 +893,50 @@ dao_network_get_embassy(
 	return (0);
 }
 
+int
+dao_network_get_ippool(
+    const char	*description,
+    char	**uid,
+    char	**subnet,
+    char	**netmask,
+    uint8_t	**ippool)
+{
+	PGresult	*result;
+	size_t		 ippool_size;
+	int		 paramLengths[1];
+	int		 tuples;
+	int		 fields;
+	uint8_t		*ippool_ptr;
+	const char	*paramValues[1];
+
+	paramValues[0] = description;
+	paramLengths[0] = strlen(description);
+
+	result = PQexecPrepared(dbconn, "dao_network_get_ippool", 1, paramValues, paramLengths, NULL, 0);
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return (-1);
+	}
+
+	if ((tuples = PQntuples(result)) > 0 &&
+	    (fields = PQnfields(result)) == 4) {
+		*uid = strdup(PQgetvalue(result, 0, 0));
+		*subnet = strdup(PQgetvalue(result, 0, 1));
+		*netmask = strdup(PQgetvalue(result, 0, 2));
+
+		ippool_ptr = (uint8_t *)PQgetvalue(result, 0, 3);
+		ippool_size = PQgetlength(result, 0, 3);
+		*ippool = PQunescapeBytea(ippool_ptr, &ippool_size);
+	} else {
+		PQclear(result);
+		return (-1);
+	}
+
+	PQclear(result);
+
+	return (0);
+}
 
 int
 dao_node_create(const char *network_uid, const char *uid, const char *provkey,

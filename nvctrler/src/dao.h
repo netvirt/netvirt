@@ -35,6 +35,7 @@ int dao_network_list(const char *, int (*)(const char *, const char *, void *),
     void *);
 //int dao_network_update();
 int dao_network_get_embassy(const char *, char **, char **, char **);
+int dao_network_get_ippool(const char *, char **, char **, char **, uint8_t **);
 
 int dao_node_create(const char *, const char *, const char *, const char *,
     const char *);
