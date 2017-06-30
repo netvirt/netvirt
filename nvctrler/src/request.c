@@ -288,38 +288,33 @@ network_create(char *msg, const char *apikey)
 	char		*network_uid = NULL;
 	char		*client_id = NULL;
 	char		*description = NULL;
-	char		*cidr = NULL;
+	char		*subnet;
+	char		*netmask;
 	char		*emb_cert_ptr = NULL;
 	char		*emb_pvkey_ptr = NULL;
 	char		*serv_cert_ptr = NULL;
 	char		*serv_pvkey_ptr = NULL;
 	char		 emb_serial[10];
 
-	if (msg == NULL || apikey == NULL)
-		return (-1);
-	
-	if (dao_client_get_id(&client_id, apikey) < 0)
-		return (-1);
+	ret = -1;
 
-	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
-		warnx("json_loadb: %s", error.text);
-		return (-1);
-	}
-
-	json_unpack(jmsg, "{s:s}", "description", &description);
-	if (description == NULL) {
-		ret = -1;
+	if (dao_client_get_id(&client_id, apikey) < 0) {
+		log_warnx("%s: dao_client_get_id", __func__);
 		goto cleanup;
 	}
 
-	json_unpack(jmsg, "{s:s}", "cidr", &cidr);
-	if (description == NULL) {
-		ret = -1;
+	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
+		log_warnx("json_loadb: %s", error.text);
+		goto cleanup;
+	}
+
+	if (json_unpack(jmsg, "{s:s, s:s, s:s}", "description", &description,
+	    "subnet", &subnet, "netmask", &netmask) < 0) {
+		log_warnx("%s: json_unpack", __func__);
 		goto cleanup;
 	}
 
 	/* initialize embassy */
-
 	exp_delay = pki_expiration_delay(10);
 
 	// XXX remove the needs of the embassy_id
@@ -342,14 +337,15 @@ network_create(char *msg, const char *apikey)
 	snprintf(emb_serial, sizeof(emb_serial), "%d", emb->serial);
 
 	/* create an IP pool */
-	ippool = ippool_new("44.128.0.0", "255.255.0.0");
+	ippool = ippool_new(subnet, netmask);
 	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
 
 	network_uid = pki_gen_uid();
 	ret = dao_network_create(client_id,
 				network_uid,
 				description,
-				"44.128.0.0/16",
+				subnet,
+				netmask,
 				emb_cert_ptr,
 				emb_pvkey_ptr,
 				emb_serial,
@@ -374,8 +370,8 @@ network_create(char *msg, const char *apikey)
 		json_object_set_new(fwd_resp, "response", json_string("more-data"));
 
 		json_object_set_new(network, "uid", json_string(network_uid));
-		json_object_set_new(network, "network", json_string("44.128.0.0"));
-		json_object_set_new(network, "netmask", json_string("255.255.0.0"));
+		json_object_set_new(network, "subnet", json_string(subnet));
+		json_object_set_new(network, "netmask", json_string(netmask));
 		json_object_set_new(network, "cert", json_string(serv_cert_ptr));
 		json_object_set_new(network, "pkey", json_string(serv_pvkey_ptr));
 		json_object_set_new(network, "tcert", json_string(emb_cert_ptr));
