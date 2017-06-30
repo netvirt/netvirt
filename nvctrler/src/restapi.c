@@ -273,36 +273,48 @@ v1_network_create(struct evhttp_request *req, void *arg)
 {
 	struct evkeyvalq	*headers;
 	struct evbuffer		*buf;
-	int			 code = HTTP_BADREQUEST;
+	int			 code;
 	const char		*apikey;
 	const char		*type;
-	const char		*phrase = "Bad Request";
+	const char		*phrase;
 	void			*p;
 
-	headers = evhttp_request_get_input_headers(req);
+	code = 500;
+	phrase = "Internal Server Error";
 
-	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
-		strncasecmp(type, "application/json", 16) != 0)
-		goto cleanup;
+	if ((type = evhttp_find_header(evhttp_request_get_input_headers(req),
+	    "Content-Type")) == NULL ||
+		strncasecmp(type, "application/json", 16) != 0) {
+		log_warnx("%s: evhttp_find_header", __func__);
+		goto out;
+	}
 
 	buf = evhttp_request_get_input_buffer(req);
 	evbuffer_add(buf, "\0", 1);
-	if ((p = evbuffer_pullup(buf, -1)) == NULL)
-		goto cleanup;
+	if ((p = evbuffer_pullup(buf, -1)) == NULL) {
+		log_warnx("%s: evbuffer_pullup", __func__);
+		goto out;
+	}
 
-	if ((apikey = evhttp_find_header(headers, "X-netvirt-apikey")) == NULL)
-		goto cleanup;
+
+	if ((apikey = evhttp_find_header(headers, "X-netvirt-apikey"))
+	    == NULL) {
+		log_warnx("%s: evhttp_find_header", __func__);
+		goto out;
+	}
 
 	if (network_create(p, apikey) == -1) {
 		code = 403;
-		phrase = "Forbidden"; 
-		goto cleanup;
+		phrase = "Forbidden";
+		log_warnx("%s: network_create", __func__);
+		goto out;
 	}
+
 
 	code = 201;
 	phrase = "Created";
 
-cleanup:
+out:
 	evhttp_send_reply(req, code, phrase, NULL);
 }
 
