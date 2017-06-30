@@ -61,7 +61,7 @@ v1_client_create_cb(struct evhttp_request *req, void *arg)
 		goto out;
 	}
 
-	if (client_create(p) == -1) {
+	if (client_create(p) < 0) {
 		code = 403;
 		phrase = "Forbidden";
 		log_warnx("%s: client_create", __func__);

@@ -34,36 +34,43 @@ extern struct session_info *switch_sinfo;
 int
 client_create(char *msg)
 {
-	json_t		*jmsg;
+	json_t		*jmsg = NULL;
 	json_error_t	 error;
-	int		 ret = 0;
-	char		*email = NULL;
-	char		*password = NULL;
+	int		 ret;
+	char		*email;
+	char		*password;
 	char		*apikey = NULL;
 
+	ret = -1;
+
 	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
-		warnx("json_loadb: %s", error.text);
-		return (-1);
-	}
-
-	json_unpack(jmsg, "{s:s}", "email", &email);
-	json_unpack(jmsg, "{s:s}", "password", &password);
-
-	if (email == NULL || password == NULL) {
-		ret = -1;
+		log_warnx("%s: json_loadb: %s", __func__, error.text);
 		goto cleanup;
 	}
- 
+
+	if (json_unpack(jmsg, "{s:s, s:s}", "email", &email,
+	    "password", &password) < 0) {
+		log_warnx("%s: json_unpack\n", __func__);
+		goto cleanup;
+	}
+
 	if ((apikey = pki_gen_key()) == NULL) {
-		ret = -1;
+		log_warnx("%s: pki_gen_key", __func__);
 		goto cleanup;
 	}
 
-	printf("apikey: %s\n", apikey);
-	if (dao_client_create(email, password, apikey) == -1) {
-		ret = -1;
+	if (dao_client_create(email, password, apikey) < 0) {
+		log_warnx("%s: dao_client_create(%s)", __func__, email);
 		goto cleanup;
 	}
+
+	// XXX send email !
+	FILE	*tmp;
+	tmp = fopen("/tmp/apikey", "w");
+	fprintf(tmp, "%s", apikey);
+	fclose(tmp);
+
+	ret = 0;
 
 cleanup:
 	json_decref(jmsg);
