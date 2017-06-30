@@ -329,12 +329,10 @@ dtls_handle(struct dtls_peer *p)
 			break;
 
 		case DTLS_ESTABLISHED:
-			if ((ret = SSL_read(p->ssl, buf, sizeof(buf))) > 0) {
-				link_switch_recv(p, buf, ret);
-			}
 			next_state = DTLS_ESTABLISHED;
+			if ((ret = SSL_read(p->ssl, buf, sizeof(buf))) > 0)
+				link_switch_recv(p, buf, ret);
 			return (0);
-
 		default:
 			log_warnx("invalid DTLS peer state");
 			return (-1);
