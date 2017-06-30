@@ -153,7 +153,7 @@ dao_prepare_statements()
 			"(client_id, uid, description, subnet, netmask, "
 				"embassy_certificate, embassy_privatekey, embassy_serial, "
 				"passport_certificate, passport_privatekey, ippool) "
-			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::bytea);",
+			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::bytea);",
 			0,
 			NULL);
 
