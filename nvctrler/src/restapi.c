@@ -33,44 +33,45 @@
 void
 v1_client_create_cb(struct evhttp_request *req, void *arg)
 {
-	struct evkeyvalq	*headers;
 	struct evbuffer		*buf;
-	int			 code = HTTP_BADREQUEST;
+	int			 code;
 	const char		*type;
-	const char		*phrase = "Bad Request";
+	const char		*phrase;
 	void			*p;
 
-	if (evhttp_request_get_command(req) != EVHTTP_REQ_POST) {
+	code = 500;
+	phrase = "INternal Server Error";
 
-		printf("not post!\n");
-		goto cleanup;
+	if (evhttp_request_get_command(req) != EVHTTP_REQ_POST) {
+		log_warnx("%s: evhttp_request_get_command", __func__);
+		goto out;
 	}
 
-	headers = evhttp_request_get_input_headers(req);
-
-	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
-		strncasecmp(type, "application/json", 16) != 0) {
-		printf("wrong header\n");
-		goto cleanup;
+	if ((type = evhttp_find_header(evhttp_request_get_input_headers(req),
+	    "Content-Type")) == NULL ||
+	    strncasecmp(type, "application/json", 16) != 0) {
+		log_warnx("%s: evhttp_find_header", __func__);
+		goto out;
 	}
 
 	buf = evhttp_request_get_input_buffer(req);
 	evbuffer_add(buf, "\0", 1);
 	if ((p = evbuffer_pullup(buf, -1)) == NULL) {
-		printf("evbuffer...\n");
-		goto cleanup;
+		log_warnx("%s: evbuffer_pullup", __func__);
+		goto out;
 	}
 
 	if (client_create(p) == -1) {
 		code = 403;
 		phrase = "Forbidden";
-		goto cleanup;
+		log_warnx("%s: client_create", __func__);
+		goto out;
 	}
 
 	code = 201;
 	phrase = "Created";
 
-cleanup:
+out:
 	evhttp_send_reply(req, code, phrase, NULL);
 }
 
