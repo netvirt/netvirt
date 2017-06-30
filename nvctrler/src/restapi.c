@@ -157,6 +157,8 @@ v1_client_get_newapikey_cb(struct evhttp_request *req, void *arg)
 	if ((respbuf = evbuffer_new()) == NULL)
 		goto cleanup;
 
+	// XXX add a call back to release the memory pointed by the respbuf
+	// use cleanup_cb
 	if (evbuffer_add_reference(respbuf, msg, strlen(msg), NULL, NULL) < 0)
 		goto cleanup;
 
@@ -208,6 +210,7 @@ v1_client_get_newresetkey_cb(struct evhttp_request *req, void *arg)
 	if ((respbuf = evbuffer_new()) == NULL)
 		goto cleanup;
 
+	// XXX use cleanup_cb
 	if (evbuffer_add_reference(respbuf, msg, strlen(msg), NULL, NULL) < 0)
 		goto cleanup;
 
@@ -369,6 +372,7 @@ v1_network_list(struct evhttp_request *req, void *arg)
 		goto cleanup;
 
 	/* XXX that doesnt work ... */
+	// XXX use cleanup_cb
 	if (evbuffer_add_reference(respbuf, msg, strlen(msg), NULL, NULL) < 0)
 		goto cleanup;
 
@@ -524,6 +528,7 @@ v1_node_list(struct evhttp_request *req, void *arg)
 	if ((respbuf = evbuffer_new()) == NULL)
 		goto cleanup;
 
+	// XXX use cleanup_cb
 	if (evbuffer_add_reference(respbuf, msg, strlen(msg), NULL, NULL) < 0)
 		goto cleanup;
 
