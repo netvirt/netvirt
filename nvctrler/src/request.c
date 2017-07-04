@@ -126,47 +126,49 @@ cleanup:
 int
 client_get_newapikey(char *msg, char **resp)
 {
-	json_t		*jmsg;
-	json_t		*jclient = NULL;
+	json_t		*jmsg = NULL;
 	json_t		*jresp = NULL;
+	json_t		*jclient;
 	json_error_t	 error;
-	int		 ret = 0;
-	char		*email = NULL;
-	char		*password = NULL;
+	int		 ret;
+	char		*email;
+	char		*password;
 	char		*new_apikey = NULL;
 
+	ret = -1;
+
 	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
-		warnx("json_loadb: %s", error.text);
-		return (-1);
-	}
- 
-	json_unpack(jmsg, "{s:s}", "email", &email);
-	if (email == NULL) {
-		ret = -1;
+		log_warnx("%s: json_loadb: %s", __func__, error.text);
 		goto cleanup;
 	}
 
-	json_unpack(jmsg, "{s:s}", "password", &password);
-	if (password == NULL) {
-		ret = -1;
+	if (json_unpack(jmsg, "{s:s, s:s}", "email", &email,
+	    "password", &password) < 0) {
+		log_warnx("%s: json_unpack", __func__);
 		goto cleanup;
 	}
 
 	if ((new_apikey = pki_gen_key()) == NULL) {
-		ret = -1;
+		log_warnx("%s: new_apikey", __func__);
 		goto cleanup;
 	}
 
 	if (dao_client_update_apikey2(email, password, new_apikey) < 0) {
-		ret = -1;
+		log_warnx("%s: dao_client_update_apikey2", __func__);
 		goto cleanup;
 	}
 
-	jresp = json_object();
-	jclient = json_object();
-	json_object_set_new(jresp, "client", jclient);
-	json_object_set_new(jclient, "apikey", json_string(new_apikey));
-	*resp = json_dumps(jresp, JSON_INDENT(1));
+	if ((jresp = json_object()) == NULL ||
+	    (jclient = json_object()) == NULL ||
+	    json_object_set_new(jresp, "client", jclient) < 0 ||
+	    json_object_set_new(jclient, "apikey",
+	    json_string_nocheck(new_apikey)) < 0 ||
+	    (*resp = json_dumps(jresp, JSON_INDENT(1))) == NULL) {
+		log_warnx("%s: json_dumps", __func__);
+			goto cleanup;
+	}
+
+	ret = 0;
 
 cleanup:
 	json_decref(jmsg);
