@@ -181,40 +181,47 @@ cleanup:
 int
 client_get_newresetkey(char *msg, char **resp)
 {
-	json_t		*jmsg;
-	json_t		*jclient = NULL;
+	json_t		*jmsg = NULL;
+	json_t		*jclient;
 	json_t		*jresp = NULL;
 	json_error_t	 error;
-	int		 ret = 0;
-	char		*email = NULL;
+	int		 ret;
+	char		*email;
 	char		*resetkey = NULL;
 
+	ret = -1;
+
 	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
-		warnx("json_loadb: %s", error.text);
-		return (-1);
+		log_warnx("%s: json_loadb: %s", __func__, error.text);
+		goto cleanup;
 	}
 
-	json_unpack(jmsg, "{s:s}", "email", &email);
-	if (email == NULL) {
-		ret = -1;
+	if (json_unpack(jmsg, "{s:s}", "email", &email) < 0) {
+		log_warnx("%s: json_unpack", __func__);
 		goto cleanup;
 	}
 
 	if ((resetkey = pki_gen_key()) == NULL) {
-		ret = -1;
+		log_warnx("%s: pki_gen_key", __func__);
 		goto cleanup;
 	}
 
 	if (dao_client_update_resetkey(email, resetkey) < 0) {
-		ret = -1;
+		log_warnx("%s: dao_client_udpate", __func__);
 		goto cleanup;
 	}
 
-	jresp = json_object();
-	jclient = json_object();
-	json_object_set_new(jresp, "client", jclient);
-	json_object_set_new(jclient, "resetkey", json_string(resetkey));
-	*resp = json_dumps(jresp, JSON_INDENT(1));
+	if ((jresp = json_object()) == NULL ||
+	    (jclient = json_object()) == NULL |
+	    json_object_set_new(jresp, "client", jclient) < 0 ||
+	    json_object_set_new(jclient, "resetkey",
+	    json_string(resetkey)) < 0 ||
+	    (*resp = json_dumps(jresp, JSON_INDENT(1))) == NULL) {
+		log_warnx("%s: json_dumps", __func__);
+		goto cleanup;
+	}
+
+	ret = 0;
 
 cleanup:
 	json_decref(jmsg);

@@ -198,49 +198,66 @@ v1_client_get_newresetkey_cb(struct evhttp_request *req, void *arg)
 	struct evkeyvalq	*headers;
 	struct evbuffer		*buf;
 	struct evbuffer		*respbuf = NULL;
-	int			 code = HTTP_BADREQUEST;
+	int			 code;
 	const char		*type;
-	const char		*phrase = "Bad Request";
+	const char		*phrase;
 	char			*msg;
 	void			*p;
 
-	if (evhttp_request_get_command(req) != EVHTTP_REQ_GET)
+	code = 500;
+	phrase = "Internal Server Error";
+
+	if (evhttp_request_get_command(req) != EVHTTP_REQ_GET) {
+		log_warnx("%s: evhttp_request_get_command", __func__);
 		goto cleanup;
+	}
 
 	headers = evhttp_request_get_input_headers(req);
 
-	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
-		strncasecmp(type, "application/json", 16) != 0)
+	if ((type = evhttp_find_header(evhttp_request_get_input_headers(req),
+	    "Content-Type")) == NULL ||
+	    strncasecmp(type, "application/json", 16) != 0) {
+		log_warnx("%s: evhttp_find_header", __func__);
 		goto cleanup;
+	}
 
 	buf = evhttp_request_get_input_buffer(req);
 	evbuffer_add(buf, "\0", 1);
-	if ((p = evbuffer_pullup(buf, -1)) == NULL)
+	if ((p = evbuffer_pullup(buf, -1)) == NULL) {
+		log_warnx("%s: evbuffer_pullup", __func__);
 		goto cleanup;
+	}
 
 	if (client_get_newresetkey(p, &msg) == -1) {
 		code = 403;
 		phrase = "Forbidden";
+		log_warnx("%s: client_get_newresetkey", __func__);
 		goto cleanup;
 	}
 
 	if (evhttp_add_header(req->output_headers, "Content-Type",
-	    "application/json") < 0)
+	    "application/json") < 0) {
+		log_warnx("%s: evhttp_add_header", __func__);
 		goto cleanup;
+	}
 
-	if ((respbuf = evbuffer_new()) == NULL)
+	if ((respbuf = evbuffer_new()) == NULL) {
+		log_warnx("%s: evbuffer_new", __func__);
 		goto cleanup;
+	}
 
 	if (evbuffer_add_reference(respbuf, msg, strlen(msg),
-	    cleanup_cb, NULL) < 0)
+	    cleanup_cb, NULL) < 0) {
+		log_warnx("%s: evbuffer_add_reference", __func__);
 		goto cleanup;
+	}
 
 	code = HTTP_OK; 
 	phrase = "OK";
 
 cleanup:
 	evhttp_send_reply(req, code, phrase, respbuf);
-	if (respbuf)
+	if (respbuf != NULL)
 		evbuffer_free(respbuf);
 }
 
