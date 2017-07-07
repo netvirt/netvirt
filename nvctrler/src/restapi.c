@@ -524,7 +524,6 @@ void
 v1_node_list(struct evhttp_request *req, void *arg)
 {
 	struct evkeyvalq	 qheaders = TAILQ_HEAD_INITIALIZER(qheaders);
-	struct evkeyvalq	*headers;
 	struct evbuffer		*respbuf = NULL;
 	const struct evhttp_uri	*uri;
 	int			 code = HTTP_BADREQUEST;
@@ -532,48 +531,66 @@ v1_node_list(struct evhttp_request *req, void *arg)
 	const char		*phrase = "Bad Request";
 	const char		*query;
 	const char		*network_uid;
-	char			*msg = NULL;
+	char			*msg;
 
-	if ((headers = evhttp_request_get_input_headers(req)) == NULL)
-		goto cleanup;
+	code = 500;
+	phrase = "Internal server error";
 
-	if ((apikey = evhttp_find_header(headers, "X-netvirt-apikey")) == NULL)
-		goto cleanup;
+	if ((apikey = evhttp_find_header(evhttp_request_get_input_headers(req),
+	    "X-netvirt-apikey")) == NULL) {
+		log_warnx("%s: evhttp_find_header", __func__);
+		goto out;
+	}
 
-	if ((uri = evhttp_request_get_evhttp_uri(req)) == NULL)
-		goto cleanup;
+	if ((uri = evhttp_request_get_evhttp_uri(req)) == NULL) {
+		log_warnx("%s: evhttp_request_get_evhttp_uri", __func__);
+		goto out;
+	}
 
-	if ((query = evhttp_uri_get_query(uri)) == NULL)
-		goto cleanup;
+	if ((query = evhttp_uri_get_query(uri)) == NULL) {
+		log_warnx("%s: evhttp_uri_get_query", __func__);
+		goto out;
+	}
 
-	if (evhttp_parse_query_str(query, &qheaders) < 0)
-		goto cleanup;
+	if (evhttp_parse_query_str(query, &qheaders) < 0) {
+		log_warnx("%s: evhttp_parse_query", __func__);
+		goto out;
+	}
 
 	if ((network_uid = evhttp_find_header(&qheaders, "network_uid"))
-	    == NULL)
-		goto cleanup;
+	    == NULL) {
+		log_warnx("%s: evhttp_find_header", __func__);
+		goto out;
+	}
 
 	if (node_list(network_uid, apikey, &msg) == -1) {
 		code = 403;
 		phrase = "Forbidden";
-		goto cleanup;
+		log_warnx("%s: node_list", __func__);
+		goto out;
 	}
 
 	if (evhttp_add_header(req->output_headers, "Content-Type",
-	    "application/json") < 0)
-		goto cleanup;
+	    "application/json") < 0) {
+		log_warnx("%s: evhttp_add_header", __func__);
+		goto out;
+	}
 
-	if ((respbuf = evbuffer_new()) == NULL)
-		goto cleanup;
+	if ((respbuf = evbuffer_new()) == NULL) {
+		log_warnx("%s: evbuffer_new", __func__);
+		goto out;
+	}
 
 	if (evbuffer_add_reference(respbuf, msg, strlen(msg),
-	    cleanup_cb, NULL) < 0)
-		goto cleanup;
+	    cleanup_cb, NULL) < 0) {
+		log_warnx("%s: evbuffer_add_reference", __func__);
+		goto out;
+	}
 
 	code = HTTP_OK;
 	phrase = "OK";
 
-cleanup:
+out:
 	evhttp_send_reply(req, code, phrase, respbuf);
 	if (respbuf != NULL)
 		evbuffer_free(respbuf);
