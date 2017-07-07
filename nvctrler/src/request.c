@@ -426,17 +426,27 @@ network_list(const char *apikey, char **resp)
 {
 	json_t	*array;
 	json_t	*jresp = NULL;
-	int	 ret = 0;
+	int	 ret;
 
-	array = json_array();
-	if (dao_network_list(apikey, network_list_cb, array) < 0) {
-		ret = -1;
+	ret = -1;
+
+	if ((array = json_array()) == NULL) {
+		log_warnx("%s: json_array", __func__);
 		goto cleanup;
 	}
 
-	jresp = json_object();
-	json_object_set_new(jresp, "networks", array);
-	*resp = json_dumps(jresp, JSON_INDENT(1));
+	if (dao_network_list(apikey, network_list_cb, array) < 0) {
+		log_warnx("%s: dao_network_list", __func__);
+		goto cleanup;
+	}
+
+	if ((jresp = json_object()) == NULL ||
+	    json_object_set_new(jresp, "networks", array) < 0 ||
+	    (*resp = json_dumps(jresp, JSON_INDENT(1))) == NULL) {
+		goto cleanup;
+	}
+
+	ret = 0;
 
 cleanup:
 	json_decref(jresp);
