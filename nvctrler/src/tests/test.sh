@@ -1,6 +1,6 @@
 exit_error() {
-	printf "\e[0;31mTest failed:\e[0m ${testname}\n"
-	exit 1
+	printf "\e[0;31m ${testname} \e[0m\n"
+#	exit 1
 }
 
 EMAIL=test@example.com
@@ -33,6 +33,7 @@ fi
 testname="Get new API key"
 APIKEY=$(curl -s -H 'Content-Type: application/json' -d '{"email":"'${EMAIL}'","password":"'${PASSWORD}'"}' \
 -X POST http://127.0.0.1:8080/v1/client/newapikey | jq -r '.client.apikey')
+echo $APIKEY
 if [ "${APIKEY}" == "" ]; then
 	exit_error
 else
@@ -59,6 +60,33 @@ NODE_DESC="pc-home"
 curl -i -H 'X-netvirt-apikey: '${APIKEY}'' -H 'Content-Type: application/json' -d '{"network_description":"'${NET_DESC}'", "description":"'${NODE_DESC}'"}' \
 -X POST http://127.0.0.1:8080/v1/node | grep "201 Created"
 
+if [ "$?" != "0" ]; then
+	exit_error
+else
+	printf "\e[0;32m ${testname} \e[0m\n"
+fi
+
+###
+testname="List networks"
+curl -s -H 'X-netvirt-apikey: '${APIKEY}'' http://127.0.0.1:8080/v1/network
+if [ "$?" != "0" ]; then
+	exit_error
+else
+	printf "\e[0;32m ${testname} \e[0m\n"
+fi
+
+###
+testname="Get network UID"
+UID=$(curl -s -H 'X-netvirt-apikey: '${APIKEY}'' http://127.0.0.1:8080/v1/network | jq -r '.networks[0].uid')
+if [ "$?" != "0" ]; then
+	exit_error
+else
+	printf "\e[0;32m ${testname} \e[0m\n"
+fi
+
+###
+testname="List nodes"
+curl -s -H 'X-netvirt-apikey: '${APIKEY}'' http://127.0.0.1:8080/v1/node?network_uid=${UID}
 if [ "$?" != "0" ]; then
 	exit_error
 else
