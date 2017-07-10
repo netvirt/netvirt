@@ -118,7 +118,7 @@ error:
 }
 
 void
-on_connect_cb(struct bufferevent *bev, void *arg)
+on_connected_cb(struct bufferevent *bev, void *arg)
 {
 	struct session_info	*session;
 	SSL			*client_ssl;
@@ -156,7 +156,7 @@ on_event_cb(struct bufferevent *bev, short events, void *arg)
 	e = 0;
 
 	if (events & BEV_EVENT_CONNECTED) {
-		on_connect_cb(bev, arg);
+		on_connected_cb(bev, arg);
 	} else if (events & (BEV_EVENT_TIMEOUT|BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
 		log_warnx("%s: event (%x)", __func__, events);
 		while ((e = bufferevent_get_openssl_error(bev)) > 0) {
