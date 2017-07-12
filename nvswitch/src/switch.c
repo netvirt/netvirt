@@ -289,6 +289,11 @@ link_switch_recv(struct dtls_peer *p, uint8_t *frame, size_t len)
 	struct lladdr	*l, *ll, needle;
 	uint8_t	saddr[ETHER_ADDR_LEN];
 
+	if (inet_ethertype(frame) == ETHERTYPE_PING) {
+		SSL_write(p->ssl, frame, len);
+		return;
+	}
+
 	inet_macaddr_src(frame, saddr);
 
 	/* Make sure we know the source */

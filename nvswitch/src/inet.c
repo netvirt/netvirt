@@ -40,14 +40,12 @@
 const uint8_t	 macaddr_broadcast[ETHER_ADDR_LEN] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 const uint8_t	 macaddr_multicast[ETHER_ADDR_LEN] = { 0x01, 0x00, 0x5e, 0x0, 0x0, 0x0 };
 
-int
-inet_is_ping(void *frame)
+uint16_t
+inet_ethertype(void *frame)
 {
 	struct ether_header	*hd = frame;
 
-	if (htons(hd->ether_type) == 0x9000)
-		return (1);
-	return (0);
+	return (htons(hd->ether_type));
 }
 
 int
