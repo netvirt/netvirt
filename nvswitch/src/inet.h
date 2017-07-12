@@ -24,6 +24,8 @@
 #define ADDR_BROADCAST	0x2
 #define ADDR_MULTICAST	0x4
 
+int	inet_is_ping(void *);
+int	inet_macaddr_type(uint8_t *);
 void	inet_macaddr_dst(void *, uint8_t *);
 void	inet_macaddr_src(void *, uint8_t *);
 void	inet_print_addr(void *);
