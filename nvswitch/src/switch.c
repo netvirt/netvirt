@@ -67,7 +67,8 @@ struct dtls_peer {
 	RB_ENTRY(dtls_peer)	 entry;
 	RB_ENTRY(dtls_peer)	 vn_entry;
 	struct sockaddr_storage  ss;
-	struct event		*timer;
+	struct event		*handshake_timer;
+	struct event		*ping_timer;
 	enum dtls_state		 state;
 	socklen_t		 ss_len;
 	SSL			*ssl;
@@ -92,12 +93,13 @@ static int		 servername_cb(SSL *, int *, void *);
 static int		 generate_cookie(SSL *, unsigned char *, unsigned int *);
 static int		 verify_cookie(SSL *, unsigned char *, unsigned int);
 static int		 cert_verify_cb(int, X509_STORE_CTX *);
+static void		 ping_timeout_cb(int, short, void *);
 static struct lladdr	*lladdr_new(struct dtls_peer *, uint8_t *);
 static void		 lladdr_free(struct lladdr *);
 static struct dtls_peer	*dtls_peer_new(int);
 static void		 dtls_peer_free(struct dtls_peer *);
 static int		 dtls_handle(struct dtls_peer *);
-static void		 dtls_peer_timeout_cb(int, short, void *);
+static void		 dtls_handshake_timeout_cb(int, short, void *);
 static int		 dtls_peer_cmp(const struct dtls_peer *,
 			    const struct dtls_peer *);
 static int		 vnetwork_cmp(const struct vnetwork *,
@@ -186,14 +188,24 @@ dtls_peer_new(int sock)
 		log_warn("%s: malloc", __func__);
 		goto error;
 	}
-
 	p->ssl = NULL;
 	p->vnet = NULL;
 	p->ss_len = 0;
 	p->state = DTLS_LISTEN;
+	p->handshake_timer = NULL;
+	p->ping_timer = NULL;
 
-	if ((p->timer = evtimer_new(ev_base, dtls_peer_timeout_cb, p)) == NULL)
+	if ((p->handshake_timer = evtimer_new(ev_base,
+	    dtls_handshake_timeout_cb, p)) == NULL) {
+		log_warnx("%s: evtimer_new", __func__);
 		goto error;
+	}
+
+	if ((p->ping_timer = evtimer_new(ev_base,
+	    ping_timeout_cb, p)) == NULL) {
+		log_warnx("%s: evtimer_new", __func__);
+		goto error;
+	}
 
 	if ((p->ssl = SSL_new(ctx)) == NULL ||
 	    SSL_set_app_data(p->ssl, p) != 1) {
@@ -213,10 +225,12 @@ dtls_peer_new(int sock)
 	}
 
 	SSL_set_bio(p->ssl, bio, bio);
+	bio = NULL;
 
 	return (p);
 
 error:
+	BIO_free(bio);
 	dtls_peer_free(p);
 	return (NULL);
 }
@@ -231,6 +245,10 @@ dtls_peer_free(struct dtls_peer *p)
 		RB_REMOVE(dtls_peer_tree, &dtls_peers, p);
 	if (p->vnet != NULL)
 		RB_REMOVE(vnet_peer_tree, &p->vnet->peers, p);
+
+	event_free(p->handshake_timer);
+	event_free(p->ping_timer);
+
 	SSL_free(p->ssl);
 	free(p);
 }
@@ -316,56 +334,69 @@ dtls_handle(struct dtls_peer *p)
 	int			 ret;
 	char			 buf[5000] = {0};
 
+	event_del(p->ping_timer);
+
 	for (;;) {
 		switch (p->state) {
 		case DTLS_LISTEN:
 			ret = DTLSv1_listen(p->ssl, &caddr);
 			next_state = DTLS_ACCEPT;
 			break;
-
 		case DTLS_ACCEPT:
 			ret = SSL_accept(p->ssl);
 			next_state = DTLS_ESTABLISHED;
 			break;
-
 		case DTLS_ESTABLISHED:
 			next_state = DTLS_ESTABLISHED;
 			if ((ret = SSL_read(p->ssl, buf, sizeof(buf))) > 0)
 				link_switch_recv(p, buf, ret);
-			return (0);
+			goto out;
 		default:
 			log_warnx("invalid DTLS peer state");
-			return (-1);
+			goto error;
 		}
 
 		switch (SSL_get_error(p->ssl, ret)) {
 		case SSL_ERROR_NONE:
 			break;
-
-		case SSL_ERROR_WANT_WRITE:
-			return (0);
-
 		case SSL_ERROR_WANT_READ:
 			if (DTLSv1_get_timeout(p->ssl, &tv) == 1 &&
-			    evtimer_add(p->timer, &tv) < 0) {
-				return (-1);
+			    evtimer_add(p->handshake_timer, &tv) < 0) {
+				goto error;
 			}
-			return (0);
-
+			goto out;
 		default:
 			printf("something else...%d\n", SSL_get_error(p->ssl, ret));
 			// XXX logs... and disconnect
-			return (0);
+			goto error;
 		}
 
 		p->state = next_state;
 	}
 
+out:
+	if (p->state == DTLS_ESTABLISHED) {
+		tv.tv_sec = 10;
+		tv.tv_usec = 0;
+		evtimer_add(p->ping_timer, &tv);
+	}
 	return (0);
+
+error:
+	return (-1);
 }
 
 void
-dtls_peer_timeout_cb(int fd, short event, void *arg)
+ping_timeout_cb(int fd, short event, void *arg)
+{
+	struct dtls_peer	*p = arg;
+
+	log_warnx("%s: keepalive", __func__);
+	dtls_peer_free(p);
+}
+
+void
+dtls_handshake_timeout_cb(int fd, short event, void *arg)
 {
 	struct dtls_peer	*p = arg;
 
