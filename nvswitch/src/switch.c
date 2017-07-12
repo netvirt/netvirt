@@ -321,7 +321,7 @@ link_switch_recv(struct dtls_peer *p, uint8_t *frame, size_t len)
 	return;
 
 cleanup:
-	// XXX disconnect peer;
+	dtls_peer_free(p);
 	return;
 }
 
