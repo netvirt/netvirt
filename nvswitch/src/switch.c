@@ -72,6 +72,7 @@ struct dtls_peer {
 	enum dtls_state		 state;
 	socklen_t		 ss_len;
 	SSL			*ssl;
+	SSL_CTX			*ctx;
 	struct vnetwork		*vnet;
 	uint8_t			 macaddr[ETHER_ADDR_LEN];
 };
@@ -207,7 +208,19 @@ dtls_peer_new(int sock)
 		goto error;
 	}
 
-	if ((p->ssl = SSL_new(ctx)) == NULL ||
+	if ((p->ctx = SSL_CTX_new(DTLSv1_method())) == NULL) {
+		log_warnx("%s: SSL_CTX_new", __func__);
+		goto error;
+	}
+
+	SSL_CTX_set_read_ahead(p->ctx, 1);
+
+	SSL_CTX_set_cookie_generate_cb(p->ctx, generate_cookie);
+	SSL_CTX_set_cookie_verify_cb(p->ctx, verify_cookie);
+	SSL_CTX_set_tlsext_servername_callback(p->ctx, servername_cb);
+	SSL_CTX_set_tlsext_servername_arg(p->ctx, NULL);
+
+	if ((p->ssl = SSL_new(p->ctx)) == NULL ||
 	    SSL_set_app_data(p->ssl, p) != 1) {
 		log_warnx("%s: SSL_new", __func__);
 		goto error;
@@ -248,7 +261,7 @@ dtls_peer_free(struct dtls_peer *p)
 
 	event_free(p->handshake_timer);
 	event_free(p->ping_timer);
-
+	SSL_CTX_free(p->ctx);
 	SSL_free(p->ssl);
 	free(p);
 }
@@ -340,6 +353,10 @@ dtls_handle(struct dtls_peer *p)
 	int			 ret;
 	char			 buf[5000] = {0};
 
+	const char		*file;
+	int			 line;
+	unsigned long		 e;
+
 	evtimer_del(p->ping_timer);
 
 	for (;;) {
@@ -372,8 +389,10 @@ dtls_handle(struct dtls_peer *p)
 			}
 			goto out;
 		default:
-			printf("something else...%d\n", SSL_get_error(p->ssl, ret));
-			// XXX logs... and disconnect
+			do {
+				e = ERR_get_error_line(&file, &line);
+				log_warnx("%s: %s", __func__, ERR_error_string(e, NULL));
+			} while (e);
 			goto error;
 		}
 
@@ -663,6 +682,7 @@ udplisten_cb(int sock, short what, void *ctx)
 		if ((p = dtls_peer_new(sock)) == NULL)
 			goto error;
 		else {
+			printf(" new peer !\n");
 			p->ss = needle.ss;
 			p->ss_len = needle.ss_len;
 			RB_INSERT(dtls_peer_tree, &dtls_peers, p);
