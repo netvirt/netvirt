@@ -291,6 +291,7 @@ link_switch_recv(struct dtls_peer *p, uint8_t *frame, size_t len)
 
 	if (inet_ethertype(frame) == ETHERTYPE_PING) {
 		SSL_write(p->ssl, frame, len);
+		printf("got ping !\n");
 		return;
 	}
 
@@ -339,7 +340,7 @@ dtls_handle(struct dtls_peer *p)
 	int			 ret;
 	char			 buf[5000] = {0};
 
-	event_del(p->ping_timer);
+	evtimer_del(p->ping_timer);
 
 	for (;;) {
 		switch (p->state) {
