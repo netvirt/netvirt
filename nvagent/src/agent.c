@@ -61,11 +61,19 @@ struct dtls_peer {
 	int		 sock;
 };
 
+struct eth_hdr {
+	uint8_t		dmac[6];
+	uint8_t		smac[6];
+	uint16_t	ethertype;
+} __attribute__((packed));
+
 static SSL_CTX			*ctx;
 static passport_t		*passport;
 static struct addrinfo		*ai;
 struct event_base		*ev_base;
 struct dtls_peer		 switch_peer;
+struct eth_hdr			 eth_ping;
+struct event			*ping_timer;
 
 static int	 certverify_cb(int, X509_STORE_CTX *);
 static void	 dtls_peer_free(struct dtls_peer *);
@@ -98,10 +106,27 @@ dtls_peer_free(struct dtls_peer *p)
 }
 
 void
+ping_timeout_cb(int fd, short event, void *arg)
+{
+	SSL	*ssl = arg;
+
+	printf("ping timeout !\n");
+	SSL_write(ssl, (void *)&eth_ping, sizeof(struct eth_hdr));
+}
+
+void
 info_cb(const SSL *ssl, int where, int ret)
 {
+	struct timeval	tv;
+
 	if ((where & SSL_CB_HANDSHAKE_DONE) == 0)
 		return;
+
+	tv.tv_sec = 5;
+	tv.tv_usec = 0;
+	ping_timer = event_new(ev_base, -1, EV_TIMEOUT | EV_PERSIST,
+	    ping_timeout_cb, ssl);
+	event_add(ping_timer, &tv);
 
 	printf("connected !\n");
 }
@@ -420,6 +445,7 @@ agent_init()
 	struct dtls_peer	*p;
 	int			 iface_fd = 0;
 
+	eth_ping.ethertype = htons(0x9000);
 	p = &switch_peer;
 
 	if ((p->tapcfg = tapcfg_init()) == NULL) {
