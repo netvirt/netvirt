@@ -45,7 +45,7 @@ inet_ethertype(void *frame)
 {
 	struct ether_header	*hd = frame;
 
-	return (htons(hd->ether_type));
+	return (ntohs(hd->ether_type));
 }
 
 int

@@ -23,7 +23,7 @@
 #define ADDR_UNICAST	0x1
 #define ADDR_BROADCAST	0x2
 #define ADDR_MULTICAST	0x4
-#define ETHERTYPE_PING	0x1
+#define ETHERTYPE_PING	0x9000
 
 uint16_t	inet_ethertype(void *);
 int		inet_macaddr_type(uint8_t *);
