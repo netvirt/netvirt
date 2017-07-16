@@ -207,7 +207,7 @@ v1_client_get_newresetkey_cb(struct evhttp_request *req, void *arg)
 	code = 500;
 	phrase = "Internal Server Error";
 
-	if (evhttp_request_get_command(req) != EVHTTP_REQ_GET) {
+	if (evhttp_request_get_command(req) != EVHTTP_REQ_POST) {
 		log_warnx("%s: evhttp_request_get_command", __func__);
 		goto cleanup;
 	}

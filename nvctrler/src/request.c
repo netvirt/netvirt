@@ -190,7 +190,6 @@ client_get_newresetkey(char *msg, char **resp)
 	char		*resetkey = NULL;
 
 	ret = -1;
-
 	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
 		log_warnx("%s: json_loadb: %s", __func__, error.text);
 		goto cleanup;
@@ -220,6 +219,12 @@ client_get_newresetkey(char *msg, char **resp)
 		log_warnx("%s: json_dumps", __func__);
 		goto cleanup;
 	}
+
+	// XXX send email !
+	FILE	*tmp;
+	tmp = fopen("/tmp/resetkey", "w");
+	fprintf(tmp, "%s", resetkey);
+	fclose(tmp);
 
 	ret = 0;
 
