@@ -112,7 +112,7 @@ v1_client_activate_cb(struct evhttp_request *req, void *arg)
 		goto out;
 	}
 
-	if (client_activate(p) == -1) {
+	if (client_activate(p) < 0) {
 		code = 403;
 		phrase = "Forbidden";
 		log_warnx("%s: client_active", __func__);
@@ -159,7 +159,7 @@ v1_client_get_newapikey_cb(struct evhttp_request *req, void *arg)
 		goto out;
 	}
 
-	if (client_get_newapikey(p, &msg) == -1) {
+	if (client_get_newapikey(p, &msg) < 0) {
 		code = 403;
 		phrase = "Forbidden";
 		log_warnx("%s: client_get_newapikey", __func__);
@@ -228,7 +228,7 @@ v1_client_get_newresetkey_cb(struct evhttp_request *req, void *arg)
 		goto cleanup;
 	}
 
-	if (client_get_newresetkey(p, &msg) == -1) {
+	if (client_get_newresetkey(p, &msg) < 0) {
 		code = 403;
 		phrase = "Forbidden";
 		log_warnx("%s: client_get_newresetkey", __func__);
@@ -292,7 +292,7 @@ v1_client_update_password_cb(struct evhttp_request *req, void *arg)
 		goto out;
 	}
 
-	if (client_reset_password(p) == -1) {
+	if (client_reset_password(p) < 0) {
 		code = 403;
 		phrase = "Forbidden"; 
 		log_warnx("%s: client_reset_password", __func__);
@@ -340,7 +340,7 @@ v1_network_create(struct evhttp_request *req, void *arg)
 		goto out;
 	}
 
-	if (network_create(p, apikey) == -1) {
+	if (network_create(p, apikey) < 0) {
 		code = 403;
 		phrase = "Forbidden";
 		log_warnx("%s: network_create", __func__);
@@ -385,7 +385,7 @@ v1_network_delete(struct evhttp_request *req, void *arg)
 	if ((uid = evhttp_find_header(&qheaders, "uid")) == NULL)
 		goto cleanup;
 
-	if (network_delete(uid, apikey) == -1) {
+	if (network_delete(uid, apikey) < 0) {
 		code = 403;
 		phrase = "Forbidden";
 		goto cleanup;
@@ -496,7 +496,7 @@ v1_node_create(struct evhttp_request *req, void *arg)
 		goto out;
 	}
 
-	if (node_create(p, apikey) == -1) {
+	if (node_create(p, apikey) < 0) {
 		code = 403;
 		phrase = "Forbidden";
 		log_warnx("%s: node_create", __func__);
@@ -540,7 +540,7 @@ v1_node_delete(struct evhttp_request *req, void *arg)
 	if ((uid = evhttp_find_header(&qheaders, "uid")) == NULL)
 		goto cleanup;
 
-	if (node_delete(uid, apikey) == -1) {
+	if (node_delete(uid, apikey) < 0) {
 		code = 403;
 		phrase = "Forbidden";
 		goto cleanup;
@@ -597,7 +597,7 @@ v1_node_list(struct evhttp_request *req, void *arg)
 		goto out;
 	}
 
-	if (node_list(network_uid, apikey, &msg) == -1) {
+	if (node_list(network_uid, apikey, &msg) < 0) {
 		code = 403;
 		phrase = "Forbidden";
 		log_warnx("%s: node_list", __func__);
