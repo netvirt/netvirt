@@ -705,7 +705,7 @@ out:
 int
 restapi_init(json_t *config, struct event_base *evbase)
 {
-	struct evhttp			*http = NULL;
+	struct evhttp			*http;
 	struct evhttp_bound_socket	*handle;
 
 	if ((http = evhttp_new(evbase)) == NULL)
