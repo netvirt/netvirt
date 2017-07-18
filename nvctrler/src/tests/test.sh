@@ -102,3 +102,16 @@ if [ "$?" != "0" ]; then
 else
 	printf "\e[0;32m ${testname} \e[0m\n"
 fi
+
+RESETKEY=$(cat /tmp/resetkey)
+echo $RESETKEY
+
+###
+testname="Reset password"
+curl -i -H 'Content-Type: application/json' -d '{"email":"'${EMAIL}'", "resetkey":"'${RESETKEY}'", "newpassword":"testpassword"}' \
+-X POST http://127.0.0.1:8080/v1/client/password | grep "200 OK"
+if [ "$?" != "0" ]; then
+	exit_error
+else
+	printf "\e[0;32m ${testname} \e[0m\n"
+fi
