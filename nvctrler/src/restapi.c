@@ -652,7 +652,7 @@ v1_provisioning_cb(struct evhttp_request *req, void *arg)
 	int			 code;
 	const char		*type;
 	const char		*phrase;
-	char			*msg = NULL;
+	char			*msg;
 	void			*p;
 
 	code = 500;
