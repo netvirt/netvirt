@@ -241,38 +241,31 @@ client_reset_password(char *msg)
 {
 	json_t		*jmsg;
 	json_error_t	 error;
-	char		*email = NULL;
-	char		*resetkey = NULL;
-	char		*newpassword = NULL;
-	int		 ret = 0;
+	char		*email;
+	char		*resetkey;
+	char		*newpassword;
+	int		 ret;
+
+	ret = -1;
 
 	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
-		warnx("json_loadb: %s", error.text);
-		return (-1);
-	}
-
-	json_unpack(jmsg, "{s:s}", "email", &email);
-	if (email == NULL) {
-		ret = -1;
+		log_warnx("%s: json_loadb: %s", __func__, error.text);
 		goto cleanup;
 	}
 
-	json_unpack(jmsg, "{s:s}", "resetkey", &resetkey);
-	if (resetkey == NULL) {
-		ret = -1;
-		goto cleanup;
-	}
-
-	json_unpack(jmsg, "{s:s}", "newpassword", &newpassword);
-	if (newpassword == NULL) {
-		ret = -1;
+	if (json_unpack(jmsg, "{s:s, s:s, s:s}",
+	    "email", &email, "resetkey", &resetkey,
+	    "newpassword", &newpassword) < 0) {
+		log_warnx("%s: json_unpack", __func__);
 		goto cleanup;
 	}
 
 	if (dao_client_update_password(email, resetkey, newpassword) < 0) {
-		ret = -1;
+		log_warnx("%s: dao_client_update_password", __func__);
 		goto cleanup;
 	}
+
+	ret = 0;
 
 cleanup:
 	json_decref(jmsg);	

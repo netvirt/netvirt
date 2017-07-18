@@ -147,7 +147,7 @@ v1_client_get_newapikey_cb(struct evhttp_request *req, void *arg)
 
 	if ((type = evhttp_find_header(evhttp_request_get_input_headers(req),
 	    "Content-Type")) == NULL ||
-		strncasecmp(type, "application/json", 16) != 0) {
+	    strncasecmp(type, "application/json", 16) != 0) {
 		log_warnx("%s: evhttp_find_header", __func__);
 		goto out;
 	}
@@ -264,37 +264,45 @@ cleanup:
 void
 v1_client_update_password_cb(struct evhttp_request *req, void *arg)
 {
-	struct evkeyvalq	*headers;
 	struct evbuffer		*buf;
-	int			 code = HTTP_BADREQUEST;
+	int			 code;
 	const char		*type;
-	const char		*phrase = "Bad Request";
+	const char		*phrase;
 	void			*p;
 
-	if (evhttp_request_get_command(req) != EVHTTP_REQ_POST)
-		goto cleanup;
+	code = 500;
+	phrase = "Internal Server Error";
 
-	headers = evhttp_request_get_input_headers(req);
+	if (evhttp_request_get_command(req) != EVHTTP_REQ_POST) {
+		log_warnx("%s: evhttp_request_get_command", __func__);
+		goto out;
+	}
 
-	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
-		strncasecmp(type, "application/json", 16) != 0)
-		goto cleanup;
+	if ((type = evhttp_find_header(evhttp_request_get_input_headers(req),
+	    "Content-Type")) == NULL ||
+	    strncasecmp(type, "application/json", 16) != 0) {
+		log_warnx("%s: evhttp_find_header", __func__);
+		goto out;
+	}
 
 	buf = evhttp_request_get_input_buffer(req);
 	evbuffer_add(buf, "\0", 1);
-	if ((p = evbuffer_pullup(buf, -1)) == NULL)
-		goto cleanup;
+	if ((p = evbuffer_pullup(buf, -1)) == NULL) {
+		log_warnx("%s: evbuffer_pullup", __func__);
+		goto out;
+	}
 
 	if (client_reset_password(p) == -1) {
 		code = 403;
 		phrase = "Forbidden"; 
-		goto cleanup;
+		log_warnx("%s: client_reset_password", __func__);
+		goto out;
 	}
 
 	code = HTTP_OK;
 	phrase = "OK";
 
-cleanup:
+out:
 	evhttp_send_reply(req, code, phrase, NULL);
 }
 
@@ -313,7 +321,7 @@ v1_network_create(struct evhttp_request *req, void *arg)
 
 	if ((type = evhttp_find_header(evhttp_request_get_input_headers(req),
 	    "Content-Type")) == NULL ||
-		strncasecmp(type, "application/json", 16) != 0) {
+	    strncasecmp(type, "application/json", 16) != 0) {
 		log_warnx("%s: evhttp_find_header", __func__);
 		goto out;
 	}
@@ -395,7 +403,7 @@ void
 v1_network_list(struct evhttp_request *req, void *arg)
 {
 	struct evbuffer		*respbuf = NULL;
-	int			 code = HTTP_BADREQUEST;
+	int			 code;
 	const char		*apikey;
 	const char		*phrase;
 	char			*msg;
@@ -552,9 +560,9 @@ v1_node_list(struct evhttp_request *req, void *arg)
 	struct evkeyvalq	 qheaders = TAILQ_HEAD_INITIALIZER(qheaders);
 	struct evbuffer		*respbuf = NULL;
 	const struct evhttp_uri	*uri;
-	int			 code = HTTP_BADREQUEST;
+	int			 code;
 	const char		*apikey;
-	const char		*phrase = "Bad Request";
+	const char		*phrase;
 	const char		*query;
 	const char		*network_uid;
 	char			*msg;
