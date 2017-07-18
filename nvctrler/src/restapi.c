@@ -417,7 +417,7 @@ v1_network_list(struct evhttp_request *req, void *arg)
 		goto out;
 	}
 
-	if (network_list(apikey, &msg) == -1) {
+	if (network_list(apikey, &msg) < 0) {
 		code = 403;
 		phrase = "Forbidden";
 		log_warnx("%s: network_list", __func__);
