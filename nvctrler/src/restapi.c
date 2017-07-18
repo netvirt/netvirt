@@ -647,46 +647,56 @@ v1_node_cb(struct evhttp_request *req, void *arg)
 void
 v1_provisioning_cb(struct evhttp_request *req, void *arg)
 {
-	struct evkeyvalq	*headers;
 	struct evbuffer		*buf;
 	struct evbuffer		*respbuf = NULL;
-	int			 code = HTTP_BADREQUEST;
+	int			 code;
 	const char		*type;
-	const char		*phrase = "Bad Request";
+	const char		*phrase;
 	char			*msg = NULL;
 	void			*p;
 
-	if ((headers = evhttp_request_get_input_headers(req)) == NULL)
-		goto cleanup;
+	code = 500;
+	phrase = "Internal Server Error";
 
-	if ((type = evhttp_find_header(headers, "Content-Type")) == NULL ||
-	    strncasecmp(type, "application/json", 16) != 0)
-		goto cleanup;
+	if ((type = evhttp_find_header(evhttp_request_get_input_headers(req),
+	    "Content-Type")) == NULL ||
+	    strncasecmp(type, "application/json", 16) != 0) {
+		log_warnx("%s: evhttp_find_header", __func__);
+		goto out;
+	}
 
 	buf = evhttp_request_get_input_buffer(req);
 	evbuffer_add(buf, "\0", 1);
-	if ((p = evbuffer_pullup(buf, -1)) == NULL)
-		goto cleanup;
+	if ((p = evbuffer_pullup(buf, -1)) == NULL) {
+		log_warnx("%s: evbuffer_pullup", __func__);
+		goto out;
+	}
 
-	if (node_provisioning(p, &msg) < 0)
-		goto cleanup;
+	if (node_provisioning(p, &msg) < 0) {
+		log_warnx("%s: node_provisioning", __func__);
+		goto out;
+	}
 
 	if (evhttp_add_header(req->output_headers, "Content-Type",
-	    "application/json") < 0)
-		goto cleanup;
+	    "application/json") < 0) {
+		log_warnx("%s: evhttp_add_header", __func__);
+		goto out;
+	}
 
-	if ((respbuf = evbuffer_new()) == NULL)
-		goto cleanup;
+	if ((respbuf = evbuffer_new()) == NULL) {
+		log_warnx("%s: evbuffer_new", __func__);
+		goto out;
+	}
 
 	if (evbuffer_add_reference(respbuf, msg, strlen(msg),
 	    cleanup_cb, NULL) < 0) {
 		log_warnx("%s: evbuffer_add_reference", __func__);
-		goto cleanup;
+		goto out;
 	}
 	code = HTTP_OK;
 	phrase = "OK";
 
-cleanup:
+out:
 	evhttp_send_reply(req, code, phrase, respbuf);
 	if (respbuf != NULL)
 		evbuffer_free(respbuf);

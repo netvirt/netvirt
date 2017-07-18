@@ -676,7 +676,7 @@ node_provisioning(const char *msg, char **resp)
 	json_t		*jmsg;
 	json_t		*jresp;
 	json_error_t	 error;
-	int		 ret = 0;
+	int		 ret;
 	uint8_t		 i;
 	char		*cn = NULL;
 	char		*csr;
@@ -693,23 +693,29 @@ node_provisioning(const char *msg, char **resp)
 	char		*serial;
 	char		*node_cert;
 
+	ret = 0;
+
 	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
-		warnx("json_loadb: %s", error.text);
-		return (-1);
+		log_warnx("%s: json_loadb: %s", __func__, error.text);
+		goto cleanup;
 	}
 
-	if (json_unpack(jmsg, "{s:s,s:s}", "csr", &csr, "provkey", &provkey)
-	    < 0)
-		return (-1);
+	if (json_unpack(jmsg, "{s:s,s:s}",
+	    "csr", &csr, "provkey", &provkey) < 0) {
+		log_warnx("%s: json_unpack", __func__);
+		goto cleanup;
+	}
 
+	/* show on web page ! */
 	printf("prov key : %s\n", provkey);
 
-	if ((str = strdup(provkey)) == NULL)
-		return (-1);
+	if ((str = strdup(provkey)) == NULL) {
+		log_warnx("%s: strdup", __func__);
+		goto cleanup;
+	}
         for ((i = 0, p = strtok_r(str, ":", &last)); p;
             (p = strtok_r(NULL, ":", &last))) {
                 if (i < sizeof(tokens)) {
-			printf("%s\n", p);
                         tokens[i++] = p;
 		}
         }
@@ -718,46 +724,47 @@ node_provisioning(const char *msg, char **resp)
         if ((network_uid = tokens[0]) == NULL ||
 	    (node_uid = tokens[1]) == NULL ||
 	    (key = tokens[2]) == NULL) {
-		log_warnx("%s: Invalid provkey tokens", __func__);
-		return (-1);
+		log_warnx("%s: invalid provkey tokens", __func__);
+		goto cleanup;
 	}
 
-	if (dao_node_delete_provkey(network_uid, node_uid, provkey) < 0)
-		return (-1);
+	if (dao_node_delete_provkey(network_uid, node_uid, provkey) < 0) {
+		log_warnx("%s: dao_node_delete_provkey", __func__);
+		goto cleanup;
+	}
 
-	if (dao_network_get_embassy(network_uid, &cacert, &pvkey, &serial) < 0)
-		return (-1);
+	if (dao_network_get_embassy(network_uid,
+	    &cacert, &pvkey, &serial) < 0) {
+		log_warnx("%s: dao_network_get_embassy", __func__);
+		goto cleanup;
+	}
 
 	if (asprintf(&cn, "1:nva:%s:%s", network_uid, node_uid) < 0) {
-		ret = -1;
+		log_warnx("%s: asprintf", __func__);
 		goto cleanup;
 	}
 
 	if ((node_cert = pki_deliver_cert_from_certreq(csr, cacert, pvkey,
 	    atoi(serial), cn)) == NULL) { // XXX remove atoi()
-		ret = -1;
+		log_warnx("%s: pki_deliver_cert_from_certreq", __func__);
 		goto cleanup;
 	}
 
-	if ((jresp = json_object()) == NULL) {
-		ret = -1;
-		goto cleanup;
-	}
-
-	if (json_object_set_new_nocheck(jresp, "cert", json_string(node_cert)) < 0) {
-		ret = -1;
-		goto cleanup;
-	}
-
-	if (json_object_set_new_nocheck(jresp, "cacert", json_string(cacert)) < 0) {
-		ret = -1;
+	if ((jresp = json_object()) == NULL &&
+	    json_object_set_new_nocheck(jresp, "cert",
+	    json_string(node_cert)) < 0 &&
+	    json_object_set_new_nocheck(jresp, "cacert",
+	    json_string(cacert)) < 0) {
+		log_warnx("%s: json_object", __func__);
 		goto cleanup;
 	}
 
 	if ((*resp = json_dumps(jresp, JSON_INDENT(1))) == NULL) {
-		ret = -1;
+		log_warnx("%s: json_dumps", __func__);
 		goto cleanup;
 	}
+
+	ret = 0;
 
 cleanup:
 	free(cn);
