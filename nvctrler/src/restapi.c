@@ -347,7 +347,6 @@ v1_network_create(struct evhttp_request *req, void *arg)
 		goto out;
 	}
 
-
 	code = 201;
 	phrase = "Created";
 
@@ -361,40 +360,44 @@ v1_network_delete(struct evhttp_request *req, void *arg)
 	struct evkeyvalq	 qheaders = TAILQ_HEAD_INITIALIZER(qheaders);
 	struct evkeyvalq	*headers;
 	const struct evhttp_uri	*uri;
-	int			 code = HTTP_BADREQUEST;
+	int			 code;
 	const char		*apikey;
-	const char		*phrase = "Bad Request";
-	const char		*uid;
+	const char		*phrase;
+	const char		*description;
 	const char		*query;
 
-	if ((headers = evhttp_request_get_input_headers(req)) == NULL)
-		goto cleanup;
+	code = 500;
+	phrase = "Internal Server Error";
 
-	if ((apikey = evhttp_find_header(headers, "X-netvirt-apikey")) == NULL)
-		goto cleanup;
+	if ((apikey = evhttp_find_header(evhttp_request_get_input_headers(req),
+	    "X-netvirt-apikey")) == NULL) {
+		log_warnx("%s: evhttp_find_header", __func__);
+		goto out;
+	}
 
-	if ((uri = evhttp_request_get_evhttp_uri(req)) == NULL)
-		goto cleanup;
+	if (evhttp_parse_query_str(evhttp_uri_get_query(
+	    evhttp_request_get_evhttp_uri(req)), &qheaders) < 0) {
+		log_warnx("%s: evhttp_parse_query_str", __func__);
+		goto out;
+	}
 
-	if ((query = evhttp_uri_get_query(uri)) == NULL)
-		goto cleanup;
+	if ((description = evhttp_find_header(&qheaders,
+	    "description")) == NULL) {
+		log_warnx("%s: evhttp_find_header", __func__);
+		goto out;
+	}
 
-	if (evhttp_parse_query_str(query, &qheaders) < 0)
-		goto cleanup;
-
-	if ((uid = evhttp_find_header(&qheaders, "uid")) == NULL)
-		goto cleanup;
-
-	if (network_delete(uid, apikey) < 0) {
+	if (network_delete(description, apikey) < 0) {
 		code = 403;
 		phrase = "Forbidden";
-		goto cleanup;
+		log_warnx("%s: network_delete", __func__);
+		goto out;
 	}
 
 	code = 204;
 	phrase = "No Content";
 
-cleanup:
+out:
 	evhttp_send_reply(req, code, phrase, NULL);
 	evhttp_clear_headers(&qheaders);
 }

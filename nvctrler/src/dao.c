@@ -165,7 +165,7 @@ dao_prepare_statements()
 			"dao_network_delete",
 			"DELETE FROM network "
 			"WHERE client_id = (SELECT id FROM client WHERE apikey = crypt($2, apikey) AND status = 1) "
-			"AND uid = $1;",
+			"AND description = $1;",
 			0,
 			NULL);
 
@@ -779,21 +779,21 @@ dao_network_create(char *client_id,
 }
 
 int
-dao_network_delete(const char *uid, const char *apikey)
+dao_network_delete(const char *description, const char *apikey)
 {
 	PGresult	*result;
 	int		 paramLengths[2];
 	const char	*paramValues[2];
 
-	if (uid == NULL || apikey == NULL) {
+	if (description == NULL || apikey == NULL) {
 		warnx("invalid parameter");
 		return (-1);
 	}
 
-	paramValues[0] = uid;
+	paramValues[0] = description;
 	paramValues[1] = apikey;
 
-	paramLengths[0] = strlen(uid);
+	paramLengths[0] = strlen(description);
 	paramLengths[1] = strlen(apikey);
 
 	result = PQexecPrepared(dbconn, "dao_network_delete", 2, paramValues, paramLengths, NULL, 0);

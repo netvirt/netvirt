@@ -460,19 +460,14 @@ cleanup:
 }
 
 int
-network_delete(const char *uid, const char *apikey)
+network_delete(const char *description, const char *apikey)
 {
-	int		 ret = 0;
+	int ret;
 
-	if (uid == NULL || apikey == NULL)
-		return (-1);
+	ret = -1;
 
-/*	FIXME
-	dao_node_delete_all(network_uid);
-*/
-
-	if (dao_network_delete(uid, apikey) < 0) {
-		ret = -1;
+	if (dao_network_delete(description, apikey) < 0) {
+		log_warnx("%s: dao_network", __func__);
 		goto cleanup;
 	}
 
@@ -494,6 +489,9 @@ network_delete(const char *uid, const char *apikey)
 	}
 	/* * */
 #endif
+
+	ret = 0;
+
 cleanup:
 	return (ret);
 }

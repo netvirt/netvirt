@@ -115,3 +115,13 @@ if [ "$?" != "0" ]; then
 else
 	printf "\e[0;32m ${testname} \e[0m\n"
 fi
+
+###
+testname="Delete network"
+curl -i -H 'X-netvirt-apikey: '${APIKEY}'' \
+-X DELETE  http://127.0.0.1:8080/v1/network?description=${NET_DESC} | grep "204 No Content"
+if [ "$?" != "0" ]; then
+	exit_error
+else
+	printf "\e[0;32m ${testname} \e[0m\n"
+fi
