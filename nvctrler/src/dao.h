@@ -33,6 +33,8 @@ int dao_network_create(char *, char *, char *, char *, char *, char *, char *, c
 int dao_network_delete(const char *, const char *);
 int dao_network_list(const char *, int (*)(const char *, const char *, void *),
     void *);
+int dao_network_update_ippool(const char *, uint8_t *, size_t);
+
 //int dao_network_update();
 int dao_network_get_embassy(const char *, char **, char **, char **);
 int dao_network_get_ippool(const char *, char **, char **, char **, uint8_t **);
@@ -44,6 +46,8 @@ int dao_node_list(const char *, const char *, int (*)(const char *,
     const char *, const char *, const char *, const char *, void *), void *);
 int dao_node_update();
 int dao_node_delete_provkey(const char *, const char *, const char *);
+int dao_node_netinfo(const char *, const char *,
+    char **, char **, char **, char **, uint8_t **);
 
 int dao_switch_network_list(void *data,
     int (*cb)(void *, int , char *, char *, char *, char *));

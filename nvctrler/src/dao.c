@@ -210,6 +210,18 @@ dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
+			"dao_network_update_ippool",
+			"UPDATE network "
+			"SET ippool = $2::bytea "
+			"WHERE uid = $1;",
+			0,
+			NULL);
+
+	if (check_result_status(result) == -1)
+		goto error;
+	PQclear(result);
+
+	result = PQprepare(dbconn,
 			"dao_node_create",
 			"INSERT INTO node "
 			"(network_uid, uid, provkey, description, ipaddress) "
@@ -224,7 +236,7 @@ dao_prepare_statements()
 	result = PQprepare(dbconn,
 			"dao_node_delete",
 			"DELETE FROM node "
-			"WHERE uid = $1 "
+			"WHERE description = $1 "
 			"AND node.network_uid IN (SELECT uid FROM network WHERE client_id = (SELECT id FROM client WHERE apikey = crypt($2, apikey) AND status = 1))",
 			0,
 			NULL);
@@ -232,6 +244,15 @@ dao_prepare_statements()
 	if (check_result_status(result) == -1)
 		goto error;
 	PQclear(result);
+
+	result = PQprepare(dbconn,
+			"dao_node_netinfo",
+			"SELECT node.ipaddress, network.uid, network.subnet, network.netmask, network.ippool "
+			"FROM node, network "
+			"WHERE node.description = $1 "
+			"AND node.network_uid IN (select uid FROM network WHERE client_id = (SELECT id FROM client WHERE apikey = crypt($2, apikey) AND status = 1))",
+			0,
+			NULL);
 
 	result = PQprepare(dbconn,
 			"dao_node_list",
@@ -939,6 +960,43 @@ dao_network_get_ippool(
 }
 
 int
+dao_network_update_ippool(const char *network_uuid,
+    uint8_t *ippool, size_t pool_size)
+{
+	PGresult	*result = NULL;
+	size_t		 ippool_str_len;
+	int		 paramLengths[2];
+	const char	*paramValues[2];
+	uint8_t		*ippool_str;
+
+	if ((ippool_str = PQescapeByteaConn(dbconn, ippool, pool_size,
+	    &ippool_str_len)) == NULL) {
+		warnx("%s: PQescapeByteaConn", __func__);
+			return (-1);
+	}
+
+	paramValues[0] = network_uuid;
+	paramLengths[0] = strlen(network_uuid);
+
+	paramValues[1] = (char *)ippool_str;
+	paramLengths[1] = ippool_str_len;
+
+	result = PQexecPrepared(dbconn, "dao_network_update_ippool", 2, paramValues, paramLengths, NULL, 1);
+
+	PQfreemem(ippool_str);
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return (-1);
+	}
+
+	PQclear(result);
+
+	return (0);
+}
+
+
+int
 dao_node_create(const char *network_uid, const char *uid, const char *provkey,
 	    const char *description, const char *ipaddress)
 {
@@ -1004,6 +1062,50 @@ dao_node_delete(const char *uid, const char *apikey)
 	/* if no row is deleted, return an error */
 	if (strcmp(PQcmdTuples(result), "0") == 0) {
 		PQclear(result);
+		return (-1);
+	}
+
+	PQclear(result);
+
+	return (0);
+}
+
+int
+dao_node_netinfo(const char *description, const char *apikey,
+    char **ipaddr, char **network_uid, char **subnet,
+    char **netmask, uint8_t **ippool_bin)
+{
+	PGresult	*result;
+	size_t		 ippool_size;
+	int		 paramLengths[2];
+	uint8_t		*ippool_ptr;
+	const char	*paramValues[2];
+
+	paramValues[0] = description;
+	paramValues[1] = apikey;
+
+	paramLengths[0] = strlen(description);
+	paramLengths[1] = strlen(apikey);
+
+	result = PQexecPrepared(dbconn, "dao_node_netinfo", 2, paramValues, paramLengths, NULL, 0);
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		warnx("%s: PQexecPrepared", __func__);
+		return (-1);
+	}
+
+	if (PQntuples(result) > 0 && PQnfields(result) == 5) {
+		*ipaddr = strdup(PQgetvalue(result, 0, 0));
+		*network_uid = strdup(PQgetvalue(result, 0, 1));
+		*subnet = strdup(PQgetvalue(result, 0, 2));
+		*netmask = strdup(PQgetvalue(result, 0, 3));
+
+		ippool_ptr = (uint8_t*)PQgetvalue(result, 0, 4);
+		ippool_size = PQgetlength(result, 0, 4);
+		*ippool_bin = PQunescapeBytea(ippool_ptr, &ippool_size);
+	} else {
+		PQclear(result);
+		warnx("%s: PQntuples PQnfields", __func__);
 		return (-1);
 	}
 

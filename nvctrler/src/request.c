@@ -618,35 +618,41 @@ cleanup:
 }
 
 int
-node_delete(const char *uid, const char *apikey)
+node_delete(const char *description, const char *apikey)
 {
-	int		ret = 0;
-	char		*ipaddr = NULL;
+	int		ret;
 	struct ippool	*ippool = NULL;
-	int		 pool_size;
+	size_t		 pool_size;
+	uint8_t		*ippool_bin;
+	char		*ipaddr = NULL;
+	char		*network_uid = NULL;
+	char		*subnet = NULL;
+	char		*netmask = NULL;
 
 
-	if (uid == NULL || apikey == NULL)
-		return (-1);
+	ret = -1;
 
-#if 0
-	ret = dao_fetch_node_ip(network_uuid, node_uuid, &ipaddr);
-
-	unsigned char *ippool_bin = NULL;
-	ret = dao_fetch_context_ippool(network_uuid, &ippool_bin);
+	if (dao_node_netinfo(description, apikey, &ipaddr, &network_uid,
+	    &subnet, &netmask, &ippool_bin) < 0) {
+		log_warnx("%s: dao_node_netinfo", __func__);
+		goto cleanup;
+	}
 
 	/* update ip pool */
-	ippool = ippool_new("44.128.0.0", "255.255.0.0");
+	ippool = ippool_new(subnet, netmask);
 	free(ippool->pool);
 	ippool->pool = (uint8_t*)ippool_bin;
 	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
 	ippool_release_ip(ippool, ipaddr);
 
-	ret = dao_update_context_ippool(network_uuid, ippool->pool, pool_size);
-#endif
+	if (dao_network_update_ippool(network_uid, ippool->pool,
+	    pool_size) < 0) {
+		log_warnx("%s: dao_network_update_ippool", __func__);
+		goto cleanup;
+	}
 
-	if (dao_node_delete(uid, apikey) < 0) {
-		ret = -1;
+	if (dao_node_delete(description, apikey) < 0) {
+		log_warnx("%s: dao_node_delete", __func__);
 		goto cleanup;
 	}
 
@@ -664,7 +670,14 @@ node_delete(const char *uid, const char *apikey)
 	}
 	/* * */
 #endif
+	ret = 0;
+
 cleanup:
+	free(ipaddr);
+	free(network_uid);
+	free(subnet);
+	free(netmask);
+	ippool_free(ippool);
 	return (ret);
 }
 
@@ -747,6 +760,8 @@ node_provisioning(const char *msg, char **resp)
 		log_warnx("%s: pki_deliver_cert_from_certreq", __func__);
 		goto cleanup;
 	}
+
+	// XXX update serial
 
 	if ((jresp = json_object()) == NULL &&
 	    json_object_set_new_nocheck(jresp, "cert",
