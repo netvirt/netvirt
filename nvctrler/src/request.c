@@ -543,18 +543,11 @@ node_create(const char *msg, const char *apikey)
 		goto cleanup;
 	}
 
-	/* XXX handle ip pool */
 	ippool = ippool_new(subnet, netmask);
 	free(ippool->pool);
 	ippool->pool = (uint8_t*)ippool_bin;
 	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
 	ipaddress = ippool_get_ip(ippool);
-
-/*
-	ret = dao_network_update_ippool(network_uid, ippool->pool, pool_size);
-		if (ret == -1) {
-	}
-*/
 
 	if ((uid = pki_gen_uid()) == NULL) {
 		log_warnx("%s: pki_gen_uid", __func__);
@@ -567,10 +560,18 @@ node_create(const char *msg, const char *apikey)
 	}
 
 	snprintf(provkey, sizeof(provkey), "%s:%s:%s", network_uid, uid, key);
-	if (dao_node_create(network_uid, uid, provkey, description, ipaddress) < 0) {
+	if (dao_node_create(network_uid, uid, provkey, description, ipaddress)
+	    < 0) {
 		log_warnx("%s: dao_node_create", __func__);
 		goto cleanup;
 	}
+
+	if (dao_network_update_ippool(network_uid, ippool->pool,
+	    pool_size) < 0) {
+		log_warnx("%s: dao_network_update_ippool", __func__);
+		goto cleanup;
+	}
+
 #if 0
 	/* forward new node to nvswitch */
 	char	*fwd_resp_str = NULL;
