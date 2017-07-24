@@ -689,7 +689,9 @@ node_provisioning(const char *msg, char **resp)
 	json_t		*jresp;
 	json_error_t	 error;
 	int		 ret;
+	uint32_t	 serial;
 	uint8_t		 i;
+	const char	*errstr;
 	char		*cn = NULL;
 	char		*csr;
 	char		*provkey;
@@ -702,7 +704,7 @@ node_provisioning(const char *msg, char **resp)
 	char		*last;
 	char		*cacert;
 	char		*pvkey;
-	char		*serial;
+	char		*serial_str;
 	char		*node_cert;
 
 	ret = 0;
@@ -746,7 +748,7 @@ node_provisioning(const char *msg, char **resp)
 	}
 
 	if (dao_network_get_embassy(network_uid,
-	    &cacert, &pvkey, &serial) < 0) {
+	    &cacert, &pvkey, &serial_str) < 0) {
 		log_warnx("%s: dao_network_get_embassy", __func__);
 		goto cleanup;
 	}
@@ -756,8 +758,14 @@ node_provisioning(const char *msg, char **resp)
 		goto cleanup;
 	}
 
+	serial = (uint32_t)strtonum(serial_str, 1, 4000000, &errstr);
+	if (errstr != NULL) {
+		log_warnx("%s: strtonum: %s", __func__, errstr);
+		goto cleanup;
+	}
+
 	if ((node_cert = pki_deliver_cert_from_certreq(csr, cacert, pvkey,
-	    atoi(serial), cn)) == NULL) { // XXX remove atoi()
+	    serial, cn)) == NULL) {
 		log_warnx("%s: pki_deliver_cert_from_certreq", __func__);
 		goto cleanup;
 	}
