@@ -62,7 +62,7 @@ int
 response_node_delete(json_t *jmsg)
 {
 	struct vnetwork	*vnet;
-	struct session	*session;
+	//struct session	*session;
 	json_t		*node;
 	char		*network_uuid;
 	char		*uuid;
@@ -105,8 +105,8 @@ response_network_delete(json_t *jmsg)
 {
 	char		*network_uuid;
 	json_t		*network;
-	struct vnetwork	*vnet;
-	struct session	*session_list;
+	struct vnetwork	*vnet = NULL;
+	//struct session	*session_list;
 
 	if ((network = json_object_get(jmsg, "network")) == NULL) {
 		warn("json_object_get failed");

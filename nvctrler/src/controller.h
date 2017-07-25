@@ -58,4 +58,6 @@ extern struct event_base	*ev_base;
 void controller_init(void);
 void controller_fini(void);
 
+int restapi_init(json_t *, struct event_base *);
+
 #endif
