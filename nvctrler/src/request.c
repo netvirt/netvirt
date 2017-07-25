@@ -499,10 +499,9 @@ cleanup:
 int
 node_create(const char *msg, const char *apikey)
 {
-	json_t		*jmsg;
+	json_t		*jmsg = NULL;
 	json_error_t	 error;
 	struct ippool	*ippool = NULL;
-	long		 size;
 	int		 ret = 0;
 	int		 pool_size;
 	char		*client_id = NULL;
@@ -1044,7 +1043,7 @@ switch_node_update_status(struct session_info *sinfo, json_t *jmsg)
 	json_decref(node);
 #endif
 
-	return;
+	return (0);
 }
 
 int
@@ -1122,7 +1121,7 @@ switch_node_list(struct session_info *sinfo, json_t *jmsg)
 	json_decref(resp);
 	free(resp_str);
 #endif
-	return;
+	return (0);
 
 }
 

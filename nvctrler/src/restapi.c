@@ -358,13 +358,10 @@ void
 v1_network_delete(struct evhttp_request *req, void *arg)
 {
 	struct evkeyvalq	 qheaders = TAILQ_HEAD_INITIALIZER(qheaders);
-	struct evkeyvalq	*headers;
-	const struct evhttp_uri	*uri;
 	int			 code;
 	const char		*apikey;
 	const char		*phrase;
 	const char		*description;
-	const char		*query;
 
 	code = 500;
 	phrase = "Internal Server Error";
@@ -521,7 +518,6 @@ v1_node_delete(struct evhttp_request *req, void *arg)
 	const char		*apikey;
 	const char		*phrase;
 	const char		*description;
-	const char		*query;
 
 	code = 500;
 	phrase = "Internal Server Error";

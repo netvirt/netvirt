@@ -1232,7 +1232,9 @@ int
 dao_switch_network_list(void *data,
     int (*cb)(void *, int , char *, char *, char *, char *))
 {
-	int		 i, ret, tuples;
+	int		 i;
+	int		 ret;
+	int		 tuples;
 	PGresult	*result;
 
 	result = PQexecPrepared(dbconn, "dao_switch_network_list", 0, NULL, NULL, NULL, 0);
@@ -1253,7 +1255,7 @@ dao_switch_network_list(void *data,
 
 out:
 	PQclear(result);
-	return (ret);
+	return (0);
 }
 
 
