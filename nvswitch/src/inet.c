@@ -98,6 +98,7 @@ inet_print_addr(void *frame)
 	printf("type: %x\n", htons(eth_hdr->ether_type));
 }
 
+void
 inet_print_macaddr(uint8_t *macaddr)
 {
 	printf("maddr: %02x:%02x:%02x:%02x:%02x:%02x\n",
@@ -107,6 +108,4 @@ inet_print_macaddr(uint8_t *macaddr)
 	macaddr[3],
 	macaddr[4],
 	macaddr[5]);
-
-
 }
