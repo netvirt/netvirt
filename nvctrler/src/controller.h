@@ -55,4 +55,7 @@ struct session_info {
 extern json_t			*config;
 extern struct event_base	*ev_base;
 
+void controller_init(void);
+void controller_fini(void);
+
 #endif

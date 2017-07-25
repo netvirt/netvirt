@@ -42,9 +42,6 @@ static passport_t		*passport;
 static struct evconnlistener	*listener;
 static SSL_CTX			*ctx;
 
-void controller_init();
-void controller_fini();
-
 struct session_info *
 sinfo_new()
 {
