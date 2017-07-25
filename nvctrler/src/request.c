@@ -211,7 +211,7 @@ client_get_newresetkey(char *msg, char **resp)
 	}
 
 	if ((jresp = json_object()) == NULL ||
-	    (jclient = json_object()) == NULL |
+	    (jclient = json_object()) == NULL ||
 	    json_object_set_new(jresp, "client", jclient) < 0 ||
 	    json_object_set_new(jclient, "resetkey",
 	    json_string(resetkey)) < 0 ||
