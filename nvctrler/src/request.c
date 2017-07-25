@@ -776,9 +776,9 @@ node_provisioning(const char *msg, char **resp)
 		goto cleanup;
 	}
 
-	if ((jresp = json_object()) == NULL &&
+	if ((jresp = json_object()) == NULL ||
 	    json_object_set_new_nocheck(jresp, "cert",
-	    json_string(node_cert)) < 0 &&
+	    json_string(node_cert)) < 0 ||
 	    json_object_set_new_nocheck(jresp, "cacert",
 	    json_string(cacert)) < 0) {
 		log_warnx("%s: json_object", __func__);
