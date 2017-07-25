@@ -222,6 +222,18 @@ dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
+			"dao_network_update_serial",
+			"UPDATE network "
+			"SET embassy_serial = $2 "
+			"WHERE uid = $1;",
+			0,
+			NULL);
+
+	if (check_result_status(result) == -1)
+		goto error;
+	PQclear(result);
+
+	result = PQprepare(dbconn,
 			"dao_node_create",
 			"INSERT INTO node "
 			"(network_uid, uid, provkey, description, ipaddress) "
@@ -984,6 +996,31 @@ dao_network_update_ippool(const char *network_uuid,
 	result = PQexecPrepared(dbconn, "dao_network_update_ippool", 2, paramValues, paramLengths, NULL, 1);
 
 	PQfreemem(ippool_str);
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return (-1);
+	}
+
+	PQclear(result);
+
+	return (0);
+}
+
+int
+dao_network_update_serial(const char *network_uuid, const char *serial)
+{
+	PGresult	*result = NULL;
+	int		 paramLengths[2];
+	const char	*paramValues[2];
+
+	paramValues[0] = network_uuid;
+	paramLengths[0] = strlen(network_uuid);
+
+	paramValues[1] = serial;
+	paramLengths[1] = strlen(serial);
+
+	result = PQexecPrepared(dbconn, "dao_network_update_serial", 2, paramValues, paramLengths, NULL, 1);
 
 	if (check_result_status(result) == -1) {
 		PQclear(result);

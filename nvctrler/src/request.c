@@ -706,6 +706,7 @@ node_provisioning(const char *msg, char **resp)
 	char		*pvkey;
 	char		*serial_str;
 	char		*node_cert;
+	char		 serial_up[10]; // XXX store int serial
 
 	ret = 0;
 
@@ -770,7 +771,11 @@ node_provisioning(const char *msg, char **resp)
 		goto cleanup;
 	}
 
-	// XXX update serial
+	snprintf(serial_up, sizeof(serial_up), "%d", ++serial);
+	if (dao_network_update_serial(network_uid, serial_up) < 0) {
+		log_warnx("%s: dao_network_update_serial", __func__);
+		goto cleanup;
+	}
 
 	if ((jresp = json_object()) == NULL &&
 	    json_object_set_new_nocheck(jresp, "cert",

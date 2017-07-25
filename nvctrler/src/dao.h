@@ -34,6 +34,7 @@ int dao_network_delete(const char *, const char *);
 int dao_network_list(const char *, int (*)(const char *, const char *, void *),
     void *);
 int dao_network_update_ippool(const char *, uint8_t *, size_t);
+int dao_network_update_serial(const char *, const char *);
 
 //int dao_network_update();
 int dao_network_get_embassy(const char *, char **, char **, char **);
