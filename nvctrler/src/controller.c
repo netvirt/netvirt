@@ -262,10 +262,11 @@ evssl_init()
 	SSL_load_error_strings();
 	SSL_library_init();
 
+	ret = -1;
+
 	if (!RAND_poll())
 		goto error;
 
-	ret = -1;
 	if ((ctx = SSL_CTX_new(TLSv1_2_server_method())) == NULL) {
 		log_warn("SSL_CTX_new");
 		goto error;
