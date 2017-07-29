@@ -13,6 +13,8 @@
  * GNU Affero General Public License for more details
  */
 
+// XXX refactor this file
+
 #include <string.h>
 
 #include <openssl/ssl.h>
@@ -100,6 +102,9 @@ struct nodeinfo
 
 void pki_passport_destroy(passport_t *passport)
 {
+	if (passport == NULL)
+		return;
+
 	EVP_PKEY_free(passport->keyring);
 	X509_free(passport->certificate);
 	X509_free(passport->cacert);
@@ -108,7 +113,8 @@ void pki_passport_destroy(passport_t *passport)
 	free(passport);
 }
 
-passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, char *trusted_authority)
+passport_t *pki_passport_load_from_memory(const char *cert, const char *pvkey,
+    const char *cacert)
 {
 	BIO *bio_memory = NULL;
 	passport_t *passport;
@@ -117,18 +123,18 @@ passport_t *pki_passport_load_from_memory(char *certificate, char *privatekey, c
 	passport = calloc(1, sizeof(passport_t));
 
 	// fetch the certificate in PEM format and convert to X509
-	bio_memory = BIO_new_mem_buf(certificate, strlen(certificate));
+	bio_memory = BIO_new_mem_buf((void *)cert, strlen(cert));
 	passport->certificate = PEM_read_bio_X509(bio_memory, NULL, NULL, NULL);
 	BIO_free(bio_memory);
 
 	// fetch the private key in PEM format and convert to EVP
-	bio_memory = BIO_new_mem_buf(privatekey, strlen(privatekey));
+	bio_memory = BIO_new_mem_buf((void *)pvkey, strlen(pvkey));
 	passport->keyring = PEM_read_bio_PrivateKey(bio_memory, NULL, NULL, NULL);
 	BIO_free(bio_memory);
 
 	// fetch the certificate authority in PEM format convert to X509
 	// and add to the trusted store
-	bio_memory = BIO_new_mem_buf(trusted_authority, strlen(trusted_authority));
+	bio_memory = BIO_new_mem_buf((void *)cacert, strlen(cacert));
 	passport->cacert = PEM_read_bio_X509(bio_memory, NULL, NULL, NULL);
 	BIO_free(bio_memory);
 	passport->cacert_store = X509_STORE_new();
