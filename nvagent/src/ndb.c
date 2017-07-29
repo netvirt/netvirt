@@ -198,7 +198,8 @@ ndb_network_remove(const char *network_name)
 
 
 int
-ndb_network(const char *network_name, char **pvkey, char **cert, char **cacert)
+ndb_network(const char *network_name, const char **pvkey, const char **cert,
+    const char **cacert)
 {
 	struct network	needle, *n;
 	needle.name = (char *)network_name;

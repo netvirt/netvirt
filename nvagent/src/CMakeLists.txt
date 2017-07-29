@@ -13,6 +13,7 @@ endif()
 
 set(nvagent_sources
 	agent.c
+	control.c
 	ndb.c)
 
 message(STATUS "CMAKE_SOURCE_DIR" ${CMAKE_SOURCE_DIR})
@@ -88,6 +89,7 @@ else()
 		crypto
 		event_core
 		event_extra
+		event_openssl
 		jansson
 	)
 endif()

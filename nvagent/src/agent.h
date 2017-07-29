@@ -19,6 +19,8 @@
 
 #include <event2/event.h>
 
+#include <pki.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,10 +34,13 @@ int	ndb_init(void);
 void	ndb_networks(void);
 int	ndb_network_add(const char *, const char *,
 	    const char *, const char *);
-int	ndb_network(const char *, char **, char **, char **);
+int	ndb_network(const char *, const char **, const char **, const char **);
 
+int	control_init(const char *);
+void	control_fini(void);
 
 extern struct event_base 	*ev_base;
+
 #ifdef __cplusplus
 }
 #endif

@@ -122,8 +122,9 @@ main(int argc, char *argv[])
 			usage();
 	}
 
-	agent_connect(network_name);
-	agent_init();
+	control_init(network_name);
+//	agent_connect(network_name);
+//	agent_init();
 
 	event_base_dispatch(ev_base);
 	event_base_free(ev_base);
