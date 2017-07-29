@@ -8,6 +8,7 @@ set(CMAKE_C_FLAGS "-I/usr/local/include -L/usr/local/lib -g -W -Wall -Wno-unused
 add_subdirectory(tests)
 
 add_executable(netvirt-controller
+	agent_control.c
 	controller.c
 	dao.c
 	ippool.c

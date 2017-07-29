@@ -16,6 +16,8 @@
 #ifndef DAO_H
 #define DAO_H
 
+#include <sys/types.h>
+
 int dao_init(const char *, const char *, const char *, const char *);
 void dao_fini();
 void dao_reset_node_state();
@@ -50,7 +52,9 @@ int dao_node_delete_provkey(const char *, const char *, const char *);
 int dao_node_netinfo(const char *, const char *,
     char **, char **, char **, char **, uint8_t **);
 
-int dao_switch_network_list(void *data,
-    int (*cb)(void *, int , char *, char *, char *, char *));
+int dao_node_listall(void *,
+    int (*cb)(void *, int, const char *, const char *, const char *, const char *));
+int dao_switch_network_list(void *,
+    int (*cb)(void *, int , const char *, const char *, const char *, const char *));
 
 #endif

@@ -304,7 +304,16 @@ dao_prepare_statements()
 		goto error;
 	PQclear(result);
 
+	result = PQprepare(dbconn,
+			"dao_node_listall",
+			"SELECT network_uid, uid, description, ipaddress "
+			"FROM node;",
+			0,
+			NULL);
 
+	if (check_result_status(result) == -1)
+		goto error;
+	PQclear(result);
 
 
 #if 0
@@ -1229,8 +1238,42 @@ dao_node_delete_provkey(const char *network_uid, const char *node_uid, const cha
 }
 
 int
+dao_node_listall(void *data,
+    int (*cb)(void *, int, const char *, const char *, const char *, const char *))
+{
+	PGresult	*result;
+	int		 i;
+	int		 tuples;
+	int		 ret;
+
+	result = PQexecPrepared(dbconn, "dao_node_listall", 0, NULL, NULL, NULL, 0);
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		goto error;
+	}
+
+	for (tuples = PQntuples(result), i = 0; i < tuples; i++) {
+		if ((ret = cb(data, tuples - i - 1,
+			PQgetvalue(result, i, 0),
+			PQgetvalue(result, i, 1),
+			PQgetvalue(result, i, 2),
+			PQgetvalue(result, i, 3))) < 0)
+				goto error;
+	}
+
+	PQclear(result);
+	return (0);
+
+error:
+	PQclear(result);
+	return (-1);
+}
+
+
+int
 dao_switch_network_list(void *data,
-    int (*cb)(void *, int , char *, char *, char *, char *))
+    int (*cb)(void *, int , const char *, const char *, const char *, const char *))
 {
 	int		 i;
 	int		 ret;

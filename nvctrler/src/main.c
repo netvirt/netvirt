@@ -108,6 +108,9 @@ main(int argc, char *argv[])
 	if (dao_init(dbname, dbuser, dbpwd, dbhost) < 0)
 		fatalx("%s: dao_init", __func__);
 
+	if (agent_control_init() < 0)
+		fatalx("%s: agent_control_init", __func__);
+
 	controller_init();
 
 	if (restapi_init(config, ev_base) < 0)
