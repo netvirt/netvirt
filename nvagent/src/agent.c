@@ -54,7 +54,8 @@ enum dtls_state {
 };
 
 struct dtls_peer {
-	struct event	*timer;
+	struct event	*handshake_timer;
+	struct event	*ping_timer;
 	enum dtls_state	 state;
 	SSL		*ssl;
 	tapcfg_t	*tapcfg;
@@ -73,11 +74,10 @@ static struct addrinfo		*ai;
 struct event_base		*ev_base;
 struct dtls_peer		 switch_peer;
 struct eth_hdr			 eth_ping;
-struct event			*ping_timer;
 
 static int	 certverify_cb(int, X509_STORE_CTX *);
 static void	 dtls_peer_free(struct dtls_peer *);
-static void	 dtls_peer_timeout_cb(int, short, void *);
+static void	 dtls_handshake_timeout_cb(int, short, void *);
 static int	 dtls_handle(struct dtls_peer *);
 static void	 iface_cb(int, short, void *);
 static void	 udpclient_cb(int, short, void *);
@@ -117,22 +117,25 @@ ping_timeout_cb(int fd, short event, void *arg)
 void
 info_cb(const SSL *ssl, int where, int ret)
 {
-	struct timeval	tv;
+	struct dtls_peer	*p;
+	struct timeval		 tv;
 
 	if ((where & SSL_CB_HANDSHAKE_DONE) == 0)
 		return;
 
+	p = SSL_get_app_data(ssl);
+
 	tv.tv_sec = 5;
 	tv.tv_usec = 0;
-	ping_timer = event_new(ev_base, -1, EV_TIMEOUT | EV_PERSIST,
+	p->ping_timer = event_new(ev_base, -1, EV_TIMEOUT | EV_PERSIST,
 	    ping_timeout_cb, ssl);
-	event_add(ping_timer, &tv);
+	event_add(p->ping_timer, &tv);
 
 	printf("connected !\n");
 }
 
 void
-dtls_peer_timeout_cb(int fd, short event, void *arg)
+dtls_handshake_timeout_cb(int fd, short event, void *arg)
 {
 	(void)fd;
 	(void)event;
@@ -187,7 +190,7 @@ dtls_handle(struct dtls_peer *p)
 
 		case SSL_ERROR_WANT_READ:
 			if (DTLSv1_get_timeout(p->ssl, &tv) == 1 &&
-			    evtimer_add(p->timer, &tv) < 0) {
+			    evtimer_add(p->handshake_timer, &tv) < 0) {
 				return (-1);
 			}
 			return (0);
@@ -356,7 +359,7 @@ agent_connect(const char *network_name)
 
 	p = &switch_peer;
 	p->state = DTLS_CONNECT;
-	p->timer = evtimer_new(ev_base, dtls_peer_timeout_cb, p);
+	p->handshake_timer = evtimer_new(ev_base, dtls_handshake_timeout_cb, p);
 
 	if (ndb_network(network_name, &pvkey, &cert, &cacert) < 0) {
 		fprintf(stderr, "%s: The network specified doesn't exist: %s\n",
@@ -409,7 +412,7 @@ agent_connect(const char *network_name)
 	if (connect(p->sock, ai->ai_addr, ai->ai_addrlen) < 0)
 		warn("%s: connect", __func__);
 
-	if ((p->ssl = SSL_new(ctx)) == NULL)
+	if ((p->ssl = SSL_new(ctx)) == NULL || SSL_set_app_data(p->ssl, p) != 1)
 		warnx("%s: SSL_new", __func__);
 
 	SSL_set_info_callback(p->ssl, info_cb);
