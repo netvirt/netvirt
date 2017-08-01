@@ -57,6 +57,8 @@ struct tls_peer {
 	RB_ENTRY(tls_peer)	 entry;
 	struct sockaddr_storage	 ss;
 	struct bufferevent	*bev;
+	struct nodeinfo		*ni; // XXX cninfo
+	struct vnetwork		*vnet;
 	SSL			*ssl;
 	SSL_CTX			*ctx;
 	socklen_t		 ss_len;
@@ -67,6 +69,7 @@ RB_HEAD(vnetwork_tree, vnetwork);
 static struct evconnlistener	*listener;
 static struct vnetwork_tree	 vnetworks;
 
+static int		 cert_verify_cb(int, X509_STORE_CTX *);
 static int		 servername_cb(SSL *, int *, void *);
 
 static int		 tls_peer_cmp(const struct tls_peer *,
@@ -107,7 +110,7 @@ tls_peer_cmp(const struct tls_peer *a, const struct tls_peer *b)
 int
 node_cmp(const struct node *a, const struct node *b)
 {
-	return strcmp(a->description, b->description);
+	return strcmp(a->uid, b->uid);
 }
 
 int
@@ -247,10 +250,16 @@ tls_peer_new(void)
 	SSL_CTX_set_tlsext_servername_callback(p->ctx, servername_cb);
 	SSL_CTX_set_tlsext_servername_arg(p->ctx, p);
 
-	if ((p->ssl = SSL_new(p->ctx)) == NULL) {
+	if ((p->ssl = SSL_new(p->ctx)) == NULL ||
+	    SSL_set_app_data(p->ssl, p) != 1) {
 		log_warnx("%s: SSL_new", __func__);
 		goto error;
 	}
+
+	SSL_set_verify_depth(p->ssl, 1);
+
+	SSL_set_verify(p->ssl,
+	    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, cert_verify_cb);
 
 	EC_KEY_free(ecdh);
 
@@ -269,7 +278,8 @@ tls_peer_free(struct tls_peer *p)
 	if (p == NULL)
 		return;
 
-	bufferevent_free(p->bev);
+	if (p->bev != NULL)
+		bufferevent_free(p->bev);
 	SSL_free(p->ssl);
 	SSL_CTX_free(p->ctx);
 	free(p);
@@ -330,10 +340,55 @@ error:
 }
 
 int
+cert_verify_cb(int ok, X509_STORE_CTX *store)
+{
+	struct node	*node, needle;
+	struct tls_peer	*p;
+	X509		*cert;
+
+	p = SSL_get_app_data(X509_STORE_CTX_get_ex_data(store,
+	    SSL_get_ex_data_X509_STORE_CTX_idx()));
+
+	if (X509_STORE_CTX_get_error_depth(store) == 0) {
+
+		if ((cert = X509_STORE_CTX_get_current_cert(store)) == NULL) {
+			log_warnx("%s: X509_STORE_CTX_GET_current_cert",
+			    __func__);
+			ok = 0;
+			goto out;
+		}
+
+		if ((p->ni = cert_get_nodeinfo(cert)) == NULL) {
+			log_warnx("%s: cert_get_nodeinfo", __func__);
+			ok = 0;
+			goto out;
+		}
+
+		printf("ni version: %s\n", p->ni->version);
+		printf("ni type: %s\n", p->ni->type);
+		printf("ni networkid: %s\n", p->ni->networkid);
+		printf("ni nodeid: %s\n", p->ni->nodeid);
+
+		needle.uid = (char *)p->ni->nodeid;
+		if ((node = RB_FIND(node_tree, &p->vnet->nodes, &needle))
+		    == NULL) {
+			log_warnx("%s: node '%s' is not whitelisted",
+			    __func__, p->ni->nodeid);
+			ok = 0;
+			goto out;
+		}
+	}
+
+out:
+
+	return (ok);
+}
+
+int
 servername_cb(SSL *ssl, int *ad, void *arg)
 {
 	struct tls_peer	*p = arg;
-	struct vnetwork	*vnet, match;
+	struct vnetwork	 needle;
 	const char	*servername;
 
 	if ((servername = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name))
@@ -342,23 +397,22 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 		return (SSL_TLSEXT_ERR_ALERT_FATAL);
 	}
 
-	printf(">>> name %s\n", servername);
+	printf("server name %s\n", servername);
 
-	match.uid = (char *)servername;
-	vnet = NULL;
-	if ((vnet = RB_FIND(vnetwork_tree, &vnetworks, &match)) == NULL) {
+	needle.uid = (char *)servername;
+	if ((p->vnet = RB_FIND(vnetwork_tree, &vnetworks, &needle)) == NULL) {
 		log_warnx("%s: servername not found: %s", __func__, servername);
 		return (SSL_TLSEXT_ERR_ALERT_FATAL);
 	}
 
-        SSL_CTX_set_cert_store(p->ctx, vnet->passport->cacert_store);
+        SSL_CTX_set_cert_store(p->ctx, p->vnet->passport->cacert_store);
 
 	SSL_set_SSL_CTX(p->ssl, p->ctx);
-        if ((SSL_use_certificate(p->ssl, vnet->passport->certificate)) != 1) {
+        if ((SSL_use_certificate(p->ssl, p->vnet->passport->certificate)) != 1) {
                 log_warnx("%s: SSL_CTX_use_certificate", __func__);
         }
 
-        if ((SSL_use_PrivateKey(p->ssl, vnet->passport->keyring)) != 1) {
+        if ((SSL_use_PrivateKey(p->ssl, p->vnet->passport->keyring)) != 1) {
                 log_warnx("%s: SSL_CTX_use_PrivateKey", __func__);
         }
 

@@ -306,7 +306,7 @@ dao_prepare_statements()
 
 	result = PQprepare(dbconn,
 			"dao_node_listall",
-			"SELECT network_uid, uid, description, ipaddress "
+			"SELECT network_uid, description, uid, ipaddress "
 			"FROM node;",
 			0,
 			NULL);
