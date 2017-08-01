@@ -302,8 +302,8 @@ node_listall_cb(void *arg, int left, const char *network_uid,
 
 	needle.uid = (char *)network_uid;
 	if ((vnet = RB_FIND(vnetwork_tree, &vnetworks, &needle)) == NULL) {
-		log_warnx("%s: node description '%s' "
-		    "doesn't belong to a network", __func__, description);
+		log_warnx("%s: node uid '%s' "
+		    "doesn't belong to a network", __func__, uid);
 		goto error;
 	}
 
