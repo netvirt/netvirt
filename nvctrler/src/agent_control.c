@@ -16,14 +16,14 @@
 #include <sys/socket.h>
 #include <sys/tree.h>
 
+#include <errno.h>
+
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
 #include <event2/bufferevent.h>
 #include <event2/bufferevent_ssl.h>
 #include <event2/listener.h>
-
-#include <errno.h>
 
 #include <log.h>
 #include <pki.h>
@@ -57,7 +57,7 @@ struct tls_peer {
 	RB_ENTRY(tls_peer)	 entry;
 	struct sockaddr_storage	 ss;
 	struct bufferevent	*bev;
-	struct nodeinfo		*ni; // XXX cninfo
+	struct nodeinfo		*ni; // XXX certinfo
 	struct vnetwork		*vnet;
 	SSL			*ssl;
 	SSL_CTX			*ctx;
@@ -336,6 +336,7 @@ network_listall_cb(void *arg, int left, const char *uid, const char *cert,
 
 error:
 	vnetwork_free(vnet);
+
 	return (-1);
 }
 
@@ -394,7 +395,7 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 	if ((servername = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name))
 	    == NULL) {
 		log_warnx("%s: SSL_get_servername", __func__);
-		return (SSL_TLSEXT_ERR_ALERT_FATAL);
+		goto error;
 	}
 
 	printf("server name %s\n", servername);
@@ -402,7 +403,7 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 	needle.uid = (char *)servername;
 	if ((p->vnet = RB_FIND(vnetwork_tree, &vnetworks, &needle)) == NULL) {
 		log_warnx("%s: servername not found: %s", __func__, servername);
-		return (SSL_TLSEXT_ERR_ALERT_FATAL);
+		goto error;
 	}
 
         SSL_CTX_set_cert_store(p->ctx, p->vnet->passport->cacert_store);
@@ -410,13 +411,19 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 	SSL_set_SSL_CTX(p->ssl, p->ctx);
         if ((SSL_use_certificate(p->ssl, p->vnet->passport->certificate)) != 1) {
                 log_warnx("%s: SSL_CTX_use_certificate", __func__);
+		goto error;
         }
 
         if ((SSL_use_PrivateKey(p->ssl, p->vnet->passport->keyring)) != 1) {
                 log_warnx("%s: SSL_CTX_use_PrivateKey", __func__);
+		goto error;
         }
 
 	return (SSL_TLSEXT_ERR_OK);
+
+error:
+
+	return (SSL_TLSEXT_ERR_ALERT_FATAL);
 }
 
 void
@@ -426,15 +433,21 @@ tls_peer_onread_cb(struct bufferevent *bev, void *arg)
 }
 
 void
+xmit_agent_nodeinfo(struct tls_peer *p)
+{
+
+}
+
+void
 tls_peer_onevent_cb(struct bufferevent *bev, short events, void *arg)
 {
 	unsigned long	e;
 
-	SSL_load_error_strings();
-
 	if (events & BEV_EVENT_CONNECTED) {
 
 		printf("event connected\n");
+
+		//xmit_agent_nodeinfo(p);
 
 	} else if (events & (BEV_EVENT_ERROR | BEV_EVENT_TIMEOUT | BEV_EVENT_EOF)) {
 
@@ -473,6 +486,7 @@ listen_accept_cb(struct evconnlistener *listener, int fd,
 
 error:
 	tls_peer_free(p);
+
 	return;
 }
 
@@ -487,6 +501,8 @@ agent_control_init(void)
 {
 	struct addrinfo		*res;
 	struct addrinfo		 hints;
+
+	SSL_load_error_strings();
 
 	if (dao_switch_network_list(NULL, network_listall_cb) < 0) {
 		log_warnx("%s: dao_switch_network_list", __func__);
