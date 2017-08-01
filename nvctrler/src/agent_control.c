@@ -436,15 +436,12 @@ tls_peer_onevent_cb(struct bufferevent *bev, short events, void *arg)
 
 		printf("event connected\n");
 
-	} else if (events & (BEV_EVENT_TIMEOUT | BEV_EVENT_EOF)) {
-
-	} else if (events &  BEV_EVENT_ERROR) {
+	} else if (events & (BEV_EVENT_ERROR | BEV_EVENT_TIMEOUT | BEV_EVENT_EOF)) {
 
                 while ((e = bufferevent_get_openssl_error(bev)) > 0) {
 			log_warnx("%s: TLS error: %s", __func__,
 			    ERR_reason_error_string(e));
                 }
-
 	}
 }
 
