@@ -398,10 +398,10 @@ static void b64enc(const uint8_t *buf, size_t length, char **b64buf)
 
 	BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
 	BIO_write(bio, buf, length);
-	BIO_flush(bio);
+	(void)BIO_flush(bio);
 
 	BIO_get_mem_ptr(bio, &memptr);
-	BIO_set_close(bio, BIO_NOCLOSE);
+	(void)BIO_set_close(bio, BIO_NOCLOSE);
 	BIO_free_all(bio);
 
 	*b64buf = calloc(1, memptr->length+1);
