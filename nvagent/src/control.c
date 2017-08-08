@@ -31,6 +31,7 @@
 
 #include <pki.h>
 #include <log.h>
+#include <tapcfg.h>
 
 #include "agent.h"
 
@@ -38,27 +39,59 @@ struct tls_client {
 	struct bufferevent	*bev;
 	SSL			*ssl;
 	SSL_CTX			*ctx;
+	tapcfg_t		*tapcfg;
 };
 
 static void	tls_client_free(struct tls_client *);
 
+int
+xmit_nodeinfo(struct bufferevent *bev, struct tls_client *c)
+{
+	(void)bev;
+
+	const char	*lladdr;
+	int		 lladdr_len;
+
+	if ((c->tapcfg = tapcfg_init()) == NULL) {
+		log_warnx("%s: tapcfg_init", __func__);
+		goto error;
+	}
+
+	if ((lladdr = tapcfg_iface_get_hwaddr(c->tapcfg, &lladdr_len))
+	    != NULL) {
+		log_warnx("%s: tapcfg_iface_get_hwaddr", __func__);
+		goto error;
+	}
+
+	return (0);
+
+error:
+
+	return (-1);
+}
+
 void
 client_onread_cb(struct bufferevent *bev, void *arg)
 {
+	(void)bev;
+	(void)arg;
+
 	printf("on read cb\n");
 }
 
 void
 client_onevent_cb(struct bufferevent *bev, short events, void *arg)
 {
-	unsigned long e;
+	struct tls_client	*c;
+	unsigned long		 e;
 
-	// XXX load globally
-	SSL_load_error_strings();
+	c = arg;
 
 	if (events & BEV_EVENT_CONNECTED) {
 
 		printf("event connected\n");
+
+		xmit_nodeinfo(bev, c);
 
 	} else if (events & (BEV_EVENT_TIMEOUT | BEV_EVENT_EOF)) {
 
@@ -198,6 +231,7 @@ control_init(const char *network_name)
 	const char		*cacert;
 
 	// XXX init globally
+	SSL_load_error_strings();
 	log_init(2, LOG_DAEMON);
 
 	printf("network name: %s\n", network_name);

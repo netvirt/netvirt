@@ -26,7 +26,6 @@ extern "C" {
 #endif
 
 int	agent_connect(const char *);
-int	agent_provisioning(const char *, const char *);
 void	agent_fini(void);
 int	agent_init(void);
 
@@ -35,6 +34,7 @@ void	ndb_networks(void);
 int	ndb_network_add(const char *, const char *,
 	    const char *, const char *);
 int	ndb_network(const char *, const char **, const char **, const char **);
+int	ndb_provisioning(const char *, const char *);
 
 int	control_init(const char *);
 void	control_fini(void);

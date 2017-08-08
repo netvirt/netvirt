@@ -118,8 +118,9 @@ main(int argc, char *argv[])
 	event_add(ev_sigterm, NULL);
 
 	if (provcode != NULL && network_name != NULL) {
-		if (agent_provisioning(provcode, network_name) < 0)
+		if (ndb_provisioning(provcode, network_name) < 0)
 			usage();
+		return(0);
 	}
 
 	control_init(network_name);

@@ -19,11 +19,22 @@
 
 #include <string.h>
 
+#include <event2/buffer.h>
+#include <event2/http.h>
+#include <event2/http_struct.h>
+
 #include <jansson.h>
+
+#include <pki.h>
 
 #include "agent.h"
 
 #define NDB_VERSION 1
+
+struct prov_info {
+	const char	*network_name;
+	const char	*pvkey;
+};
 
 struct network {
 	RB_ENTRY(network)	 entry;
@@ -193,6 +204,7 @@ ndb_network_add(const char *network_name, const char *pvkey,
 int
 ndb_network_remove(const char *network_name)
 {
+	(void)network_name;
 	return (0);
 }
 
@@ -276,6 +288,98 @@ out:
 	json_decref(jdb);
 
 	return (ret);
+}
+
+void
+ndb_prov_cb(struct evhttp_request *req, void *arg)
+{
+	json_t			*jmsg;
+	json_error_t		 error;
+	struct evbuffer         *buf;
+	struct prov_info	*prov_info;
+	const char		*cacert;
+	const char		*cert;
+	void                    *p;
+
+	buf = evhttp_request_get_input_buffer(req);
+
+        p = evbuffer_pullup(buf, -1);
+
+	if ((jmsg = json_loadb(p, evbuffer_get_length(buf), 0, &error)) == NULL) {
+		fprintf(stdout, "%s: json_loadb - %s", __func__, error.text);
+		goto err;
+	}
+
+	if (json_unpack(jmsg, "{s:s,s:s}", "cert", &cert, "cacert", &cacert)
+	    < 0) {
+		fprintf(stdout, "%s: json_unpack", __func__);
+		goto err;
+	}
+
+	prov_info = arg;
+	ndb_network_add(prov_info->network_name, prov_info->pvkey, cert,
+	    cacert);
+
+err:
+	return;
+
+}
+
+int
+ndb_provisioning(const char *provkey, const char *network_name)
+{
+	struct evhttp_connection	*evhttp_conn;
+	struct evhttp_request		*req;
+	struct evkeyvalq		*output_headers;
+	struct evbuffer			*output_buffer;
+	struct prov_info		*prov_info;
+	EVP_PKEY			*keyring = NULL;
+	X509_REQ			*certreq = NULL;
+	digital_id_t			*nva_id = NULL;
+	json_t				*jresp;
+	long				 size = 0;
+	char				*resp;
+	char				*certreq_pem = NULL;
+	char				*pvkey_pem = NULL;
+
+	nva_id = pki_digital_id("",  "", "", "", "contact@dynvpn.com", "www.dynvpn.com");
+
+	/* generate RSA public and private keys */
+	keyring = pki_generate_keyring();
+
+	/* create a certificate signing request */
+	certreq = pki_certificate_request(keyring, nva_id);
+
+	/* write the certreq in PEM format */
+	pki_write_certreq_in_mem(certreq, &certreq_pem, &size);
+
+	/* write the private key in PEM format */
+	pki_write_privatekey_in_mem(keyring, &pvkey_pem, &size);
+
+	if ((prov_info = malloc(sizeof(struct prov_info))) == NULL)
+		return (-1);
+
+	prov_info->network_name = network_name;
+	prov_info->pvkey = pvkey_pem;
+
+	evhttp_conn = evhttp_connection_base_new(ev_base, NULL, "127.0.0.1", 8080);
+	req = evhttp_request_new(ndb_prov_cb, prov_info);
+
+	output_headers = evhttp_request_get_output_headers(req);
+	evhttp_add_header(output_headers, "Content-Type", "application/json");
+
+	jresp = json_object();
+	json_object_set_new(jresp, "csr", json_string(certreq_pem));
+
+	json_object_set_new(jresp, "provkey", json_string(provkey));
+	resp = json_dumps(jresp, 0);
+
+	output_buffer = evhttp_request_get_output_buffer(req);
+	evbuffer_add(output_buffer, resp, strlen(resp));
+
+	evhttp_make_request(evhttp_conn, req, EVHTTP_REQ_POST, "/v1/provisioning");
+
+	return (0);
 }
 
 void

@@ -31,10 +31,7 @@
 #include <openssl/ssl.h>
 #include <openssl/rand.h>
 
-#include <event2/buffer.h>
 #include <event2/event.h>
-#include <event2/http.h>
-#include <event2/http_struct.h>
 
 #include <jansson.h>
 
@@ -42,11 +39,6 @@
 #include <tapcfg.h>
 
 #include "agent.h"
-
-struct prov_info {
-	const char	*network_name;
-	const char	*pvkey;
-};
 
 enum dtls_state {
 	DTLS_CONNECT,
@@ -81,7 +73,6 @@ static void	 dtls_handshake_timeout_cb(int, short, void *);
 static int	 dtls_handle(struct dtls_peer *);
 static void	 iface_cb(int, short, void *);
 static void	 udpclient_cb(int, short, void *);
-static void	 http_prov_cb(struct evhttp_request *, void *);
 
 int
 certverify_cb(int ok, X509_STORE_CTX *store)
@@ -102,12 +93,15 @@ certverify_cb(int ok, X509_STORE_CTX *store)
 void
 dtls_peer_free(struct dtls_peer *p)
 {
-
+	(void)p;
 }
 
 void
 ping_timeout_cb(int fd, short event, void *arg)
 {
+	(void)event;
+	(void)fd;
+
 	SSL	*ssl = arg;
 
 	printf("ping timeout !\n");
@@ -117,6 +111,8 @@ ping_timeout_cb(int fd, short event, void *arg)
 void
 info_cb(const SSL *ssl, int where, int ret)
 {
+	(void)ret;
+
 	struct dtls_peer	*p;
 	struct timeval		 tv;
 
@@ -128,7 +124,7 @@ info_cb(const SSL *ssl, int where, int ret)
 	tv.tv_sec = 5;
 	tv.tv_usec = 0;
 	p->ping_timer = event_new(ev_base, -1, EV_TIMEOUT | EV_PERSIST,
-	    ping_timeout_cb, ssl);
+	    ping_timeout_cb, (SSL *)ssl);
 	event_add(p->ping_timer, &tv);
 
 	printf("connected !\n");
@@ -245,98 +241,6 @@ error:
 	dtls_peer_free(p);
 }
 
-void
-http_prov_cb(struct evhttp_request *req, void *arg)
-{
-	json_t			*jmsg;
-	json_error_t		 error;
-	struct evbuffer         *buf;
-	struct prov_info	*prov_info;
-	const char		*cacert;
-	const char		*cert;
-        void                    *p;
-
-	buf = evhttp_request_get_input_buffer(req);
-
-        p = evbuffer_pullup(buf, -1);
-
-	if ((jmsg = json_loadb(p, evbuffer_get_length(buf), 0, &error)) == NULL) {
-		fprintf(stdout, "%s: json_loadb - %s", __func__, error.text);
-		goto err;
-	}
-
-	if (json_unpack(jmsg, "{s:s,s:s}", "cert", &cert, "cacert", &cacert)
-	    < 0) {
-		fprintf(stdout, "%s: json_unpack", __func__);
-		goto err;
-	}
-
-	prov_info = arg;
-	ndb_network_add(prov_info->network_name, prov_info->pvkey, cert,
-	    cacert);
-
-err:
-	return;
-
-}
-
-int
-agent_provisioning(const char *provkey, const char *network_name)
-{
-	EVP_PKEY			*keyring = NULL;
-	X509_REQ			*certreq = NULL;
-	digital_id_t			*nva_id = NULL;
-	json_t				*jresp;
-	struct evhttp_connection	*evhttp_conn;
-	struct evhttp_request		*req;
-	struct evkeyvalq		*output_headers;
-	struct evbuffer			*output_buffer;
-	struct prov_info		*prov_info;
-	long				 size = 0;
-	char				*resp;
-	char				*certreq_pem = NULL;
-	char				*pvkey_pem = NULL;
-
-	nva_id = pki_digital_id("",  "", "", "", "contact@dynvpn.com", "www.dynvpn.com");
-
-	/* generate RSA public and private keys */
-	keyring = pki_generate_keyring();
-
-	/* create a certificate signing request */
-	certreq = pki_certificate_request(keyring, nva_id);
-
-	/* write the certreq in PEM format */
-	pki_write_certreq_in_mem(certreq, &certreq_pem, &size);
-
-	/* write the private key in PEM format */
-	pki_write_privatekey_in_mem(keyring, &pvkey_pem, &size);
-
-	if ((prov_info = malloc(sizeof(struct prov_info))) == NULL)
-		return (-1);
-
-	prov_info->network_name = network_name;
-	prov_info->pvkey = pvkey_pem;
-
-	evhttp_conn = evhttp_connection_base_new(ev_base, NULL, "127.0.0.1", 8080);
-	req = evhttp_request_new(http_prov_cb, prov_info);
-
-	output_headers = evhttp_request_get_output_headers(req);
-	evhttp_add_header(output_headers, "Content-Type", "application/json");
-
-        jresp = json_object();
-        json_object_set_new(jresp, "csr", json_string(certreq_pem));
-
-	json_object_set_new(jresp, "provkey", json_string(provkey));
-        resp = json_dumps(jresp, 0);
-
-	output_buffer = evhttp_request_get_output_buffer(req);
-	evbuffer_add(output_buffer, resp, strlen(resp));
-
-	evhttp_make_request(evhttp_conn, req, EVHTTP_REQ_POST, "/v1/provisioning");
-
-	return (0);
-}
-
 int
 agent_connect(const char *network_name)
 {
@@ -349,9 +253,9 @@ agent_connect(const char *network_name)
 	int			 status;
 	int			 flag;
 	int			 ret;
-	char			*pvkey;
-	char			*cert;
-	char			*cacert;
+	const char		*pvkey;
+	const char		*cert;
+	const char		*cacert;
 	const char		*ip = "127.0.0.1";
 	const char		*port = "9090";
 
@@ -450,11 +354,6 @@ agent_init()
 
 	eth_ping.ethertype = htons(0x9000);
 	p = &switch_peer;
-
-	if ((p->tapcfg = tapcfg_init()) == NULL) {
-		fprintf(stderr, "tapcfg_init failed");
-		return (-1);
-	}
 
 	if ((iface_fd = tapcfg_start(p->tapcfg, "netvirt0", 1)) < 0) {
 		fprintf(stderr, "tapcfg_start\n");
