@@ -23,11 +23,11 @@
 
 #include <openssl/x509_vfy.h>
 
-struct nodeinfo {
+struct certinfo {
 	char	*version;
 	char	*type;
-	char	*networkid;
-	char	*nodeid;
+	char	*network_uid;
+	char	*node_uid;
 };
 
 typedef struct passport {
@@ -35,11 +35,11 @@ typedef struct passport {
 	X509		*certificate;
 	X509		*cacert;
 	X509_STORE	*cacert_store;
-	struct nodeinfo	*nodeinfo;
+	struct certinfo	*certinfo;
 } passport_t;
 
-void		 nodeinfo_destroy(struct nodeinfo *);
-struct nodeinfo	*cert_get_nodeinfo(X509 *);
+void		 certinfo_destroy(struct certinfo *);
+struct certinfo	*certinfo(X509 *);
 
 void		 pki_passport_destroy(passport_t *);
 passport_t	*pki_passport_load_from_memory(const char *, const char *, const char *);

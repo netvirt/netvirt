@@ -57,7 +57,7 @@ struct tls_peer {
 	RB_ENTRY(tls_peer)	 entry;
 	struct sockaddr_storage	 ss;
 	struct bufferevent	*bev;
-	struct nodeinfo		*ni; // XXX certinfo
+	struct certinfo		*ci;
 	struct vnetwork		*vnet;
 	SSL			*ssl;
 	SSL_CTX			*ctx;
@@ -359,22 +359,22 @@ cert_verify_cb(int ok, X509_STORE_CTX *store)
 			goto out;
 		}
 
-		if ((p->ni = cert_get_nodeinfo(cert)) == NULL) {
+		if ((p->ci = certinfo(cert)) == NULL) {
 			log_warnx("%s: cert_get_nodeinfo", __func__);
 			ok = 0;
 			goto out;
 		}
 
-		printf("ni version: %s\n", p->ni->version);
-		printf("ni type: %s\n", p->ni->type);
-		printf("ni networkid: %s\n", p->ni->networkid);
-		printf("ni nodeid: %s\n", p->ni->nodeid);
+		printf("ni version: %s\n", p->ci->version);
+		printf("ni type: %s\n", p->ci->type);
+		printf("ni network_uid: %s\n", p->ci->network_uid);
+		printf("ni node_uid: %s\n", p->ci->node_uid);
 
-		needle.uid = (char *)p->ni->nodeid;
+		needle.uid = (char *)p->ci->node_uid;
 		if ((node = RB_FIND(node_tree, &p->vnet->nodes, &needle))
 		    == NULL) {
 			log_warnx("%s: node '%s' is not whitelisted",
-			    __func__, p->ni->nodeid);
+			    __func__, p->ci->node_uid);
 			ok = 0;
 			goto out;
 		}
@@ -427,15 +427,15 @@ error:
 }
 
 void
-tls_peer_onread_cb(struct bufferevent *bev, void *arg)
+xmit_agent_info(struct tls_peer *p)
 {
-	printf("tls_peer_onread_cb");
+
 }
 
 void
-xmit_agent_nodeinfo(struct tls_peer *p)
+tls_peer_onread_cb(struct bufferevent *bev, void *arg)
 {
-
+	printf("tls_peer_onread_cb");
 }
 
 void

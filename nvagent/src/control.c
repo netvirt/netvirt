@@ -181,7 +181,7 @@ tls_client_new(const char *hostname, const char *port, passport_t *passport)
 		goto cleanup;
 	}
 
-	SSL_set_tlsext_host_name(c->ssl, passport->nodeinfo->networkid);
+	SSL_set_tlsext_host_name(c->ssl, passport->certinfo->network_uid);
 
 	if ((c->bev = bufferevent_openssl_socket_new(ev_base, fd, c->ssl,
 	    BUFFEREVENT_SSL_CONNECTING, BEV_OPT_CLOSE_ON_FREE)) == NULL) {

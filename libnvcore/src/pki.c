@@ -48,20 +48,20 @@ char *cert_cname(X509 *cert)
 }
 
 void
-nodeinfo_destroy(struct nodeinfo *ni)
+certinfo_destroy(struct certinfo *ci)
 {
-	free(ni->version);
-	free(ni->type);
-	free(ni->networkid);
-	free(ni->nodeid);
-	free(ni);
+	free(ci->version);
+	free(ci->type);
+	free(ci->network_uid);
+	free(ci->node_uid);
+	free(ci);
 }
 
-struct nodeinfo
-*cert_get_nodeinfo(X509 *cert)
+struct certinfo
+*certinfo(X509 *cert)
 {
 	X509_NAME	*subj;
-	struct nodeinfo	*ni;
+	struct certinfo	*ci;
 	size_t		 i;
 	char		 cn[64];
 	char		*tokens[5];
@@ -89,15 +89,15 @@ struct nodeinfo
 		return (NULL);
 	}
 
-	if ((ni = malloc(sizeof(struct nodeinfo))) == NULL)
+	if ((ci = malloc(sizeof(struct certinfo))) == NULL)
 		return (NULL);
 
-	ni->version = strdup(tokens[0]);
-	ni->type = strdup(tokens[1]);
-	ni->networkid = strdup(tokens[2]);
-	ni->nodeid = strdup(tokens[3]);
+	ci->version = strdup(tokens[0]);
+	ci->type = strdup(tokens[1]);
+	ci->network_uid = strdup(tokens[2]);
+	ci->node_uid = strdup(tokens[3]);
 
-	return (ni);
+	return (ci);
 }
 
 void pki_passport_destroy(passport_t *passport)
@@ -109,7 +109,7 @@ void pki_passport_destroy(passport_t *passport)
 	X509_free(passport->certificate);
 	X509_free(passport->cacert);
 	X509_STORE_free(passport->cacert_store);
-	nodeinfo_destroy(passport->nodeinfo);
+	certinfo_destroy(passport->certinfo);
 	free(passport);
 }
 
@@ -140,7 +140,7 @@ passport_t *pki_passport_load_from_memory(const char *cert, const char *pvkey,
 	passport->cacert_store = X509_STORE_new();
 	X509_STORE_add_cert(passport->cacert_store, passport->cacert);
 
-	passport->nodeinfo = cert_get_nodeinfo(passport->certificate);
+	passport->certinfo = certinfo(passport->certificate);
 
 	return passport;
 }

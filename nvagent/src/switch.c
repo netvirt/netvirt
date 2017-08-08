@@ -320,7 +320,7 @@ agent_connect(const char *network_name)
 		warnx("%s: SSL_new", __func__);
 
 	SSL_set_info_callback(p->ssl, info_cb);
-	SSL_set_tlsext_host_name(p->ssl, passport->nodeinfo->networkid);
+	SSL_set_tlsext_host_name(p->ssl, passport->certinfo->network_uid);
 	SSL_set_verify(p->ssl,
 	    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, certverify_cb);
 
