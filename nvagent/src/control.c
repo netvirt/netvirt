@@ -145,7 +145,9 @@ xmit_nodeinfo(struct bufferevent *bev, struct tls_client *c)
             ((uint8_t *)lladdr)[4],
             ((uint8_t *)lladdr)[5]);
 
-	if ((jmsg = json_pack("{s:s,s:s}", "local_ipaddr", lipaddr,
+	if ((jmsg = json_pack("{s:s,s:s,s:s}",
+	    "action", "nodeinfo",
+	    "local_ipaddr", lipaddr,
 	    "lladdr", lladdr_str)) == NULL) {
 		log_warnx("%s: json_pack", __func__);
 		goto out;
