@@ -29,6 +29,8 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
+#include <jansson.h>
+
 #include <pki.h>
 #include <log.h>
 #include <tapcfg.h>
@@ -40,34 +42,136 @@ struct tls_client {
 	SSL			*ssl;
 	SSL_CTX			*ctx;
 	tapcfg_t		*tapcfg;
+	int			 tapfd;
 };
 
 static void	tls_client_free(struct tls_client *);
 
+#ifdef _WIN32
+        #include <winsock2.h>
+        #include <ws2tcpip.h>
+#else
+        #include <sys/types.h>
+        #include <netinet/in.h>
+        #include <arpa/inet.h>
+        #include <sys/socket.h>
+        #include <netdb.h>
+        #include <unistd.h>
+#endif
+
+char *
+local_ipaddr()
+{
+#ifdef _WIN32
+        WORD	wVersionRequested = MAKEWORD(1,1);
+        WSADATA wsaData;
+#endif
+        struct addrinfo		*serv_info;
+        struct sockaddr_in	 name;
+        int			 sock;
+        const char		*addr_ptr;
+        char			*listen_addr = "dynvpn.com";
+        char			*port = "9092";
+	char			 local_ip[16];
+
+#ifdef _WIN32
+        /* init Winsocket */
+        WSAStartup(wVersionRequested, &wsaData);
+#endif
+	// XXX handler errors
+        sock = socket(AF_INET, SOCK_DGRAM, 0);
+
+        getaddrinfo(listen_addr, port, NULL, &serv_info);
+        connect(sock, serv_info->ai_addr, serv_info->ai_addrlen);
+        freeaddrinfo(serv_info);
+
+        socklen_t namelen = sizeof(name);
+        getsockname(sock, (struct sockaddr *)&name, &namelen);
+
+#ifdef _WIN32
+        closesocket(sock);
+        WSACleanup();
+#else
+        close(sock);
+#endif
+
+        if ((addr_ptr = inet_ntop(AF_INET, &name.sin_addr, local_ip,
+	    INET_ADDRSTRLEN)) == NULL)
+		return (NULL);
+
+	return strdup(local_ip);
+}
+
 int
 xmit_nodeinfo(struct bufferevent *bev, struct tls_client *c)
 {
-	(void)bev;
-
-	const char	*lladdr;
+	json_t		*jmsg = NULL;
+	int		 ret;
 	int		 lladdr_len;
+	const char	*lladdr;
+	char		 lladdr_str[18];
+	char		*lipaddr = NULL;
+	char		*msg = NULL;
+
+	ret = -1;
 
 	if ((c->tapcfg = tapcfg_init()) == NULL) {
 		log_warnx("%s: tapcfg_init", __func__);
-		goto error;
+		goto out;
+	}
+
+	if ((c->tapfd = tapcfg_start(c->tapcfg, "netvirt0", 1)) < 0) {
+		log_warnx("%s: tapcfg_start", __func__);
+		goto out;
 	}
 
 	if ((lladdr = tapcfg_iface_get_hwaddr(c->tapcfg, &lladdr_len))
-	    != NULL) {
+	    == NULL) {
 		log_warnx("%s: tapcfg_iface_get_hwaddr", __func__);
-		goto error;
+		goto out;
 	}
 
-	return (0);
+	if ((lipaddr = local_ipaddr()) == NULL) {
+		log_warnx("%s: local_ipaddr", __func__);
+		goto out;
+	}
 
-error:
+	snprintf(lladdr_str, sizeof(lladdr_str),
+	    "%02x:%02x:%02x:%02x:%02x:%02x",
+            ((uint8_t *)lladdr)[0],
+            ((uint8_t *)lladdr)[1],
+            ((uint8_t *)lladdr)[2],
+            ((uint8_t *)lladdr)[3],
+            ((uint8_t *)lladdr)[4],
+            ((uint8_t *)lladdr)[5]);
 
-	return (-1);
+	if ((jmsg = json_pack("{s:s,s:s}", "local_ipaddr", lipaddr,
+	    "lladdr", lladdr_str)) == NULL) {
+		log_warnx("%s: json_pack", __func__);
+		goto out;
+	}
+
+	if ((msg = json_dumps(jmsg, 0)) == NULL) {
+		log_warnx("%s: json_dumps", __func__);
+		goto out;
+	}
+
+	if (bufferevent_write(bev, msg, strlen(msg)) != 0) {
+		log_warnx("%s: bufferevent_write", __func__);
+		goto out;
+	}
+
+	if (bufferevent_write(bev, "\n", strlen("\n")) != 0) {
+		log_warnx("%s: bufferevent_write", __func__);
+		goto out;
+	}
+
+	ret = 0;
+
+out:
+	json_decref(jmsg);
+	free(msg);
+	return (ret);
 }
 
 void
@@ -122,6 +226,8 @@ tls_client_new(const char *hostname, const char *port, passport_t *passport)
 	c->ssl = NULL;
 	c->ctx = NULL;
 	c->bev = NULL;
+	c->tapcfg = NULL;
+	c->tapfd = -1;
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
@@ -191,7 +297,7 @@ tls_client_new(const char *hostname, const char *port, passport_t *passport)
 
 	bufferevent_enable(c->bev, EV_READ | EV_WRITE);
 	bufferevent_setcb(c->bev, client_onread_cb, NULL, client_onevent_cb,
-	    NULL);
+	    c);
 
 	if (bufferevent_socket_connect(c->bev, res->ai_addr, res->ai_addrlen)
 	    < 0) {
