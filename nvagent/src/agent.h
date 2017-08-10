@@ -19,15 +19,16 @@
 
 #include <event2/event.h>
 
+#include <tapcfg.h>
+
 #include <pki.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int	agent_connect(const char *);
-void	agent_fini(void);
-int	agent_init(void);
+void	switch_fini(void);
+int	switch_init(tapcfg_t *, int, const char *, const char *);
 
 int	ndb_init(void);
 void	ndb_networks(void);

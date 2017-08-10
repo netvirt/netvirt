@@ -23,6 +23,7 @@
 #include <syslog.h>
 #include <unistd.h>
 
+#include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <event2/bufferevent_ssl.h>
 
@@ -45,7 +46,9 @@ struct tls_client {
 	int			 tapfd;
 };
 
-static void	tls_client_free(struct tls_client *);
+static void	 tls_client_free(struct tls_client *);
+
+const char	*netname;
 
 #ifdef _WIN32
         #include <winsock2.h>
@@ -179,10 +182,52 @@ out:
 void
 client_onread_cb(struct bufferevent *bev, void *arg)
 {
-	(void)bev;
-	(void)arg;
+	json_error_t		 error;
+	json_t			*jmsg = NULL;
+	struct tls_client	*c = arg;
+	size_t			 n_read_out;
+	const char		*action;
+	const char		*ipaddr;
+	char			*msg = NULL;
 
-	printf("on read cb\n");
+	while (evbuffer_get_length(bufferevent_get_input(bev)) > 0) {
+
+		if ((msg = evbuffer_readln(bufferevent_get_input(bev),
+		    &n_read_out, EVBUFFER_EOL_LF)) == NULL) {
+			/* XXX timeout timer */
+			return;
+		}
+
+		if ((jmsg = json_loadb(msg, n_read_out, 0, &error)) == NULL) {
+			log_warnx("%s: json_loadb", __func__);
+			goto error;
+		}
+
+		if (json_unpack(jmsg, "{s:s}", "action", &action) < 0) {
+			log_warnx("%s: json_unpack action", __func__);
+			goto error;
+		}
+
+		if (strcmp(action, "networkinfo") == 0) {
+
+			if (json_unpack(jmsg, "{s:s}", "ipaddr", &ipaddr)
+			    < 0) {
+				log_warnx("%s: json_unpack ipaddr", __func__);
+				goto error;
+			}
+
+			switch_init(c->tapcfg, c->tapfd, ipaddr, netname);
+		}
+	}
+
+	json_decref(jmsg);
+	free(msg);
+	return;
+
+error:
+	json_decref(jmsg);
+	free(msg);
+	bufferevent_free(bev);
 }
 
 void
@@ -343,6 +388,7 @@ control_init(const char *network_name)
 	log_init(2, LOG_DAEMON);
 
 	printf("network name: %s\n", network_name);
+	netname = network_name;
 
 	if (ndb_network(network_name, &pvkey, &cert, &cacert) < 0) {
 		log_warnx("%s: the network doesn't exist: %s\n",

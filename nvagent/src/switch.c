@@ -51,6 +51,7 @@ struct dtls_peer {
 	enum dtls_state	 state;
 	SSL		*ssl;
 	tapcfg_t	*tapcfg;
+	int		 tapfd;
 	int		 sock;
 };
 
@@ -242,7 +243,7 @@ error:
 }
 
 int
-agent_connect(const char *network_name)
+switch_connect(const char *network_name)
 {
 	BIO			*bio = NULL;
 	EC_KEY			*ecdh;
@@ -346,24 +347,27 @@ agent_connect(const char *network_name)
 }
 
 int
-agent_init()
+switch_init(tapcfg_t *tapcfg, int tapfd, const char *ipaddr,
+    const char *network_name)
 {
 	struct event		*ev_iface;
 	struct dtls_peer	*p;
-	int			 iface_fd = 0;
 
 	eth_ping.ethertype = htons(0x9000);
 	p = &switch_peer;
 
-	if ((iface_fd = tapcfg_start(p->tapcfg, "netvirt0", 1)) < 0) {
-		fprintf(stderr, "tapcfg_start\n");
-		return (-1);
-	}
+	p->tapcfg = tapcfg;
+	p->tapfd = tapfd;
 
-	if ((ev_iface = event_new(ev_base, iface_fd,
+	tapcfg_iface_set_status(tapcfg, TAPCFG_STATUS_IPV4_UP);
+	tapcfg_iface_set_ipv4(tapcfg, ipaddr, 24);
+
+	if ((ev_iface = event_new(ev_base, tapfd,
 	    EV_READ | EV_PERSIST, iface_cb, p)) == NULL)
 		warn("%s:%d", "event_new", __LINE__);
 	event_add(ev_iface, NULL);
+
+	switch_connect(network_name);
 
 	return (0);	
 }
