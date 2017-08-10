@@ -21,6 +21,7 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
+#include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <event2/bufferevent_ssl.h>
 #include <event2/listener.h>
@@ -49,7 +50,7 @@ struct node {
 	char			*network_uid;
 	char			*description;
 	char			*uid;
-	char			*ipaddress;
+	char			*ipaddr;
 	struct tls_peer		*peer;
 };
 
@@ -59,6 +60,7 @@ struct tls_peer {
 	struct bufferevent	*bev;
 	struct certinfo		*ci;
 	struct vnetwork		*vnet;
+	struct node		*node;
 	SSL			*ssl;
 	SSL_CTX			*ctx;
 	socklen_t		 ss_len;
@@ -170,7 +172,7 @@ vnetwork_free(struct vnetwork *vnet)
 
 struct node *
 node_new(const char *network_uid, const char *description, const char *uid,
-    const char *ipaddress)
+    const char *ipaddr)
 {
 	struct node	*node;
 
@@ -181,12 +183,12 @@ node_new(const char *network_uid, const char *description, const char *uid,
 	node->network_uid = NULL;
 	node->description = NULL;
 	node->uid = NULL;
-	node->ipaddress = NULL;
+	node->ipaddr = NULL;
 
 	if ((node->network_uid = strdup(network_uid)) == NULL ||
 	    (node->description = strdup(description)) == NULL ||
 	    (node->uid = strdup(uid)) == NULL ||
-	    (node->ipaddress = strdup(ipaddress)) == NULL) {
+	    (node->ipaddr = strdup(ipaddr)) == NULL) {
 		log_warn("%s: strdup", __func__);
 		goto error;
 	}
@@ -208,7 +210,7 @@ node_free(struct node *node)
 	free(node->network_uid);
 	free(node->description);
 	free(node->uid);
-	free(node->ipaddress);
+	free(node->ipaddr);
 	free(node);
 }
 
@@ -287,14 +289,14 @@ tls_peer_free(struct tls_peer *p)
 
 int
 node_listall_cb(void *arg, int left, const char *network_uid,
-    const char *description, const char *uid, const char *ipaddress)
+    const char *description, const char *uid, const char *ipaddr)
 {
 	struct node	*node = NULL;
 	struct vnetwork	 needle, *vnet;
 
 	printf("node: %s\n", description);
 
-	if ((node = node_new(network_uid, description, uid, ipaddress))
+	if ((node = node_new(network_uid, description, uid, ipaddr))
 	    == NULL) {
 		log_warnx("%s: node_new", __func__);
 		goto error;
@@ -378,6 +380,8 @@ cert_verify_cb(int ok, X509_STORE_CTX *store)
 			ok = 0;
 			goto out;
 		}
+
+		p->node = node;
 	}
 
 out:
@@ -426,16 +430,86 @@ error:
 	return (SSL_TLSEXT_ERR_ALERT_FATAL);
 }
 
-void
-xmit_agent_info(struct tls_peer *p)
+int
+xmit_networkinfo(struct tls_peer *p)
 {
+	json_t		*jmsg = NULL;
+	char		*msg = NULL;
 
+	if ((jmsg = json_pack("{s:s, s:s}",
+	    "action", "networkinfo",
+	    "ipaddr", p->node->ipaddr)) == NULL) {
+		log_warnx("%s: json_pack", __func__);
+		goto error;
+	}
+
+	if ((msg = json_dumps(jmsg, 0)) == NULL) {
+		log_warnx("%s: json_dumps", __func__);
+		goto error;
+	}
+
+	if (bufferevent_write(p->bev, msg, strlen(msg)) != 0) {
+		log_warnx("%s: bufferevent_write", __func__);
+		goto error;
+	}
+
+	if (bufferevent_write(p->bev, "\n", strlen("\n")) != 0) {
+		log_warnx("%s: bufferevent_write", __func__);
+		goto error;
+	}
+
+	return (0);
+
+error:
+	json_decref(jmsg);
+	free(msg);
+	return (-1);
 }
 
 void
 tls_peer_onread_cb(struct bufferevent *bev, void *arg)
 {
-	printf("tls_peer_onread_cb");
+	json_error_t		 error;
+	json_t			*jmsg = NULL;
+	struct tls_peer		*p = arg;
+	size_t			 n_read_out;
+	const char		*action;
+	char			*msg = NULL;
+
+	while (evbuffer_get_length(bufferevent_get_input(bev)) > 0) {
+
+		if ((msg = evbuffer_readln(bufferevent_get_input(bev),
+		    &n_read_out, EVBUFFER_EOL_LF)) == NULL) {
+			/* XXX timeout timer */
+			return;
+		}
+
+		if ((jmsg = json_loadb(msg, n_read_out, 0, &error)) == NULL) {
+			log_warnx("%s: json_loadb: %s", __func__, error.text);
+			goto error;
+		}
+
+		if (json_unpack(jmsg, "{s:s}", "action", &action) < 0) {
+			log_warnx("%s: json_unpack", __func__);
+			goto error;
+		}
+
+		if (strcmp(action, "nodeinfo") == 0) {
+			if (xmit_networkinfo(p) < 0) {
+				log_warnx("%s: xmit_networkinfo", __func__);
+				goto error;
+			}
+		}
+	}
+
+	json_decref(jmsg);
+	free(msg);
+	return;
+
+error:
+	json_decref(jmsg);
+	free(msg);
+	bufferevent_free(bev);
 }
 
 void
@@ -446,8 +520,6 @@ tls_peer_onevent_cb(struct bufferevent *bev, short events, void *arg)
 	if (events & BEV_EVENT_CONNECTED) {
 
 		printf("event connected\n");
-
-		//xmit_agent_nodeinfo(p);
 
 	} else if (events & (BEV_EVENT_ERROR | BEV_EVENT_TIMEOUT | BEV_EVENT_EOF)) {
 
@@ -463,8 +535,6 @@ listen_accept_cb(struct evconnlistener *listener, int fd,
     struct sockaddr *address, int socklen, void *arg)
 {
 	struct tls_peer		*p;
-
-	printf("listen_accept_cb\n");
 
 	if ((p = tls_peer_new()) == NULL) {
 		log_warnx("%s: tls_peer_new", __func__);
