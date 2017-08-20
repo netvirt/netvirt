@@ -75,25 +75,25 @@ static int		 cert_verify_cb(int, X509_STORE_CTX *);
 static int		 servername_cb(SSL *, int *, void *);
 
 static int		 tls_peer_cmp(const struct tls_peer *,
-		    const struct tls_peer *);
+			    const struct tls_peer *);
 static struct tls_peer	*tls_peer_new(void);
 static void		 tls_peer_free(struct tls_peer *);
 
 static int		 vnetwork_cmp(const struct vnetwork *,
-		    const struct vnetwork *);
+			    const struct vnetwork *);
 static struct		 vnetwork *vnetwork_new(const char *, const char *,
-		    const char *,const char *);
+			    const char *,const char *);
 static void		 vnetwork_free(struct vnetwork *vnet);
 
 static int	 	 node_cmp(const struct node *, const struct node *);
 static struct node	*node_new(const char *, const char *, const char *,
-		    const char *);
+			    const char *);
 static void		 node_free(struct node *node);
 
 static int		 network_listall_cb(void *, int, const char *,
-		    const char *, const char *, const char *);
+			    const char *, const char *, const char *);
 static int		node_listall_cb(void *, int, const char *, const char *,
-		    const char *, const char *);
+			    const char *, const char *);
 
 RB_PROTOTYPE_STATIC(vnetwork_tree, vnetwork, entry, vnetwork_cmp);
 RB_PROTOTYPE_STATIC(tls_peer_tree, tls_peer, entry, tls_peer_cmp);
@@ -104,8 +104,10 @@ tls_peer_cmp(const struct tls_peer *a, const struct tls_peer *b)
 {
         if (a->ss_len < b->ss_len)
                 return (-1);
+
         if (b->ss_len > b->ss_len)
                 return (1);
+
         return (memcmp(&a->ss, &b->ss, a->ss_len));
 }
 
@@ -154,7 +156,6 @@ vnetwork_new(const char *uid, const char *cert, const char *pvkey,
 
 error:
 	vnetwork_free(vnet);
-
 	return (NULL);
 }
 
@@ -197,7 +198,6 @@ node_new(const char *network_uid, const char *description, const char *uid,
 
 error:
 	node_free(node);
-
 	return (NULL);
 }
 
@@ -316,7 +316,6 @@ node_listall_cb(void *arg, int left, const char *network_uid,
 
 error:
 	node_free(node);
-
 	return (-1);
 }
 
@@ -339,7 +338,6 @@ network_listall_cb(void *arg, int left, const char *uid, const char *cert,
 
 error:
 	vnetwork_free(vnet);
-
 	return (-1);
 }
 
@@ -386,7 +384,6 @@ cert_verify_cb(int ok, X509_STORE_CTX *store)
 	}
 
 out:
-
 	return (ok);
 }
 
@@ -427,7 +424,6 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 	return (SSL_TLSEXT_ERR_OK);
 
 error:
-
 	return (SSL_TLSEXT_ERR_ALERT_FATAL);
 }
 
@@ -511,6 +507,7 @@ error:
 	json_decref(jmsg);
 	free(msg);
 	bufferevent_free(bev);
+	return;
 }
 
 void
@@ -557,7 +554,6 @@ listen_accept_cb(struct evconnlistener *listener, int fd,
 
 error:
 	tls_peer_free(p);
-
 	return;
 }
 
@@ -601,7 +597,6 @@ agent_control_init(void)
 	return (0);
 
 error:
-
 	return (-1);
 }
 
