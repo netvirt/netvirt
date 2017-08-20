@@ -741,12 +741,12 @@ node_provisioning(const char *msg, char **resp)
 		log_warnx("%s: invalid provkey tokens", __func__);
 		goto cleanup;
 	}
-
+/*
 	if (dao_node_delete_provkey(network_uid, node_uid, provkey) < 0) {
 		log_warnx("%s: dao_node_delete_provkey", __func__);
 		goto cleanup;
 	}
-
+*/
 	if (dao_network_get_embassy(network_uid,
 	    &cacert, &pvkey, &serial_str) < 0) {
 		log_warnx("%s: dao_network_get_embassy", __func__);

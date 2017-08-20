@@ -149,6 +149,7 @@ dtls_handshake_timeout_cb(int fd, short event, void *arg)
 int
 dtls_handle(struct dtls_peer *p)
 {
+	printf("dtls handle\n");
 	struct timeval	tv;
 	enum dtls_state	next_state;
 	int		ret;
@@ -215,6 +216,7 @@ iface_cb(int sock, short what, void *arg)
 
 	p = arg;
 
+	printf("iface cb\n");
 	ret = tapcfg_read(p->tapcfg, buf, sizeof(buf));
 	// XXX check ret
 

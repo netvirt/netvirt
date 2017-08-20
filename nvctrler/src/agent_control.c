@@ -233,8 +233,9 @@ tls_peer_new(void)
 		goto error;
 	}
 
-	if (SSL_CTX_set_cipher_list(p->ctx, "ECDHE-ECDSA-CHACHA20-POLY1305")
-	    != 1) {
+	if (SSL_CTX_set_cipher_list(p->ctx,
+	    "ECDHE-ECDSA-CHACHA20-POLY1305,"
+	    "ECDHE-ECDSA-AES256-GCM-SHA384") != 1) {
 		log_warnx("%s: SSL_CTX_set_cipher", __func__);
 		goto error;
 	}
