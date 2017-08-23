@@ -6,6 +6,8 @@ set(NVCORE_SRCS
 	bitv.c
 	log.c
 	pki.c
+
+	bsd-asprintf.c
 )
 
 add_library(nvcore ${NVCORE_SRCS})
