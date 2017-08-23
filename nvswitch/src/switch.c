@@ -66,6 +66,7 @@ enum dtls_state {
 struct dtls_peer {
 	RB_ENTRY(dtls_peer)	 entry;
 	RB_ENTRY(dtls_peer)	 vn_entry;
+	struct lladdr		*lladdr;
 	struct sockaddr_storage  ss;
 	struct event		*handshake_timer;
 	struct event		*ping_timer;
@@ -195,6 +196,7 @@ dtls_peer_new(int sock)
 	p->state = DTLS_LISTEN;
 	p->handshake_timer = NULL;
 	p->ping_timer = NULL;
+	p->lladdr = NULL;
 
 	if ((p->handshake_timer = evtimer_new(ev_base,
 	    dtls_handshake_timeout_cb, p)) == NULL) {
@@ -258,6 +260,8 @@ dtls_peer_free(struct dtls_peer *p)
 		RB_REMOVE(dtls_peer_tree, &dtls_peers, p);
 	if (p->vnet != NULL)
 		RB_REMOVE(vnet_peer_tree, &p->vnet->peers, p);
+	if (p->lladdr != NULL)
+		RB_REMOVE(vnet_lladdr_tree, &p->vnet->arpcache, p->lladdr);
 
 	event_free(p->handshake_timer);
 	event_free(p->ping_timer);
@@ -286,6 +290,7 @@ lladdr_new(struct dtls_peer *p, uint8_t *macaddr)
 	}
 
 	l->peer = p;
+	p->lladdr = l;
 	memcpy(l->macaddr, macaddr, ETHER_ADDR_LEN);
 
 	return (l);
@@ -298,13 +303,15 @@ error:
 void
 link_switch_recv(struct dtls_peer *p, uint8_t *frame, size_t len)
 {
-	int ret;
-	struct lladdr	*l, *ll, needle;
-	uint8_t	saddr[ETHER_ADDR_LEN];
+	struct dtls_peer	*pp;
+	struct lladdr		*l, *ll, needle;
+	uint8_t			 saddr[ETHER_ADDR_LEN];
 
 	if (inet_ethertype(frame) == ETHERTYPE_PING) {
-		SSL_write(p->ssl, frame, len);
-		printf("got ping !\n");
+		if (SSL_write(p->ssl, frame, len) <= 0) {
+			log_warnx("%s: SSL_write", __func__);
+			goto cleanup;
+		}
 		return;
 	}
 
@@ -325,14 +332,17 @@ link_switch_recv(struct dtls_peer *p, uint8_t *frame, size_t len)
 	inet_macaddr_dst(frame, needle.macaddr);
 	if ((ll = RB_FIND(vnet_lladdr_tree, &p->vnet->arpcache, &needle))
 	    != NULL) {
-		ret = SSL_write(ll->peer->ssl, frame, len);
-		// XXX check fail
+		if (SSL_write(ll->peer->ssl, frame, len) <= 0) {
+			log_warnx("%s: SSL_write", __func__);
+			goto cleanup;
+		}
 	} else {
-		RB_FOREACH(ll, vnet_lladdr_tree, &p->vnet->arpcache) {
-			if (memcmp(ll->macaddr, saddr, sizeof(ll->macaddr))
-			    != 0) {
-				ret = SSL_write(ll->peer->ssl, frame, len);
-				// XXX check fail
+		RB_FOREACH(pp, vnet_peer_tree, &p->vnet->peers) {
+			if (pp != p) {
+				if (SSL_write(pp->ssl, frame, len) <= 0) {
+					log_warnx("%s: SSL_write", __func__);
+					goto cleanup;
+				}
 			}
 		}
 	}

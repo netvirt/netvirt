@@ -56,7 +56,7 @@ fi
 
 ###
 testname="Add node"
-NODE_DESC="pc-home"
+NODE_DESC="pc-home3"
 curl -i -H 'X-netvirt-apikey: '${APIKEY}'' -H 'Content-Type: application/json' -d '{"network_description":"'${NET_DESC}'", "description":"'${NODE_DESC}'"}' \
 -X POST http://127.0.0.1:8080/v1/node | grep "201 Created"
 
@@ -65,6 +65,8 @@ if [ "$?" != "0" ]; then
 else
 	printf "\e[0;32m ${testname} \e[0m\n"
 fi
+
+exit
 
 ###
 testname="Add node2"
