@@ -120,10 +120,8 @@ main(int argc, char *argv[])
 	if (provcode != NULL && network_name != NULL) {
 		if (ndb_provisioning(provcode, network_name) < 0)
 			usage();
-		return(0);
-	}
-
-	control_init(network_name);
+	} else
+		control_init(network_name);
 
 	event_base_dispatch(ev_base);
 	event_base_free(ev_base);
