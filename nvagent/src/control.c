@@ -262,6 +262,7 @@ tls_client_new(const char *hostname, const char *port, passport_t *passport)
 	struct addrinfo		*res = NULL;
 	struct addrinfo		 hints;
 	EC_KEY			*ecdh = NULL;
+	unsigned long		 e;
 	int			 fd = -1;
 	int			 flag;
 	int			 ret;
@@ -303,6 +304,9 @@ tls_client_new(const char *hostname, const char *port, passport_t *passport)
 
 	if ((c->ctx = SSL_CTX_new(TLSv1_2_client_method())) == NULL) {
 		log_warnx("%s: SSL_CTX_new", __func__);
+		while ((e = ERR_get_error()))
+			log_warnx("%s", ERR_error_string(e, NULL));
+
 		goto cleanup;
 	}
 
