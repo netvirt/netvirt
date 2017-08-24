@@ -391,7 +391,10 @@ control_init(const char *network_name)
 	const char		*cacert;
 
 	// XXX init globally
+	SSL_library_init();
 	SSL_load_error_strings();
+	OpenSSL_add_all_algorithms();
+
 	log_init(2, LOG_DAEMON);
 
 	printf("network name: %s\n", network_name);
