@@ -310,9 +310,12 @@ tls_client_new(const char *hostname, const char *port, passport_t *passport)
 		goto cleanup;
 	}
 
-	if (SSL_CTX_set_cipher_list(c->ctx, "ECDHE-ECDSA-CHACHA20-POLY1305")
-	    != 1) {
+	if (SSL_CTX_set_cipher_list(c->ctx,
+	    "ECDHE-ECDSA-CHACHA20-POLY1305,"
+	    "ECDHE-ECDSA-AES256-GCM-SHA384") != 1) {
 		log_warnx("%s: SSL_CTX_set_cipher", __func__);
+		while ((e = ERR_get_error()))
+			log_warnx("%s", ERR_error_string(e, NULL));
 		goto cleanup;
 	}
 
