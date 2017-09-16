@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 
-include_directories("../libnvcore/src/")
+include_directories("../libnv/src/")
 
 add_subdirectory(src)
 

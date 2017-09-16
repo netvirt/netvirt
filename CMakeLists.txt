@@ -43,7 +43,7 @@ else()
 	set(library_dest_dir lib)
 endif()
 
-add_subdirectory(libnvcore)
+add_subdirectory(libnv)
 
 option (WITH_NVAGENT "WITH_NVAGENT" ON)
 

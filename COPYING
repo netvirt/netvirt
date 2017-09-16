@@ -5,6 +5,6 @@ which case that license applies to the file in question.
     - nvagent: GPLv3
     - nvswitch: AGPLv3
     - nvctrler: AGPLv3
-    - libnvcore: AGPLv3
+    - libnv: AGPLv3
 
 
