@@ -6,7 +6,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 	set(compat_src bsd-asprintf.c)
 endif (CMAKE_SYSTEM_NAME MATCHES "Linux")
 
-set(NVCORE_SRCS
+set(NV_SRCS
 	bitv.c
 	log.c
 	pki.c
@@ -14,5 +14,5 @@ set(NVCORE_SRCS
 	${compat_src}
 )
 
-add_library(nvcore ${NVCORE_SRCS})
+add_library(nv ${NV_SRCS})
 

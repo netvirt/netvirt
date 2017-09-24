@@ -70,21 +70,21 @@ include_directories("${CMAKE_SOURCE_DIR}/tapcfg/src/include/")
 if (APPLE)
 	target_link_libraries(netvirt-agent
 		${CMAKE_SOURCE_DIR}/tapcfg/build/libtapcfg.a
-		nvcore
+		nv
 		ssl
 		crypto
 	)
 elseif (WIN32)
 	target_link_libraries(netvirt-agent
 		config
-		nvcore
+		nv
 		${CMAKE_SOURCE_DIR}/tapcfg/build/tapcfg.dll
 		${OPENSSL_LIBRARIES}
 	)
 else()
 	target_link_libraries(netvirt-agent
 		tapcfg
-		nvcore
+		nv
 		ssl
 		crypto
 		event_core

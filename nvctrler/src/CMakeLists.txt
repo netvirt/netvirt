@@ -18,7 +18,7 @@ add_executable(netvirt-controller
 )
 
 target_link_libraries(netvirt-controller
-	nvcore
+	nv
 	pq
 	jansson
 	event_core

@@ -11,7 +11,7 @@ add_executable(netvirt-switch
 )
 
 target_link_libraries(netvirt-switch
-	nvcore
+	nv
 	jansson
 	event_core
 	event_extra
