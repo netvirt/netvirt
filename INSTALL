@@ -16,10 +16,10 @@ deb http://download.opensuse.org/repositories/home:/netvirt/xUbuntu_14.10 ./
 
 Then add _one_ the following signature keys:
 
-wget -qO - 'http://download.opensuse.org/repositories/home:netvirt/Debian_7.0/Release.key' | sudo apt-key add -
-wget -qO - 'http://download.opensuse.org/repositories/home:netvirt/Debian_8.0/Release.key' | sudo apt-key add -
-wget -qO - 'http://download.opensuse.org/repositories/home:netvirt/xUbuntu_12.04/Release.key' | sudo apt-key add -
-wget -qO - 'http://download.opensuse.org/repositories/home:netvirt/xUbuntu_14.10/Release.key' | sudo apt-key add -
+wget -qO - 'http://download.opensuse.org/repositories/home:/netvirt/Debian_7.0/Release.key' | sudo apt-key add -
+wget -qO - 'http://download.opensuse.org/repositories/home:/netvirt/Debian_8.0/Release.key' | sudo apt-key add -
+wget -qO - 'http://download.opensuse.org/repositories/home:/netvirt/xUbuntu_12.04/Release.key' | sudo apt-key add -
+wget -qO - 'http://download.opensuse.org/repositories/home:/netvirt/xUbuntu_14.04/Release.key' | sudo apt-key add -
 
 Then install the package:
 
