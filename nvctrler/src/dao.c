@@ -270,7 +270,7 @@ dao_prepare_statements()
 			"dao_node_list",
 			"SELECT node.uid, node.description, node.provkey, node.ipaddress, node.status "
 			"FROM node, network "
-			"WHERE network.uid = $1 "
+			"WHERE network_uid = $1 "
 			"AND network.client_id = (SELECT id FROM client WHERE apikey = crypt($2, apikey) AND status = 1);",
 			0,
 			NULL);
