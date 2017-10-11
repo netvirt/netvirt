@@ -882,10 +882,14 @@ dao_network_list(const char *apikey,
 		return (-1);
 	}
 
-	tuples = PQntuples(result);
-
-	for (i = 0; i < tuples; i++)
-		cb(PQgetvalue(result, i, 0), PQgetvalue(result, i, 1), arg);
+	if ((tuples = PQntuples(result)) > 0) {
+		for (i = 0; i < tuples; i++)
+			cb(PQgetvalue(result, i, 0),
+			    PQgetvalue(result, i, 1), arg);
+	} else {
+		PQclear(result);
+		return (-1);
+	}
 
 	PQclear(result);
 
