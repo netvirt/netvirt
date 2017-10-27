@@ -48,6 +48,11 @@ v1_client_create_cb(struct evhttp_request *req, void *arg)
 	code = 500;
 	phrase = "Internal Server Error";
 
+	if (evhttp_request_get_command(req) == EVHTTP_REQ_OPTIONS) {
+		evhttp_send_reply(req, 200, "OK", NULL);
+		return;
+	}
+
 	if (evhttp_request_get_command(req) != EVHTTP_REQ_POST) {
 		log_warnx("%s: evhttp_request_get_command", __func__);
 		goto out;
@@ -92,6 +97,11 @@ v1_client_activate_cb(struct evhttp_request *req, void *arg)
 
 	code = 500;
 	phrase = "Internal Server Error";
+
+	if (evhttp_request_get_command(req) == EVHTTP_REQ_OPTIONS) {
+		evhttp_send_reply(req, 200, "OK", NULL);
+		return;
+	}
 
 	if (evhttp_request_get_command(req) != EVHTTP_REQ_POST) {
 		log_warnx("%s: evhttp_request_get_command", __func__);
@@ -139,6 +149,11 @@ v1_client_get_newapikey_cb(struct evhttp_request *req, void *arg)
 
 	code = 500;
 	phrase = "Internal Server Error";
+
+	if (evhttp_request_get_command(req) == EVHTTP_REQ_OPTIONS) {
+		evhttp_send_reply(req, 200, "OK", NULL);
+		return;
+	}
 
 	if (evhttp_request_get_command(req) != EVHTTP_REQ_POST) {
 		log_warnx("%s: evhttp_request_get_command", __func__);
@@ -207,6 +222,11 @@ v1_client_get_newresetkey_cb(struct evhttp_request *req, void *arg)
 	code = 500;
 	phrase = "Internal Server Error";
 
+	if (evhttp_request_get_command(req) == EVHTTP_REQ_OPTIONS) {
+		evhttp_send_reply(req, 200, "OK", NULL);
+		return;
+	}
+
 	if (evhttp_request_get_command(req) != EVHTTP_REQ_POST) {
 		log_warnx("%s: evhttp_request_get_command", __func__);
 		goto cleanup;
@@ -272,6 +292,11 @@ v1_client_update_password_cb(struct evhttp_request *req, void *arg)
 
 	code = 500;
 	phrase = "Internal Server Error";
+
+	if (evhttp_request_get_command(req) == EVHTTP_REQ_OPTIONS) {
+		evhttp_send_reply(req, 200, "OK", NULL);
+		return;
+	}
 
 	if (evhttp_request_get_command(req) != EVHTTP_REQ_POST) {
 		log_warnx("%s: evhttp_request_get_command", __func__);
@@ -453,6 +478,11 @@ out:
 void
 v1_network_cb(struct evhttp_request *req, void *arg)
 {
+	if (evhttp_request_get_command(req) == EVHTTP_REQ_OPTIONS) {
+		evhttp_send_reply(req, 200, "OK", NULL);
+		return;
+	}
+
 	if (evhttp_request_get_command(req) == EVHTTP_REQ_GET)
 		v1_network_list(req, arg);
 	else if (evhttp_request_get_command(req) == EVHTTP_REQ_POST)
@@ -635,7 +665,11 @@ out:
 void
 v1_node_cb(struct evhttp_request *req, void *arg)
 {
-	if (evhttp_request_get_command(req) == EVHTTP_REQ_GET)
+	if (evhttp_request_get_command(req) == EVHTTP_REQ_OPTIONS) {
+		evhttp_send_reply(req, 200, "OK", NULL);
+		return;
+	}
+	else if (evhttp_request_get_command(req) == EVHTTP_REQ_GET)
 		v1_node_list(req, arg);
 	else if (evhttp_request_get_command(req) == EVHTTP_REQ_POST)
 		v1_node_create(req, arg);
@@ -711,6 +745,9 @@ restapi_init(json_t *config, struct event_base *evbase)
 
 	if ((http = evhttp_new(evbase)) == NULL)
 		errx(1, "evhttp_new");
+
+	evhttp_set_allowed_methods(http, EVHTTP_REQ_GET | EVHTTP_REQ_POST |
+	    EVHTTP_REQ_DELETE | EVHTTP_REQ_OPTIONS);
 
 	if (evhttp_set_cb(http, "/v1/client", v1_client_create_cb, NULL) < 0)
 		errx(1, "evhttp_set_cb /v1/client");
