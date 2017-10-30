@@ -707,7 +707,7 @@ node_provisioning(const char *msg, char **resp)
 	char		*node_cert;
 	char		 serial_up[10]; // XXX store int serial
 
-	ret = 0;
+	ret = -1;
 
 	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
 		log_warnx("%s: json_loadb: %s", __func__, error.text);
