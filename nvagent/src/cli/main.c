@@ -32,14 +32,10 @@ usage(void)
 {
 	extern char	*__progname;
 	fprintf(stderr, "usage: %s\n"
-	    "\t-p\tprovisioning key\n"
-	    "\t-n\tnetwork name\n"
-	    "\t-l\tlist provisioned networks\n"
-	    "\t-h\thelp\n"
-	    "\n\tProvisioning a new network: ./%s -p your_provisioning_key "
-	    "-n my_new_network\n"
-	    "\tConnecting to a provisioned network: ./%s -n my_new_network\n"
-	    , __progname, __progname, __progname);
+	    "\t-k\tConfigure new network [provisioning key]\n"
+	    "\t-l\tList networks\n"
+	    "\t-c\tConnect [network name]\n"
+	    "\t-h\thelp\n", __progname);
 	exit(1);
 }
 
@@ -61,18 +57,20 @@ main(int argc, char *argv[])
 	int		 list_networks = 0;
 	char		*provcode = NULL;
 	char		*network_name = NULL;
+	char		 new_name[64];
+	char		 line[64];
 
-	while ((ch = getopt(argc, argv, "hp:n:l")) != -1) {
+	while ((ch = getopt(argc, argv, "hk:lc:")) != -1) {
 
 		switch (ch) {
-		case 'p':
+		case 'k':
 			provcode = optarg;
-			break;
-		case 'n':
-			network_name = optarg;
 			break;
 		case 'l':
 			list_networks = 1;
+			break;
+		case 'c':
+			network_name = optarg;
 			break;
 		case 'h':
 		default:
@@ -81,12 +79,6 @@ main(int argc, char *argv[])
 	}
 	argc -= optind;
 	argv += optind;
-
-	if (provcode != NULL && network_name == NULL) {
-		fprintf(stderr, "%s: You must specify a network name and"
-		    "a provisioning code\n", __func__);
-		usage();
-	}
 
 	if (ndb_init() < 0) {
 		fprintf(stderr, "%s: db_init\n", __func__);
@@ -117,10 +109,19 @@ main(int argc, char *argv[])
 	}
 	event_add(ev_sigterm, NULL);
 
-	if (provcode != NULL && network_name != NULL) {
-		if (ndb_provisioning(provcode, network_name) < 0)
+	char *p;
+	if (provcode != NULL) {
+		printf("Give this network a name: ");
+		if (fgets(new_name, sizeof(new_name)-1, stdin) == NULL)
+			fatalx("fgets");
+
+		if ((p = strchr(new_name, '\n')) != NULL)
+			*p = '\0';
+
+		if (ndb_provisioning(provcode, new_name) < 0)
 			usage();
-	} else
+
+	} else if (network_name)
 		control_init(network_name);
 
 	event_base_dispatch(ev_base);

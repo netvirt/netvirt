@@ -169,7 +169,7 @@ void
 ndb_networks(void)
 {
 	struct network	*n;
-	printf("networks:\n");
+	printf("Networks:\n");
 	RB_FOREACH(n, network_tree, &networks) {
 		printf("\tname \"%s\"\n", n->name);
 	}
@@ -306,7 +306,7 @@ ndb_prov_cb(struct evhttp_request *req, void *arg)
         p = evbuffer_pullup(buf, -1);
 
 	if ((jmsg = json_loadb(p, evbuffer_get_length(buf), 0, &error)) == NULL) {
-		fprintf(stdout, "%s: json_loadb - %s", __func__, error.text);
+		fprintf(stdout, "%s: json_loadb - %s\n", __func__, error.text);
 		goto err;
 	}
 
@@ -320,6 +320,8 @@ ndb_prov_cb(struct evhttp_request *req, void *arg)
 	ndb_network_add(prov_info->network_name, prov_info->pvkey, cert,
 	    cacert);
 
+	printf("Network `%s` successfully provisioned.\n",
+	    prov_info->network_name);
 err:
 	return;
 
