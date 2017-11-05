@@ -181,7 +181,6 @@ ndb_network_add(const char *network_name, const char *pvkey,
     const char *cert, const char *cacert)
 {
 
-	printf("add new network\n");
 	struct network	*n;
 
 	if ((n = malloc(sizeof(struct network))) == NULL) {
@@ -322,6 +321,8 @@ ndb_prov_cb(struct evhttp_request *req, void *arg)
 
 	printf("Network `%s` successfully provisioned.\n",
 	    prov_info->network_name);
+
+	exit(0);
 err:
 	return;
 
