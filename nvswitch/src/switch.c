@@ -105,7 +105,7 @@ static void		 dtls_handshake_timeout_cb(int, short, void *);
 static int		 dtls_peer_cmp(const struct dtls_peer *,
 			    const struct dtls_peer *);
 static int		 vnetwork_cmp(const struct vnetwork *,
-    const struct vnetwork *);
+			    const struct vnetwork *);
 RB_PROTOTYPE_STATIC(vnet_tree, vnetwork, entry, vnetwork_cmp);
 RB_PROTOTYPE_STATIC(vnet_peer_tree, dtls_peer, vn_entry, dtls_peer_cmp);
 RB_PROTOTYPE_STATIC(dtls_peer_tree, dtls_peer, entry, dtls_peer_cmp);
