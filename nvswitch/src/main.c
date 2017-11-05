@@ -52,6 +52,9 @@ main(int argc, char *argv[])
 		fatalx("json_load_file: line: %d error: %s",
 		    error.line, error.text);
 
+	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+		fatal("signal");
+
 	if ((ev_base = event_base_new()) == NULL)
 		fatalx("event_base_new");
 

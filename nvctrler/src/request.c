@@ -440,6 +440,8 @@ network_list(const char *apikey, char **resp)
 		goto cleanup;
 	}
 
+	printf("apikey: %s\n", apikey);
+
 	if (dao_network_list(apikey, network_list_cb, array) < 0) {
 		log_warnx("%s: dao_network_list", __func__);
 		goto cleanup;
@@ -804,6 +806,10 @@ node_list_cb(const char *uid, const char *description, const char *provkey,
 	json_t	*array;
 	json_t	*node;
 
+	printf("uid: %s\n", uid);
+	printf("description: %s\n", description);
+	printf("provkey: %s\n", provkey);
+
 	array = arg;
 	node = json_object();
 
@@ -825,6 +831,9 @@ node_list(const char *network_uid, const char *apikey, char **resp)
 	int	 ret;
 
 	ret = -1;
+
+	printf("network_uid: %s\n", network_uid);
+	printf("apikey: %s\n", apikey);
 
 	if ((array = json_array()) == NULL) {
 		log_warnx("%s: json_array", __func__);

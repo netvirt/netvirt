@@ -40,23 +40,32 @@
 
 #include "switch.h"
 
-static int	 request_node_list();
-static int	 request_network_list();
+struct peer {
+	struct bufferevent	*bufev;
+	SSL			*ssl;
+	SSL_CTX			*ctx;
+	int			 fd;
+};
 
-static int	 response_node_delete(json_t *);
-static int	 response_network_delete(json_t *);
-static int	 response_node_list(json_t *);
-static int	 response_network_list(json_t *);
+static int		 request_node_list();
+static int		 request_network_list();
 
-static void	 on_read_cb(struct bufferevent *, void *);
-static void	 on_event_cb(struct bufferevent *, short, void *);
+static int		 response_node_delete(json_t *);
+static int		 response_network_delete(json_t *);
+static int		 response_node_list(json_t *);
+static int		 response_network_list(json_t *);
 
-static int	 new_peer();
-static DH	*get_dh_1024();
-static SSL_CTX	*evssl_init();
+static void		 on_read_cb(struct bufferevent *, void *);
+static void		 on_event_cb(struct bufferevent *, short, void *);
 
-static struct bufferevent	*bufev_sock;
-static passport_t		*passport;
+static struct peer	*peer_new();
+static void		 peer_free(struct peer *);
+
+static DH		*get_dh_1024();
+static SSL_CTX		*evssl_init();
+
+static passport_t	*passport;
+static struct peer	*peer;
 
 int
 response_node_delete(json_t *jmsg)
@@ -284,7 +293,7 @@ request_node_list()
 		goto error;
 	}
 
-	if (bufferevent_write_buffer(bufev_sock, buf) < 0) {
+	if (bufferevent_write_buffer(peer->bufev, buf) < 0) {
 		log_warnx("%s: bufferevent_write_buffer", __func__);
 		goto error;
 	}
@@ -340,7 +349,7 @@ request_network_list()
 		goto error;
 	}
 
-	if (bufferevent_write_buffer(bufev_sock, buf) < 0) {
+	if (bufferevent_write_buffer(peer->bufev, buf) < 0) {
 		log_warnx("%s: bufferevent_write_buffer", __func__);
 		goto error;
 	}
@@ -381,7 +390,6 @@ on_read_cb(struct bufferevent *bev, void *arg)
 			goto error;
 		}
 
-	printf("action: %s\n", action);
 		if (strcmp(action, "switch-network-list") == 0) {
 			if ((ret = response_network_list(jmsg)) < 0) {
 				log_warnx("%s: response_network_list", __func__);
@@ -434,7 +442,8 @@ error:
 void
 on_timeout_cb(evutil_socket_t fd, short what, void *arg)
 {
-	new_peer();
+	peer_free(peer);
+	peer = peer_new();
 }
 
 void
@@ -451,11 +460,12 @@ on_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
 
 	} else if (events & (BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
 
-		while ((e = bufferevent_get_openssl_error(bufev_sock)) > 0)
+		while ((e = bufferevent_get_openssl_error(peer->bufev)) > 0)
 			log_warnx("%s: ssl error: %s", __func__,
 			    ERR_error_string(e, NULL));
 
-		bufferevent_free(bufev_sock);
+		bufferevent_free(peer->bufev);
+
 		ev = event_new(ev_base, -1, EV_TIMEOUT, on_timeout_cb, NULL);
 		event_add(ev, &tv);
 	}
@@ -505,12 +515,6 @@ evssl_init()
 	EC_KEY		*ecdh = NULL;
 	SSL_CTX		*ctx = NULL;
 	int		 ret;
-
-	SSL_load_error_strings();
-	SSL_library_init();
-
-	if (!RAND_poll())
-		return (NULL);
 
 	ret = -1;
 	if ((ctx = SSL_CTX_new(TLSv1_2_method())) == NULL) {
@@ -567,71 +571,85 @@ error:
 	return (ctx);
 }
 
-int
-new_peer()
+void
+peer_free(struct peer *p)
 {
-	SSL			*ssl;
-	SSL_CTX			*ctx;
-	struct addrinfo		*res;
+	free(p);
+}
+
+struct peer *
+peer_new()
+{
+	struct peer		*p;
+	struct addrinfo		*res = NULL;
 	struct addrinfo		 hints;
-	int			 ret;
 	int			 flag = 1;
-	int			 fd = -1;
+
+	if ((p = malloc(sizeof(struct peer))) == NULL) {
+		log_warn("%s: malloc", __func__);
+		goto error;
+	}
+	p->ssl = NULL;
+	p->ctx = NULL;
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	getaddrinfo("127.0.0.1", "9093", &hints, &res);
 
-	ret = -1;
-	if ((fd = socket(res->ai_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+	if ((p->fd = socket(res->ai_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
 		log_warn("%s: socket", __func__);
 		goto error;
 	}
 
-	if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(flag)) < 0 ||
-	    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
+	if (setsockopt(p->fd, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(flag)) < 0 ||
+	    setsockopt(p->fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
 		log_warn("%s: setsockopt", __func__);
 		goto error;
 	}
 
-	if (evutil_make_socket_nonblocking(fd) < 0) {
+	if (evutil_make_socket_nonblocking(p->fd) < 0) {
 		log_warn("%s: evutil_make_socket_nonblocking", __func__);
 		goto error;
 	}	
 
-	if ((ctx = evssl_init()) == NULL) {
+	if ((p->ctx = evssl_init()) == NULL) {
 		log_warnx("%s: evssl_init", __func__);
 		goto error;
 	}
 
-	if ((ssl = SSL_new(ctx)) == NULL) {
+	if ((p->ssl = SSL_new(p->ctx)) == NULL) {
 		log_warnx("%s: SSL_new", __func__);
 		goto error;
 	}
 
-	if ((bufev_sock = bufferevent_openssl_socket_new(ev_base, fd, ssl,
+	if ((p->bufev = bufferevent_openssl_socket_new(ev_base, p->fd, p->ssl,
 	    BUFFEREVENT_SSL_CONNECTING, BEV_OPT_CLOSE_ON_FREE)) == NULL) {
 		log_warnx("%s: bufferevent_socket_new failed", __func__);
 		goto error;
 	}
 
-	bufferevent_enable(bufev_sock, EV_READ|EV_WRITE);
-	bufferevent_setcb(bufev_sock, on_read_cb, NULL, on_event_cb, NULL);
+	bufferevent_enable(p->bufev, EV_READ|EV_WRITE);
+	bufferevent_setcb(p->bufev, on_read_cb, NULL, on_event_cb, p);
 
-	if (bufferevent_socket_connect(bufev_sock, res->ai_addr,
+	if (bufferevent_socket_connect(p->bufev, res->ai_addr,
 	    res->ai_addrlen) < 0) {
 		log_warnx("%s: bufferevent_socket_connected failed", __func__);
 		goto error;
 	}
 
-	ret = 0;
+	if (res != NULL)
+		freeaddrinfo(res);
+
+	return (p);
 
 error:
-	if (ret < 0 && bufev_sock != NULL)
-		bufferevent_free(bufev_sock);
-	freeaddrinfo(res);
-	return (ret);
+	if (res != NULL)
+		freeaddrinfo(res);
+
+	peer_free(p);
+
+	return (NULL);
 }
 
 void
@@ -639,6 +657,12 @@ control_init()
 {
 	const char	*cert;
 	const char	*pvkey, *cacert;
+
+	SSL_load_error_strings();
+	SSL_library_init();
+
+	if (!RAND_poll())
+		return (NULL);
 
 	if (json_unpack(config, "{s:s}", "cert", &cert) < 0)
 		fatalx("'cert' not found in config");
@@ -654,15 +678,13 @@ control_init()
 	    pvkey, cacert)) == NULL)
 		fatalx("pki_passport_load_from_file");
 
-	if (new_peer() < 0)
-		fatalx("new_peer");
+	if ((peer = peer_new()) == NULL)
+		fatalx("peer_new");
 }
 
 void
 control_fini()
 {
-	if (bufev_sock != NULL)
-		bufferevent_free(bufev_sock);
 	pki_passport_destroy(passport);
 	//vnetworks_free();
 }
