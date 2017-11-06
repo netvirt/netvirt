@@ -6,7 +6,6 @@ add_executable(netvirt-switch
 	control.c
 	inet.c
 	main.c
-	request.c
 	switch.c
 )
 
