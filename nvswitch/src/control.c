@@ -612,7 +612,7 @@ control_init()
 	SSL_library_init();
 
 	if (!RAND_poll())
-		return (NULL);
+		fatalx("RAND_poll");
 
 	if (json_unpack(config, "{s:s}", "cert", &cert) < 0)
 		fatalx("'cert' not found in config");
