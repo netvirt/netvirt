@@ -66,8 +66,6 @@ else
 	printf "\e[0;32m ${testname} \e[0m\n"
 fi
 
-exit
-
 ###
 testname="Add node2"
 NODE_DESC2="pc-home2"
