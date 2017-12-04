@@ -440,8 +440,6 @@ network_list(const char *apikey, char **resp)
 		goto cleanup;
 	}
 
-	printf("apikey: %s\n", apikey);
-
 	if (dao_network_list(apikey, network_list_cb, array) < 0) {
 		log_warnx("%s: dao_network_list", __func__);
 		goto cleanup;
