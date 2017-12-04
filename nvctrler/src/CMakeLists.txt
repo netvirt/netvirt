@@ -9,12 +9,12 @@ add_subdirectory(tests)
 
 add_executable(netvirt-controller
 	agent_control.c
-	controller.c
 	dao.c
 	ippool.c
 	main.c
 	request.c
 	restapi.c
+	switch_control.c
 )
 
 target_link_libraries(netvirt-controller
