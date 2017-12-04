@@ -463,7 +463,7 @@ int
 network_delete(const char *description, const char *apikey)
 {
 	int	 ret;
-	char	*network_uid;
+	char	*network_uid = NULL;
 
 	ret = -1;
 
@@ -473,11 +473,11 @@ network_delete(const char *description, const char *apikey)
 	}
 
 	switch_network_delete(network_uid);
-	free(network_uid);
 
 	ret = 0;
 
 cleanup:
+	free(network_uid);
 	return (ret);
 }
 
@@ -646,6 +646,7 @@ node_delete(const char *description, const char *apikey)
 	ret = 0;
 
 cleanup:
+	free(node_uid);
 	free(ipaddr);
 	free(network_uid);
 	free(subnet);
