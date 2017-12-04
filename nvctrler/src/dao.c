@@ -165,7 +165,8 @@ dao_prepare_statements()
 			"dao_network_delete",
 			"DELETE FROM network "
 			"WHERE client_id = (SELECT id FROM client WHERE apikey = crypt($2, apikey) AND status = 1) "
-			"AND description = $1;",
+			"AND description = $1 "
+			"RETURNING uid",
 			0,
 			NULL);
 
@@ -823,7 +824,7 @@ dao_network_create(char *client_id,
 }
 
 int
-dao_network_delete(const char *description, const char *apikey)
+dao_network_delete(char **uid, const char *description, const char *apikey)
 {
 	PGresult	*result;
 	int		 paramLengths[2];
@@ -847,8 +848,9 @@ dao_network_delete(const char *description, const char *apikey)
 		return (-1);
 	}
 
-	/* if no row is deleted, return an error */
-	if (strcmp(PQcmdTuples(result), "0") == 0) {
+	if (PQntuples(result) == 1 && PQnfields(result) == 1)
+		*uid = strdup(PQgetvalue(result, 0, 0));
+	else {
 		PQclear(result);
 		return (-1);
 	}

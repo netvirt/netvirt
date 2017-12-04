@@ -43,6 +43,12 @@ static struct evconnlistener	*listener;
 static SSL_CTX			*ctx;
 
 void
+switch_network_delete(const char *network_uid)
+{
+	printf("switch_network_delete (%s)\n", network_uid);
+}
+
+void
 switch_node_delete(const char *node_uid, const char *network_uid)
 {
 	printf("switch_node_delete (%s) (%s)\n", node_uid, network_uid);

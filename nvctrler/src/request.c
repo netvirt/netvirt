@@ -462,33 +462,18 @@ cleanup:
 int
 network_delete(const char *description, const char *apikey)
 {
-	int ret;
+	int	 ret;
+	char	*network_uid;
 
 	ret = -1;
 
-	if (dao_network_delete(description, apikey) < 0) {
+	if (dao_network_delete(&network_uid, description, apikey) < 0) {
 		log_warnx("%s: dao_network", __func__);
 		goto cleanup;
 	}
 
-	/* Forward del-network to the switch */
-#if 0
-	char *fwd_str = NULL;
-	if (switch_sinfo != NULL) {
-		json_object_del(jmsg, "apikey");
-		json_object_set_new(js_network, "networkuuid", json_string(network_uuid));
-		json_object_del(js_network, "uuid");
-		json_object_del(js_network, "name");
-
-		fwd_str = json_dumps(jmsg, 0);
-		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
-			bufferevent_write(switch_sinfo->bev, fwd_str, strlen(fwd_str));
-		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
-			bufferevent_write(switch_sinfo->bev, "\n", strlen("\n"));
-		free(fwd_str);
-	}
-	/* * */
-#endif
+	switch_network_delete(network_uid);
+	free(network_uid);
 
 	ret = 0;
 

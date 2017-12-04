@@ -58,6 +58,7 @@ extern struct event_base	*ev_base;
 void controller_init(void);
 void controller_fini(void);
 
+void switch_network_delete(const char *);
 void switch_node_delete(const char *, const char *);
 
 int agent_control_init(void);
