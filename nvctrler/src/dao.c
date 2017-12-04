@@ -249,7 +249,8 @@ dao_prepare_statements()
 			"dao_node_delete",
 			"DELETE FROM node "
 			"WHERE description = $1 "
-			"AND node.network_uid IN (SELECT uid FROM network WHERE client_id = (SELECT id FROM client WHERE apikey = crypt($2, apikey) AND status = 1))",
+			"AND node.network_uid IN (SELECT uid FROM network WHERE client_id = (SELECT id FROM client WHERE apikey = crypt($2, apikey) AND status = 1)) "
+			"RETURNING node.uid" ,
 			0,
 			NULL);
 
@@ -1083,7 +1084,7 @@ dao_node_create(const char *network_uid, const char *uid, const char *provkey,
 }
 
 int
-dao_node_delete(const char *uid, const char *apikey)
+dao_node_delete(char **uid, const char *description, const char *apikey)
 {
 	const char *paramValues[2];
 	int paramLengths[2];
@@ -1094,10 +1095,10 @@ dao_node_delete(const char *uid, const char *apikey)
 		return (-1);
 	}
 
-	paramValues[0] = uid;
+	paramValues[0] = description;
 	paramValues[1] = apikey;
 
-	paramLengths[0] = strlen(uid);
+	paramLengths[0] = strlen(description);
 	paramLengths[1] = strlen(apikey);
 
 	result = PQexecPrepared(dbconn, "dao_node_delete", 2, paramValues, paramLengths, NULL, 0);
@@ -1107,8 +1108,9 @@ dao_node_delete(const char *uid, const char *apikey)
 		return (-1);
 	}
 
-	/* if no row is deleted, return an error */
-	if (strcmp(PQcmdTuples(result), "0") == 0) {
+	if (PQntuples(result) == 1 && PQnfields(result) == 1)
+		*uid = strdup(PQgetvalue(result, 0, 0));
+	else {
 		PQclear(result);
 		return (-1);
 	}

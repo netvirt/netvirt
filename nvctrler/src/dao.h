@@ -44,7 +44,7 @@ int dao_network_get_ippool(const char *, char **, char **, char **, uint8_t **);
 
 int dao_node_create(const char *, const char *, const char *, const char *,
     const char *);
-int dao_node_delete(const char *, const char *);
+int dao_node_delete(char **, const char *, const char *);
 int dao_node_list(const char *, const char *, int (*)(const char *,
     const char *, const char *, const char *, const char *, void *), void *);
 int dao_node_update();

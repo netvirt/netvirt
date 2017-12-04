@@ -628,7 +628,7 @@ node_delete(const char *description, const char *apikey)
 	char		*network_uid = NULL;
 	char		*subnet = NULL;
 	char		*netmask = NULL;
-
+	char		*node_uid = NULL;
 
 	ret = -1;
 
@@ -651,25 +651,13 @@ node_delete(const char *description, const char *apikey)
 		goto cleanup;
 	}
 
-	if (dao_node_delete(description, apikey) < 0) {
+	if (dao_node_delete(&node_uid, description, apikey) < 0) {
 		log_warnx("%s: dao_node_delete", __func__);
 		goto cleanup;
 	}
 
-#if 0
-	/* Forward del-node to the switch */
-	if (switch_sinfo != NULL) {
-		json_object_del(jmsg, "apikey");
+	switch_node_delete(node_uid, network_uid);
 
-		fwd_str = json_dumps(jmsg, 0);
-		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
-			bufferevent_write(switch_sinfo->bev, fwd_str, strlen(fwd_str));
-		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
-			bufferevent_write(switch_sinfo->bev, "\n", strlen("\n"));
-		free(fwd_str);
-	}
-	/* * */
-#endif
 	ret = 0;
 
 cleanup:
@@ -860,7 +848,7 @@ cleanup:
 
 int
 switch_network_list_cb(void *arg, int left,
-    char *uid, char *cert, char *pvkey, char *cacert)
+    const char *uid, const char *cert, const char *pvkey, const char *cacert)
 {
 	struct evbuffer		*buf = NULL;
 	struct session_info	*sinfo;

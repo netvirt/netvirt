@@ -42,6 +42,13 @@ static passport_t		*passport;
 static struct evconnlistener	*listener;
 static SSL_CTX			*ctx;
 
+void
+switch_node_delete(const char *node_uid, const char *network_uid)
+{
+	printf("switch_node_delete (%s) (%s)\n", node_uid, network_uid);
+}
+
+
 struct session_info *
 sinfo_new()
 {
