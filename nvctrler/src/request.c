@@ -809,10 +809,6 @@ node_list_cb(const char *uid, const char *description, const char *provkey,
 	json_t	*array;
 	json_t	*node;
 
-	printf("uid: %s\n", uid);
-	printf("description: %s\n", description);
-	printf("provkey: %s\n", provkey);
-
 	array = arg;
 	node = json_object();
 
