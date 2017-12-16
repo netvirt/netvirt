@@ -725,9 +725,6 @@ node_provisioning(const char *msg, char **resp)
 		goto cleanup;
 	}
 
-	/* show on web page ! */
-	printf("prov key : %s\n", provkey);
-
 	if ((str = strdup(provkey)) == NULL) {
 		log_warnx("%s: strdup", __func__);
 		goto cleanup;
@@ -830,9 +827,6 @@ node_list(const char *network_uid, const char *apikey, char **resp)
 	int	 ret;
 
 	ret = -1;
-
-	printf("network_uid: %s\n", network_uid);
-	printf("apikey: %s\n", apikey);
 
 	if ((array = json_array()) == NULL) {
 		log_warnx("%s: json_array", __func__);
