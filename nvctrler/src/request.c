@@ -20,26 +20,40 @@
 
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
+#include <event2/http.h>
 #include <jansson.h>
 
 #include <log.h>
 #include <pki.h>
 
+#include "controller.h"
 #include "dao.h"
 #include "ippool.h"
 #include "request.h"
 
 extern struct session_info *switch_sinfo;
 
+void
+req_cb(struct evhttp_request *req, void *arg)
+{
+	evhttp_connection_free(arg);
+
+	return;
+}
+
 int
 client_create(char *msg)
 {
-	json_t		*jmsg = NULL;
-	json_error_t	 error;
-	int		 ret;
-	char		*email;
-	char		*password;
-	char		*apikey = NULL;
+	struct evhttp_connection	*evhttp_conn;
+	struct evhttp_request		*req;
+	struct evkeyvalq		*output_headers;
+	json_t				*jmsg = NULL;
+	json_error_t			 error;
+	int				 ret;
+	char				*email;
+	char				*password;
+	char				*apikey = NULL;
+	char				*emailquery = NULL;
 
 	ret = -1;
 
@@ -64,17 +78,24 @@ client_create(char *msg)
 		goto cleanup;
 	}
 
-	// XXX send email !
-	FILE	*tmp;
-	tmp = fopen("/tmp/apikey", "w");
-	fprintf(tmp, "%s", apikey);
-	fclose(tmp);
+	evhttp_conn = evhttp_connection_base_new(ev_base, NULL, "localhost", 8000);
+	req = evhttp_request_new(req_cb, evhttp_conn);
+
+	output_headers = evhttp_request_get_output_headers(req);
+	evhttp_add_header(output_headers, "Content-Type", "text/plain");
+	evhttp_add_header(output_headers, "Host", "*");
+
+	asprintf(&emailquery, "/email?msgtype=welcome&key=%s&to=\"%s\"",
+	    apikey, email);
+
+	evhttp_make_request(evhttp_conn, req, EVHTTP_REQ_GET, emailquery);
 
 	ret = 0;
 
 cleanup:
 	json_decref(jmsg);
 	free(apikey);
+	free(emailquery);
 	return (ret);
 }
 
@@ -181,13 +202,17 @@ cleanup:
 int
 client_get_newresetkey(char *msg, char **resp)
 {
-	json_t		*jmsg = NULL;
-	json_t		*jclient;
-	json_t		*jresp = NULL;
-	json_error_t	 error;
-	int		 ret;
-	char		*email;
-	char		*resetkey = NULL;
+	struct evhttp_connection	*evhttp_conn;
+	struct evhttp_request		*req;
+	struct evkeyvalq		*output_headers;
+	json_t				*jmsg = NULL;
+	json_t				*jclient;
+	json_t				*jresp = NULL;
+	json_error_t			 error;
+	int				 ret;
+	char				*email;
+	char				*resetkey = NULL;
+	char				*emailquery = NULL;
 
 	ret = -1;
 	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
@@ -220,11 +245,17 @@ client_get_newresetkey(char *msg, char **resp)
 		goto cleanup;
 	}
 
-	// XXX send email !
-	FILE	*tmp;
-	tmp = fopen("/tmp/resetkey", "w");
-	fprintf(tmp, "%s", resetkey);
-	fclose(tmp);
+	evhttp_conn = evhttp_connection_base_new(ev_base, NULL, "localhost", 8000);
+	req = evhttp_request_new(req_cb, evhttp_conn);
+
+	output_headers = evhttp_request_get_output_headers(req);
+	evhttp_add_header(output_headers, "Content-Type", "text/plain");
+	evhttp_add_header(output_headers, "Host", "*");
+
+	asprintf(&emailquery, "/email?msgtype=reset&key=%s&to=\"%s\"",
+	    resetkey, email);
+
+	evhttp_make_request(evhttp_conn, req, EVHTTP_REQ_GET, emailquery);
 
 	ret = 0;
 
