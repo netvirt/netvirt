@@ -69,79 +69,63 @@ static struct peer	*peer;
 int
 response_node_delete(json_t *jmsg)
 {
+	json_t		*jnode;
 	struct vnetwork	*vnet;
-	//struct session	*session;
-	json_t		*node;
-	char		*network_uuid;
-	char		*uuid;
+	struct node	*node;
+	char		*network_uid;
+	const char	*uid;
 
-	if ((node = json_object_get(jmsg, "node")) == NULL) {
-		warn("json_object_get failed");
-		return -1;
+	if ((jnode = json_object_get(jmsg, "node")) == NULL) {
+		log_warnx("%s: json_object_get failed", __func__);
+		return (-1);
 	}
 
-	if (json_unpack(node, "{s:s}", "uuid", &uuid) == -1) {
-		warn("json_unpack failed");
-		return -1;
+	if (json_unpack(jnode, "{s:s, s:s}", "uid", &uid,
+	    "network_uid", &network_uid) < 0) {
+		log_warnx("%s: json_unpack failed", __func__);
+		return (-1);
 	}
 
-	if (json_unpack(node, "{s:s}", "networkuuid", &network_uuid) == -1) {
-		warn("json_unpack failed");
-		return -1;
+	if ((vnet = vnetwork_lookup(network_uid)) == NULL) {
+		log_warnx("%s: vnetwork_lookup", __func__);
+		return (-1);
 	}
 
-	if ((vnet = vnetwork_lookup(network_uuid)) == NULL) {
-		warn("context_lookup failed");
-		return -1;
+	if ((node = vnetwork_find_node(vnet, uid)) == NULL) {
+		log_warnx("%s: vnetwork_find_node", __func__);
+		return (-1);
 	}
 
-	/* remove the node from the access table */
-	//ctable_erase(vnet->atable, uuid);
+	vnetwork_del_node(vnet, node);
 
-#if 0
-	/* if the node is connected, mark it to be purged */
-	if ((session = ctable_find(vnet->ctable, uuid)) != NULL) {
-//		session->state = SESSION_STATE_PURGE;
-	}
-#endif
-
-	return 0;
+	return (0);
 }
 
 int
 response_network_delete(json_t *jmsg)
 {
-	char		*network_uuid;
 	json_t		*network;
 	struct vnetwork	*vnet = NULL;
-	//struct session	*session_list;
+	char		*network_uid;
 
 	if ((network = json_object_get(jmsg, "network")) == NULL) {
-		warn("json_object_get failed");
-		return -1;
+		log_warnx("%s: json_object_get failed", __func__);
+		return (-1);
 	}
 
-	if (json_unpack(network, "{s:s}", "networkuuid", &network_uuid) == -1) {
-		warn("json_unpack failed");
-		return -1;
+	if (json_unpack(network, "{s:s}", "network_uid", &network_uid) < 0) {
+		log_warnx("%s: json_unpack failed", __func__);
+		return (-1);
 	}
 
-//	if ((vnet = vnetwork_disable(network_uuid)) == NULL) {
-//		warn("context_disable failed");
-//		return -1;
-//	}
-
-#if 0
-	session_list = vnet->session_list;
-	while (session_list != NULL) {
-	//	session_list->state = SESSION_STATE_PURGE;
-		session_list->vnetwork = NULL;
-		session_list = session_list->next;
+	if ((vnet = vnetwork_lookup(network_uid)) == NULL) {
+		log_warnx("%s: vnetwork_lookup", __func__);
+		return (-1);
 	}
-#endif
+
 	vnetwork_free(vnet);
 
-	return 0;
+	return (0);
 }
 
 int
