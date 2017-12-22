@@ -398,21 +398,20 @@ network_create(char *msg, const char *apikey)
 		array = json_array();
 		fwd_resp = json_object();
 
-		json_object_set_new(fwd_resp, "action", json_string("listall-network"));
+		json_object_set_new(fwd_resp, "action", json_string("switch-network-list"));
 		json_object_set_new(fwd_resp, "response", json_string("more-data"));
 
 		json_object_set_new(network, "uid", json_string(network_uid));
-		json_object_set_new(network, "subnet", json_string(subnet));
-		json_object_set_new(network, "netmask", json_string(netmask));
 		json_object_set_new(network, "cert", json_string(serv_cert_ptr));
-		json_object_set_new(network, "pkey", json_string(serv_pvkey_ptr));
-		json_object_set_new(network, "tcert", json_string(emb_cert_ptr));
+		json_object_set_new(network, "pvkey", json_string(serv_pvkey_ptr));
+		json_object_set_new(network, "cacert", json_string(emb_cert_ptr));
 
 		json_array_append_new(array, network);
 		json_object_set_new(fwd_resp, "networks", array);
 
 		fwd_resp_str = json_dumps(fwd_resp, 0);
 
+		// XXX use buffer
 		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
 			bufferevent_write(switch_sinfo->bev, fwd_resp_str, strlen(fwd_resp_str));
 		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
@@ -587,7 +586,6 @@ node_create(const char *msg, const char *apikey)
 		goto cleanup;
 	}
 
-#if 0
 	/* forward new node to nvswitch */
 	char	*fwd_resp_str = NULL;
 	json_t	*array = NULL;
@@ -599,17 +597,18 @@ node_create(const char *msg, const char *apikey)
 		node = json_object();
 		array = json_array();
 
-		json_object_set_new(fwd_resp, "action", json_string("listall-node"));
+		json_object_set_new(fwd_resp, "action", json_string("switch-node-list"));
 		json_object_set_new(fwd_resp, "response", json_string("more-data"));
 
-		json_object_set_new(node, "networkuuid", json_string(network_uuid));
-		json_object_set_new(node, "uuid", json_string(uuid));
+		json_object_set_new(node, "network_uid", json_string(network_uid));
+		json_object_set_new(node, "uid", json_string(uid));
 
 		json_array_append_new(array, node);
 		json_object_set_new(fwd_resp, "nodes", array);
 
 		fwd_resp_str = json_dumps(fwd_resp, 0);
 
+		// XXX use buffer
 		if (switch_sinfo && switch_sinfo->bev)
 			bufferevent_write(switch_sinfo->bev, fwd_resp_str, strlen(fwd_resp_str));
 		if (switch_sinfo && switch_sinfo->bev)
@@ -618,9 +617,7 @@ node_create(const char *msg, const char *apikey)
 		json_decref(fwd_resp);
 		free(fwd_resp_str);
 	}
-
 	/* * */
-#endif
 
 	ret = 0;
 
