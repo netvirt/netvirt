@@ -163,7 +163,7 @@ vnetwork_free(struct vnetwork *vnet)
 	while ((lladdr = RB_ROOT(&vnet->arpcache)) != NULL)
 		free(lladdr);
 	while ((node = RB_ROOT(&vnet->aclnode)) != NULL)
-		vnetwork_del_node(vnet, node->uid);
+		vnetwork_del_node(vnet, node);
 	pki_passport_destroy(vnet->passport);
 	SSL_CTX_free(vnet->ctx);
 	free(vnet->uid);
@@ -211,13 +211,9 @@ vnetwork_add_node(struct vnetwork *vnet, const char *uid)
 }
 
 void
-vnetwork_del_node(struct vnetwork *vnet, const char *uid)
+vnetwork_del_node(struct vnetwork *vnet, struct node *node)
 {
-	struct node	*node;
-
-	if ((node = vnetwork_find_node(vnet, uid)) == NULL)
-		return;
-
+	// XXX Disconnect the peer if connected
 	free(node->uid);
 	free(node);
 }
