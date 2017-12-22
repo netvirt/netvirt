@@ -318,13 +318,18 @@ error:
 void
 dtls_peer_free(struct dtls_peer *p)
 {
+	struct dtls_peer	*pp;
+
 	if (p == NULL)
 		return;
 
+	if (p->vnet != NULL) {
+		if ((pp = RB_FIND(vnet_peer_tree, &p->vnet->peers, p)) != NULL)
+			RB_REMOVE(vnet_peer_tree, &p->vnet->peers, pp);
+	}
+
 	if (p->ss_len != 0)
 		RB_REMOVE(dtls_peer_tree, &dtls_peers, p);
-	if (p->vnet != NULL)
-		RB_REMOVE(vnet_peer_tree, &p->vnet->peers, p);
 	if (p->lladdr != NULL)
 		RB_REMOVE(vnet_lladdr_tree, &p->vnet->arpcache, p->lladdr);
 
