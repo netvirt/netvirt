@@ -147,8 +147,8 @@ response_network_delete(json_t *jmsg)
 int
 response_node_list(json_t *jmsg)
 {
-	char		*uuid;
-	char		*network_uuid;
+	char		*uid;
+	char		*network_uid;
 	char		*response;
 	size_t		 array_size;
 	size_t		 i;
@@ -174,24 +174,23 @@ static	size_t		 total = 1;
 			return -1;
 		}
 
-		if (json_unpack(node, "{s:s}", "uuid", &uuid) == -1 ||
-		    json_unpack(node, "{s:s}", "networkuuid", &network_uuid) == -1) {
+		if (json_unpack(node, "{s:s}", "uid", &uid) == -1 ||
+		    json_unpack(node, "{s:s}", "network_uid", &network_uid) == -1) {
 			warn("NULL parameter");
 			return -1;
 		}
 
-		if ((vnet = vnetwork_lookup(network_uuid)) != NULL) {
-			//ctable_insert(vnet->atable, uuid, vnet->access_session);
-		}
+		if ((vnet = vnetwork_lookup(network_uid)) != NULL)
+			vnetwork_add_node(vnet, uid);
 	}
 
 	if ((json_unpack(jmsg, "{s:s}", "response", &response)) == -1) {
-		warn("json_unpack failed");
+		warnx("json_unpack failed");
 		return -1;
 	}
 
 	if (strcmp(response, "success") == 0) {
-		warn("fetched %zu node", total);
+		warnx("fetched %zu node", total);
 		return 0;
 	}
 
