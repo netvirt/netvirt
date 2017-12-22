@@ -57,4 +57,6 @@ int dao_node_listall(void *,
 int dao_switch_network_list(void *,
     int (*cb)(void *, int , const char *, const char *, const char *, const char *));
 
+int dao_switch_node_list(void *,
+    int (*cb)(void *, int, const char *, const char *));
 #endif
