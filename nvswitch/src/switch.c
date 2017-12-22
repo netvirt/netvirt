@@ -246,6 +246,7 @@ dtls_peer_new(int sock)
 {
 	BIO			*bio = NULL;
 	struct dtls_peer	*p = NULL;
+	struct timeval		 tv = {10, 0};
 
 	if ((p = malloc(sizeof(*p))) == NULL) {
 		log_warn("%s: malloc", __func__);
@@ -302,6 +303,9 @@ dtls_peer_new(int sock)
 
 	SSL_set_bio(p->ssl, bio, bio);
 	bio = NULL;
+
+	if (evtimer_add(p->ping_timer, &tv) < 0)
+		goto error;
 
 	return (p);
 
@@ -428,8 +432,6 @@ dtls_handle(struct dtls_peer *p)
 	int			 line;
 	unsigned long		 e;
 
-	evtimer_del(p->ping_timer);
-
 	for (;;) {
 		switch (p->state) {
 		case DTLS_LISTEN:
@@ -471,11 +473,6 @@ dtls_handle(struct dtls_peer *p)
 	}
 
 out:
-	if (p->state == DTLS_ESTABLISHED) {
-		tv.tv_sec = 10;
-		tv.tv_usec = 0;
-		evtimer_add(p->ping_timer, &tv);
-	}
 	return (0);
 
 error:
@@ -487,7 +484,7 @@ ping_timeout_cb(int fd, short event, void *arg)
 {
 	struct dtls_peer	*p = arg;
 
-	log_warnx("%s: keepalive", __func__);
+	log_warnx("%s: keepalive expired", __func__);
 	dtls_peer_free(p);
 }
 
