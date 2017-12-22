@@ -68,11 +68,15 @@ struct certinfo
 	char		*tok;
 	char		*last;
 
-	if ((subj = X509_get_subject_name(cert)) == NULL)
+	if ((subj = X509_get_subject_name(cert)) == NULL) {
+		log_warnx("%s: X509_get_subject_name", __func__);
 		return (NULL);
+	}
 
-	if (X509_NAME_get_text_by_NID(subj, NID_commonName, cn, sizeof(cn)) < 0)
+	if (X509_NAME_get_text_by_NID(subj, NID_commonName, cn, sizeof(cn)) < 0) {
+		log_warnx("%s: X509_NAME_get_text_by_NID", __func__);
 		return (NULL);
+	}
 
 	for ((i = 0, tok = strtok_r(cn, ":", &last)); tok;
 	    (tok = strtok_r(NULL, ":", &last))) {
@@ -86,11 +90,14 @@ struct certinfo
 	    tokens[1] == NULL ||
 	    tokens[2] == NULL ||
 	    tokens[3] == NULL) {
+		log_warnx("%s: token is NULL", __func__);
 		return (NULL);
 	}
 
-	if ((ci = malloc(sizeof(struct certinfo))) == NULL)
+	if ((ci = malloc(sizeof(struct certinfo))) == NULL) {
+		log_warnx("%s: malloc", __func__);
 		return (NULL);
+	}
 
 	ci->version = strdup(tokens[0]);
 	ci->type = strdup(tokens[1]);
