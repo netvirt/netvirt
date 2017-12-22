@@ -393,7 +393,6 @@ on_read_cb(struct bufferevent *bev, void *arg)
 				log_warnx("%s: response_network_list", __func__);
 				goto error;
 			}
-			printf("ret %d\n", ret);
 			if (ret == 1 && control_init_done == 0) {
 				log_warnx("networks initalized");
 				if (request_node_list(jmsg) < 0) {
