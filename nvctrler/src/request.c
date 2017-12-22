@@ -1021,82 +1021,168 @@ cleanup:
 }
 
 int
-switch_node_list_cb(void *arg, int remaining, char *network_uuid, char *uuid)
+switch_node_list_cb(void *arg, int left,
+    const char *uid, const char *network_uid)
 {
-#if 0
-	char			*resp_str = NULL;
-	struct	session_info	**sinfo;
+	struct evbuffer		*buf = NULL;
+	struct session_info	*sinfo;
 	json_t			*array;
 	json_t			*node;
 	json_t			*resp = NULL;
+	int			 ret;
+	char			*resp_str = NULL;
 
 	sinfo = arg;
-	node = json_object();
-	array = json_array();
-	resp = json_object();
 
-	json_object_set_new(resp, "tid", json_string("tid"));
-	json_object_set_new(resp, "action", json_string("listall-node"));
+	ret = -1;
 
-	json_object_set_new(node, "networkuuid", json_string(network_uuid));
-	json_object_set_new(node, "uuid", json_string(uuid));
+	if ((node = json_object()) == NULL) {
+		log_warnx("%s: json_object", __func__);
+		goto error;
+	}
 
-	json_array_append_new(array, node);
+	if ((array = json_array()) == NULL) {
+		log_warnx("%s: json_array", __func__);
+		goto error;
+	}
 
-	json_object_set_new(resp, "nodes", array);
-	if (remaining > 0)
-		json_object_set_new(resp, "response", json_string("more-data"));
-	else
-		json_object_set_new(resp, "response", json_string("success"));
+	if ((resp = json_object()) == NULL) {
+		log_warnx("%s: json_object", __func__);
+		goto error;
+	}
 
-	resp_str = json_dumps(resp, 0);
+	if (json_object_set_new_nocheck(resp, "action",
+	    json_string("switch-node-list")) < 0 ||
+	    json_object_set_new_nocheck(node, "uid", json_string(uid)) < 0 ||
+	    json_object_set_new_nocheck(node, "network_uid",
+	    json_string(network_uid)) < 0) {
+		log_warnx("%s: json_object_set_new_nocheck", __func__);
+		goto error;
+	}
 
-	if (*sinfo == NULL || (*sinfo)->bev == NULL)
-		goto out;
-	bufferevent_write((*sinfo)->bev, resp_str, strlen(resp_str));
+	if (json_array_append_new(array, node) < 0) {
+		log_warnx("%s: json_array_append_new", __func__);
+		goto error;
+	}
 
-	if (*sinfo == NULL || (*sinfo)->bev == NULL)
-		goto out;
-	bufferevent_write((*sinfo)->bev, "\n", strlen("\n"));
+	if (json_object_set_new_nocheck(resp, "nodes", array) < 0) {
+		log_warnx("%s: json_object_set_new_nocheck", __func__);
+		goto error;
+	}
 
+	if (left > 0) {
+		if (json_object_set_new_nocheck(resp, "response",
+		    json_string("more-data")) < 0) {
+			log_warnx("%s: json_object_set_new_nocheck", __func__);
+			goto error;
+		}
+	} else {
+		if (json_object_set_new_nocheck(resp, "response",
+		    json_string("success")) < 0) {
+			log_warnx("%s: json_object_set_new_nocheck", __func__);
+			goto error;
+		}
+	}
+
+	if ((resp_str = json_dumps(resp, 0)) == NULL) {
+		log_warnx("%s: json_dumps", __func__);
+		goto error;
+	}
+
+	if ((buf = evbuffer_new()) == NULL) {
+		log_warnx("%s: evbuffer_new", __func__);
+		goto error;
+	}
+
+	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str), NULL, NULL)
+	    < 0) {
+		log_warnx("%s: evbuffer_add_reference", __func__);
+		goto error;
+	}
+
+	if (evbuffer_add(buf, "\n", 1) < 0) {
+		log_warnx("%s: evbuffer_add", __func__);
+		goto error;
+	}
+
+	if (sinfo != NULL && sinfo->bev != NULL)
+		if (bufferevent_write_buffer(sinfo->bev, buf) < 0) {
+			log_warnx("%s: bufferevent_write_buffer", __func__);
+			goto error;
+		}
+
+	ret = 0;
+
+error:
+	if (buf != NULL)
+		evbuffer_free(buf);
 	json_decref(resp);
 	free(resp_str);
-	return 0;
-out:
-	json_decref(resp);
-	free(resp_str);
-#endif
-	return -1;
+	return (ret);
 }
 
 int
 switch_node_list(struct session_info *sinfo, json_t *jmsg)
 {
-#if 0
-	//jlog(L_DEBUG, "listallNode");
+	struct evbuffer	*buf = NULL;
+	json_t		*resp = NULL;
+	char		*resp_str = NULL;
 
-	char	*resp_str = NULL;
-	json_t	*resp = NULL;
+	if ((resp = json_object()) == NULL) {
+		log_warnx("%s: json_object", __func__);
+		goto error;
+	}
 
-	if (dao_fetch_node_uuid_networkuuid(sinfo, CB_listall_node) == 0)
-		return;
+	if (json_object_set_new_nocheck(resp, "action",
+	    json_string_nocheck("switch-node-list")) < 0) {
+		log_warnx("%s: json_object_set_new_nocheck", __func__);
+		goto error;
+	}
 
-	resp = json_object();
-	json_object_set_new(resp, "response", json_string("error"));
-	json_object_set_new(resp, "action", json_string("listall-node"));
-
-	resp_str = json_dumps(resp, 0);
-
-	if (*sinfo && (*sinfo)->bev != NULL)
-		bufferevent_write((*sinfo)->bev, resp_str, strlen(resp_str));
-	if (*sinfo && (*sinfo)->bev != NULL)
-		bufferevent_write((*sinfo)->bev, "\n", strlen("\n"));
+	if (dao_switch_node_list(sinfo, switch_node_list_cb) < 0) {
+		json_object_set_new_nocheck(resp, "response",
+		    json_string_nocheck("error"));
+		goto error;
+	}
 
 	json_decref(resp);
-	free(resp_str);
-#endif
 	return (0);
 
+error:
+
+	if ((resp_str = json_dumps(resp, 0)) == NULL) {
+		log_warnx("%s: json_dumps", __func__);
+		goto cleanup;
+	}
+
+	if ((buf = evbuffer_new()) == NULL) {
+		log_warnx("%s: evbuffer_new", __func__);
+		goto cleanup;
+	}
+
+	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str), NULL, NULL)
+	    < 0) {
+		log_warnx("%s: evbuffer_add_reference", __func__);
+		goto cleanup;
+	}
+
+	if (evbuffer_add(buf, "\n", 1) < 0) {
+		log_warnx("%s: evbuffer_add", __func__);
+		goto cleanup;
+	}
+
+	if (sinfo != NULL && sinfo->bev != NULL)
+		if (bufferevent_write_buffer(sinfo->bev, buf) < 0) {
+			log_warnx("%s: bufferevent_write_buffer", __func__);
+			goto cleanup;
+		}
+cleanup:
+	if (buf != NULL)
+		evbuffer_free(buf);
+	json_decref(resp);
+	free(resp_str);
+
+	return (-1);
 }
 
 int
