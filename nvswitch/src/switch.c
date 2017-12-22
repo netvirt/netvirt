@@ -38,17 +38,25 @@
 #include "inet.h"
 #include "switch.h"
 
+RB_HEAD(vnet_node_tree, node);
 RB_HEAD(vnet_peer_tree, dtls_peer);
 RB_HEAD(vnet_lladdr_tree, lladdr);
 
 struct vnetwork {
 	RB_ENTRY(vnetwork)	 entry;
+	struct vnet_node_tree	 aclnode;
 	struct vnet_peer_tree	 peers;
 	struct vnet_lladdr_tree	 arpcache;
 	passport_t		*passport;
 	SSL_CTX			*ctx;
 	char			*uid;
 	uint32_t		 active_node;
+};
+
+struct node {
+	RB_ENTRY(node)		 entry;
+	char			*uid;
+	struct dtls_peer	*peer;
 };
 
 struct lladdr {
@@ -98,18 +106,29 @@ static int		 cert_verify_cb(int, X509_STORE_CTX *);
 static void		 ping_timeout_cb(int, short, void *);
 static struct lladdr	*lladdr_new(struct dtls_peer *, uint8_t *);
 static void		 lladdr_free(struct lladdr *);
+static int		 lladdr_cmp(const struct lladdr *,
+			    const struct lladdr *);
 static struct dtls_peer	*dtls_peer_new(int);
 static void		 dtls_peer_free(struct dtls_peer *);
 static int		 dtls_handle(struct dtls_peer *);
 static void		 dtls_handshake_timeout_cb(int, short, void *);
 static int		 dtls_peer_cmp(const struct dtls_peer *,
 			    const struct dtls_peer *);
+static int		 node_cmp(const struct node *, const struct node *);
 static int		 vnetwork_cmp(const struct vnetwork *,
 			    const struct vnetwork *);
+
 RB_PROTOTYPE_STATIC(vnet_tree, vnetwork, entry, vnetwork_cmp);
 RB_PROTOTYPE_STATIC(vnet_peer_tree, dtls_peer, vn_entry, dtls_peer_cmp);
 RB_PROTOTYPE_STATIC(dtls_peer_tree, dtls_peer, entry, dtls_peer_cmp);
 RB_PROTOTYPE_STATIC(vnet_lladdr_tree, lladdr, entry, lladdr_cmp);
+RB_PROTOTYPE_STATIC(vnet_node_tree, node, entry, node_cmp);
+
+int
+node_cmp(const struct node *a, const struct node *b)
+{
+	return strcmp(a->uid, b->uid);
+}
 
 int
 lladdr_cmp(const struct lladdr *a, const struct lladdr *b)
@@ -136,12 +155,15 @@ void
 vnetwork_free(struct vnetwork *vnet)
 {
 	struct lladdr	*lladdr;
+	struct node	*node;
 
 	if (vnet == NULL)
 		return;
 
 	while ((lladdr = RB_ROOT(&vnet->arpcache)) != NULL)
 		free(lladdr);
+	while ((node = RB_ROOT(&vnet->aclnode)) != NULL)
+		vnetwork_del_node(vnet, node->uid);
 	pki_passport_destroy(vnet->passport);
 	SSL_CTX_free(vnet->ctx);
 	free(vnet->uid);
@@ -158,6 +180,7 @@ vnetwork_create(char *uid, char *cert, char *pvkey, char *cacert)
 		return (-1);
 	}
 
+	RB_INIT(&vnet->aclnode);
 	RB_INIT(&vnet->peers);
 	RB_INIT(&vnet->arpcache);
 	vnet->uid = strdup(uid);
@@ -168,6 +191,44 @@ vnetwork_create(char *uid, char *cert, char *pvkey, char *cacert)
 	RB_INSERT(vnet_tree, &vnetworks, vnet);
 
 	return (0);
+}
+
+int
+vnetwork_add_node(struct vnetwork *vnet, const char *uid)
+{
+	struct node	*node;
+
+	if ((node = malloc(sizeof(*node))) == NULL) {
+		log_warnx("%s: malloc", __func__);
+		return (-1);
+	}
+
+	node->uid = strdup(uid);
+
+	RB_INSERT(vnet_node_tree, &vnet->aclnode, node);
+
+	return (0);
+}
+
+void
+vnetwork_del_node(struct vnetwork *vnet, const char *uid)
+{
+	struct node	*node;
+
+	if ((node = vnetwork_find_node(vnet, uid)) == NULL)
+		return;
+
+	free(node->uid);
+	free(node);
+}
+
+struct node *
+vnetwork_find_node(struct vnetwork *vnet, const char *uid)
+{
+	struct node	match;
+
+	match.uid = (char *)uid;
+	return RB_FIND(vnet_node_tree, &vnet->aclnode, &match);
 }
 
 int
@@ -444,6 +505,9 @@ dtls_handshake_timeout_cb(int fd, short event, void *arg)
 int
 cert_verify_cb(int ok, X509_STORE_CTX *store)
 {
+	struct vnetwork *vnet;
+	struct node	*node;
+	struct certinfo	*ci;
 	X509		*cert;
 	X509_NAME	*name;
 	char		 buf[256];
@@ -452,7 +516,21 @@ cert_verify_cb(int ok, X509_STORE_CTX *store)
 	name = X509_get_subject_name(cert);
 	X509_NAME_get_text_by_NID(name, NID_commonName, buf, 256);
 
-	printf("CN: %s\n", buf);
+	if (strcmp(buf, "embassy") == 0)
+		return (ok);
+
+	if ((ci = certinfo(cert)) == NULL)
+		return (!ok);
+
+	if ((vnet = vnetwork_lookup(ci->network_uid)) == NULL) {
+		log_warnx("%s: vnetwork_lookup", __func__);
+		return (!ok);
+	}
+
+	if ((node = vnetwork_find_node(vnet, ci->node_uid)) == NULL) {
+		log_warnx("%s: vnetwork_find_node: access denied", __func__);
+		return (!ok);
+	}
 
 	return (ok);
 }
@@ -800,3 +878,4 @@ RB_GENERATE_STATIC(vnet_tree, vnetwork, entry, vnetwork_cmp);
 RB_GENERATE_STATIC(vnet_peer_tree, dtls_peer, vn_entry, dtls_peer_cmp);
 RB_GENERATE_STATIC(dtls_peer_tree, dtls_peer, entry, dtls_peer_cmp);
 RB_GENERATE_STATIC(vnet_lladdr_tree, lladdr, entry, lladdr_cmp);
+RB_GENERATE_STATIC(vnet_node_tree, node, entry, node_cmp);

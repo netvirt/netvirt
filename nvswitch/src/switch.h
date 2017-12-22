@@ -44,6 +44,9 @@ struct vnetwork	*vnetwork_lookup(const char *);
 void		 vnetworks_free(void);
 int		 vnetwork_create(char *, char *, char *, char *);
 int		 vnetwork_init(void);
+int		 vnetwork_add_node(struct vnetwork *, const char *);
+void		 vnetwork_del_node(struct vnetwork *, const char *);
+struct node	*vnetwork_find_node(struct vnetwork *, const char *);
 
 void		 switch_init(json_t *);
 void		 switch_fini(void);
