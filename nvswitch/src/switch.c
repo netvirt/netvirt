@@ -160,6 +160,8 @@ vnetwork_free(struct vnetwork *vnet)
 	if (vnet == NULL)
 		return;
 
+	RB_REMOVE(vnet_tree, &vnetworks, vnet);
+
 	while ((lladdr = RB_ROOT(&vnet->arpcache)) != NULL)
 		free(lladdr);
 	while ((node = RB_ROOT(&vnet->aclnode)) != NULL)
