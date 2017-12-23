@@ -69,34 +69,50 @@ static struct peer	*peer;
 int
 response_node_delete(json_t *jmsg)
 {
+	json_t		*jnodes;
 	json_t		*jnode;
 	struct vnetwork	*vnet;
 	struct node	*node;
+	size_t		 i;
+	size_t		 array_size;
 	char		*network_uid;
 	const char	*uid;
 
-	if ((jnode = json_object_get(jmsg, "node")) == NULL) {
+	if ((jnodes = json_object_get(jmsg, "nodes")) == NULL) {
 		log_warnx("%s: json_object_get failed", __func__);
 		return (-1);
 	}
 
-	if (json_unpack(jnode, "{s:s, s:s}", "uid", &uid,
-	    "network_uid", &network_uid) < 0) {
-		log_warnx("%s: json_unpack failed", __func__);
+	if ((array_size = json_array_size(jnodes)) == 0) {
+		log_warnx("%s: json_array_size", __func__);
 		return (-1);
 	}
 
-	if ((vnet = vnetwork_lookup(network_uid)) == NULL) {
-		log_warnx("%s: vnetwork_lookup", __func__);
-		return (-1);
-	}
+	for (i = 0; i < array_size; i++) {
 
-	if ((node = vnetwork_find_node(vnet, uid)) == NULL) {
-		log_warnx("%s: vnetwork_find_node", __func__);
-		return (-1);
-	}
+		if ((jnode = json_array_get(jnodes, i)) == NULL) {
+			log_warnx("%s: json_array_get", __func__);
+			return (-1);
+		}
 
-	vnetwork_del_node(vnet, node);
+		if (json_unpack(jnode, "{s:s, s:s}", "uid", &uid,
+		    "network_uid", &network_uid) < 0) {
+			log_warnx("%s: json_unpack failed", __func__);
+			return (-1);
+		}
+
+		if ((vnet = vnetwork_lookup(network_uid)) == NULL) {
+			log_warnx("%s: vnetwork_lookup", __func__);
+			return (-1);
+		}
+
+		if ((node = vnetwork_find_node(vnet, uid)) == NULL) {
+			log_warnx("%s: vnetwork_find_node", __func__);
+			return (-1);
+		}
+
+		vnetwork_del_node(vnet, node);
+	}
 
 	return (0);
 }
@@ -104,26 +120,42 @@ response_node_delete(json_t *jmsg)
 int
 response_network_delete(json_t *jmsg)
 {
-	json_t		*network;
+	json_t		*jnetworks;
+	json_t		*jnetwork;
 	struct vnetwork	*vnet = NULL;
+	size_t		 i;
+	size_t		 array_size;
 	char		*network_uid;
 
-	if ((network = json_object_get(jmsg, "network")) == NULL) {
+	if ((jnetworks = json_object_get(jmsg, "networks")) == NULL) {
 		log_warnx("%s: json_object_get failed", __func__);
 		return (-1);
 	}
 
-	if (json_unpack(network, "{s:s}", "network_uid", &network_uid) < 0) {
-		log_warnx("%s: json_unpack failed", __func__);
+	if ((array_size = json_array_size(jnetworks)) == 0) {
+		log_warnx("%s: json_array_size", __func__);
 		return (-1);
 	}
 
-	if ((vnet = vnetwork_lookup(network_uid)) == NULL) {
-		log_warnx("%s: vnetwork_lookup", __func__);
-		return (-1);
-	}
+	for (i = 0; i < array_size; i++) {
 
-	vnetwork_free(vnet);
+		if ((jnetwork = json_array_get(jnetworks, i)) == NULL) {
+			log_warnx("%s: json_array_get", __func__);
+			return (-1);
+		}
+
+		if (json_unpack(jnetwork, "{s:s}", "uid", &network_uid) < 0) {
+			log_warnx("%s: json_unpack failed", __func__);
+			return (-1);
+		}
+
+		if ((vnet = vnetwork_lookup(network_uid)) == NULL) {
+			log_warnx("%s: vnetwork_lookup", __func__);
+			return (-1);
+		}
+
+		vnetwork_free(vnet);
+	}
 
 	return (0);
 }
