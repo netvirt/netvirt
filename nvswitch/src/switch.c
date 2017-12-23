@@ -479,6 +479,13 @@ dtls_handle(struct dtls_peer *p)
 	}
 
 out:
+	if (p->state == DTLS_ESTABLISHED) {
+		evtimer_del(p->ping_timer);
+		tv.tv_sec = 10;
+		tv.tv_usec = 0;
+		evtimer_add(p->ping_timer, &tv);
+	}
+
 	return (0);
 
 error:
