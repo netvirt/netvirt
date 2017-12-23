@@ -34,6 +34,12 @@
 extern struct session_info *switch_sinfo;
 
 void
+buf_free_cb(const void *data, size_t datalen, void *extra)
+{
+	free((void *)data);
+}
+
+void
 req_cb(struct evhttp_request *req, void *arg)
 {
 	evhttp_connection_free(arg);
@@ -938,8 +944,8 @@ switch_network_list_cb(void *arg, int left,
 		goto error;
 	}
 
-	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str), free, resp_str)
-	    < 0) {
+	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str),
+	    buf_free_cb, resp_str) < 0) {
 		log_warnx("%s: evbuffer_add_reference", __func__);
 		goto error;
 	}
@@ -1001,8 +1007,8 @@ error:
 		goto cleanup;
 	}
 
-	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str), free, resp_str)
-	    < 0) {
+	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str),
+	    buf_free_cb, resp_str) < 0) {
 		log_warnx("%s: evbuffer_add_reference", __func__);
 		goto cleanup;
 	}
@@ -1097,8 +1103,8 @@ switch_node_list_cb(void *arg, int left,
 		goto error;
 	}
 
-	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str), free, resp_str)
-	    < 0) {
+	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str),
+	    buf_free_cb, resp_str) < 0) {
 		log_warnx("%s: evbuffer_add_reference", __func__);
 		goto error;
 	}
@@ -1160,8 +1166,8 @@ error:
 		goto cleanup;
 	}
 
-	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str), free, resp_str)
-	    < 0) {
+	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str),
+	    buf_free_cb, resp_str) < 0) {
 		log_warnx("%s: evbuffer_add_reference", __func__);
 		goto cleanup;
 	}
