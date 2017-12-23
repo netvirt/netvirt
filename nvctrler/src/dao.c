@@ -32,10 +32,10 @@ __attribute__((always_inline)) check_result_status(PGresult *result)
 
 	switch (PQresultStatus(result)) {
 	case PGRES_COMMAND_OK:
-		warnx("command executed ok, %s rows affected", PQcmdTuples(result));
+		//warnx("command executed ok, %s rows affected", PQcmdTuples(result));
 		break;
 	case PGRES_TUPLES_OK:
-		warnx("query may have returned data");
+		//warnx("query may have returned data");
 		break;
 	default:
 		warnx("command failed with code %s, error message %s",
