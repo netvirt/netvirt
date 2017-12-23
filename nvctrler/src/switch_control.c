@@ -45,15 +45,72 @@ static SSL_CTX			*ctx;
 void
 switch_network_delete(const char *network_uid)
 {
-	printf("switch_network_delete (%s)\n", network_uid);
+	char	*msg = NULL;
+	json_t	*jmsg = NULL;
+	json_t	*array;
+	json_t	*network;
+
+	if (switch_sinfo != NULL) {
+
+		jmsg = json_object();
+		network = json_object();
+		array = json_array();
+
+		json_object_set_new(jmsg, "action", json_string("switch-network-delete"));
+
+		json_object_set_new(network, "uid", json_string(network_uid));
+
+		json_array_append_new(array, network);
+		json_object_set_new(jmsg, "networks", array);
+
+		msg = json_dumps(jmsg, 0);
+
+		// XXX use buffer
+		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
+			bufferevent_write(switch_sinfo->bev, msg, strlen(msg));
+		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
+			bufferevent_write(switch_sinfo->bev, "\n", strlen("\n"));
+
+		json_decref(jmsg);
+		free(msg);
+	}
 }
 
 void
-switch_node_delete(const char *node_uid, const char *network_uid)
+switch_node_delete(const char *uid, const char *network_uid)
 {
-	printf("switch_node_delete (%s) (%s)\n", node_uid, network_uid);
-}
 
+	char	*msg = NULL;
+	json_t	*jmsg = NULL;
+	json_t	*array;
+	json_t	*node;
+
+	if (switch_sinfo != NULL) {
+
+		jmsg = json_object();
+		node = json_object();
+		array = json_array();
+
+		json_object_set_new(jmsg, "action", json_string("switch-node-delete"));
+
+		json_object_set_new(node, "uid", json_string(uid));
+		json_object_set_new(node, "network_uid", json_string(network_uid));
+
+		json_array_append_new(array, node);
+		json_object_set_new(jmsg, "nodes", array);
+
+		msg = json_dumps(jmsg, 0);
+
+		// XXX use buffer
+		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
+			bufferevent_write(switch_sinfo->bev, msg, strlen(msg));
+		if (switch_sinfo != NULL && switch_sinfo->bev != NULL)
+			bufferevent_write(switch_sinfo->bev, "\n", strlen("\n"));
+
+		json_decref(jmsg);
+		free(msg);
+	}
+}
 
 struct session_info *
 sinfo_new()
