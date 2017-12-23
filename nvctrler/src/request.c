@@ -938,7 +938,7 @@ switch_network_list_cb(void *arg, int left,
 		goto error;
 	}
 
-	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str), NULL, NULL)
+	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str), free, resp_str)
 	    < 0) {
 		log_warnx("%s: evbuffer_add_reference", __func__);
 		goto error;
@@ -958,10 +958,7 @@ switch_network_list_cb(void *arg, int left,
 	ret = 0;
 
 error:
-	if (buf != NULL)
-		evbuffer_free(buf);
 	json_decref(resp);
-	free(resp_str);
 	return (ret);
 }
 
@@ -1004,7 +1001,7 @@ error:
 		goto cleanup;
 	}
 
-	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str), NULL, NULL)
+	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str), free, resp_str)
 	    < 0) {
 		log_warnx("%s: evbuffer_add_reference", __func__);
 		goto cleanup;
@@ -1021,10 +1018,7 @@ error:
 			goto cleanup;
 		}
 cleanup:
-	if (buf != NULL)
-		evbuffer_free(buf);
 	json_decref(resp);
-	free(resp_str);
 
 	return (-1);
 }
@@ -1103,7 +1097,7 @@ switch_node_list_cb(void *arg, int left,
 		goto error;
 	}
 
-	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str), NULL, NULL)
+	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str), free, resp_str)
 	    < 0) {
 		log_warnx("%s: evbuffer_add_reference", __func__);
 		goto error;
@@ -1123,10 +1117,7 @@ switch_node_list_cb(void *arg, int left,
 	ret = 0;
 
 error:
-	if (buf != NULL)
-		evbuffer_free(buf);
 	json_decref(resp);
-	free(resp_str);
 	return (ret);
 }
 
@@ -1169,7 +1160,7 @@ error:
 		goto cleanup;
 	}
 
-	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str), NULL, NULL)
+	if (evbuffer_add_reference(buf, resp_str, strlen(resp_str), free, resp_str)
 	    < 0) {
 		log_warnx("%s: evbuffer_add_reference", __func__);
 		goto cleanup;
@@ -1186,10 +1177,7 @@ error:
 			goto cleanup;
 		}
 cleanup:
-	if (buf != NULL)
-		evbuffer_free(buf);
 	json_decref(resp);
-	free(resp_str);
 
 	return (-1);
 }
