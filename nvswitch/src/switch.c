@@ -213,6 +213,9 @@ vnetwork_add_node(struct vnetwork *vnet, const char *uid)
 void
 vnetwork_del_node(struct vnetwork *vnet, struct node *node)
 {
+	// XXX safe to call if find() used first
+	RB_REMOVE(vnet_node_tree, &vnet->aclnode, node);
+
 	// XXX Disconnect the peer if connected
 	free(node->uid);
 	free(node);
