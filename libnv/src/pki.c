@@ -27,6 +27,7 @@
 #include <openssl/rand.h>
 #include <openssl/x509v3.h>
 
+#include "log.h"
 #include "pki.h"
 
 // openssl x509 -in ./certificate.pem -text
