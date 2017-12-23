@@ -50,6 +50,9 @@ char *cert_cname(X509 *cert)
 void
 certinfo_destroy(struct certinfo *ci)
 {
+	if (ci == NULL)
+		return;
+
 	free(ci->version);
 	free(ci->type);
 	free(ci->network_uid);
