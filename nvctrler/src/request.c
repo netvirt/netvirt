@@ -90,6 +90,12 @@ client_create(char *msg)
 
 	evhttp_make_request(evhttp_conn, req, EVHTTP_REQ_GET, emailquery);
 
+	// XXX debug purpose
+	FILE    *tmp;
+	tmp = fopen("/tmp/apikey", "w");
+	fprintf(tmp, "%s", apikey);
+	fclose(tmp);
+
 	ret = 0;
 
 cleanup:
@@ -256,6 +262,12 @@ client_get_newresetkey(char *msg, char **resp)
 	    resetkey, email);
 
 	evhttp_make_request(evhttp_conn, req, EVHTTP_REQ_GET, emailquery);
+
+	// XXX debug purpose
+	FILE    *tmp;
+	tmp = fopen("/tmp/resetkey", "w");
+	fprintf(tmp, "%s", resetkey);
+	fclose(tmp);
 
 	ret = 0;
 
