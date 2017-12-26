@@ -57,6 +57,7 @@ client_create(char *msg)
 	json_error_t			 error;
 	int				 ret;
 	char				*email;
+	char				*email_encoded = NULL;
 	char				*password;
 	char				*apikey = NULL;
 	char				*emailquery = NULL;
@@ -91,8 +92,13 @@ client_create(char *msg)
 	evhttp_add_header(output_headers, "Content-Type", "text/plain");
 	evhttp_add_header(output_headers, "Host", "*");
 
+	if ((email_encoded = evhttp_encode_uri(email)) == NULL) {
+		log_warnx("%s: email_encoded", __func__);
+		goto cleanup;
+	}
+
 	asprintf(&emailquery, "/email?msgtype=welcome&key=%s&to=\"%s\"",
-	    apikey, email);
+	    apikey, email_encoded);
 
 	evhttp_make_request(evhttp_conn, req, EVHTTP_REQ_GET, emailquery);
 
@@ -108,6 +114,7 @@ cleanup:
 	json_decref(jmsg);
 	free(apikey);
 	free(emailquery);
+	free(email_encoded);
 	return (ret);
 }
 
