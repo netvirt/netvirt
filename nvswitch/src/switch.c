@@ -167,7 +167,7 @@ vnetwork_free(struct vnetwork *vnet)
 	while ((node = RB_ROOT(&vnet->aclnode)) != NULL)
 		vnetwork_del_node(vnet, node);
 	pki_passport_destroy(vnet->passport);
-	SSL_CTX_free(vnet->ctx);
+	// XXX crash SSL_CTX_free(vnet->ctx);
 	free(vnet->uid);
 	free(vnet);
 }
