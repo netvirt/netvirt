@@ -232,6 +232,7 @@ client_get_newresetkey(char *msg, char **resp)
 	char				*email;
 	char				*resetkey = NULL;
 	char				*emailquery = NULL;
+	char				*email_encoded = NULL;
 
 	ret = -1;
 	if ((jmsg = json_loadb(msg, strlen(msg), 0, &error)) == NULL) {
@@ -271,8 +272,13 @@ client_get_newresetkey(char *msg, char **resp)
 	evhttp_add_header(output_headers, "Content-Type", "text/plain");
 	evhttp_add_header(output_headers, "Host", "*");
 
+	if ((email_encoded = evhttp_encode_uri(email)) == NULL) {
+		log_warnx("%s: email_encoded", __func__);
+		goto cleanup;
+	}
+
 	asprintf(&emailquery, "/email?msgtype=reset&key=%s&to=\"%s\"",
-	    resetkey, email);
+	    resetkey, email_encoded);
 
 	evhttp_make_request(evhttp_conn, req, EVHTTP_REQ_GET, emailquery);
 
@@ -288,6 +294,8 @@ cleanup:
 	json_decref(jmsg);
 	json_decref(jresp);
 	free(resetkey);
+	free(emailquery);
+	free(email_encoded);
 
 	return (ret);
 }
@@ -295,7 +303,7 @@ cleanup:
 int
 client_reset_password(char *msg)
 {
-	json_t		*jmsg;
+	json_t		*jmsg = NULL;
 	json_error_t	 error;
 	char		*email;
 	char		*resetkey;
