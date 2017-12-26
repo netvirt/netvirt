@@ -63,6 +63,10 @@ void switch_node_delete(const char *, const char *);
 
 int agent_control_init(void);
 void agent_control_fini(void);
+void agent_control_network_delete(const char *);
+void agent_control_network_create(const char *, const char *, const char *, const char *);
+void agent_control_node_delete(const char *, const char *);
+void agent_control_node_create(const char *, const char *, const char *, const char *);
 
 int restapi_init(json_t *, struct event_base *);
 

@@ -455,6 +455,8 @@ network_create(char *msg, const char *apikey)
 	}
 	/* * */
 
+	agent_control_network_create(network_uid, serv_cert_ptr, serv_pvkey_ptr, emb_cert_ptr);
+
 cleanup:
 
 	json_decref(jmsg);
@@ -536,6 +538,7 @@ network_delete(const char *description, const char *apikey)
 	}
 
 	switch_network_delete(network_uid);
+	agent_control_network_delete(network_uid);
 
 	ret = 0;
 
@@ -652,6 +655,8 @@ node_create(const char *msg, const char *apikey)
 	}
 	/* * */
 
+	agent_control_node_create(uid, network_uid, description, ipaddress);
+
 	ret = 0;
 
 cleanup:
@@ -703,6 +708,7 @@ node_delete(const char *description, const char *apikey)
 	}
 
 	switch_node_delete(node_uid, network_uid);
+	agent_control_node_delete(node_uid, network_uid);
 
 	ret = 0;
 

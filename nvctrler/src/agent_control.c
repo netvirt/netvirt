@@ -288,14 +288,74 @@ tls_peer_free(struct tls_peer *p)
 	free(p);
 }
 
+void
+agent_control_network_delete(const char *uid)
+{
+	struct vnetwork	*vnet, match;
+	struct node	*node;
+
+	match.uid = (char *)uid;
+	if ((vnet = RB_FIND(vnetwork_tree, &vnetworks, &match)) == NULL) {
+		log_warnx("%s: RB_FIND not found: %s\n", __func__, uid);
+		return;
+	}
+
+	RB_REMOVE(vnetwork_tree, &vnetworks, vnet);
+
+	while ((node = RB_ROOT(&vnet->nodes)) != NULL) {
+		RB_REMOVE(node_tree, &vnet->nodes, node);
+		node_free(node);
+	}
+
+	vnetwork_free(vnet);
+
+	return;
+}
+
+void
+agent_control_network_create(const char *uid, const char *cert,
+    const char *pvkey, const char *cacert)
+{
+	network_listall_cb(NULL, 0, uid, cert, pvkey, cacert);
+}
+
+void
+agent_control_node_delete(const char *uid, const char *network_uid)
+{
+	struct vnetwork	*vnet, match;
+	struct node	*node, node_match;
+
+	match.uid = (char *)network_uid;
+	if ((vnet = RB_FIND(vnetwork_tree, &vnetworks, &match)) == NULL) {
+		log_warnx("%s: RB_FIND not found: %s\n", __func__, network_uid);
+		return;
+	}
+
+	node_match.uid = (char *)uid;
+	if ((node = RB_FIND(node_tree, &vnet->nodes, &node_match)) == NULL) {
+		log_warnx("%s: RB_FIND not found: %s\n", __func__, uid);
+		return;
+	}
+
+	RB_REMOVE(node_tree, &vnet->nodes, node);
+	node_free(node);
+
+	return;
+}
+
+void
+agent_control_node_create(const char *uid, const char *network_uid,
+    const char *description, const char *ipaddr)
+{
+	node_listall_cb(NULL, 0, network_uid, description, uid, ipaddr);
+}
+
 int
 node_listall_cb(void *arg, int left, const char *network_uid,
     const char *description, const char *uid, const char *ipaddr)
 {
 	struct node	*node = NULL;
 	struct vnetwork	 needle, *vnet;
-
-	printf("node: %s\n", description);
 
 	if ((node = node_new(network_uid, description, uid, ipaddr))
 	    == NULL) {
@@ -324,8 +384,6 @@ network_listall_cb(void *arg, int left, const char *uid, const char *cert,
     const char *pvkey, const char *cacert)
 {
 	struct vnetwork *vnet;
-
-	printf("network: %s\n", uid);
 
 	if ((vnet = vnetwork_new(uid, cert, pvkey, cacert)) == NULL) {
 		log_warnx("%s: network_create", __func__);
@@ -366,11 +424,6 @@ cert_verify_cb(int ok, X509_STORE_CTX *store)
 			goto out;
 		}
 
-		printf("ni version: %s\n", p->ci->version);
-		printf("ni type: %s\n", p->ci->type);
-		printf("ni network_uid: %s\n", p->ci->network_uid);
-		printf("ni node_uid: %s\n", p->ci->node_uid);
-
 		needle.uid = (char *)p->ci->node_uid;
 		if ((node = RB_FIND(node_tree, &p->vnet->nodes, &needle))
 		    == NULL) {
@@ -399,8 +452,6 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 		log_warnx("%s: SSL_get_servername", __func__);
 		goto error;
 	}
-
-	printf("server name %s\n", servername);
 
 	needle.uid = (char *)servername;
 	if ((p->vnet = RB_FIND(vnetwork_tree, &vnetworks, &needle)) == NULL) {
@@ -517,7 +568,6 @@ tls_peer_onevent_cb(struct bufferevent *bev, short events, void *arg)
 
 	if (events & BEV_EVENT_CONNECTED) {
 
-		printf("event connected\n");
 
 	} else if (events & (BEV_EVENT_ERROR | BEV_EVENT_TIMEOUT | BEV_EVENT_EOF)) {
 
