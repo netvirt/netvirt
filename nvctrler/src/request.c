@@ -609,7 +609,7 @@ node_create(const char *msg, const char *apikey)
 		goto cleanup;
 	}
 
-	snprintf(provkey, sizeof(provkey), "1:%s:%s:%s:%s",
+	snprintf(provkey, sizeof(provkey), "v=2&a=%s&k=%s:%s:%s",
 	    provsrv, network_uid, uid, key);
 
 	if (dao_node_create(network_uid, uid, provkey, description, ipaddress)
