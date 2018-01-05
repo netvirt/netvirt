@@ -609,7 +609,9 @@ node_create(const char *msg, const char *apikey)
 		goto cleanup;
 	}
 
-	snprintf(provkey, sizeof(provkey), "%s:%s:%s", network_uid, uid, key);
+	snprintf(provkey, sizeof(provkey), "1:%s:%s:%s:%s",
+	    provsrv, network_uid, uid, key);
+
 	if (dao_node_create(network_uid, uid, provkey, description, ipaddress)
 	    < 0) {
 		log_warnx("%s: dao_node_create", __func__);
