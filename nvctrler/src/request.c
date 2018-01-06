@@ -13,6 +13,8 @@
  * GNU Affero General Public License for more details
  */
 
+#include <sys/queue.h>
+
 #include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,6 +23,8 @@
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <event2/http.h>
+#include <event2/keyvalq_struct.h>
+#include <event2/util.h>
 #include <jansson.h>
 
 #include <log.h>
@@ -727,28 +731,26 @@ cleanup:
 int
 node_provisioning(const char *msg, char **resp)
 {
-	json_t		*jmsg;
-	json_t		*jresp;
-	json_error_t	 error;
-	int		 ret;
-	uint32_t	 serial;
-	uint8_t		 i;
-	const char	*errstr;
-	char		*cn = NULL;
-	char		*csr;
-	char		*provkey;
-	char		*str;
-	char		*network_uid;
-	char		*node_uid;
-	char		*key;
-	char		*tokens[3];
-	char		*p;
-	char		*last;
-	char		*cacert;
-	char		*pvkey;
-	char		*serial_str;
-	char		*node_cert;
-	char		 serial_up[10]; // XXX store int serial
+	json_t			*jmsg;
+	json_t			*jresp;
+	json_error_t		 error;
+	struct evhttp_uri	*uri = NULL;
+	struct evkeyvalq	 headers = TAILQ_HEAD_INITIALIZER(headers);
+	int			 ret;
+	uint32_t		 serial;
+	const char		*errstr;
+	const char		*provlink;
+	const char		*network_uid;
+	const char		*node_uid;
+	const char		*node_key;
+	const char		*version;
+	char			*cn = NULL;
+	char			*csr;
+	char			*cacert;
+	char			*pvkey;
+	char			*serial_str;
+	char			*node_cert;
+	char			 serial_up[10]; // XXX store int serial
 
 	ret = -1;
 

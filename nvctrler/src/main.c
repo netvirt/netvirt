@@ -39,7 +39,7 @@ static void sighandler(int, short, void *);
 
 json_t			*config = NULL;
 struct event_base	*ev_base = NULL;
-const char		*provsrv = NULL;
+const char		*provsrv_addr = NULL;
 
 void
 sighandler(int signal, short events, void *arg)
@@ -93,8 +93,8 @@ main(int argc, char *argv[])
 	if (json_unpack(config, "{s:s}", "dbhost", &dbhost) < 0)
 		fatalx("dbhost not found in config");
 
-	if (json_unpack(config, "{s:s}", "provsrv", &provsrv) < 0)
-		fatalx("provsrv not found in config");
+	if (json_unpack(config, "{s:s}", "provsrv_addr", &provsrv_addr) < 0)
+		fatalx("provsrv_addr not found in config");
 
 	if ((ev_base = event_base_new()) == NULL)
 		fatalx("event_init");
