@@ -569,7 +569,7 @@ node_create(const char *msg, const char *apikey)
 	char		*subnet;
 	char		*netmask;
 	unsigned char	*ippool_bin = NULL;
-	char		 provkey[256];
+	char		 provlink[256];
 
 	ret = -1;
 
@@ -613,10 +613,10 @@ node_create(const char *msg, const char *apikey)
 		goto cleanup;
 	}
 
-	snprintf(provkey, sizeof(provkey), "v=2&a=%s&k=%s:%s:%s",
-	    provsrv, network_uid, uid, key);
+	snprintf(provlink, sizeof(provlink), "nv:?v=2&a=%s&w=%s&n=%s&k=%s",
+	    provsrv_addr, network_uid, uid, key);
 
-	if (dao_node_create(network_uid, uid, provkey, description, ipaddress)
+	if (dao_node_create(network_uid, uid, provlink, description, ipaddress)
 	    < 0) {
 		log_warnx("%s: dao_node_create", __func__);
 		goto cleanup;
@@ -760,35 +760,38 @@ node_provisioning(const char *msg, char **resp)
 	}
 
 	if (json_unpack(jmsg, "{s:s,s:s}",
-	    "csr", &csr, "provkey", &provkey) < 0) {
+	    "csr", &csr, "provlink", &provlink) < 0) {
 		log_warnx("%s: json_unpack", __func__);
 		goto cleanup;
 	}
 
-	if ((str = strdup(provkey)) == NULL) {
-		log_warnx("%s: strdup", __func__);
+	if ((uri = evhttp_uri_parse(provlink)) == NULL) {
+		log_warnx("%s: evhttp_uri_parse", __func__);
 		goto cleanup;
 	}
-        for ((i = 0, p = strtok_r(str, ":", &last)); p;
-            (p = strtok_r(NULL, ":", &last))) {
-                if (i < sizeof(tokens)) {
-                        tokens[i++] = p;
-		}
-        }
-        tokens[i] = NULL;
 
-        if ((network_uid = tokens[0]) == NULL ||
-	    (node_uid = tokens[1]) == NULL ||
-	    (key = tokens[2]) == NULL) {
-		log_warnx("%s: invalid provkey tokens", __func__);
+	if ((evhttp_parse_query_str(evhttp_uri_get_query(uri), &headers)) < 0) {
+		log_warnx("%s: evhttp_parse_query_str", __func__);
 		goto cleanup;
 	}
-/*
-	if (dao_node_delete_provkey(network_uid, node_uid, provkey) < 0) {
+
+	if (((version = evhttp_find_header(&headers, "v")) == NULL) ||
+	    ((network_uid = evhttp_find_header(&headers, "w")) == NULL) ||
+	    ((node_uid = evhttp_find_header(&headers, "n")) == NULL) ||
+	    ((node_key = evhttp_find_header(&headers, "k")) == NULL)) {
+		log_warnx("%s: evhttp_find_headers", __func__);
+		goto cleanup;
+	}
+
+	/* XXX validate credentials */
+
+	/*
+	if (dao_node_delete_provkey(network_uid, node_uid, provlink) < 0) {
 		log_warnx("%s: dao_node_delete_provkey", __func__);
 		goto cleanup;
 	}
-*/
+	*/
+
 	if (dao_network_get_embassy(network_uid,
 	    &cacert, &pvkey, &serial_str) < 0) {
 		log_warnx("%s: dao_network_get_embassy", __func__);
@@ -835,12 +838,15 @@ node_provisioning(const char *msg, char **resp)
 	ret = 0;
 
 cleanup:
+
+	evhttp_uri_free(uri);
+	evhttp_clear_headers(&headers);
 	free(cn);
 	return (ret);
 }
 
 int
-node_list_cb(const char *uid, const char *description, const char *provkey,
+node_list_cb(const char *uid, const char *description, const char *provlink,
     const char *ipaddress, const char *status, void *arg)
 {
 	json_t	*array;
@@ -852,7 +858,7 @@ node_list_cb(const char *uid, const char *description, const char *provkey,
 	json_object_set_new(node, "uid", json_string(uid));
 	json_object_set_new(node, "description", json_string(description));
 	json_object_set_new(node, "ipaddress", json_string(ipaddress));
-	json_object_set_new(node, "provcode", json_string(provkey));
+	json_object_set_new(node, "provcode", json_string(provlink));
 	json_object_set_new(node, "status", json_string(status));
 	json_array_append_new(array, node);
 
