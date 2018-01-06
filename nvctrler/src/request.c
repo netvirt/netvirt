@@ -798,7 +798,7 @@ node_provisioning(const char *msg, char **resp)
 		goto cleanup;
 	}
 
-	if (asprintf(&cn, "1:nva:%s:%s", network_uid, node_uid) < 0) {
+	if (asprintf(&cn, "v=2&t=nva&w=%s&n=%s", network_uid, node_uid) < 0) {
 		log_warnx("%s: asprintf", __func__);
 		goto cleanup;
 	}
