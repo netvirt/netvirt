@@ -484,8 +484,9 @@ xmit_networkinfo(struct tls_peer *p)
 	json_t		*jmsg = NULL;
 	char		*msg = NULL;
 
-	if ((jmsg = json_pack("{s:s, s:s}",
+	if ((jmsg = json_pack("{s:s, s:s, s:s}",
 	    "action", "networkinfo",
+	    "vswitch_addr", vswitch_addr,
 	    "ipaddr", p->node->ipaddr)) == NULL) {
 		log_warnx("%s: json_pack", __func__);
 		goto error;

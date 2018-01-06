@@ -55,6 +55,7 @@ struct session_info {
 extern json_t			*config;
 extern struct event_base	*ev_base;
 extern const char		*provsrv_addr;
+extern const char		*vswitch_addr;
 
 void controller_init(void);
 void controller_fini(void);
