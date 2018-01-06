@@ -77,23 +77,24 @@ struct certinfo
 
 	if ((subj = X509_get_subject_name(cert)) == NULL) {
 		log_warnx("%s: X509_get_subject_name", __func__);
-		goto cleanup;
+		goto error;
 	}
 
 	if (X509_NAME_get_text_by_NID(subj, NID_commonName, cn, sizeof(cn)) < 0) {
 		log_warnx("%s: X509_NAME_get_text_by_NID", __func__);
-		goto cleanup;
+		goto error;
 	}
 
+	printf("cn: %s\n", cn);
 	if ((evhttp_parse_query_str(cn, &headers)) < 0) {
 		log_warnx("%s: evhttp_parse_query_str", __func__);
-		goto cleanup;
+		goto error;
 	}
 
 	// XXX create a constructor
 	if ((ci = calloc(1, sizeof(struct certinfo))) == NULL) {
 		log_warnx("%s: malloc", __func__);
-		goto cleanup;
+		goto error;
 	}
 
 	if (((v = evhttp_find_header(&headers, "v")) == NULL) ||
@@ -101,7 +102,7 @@ struct certinfo
 	    ((w = evhttp_find_header(&headers, "w")) == NULL) ||
 	    ((n = evhttp_find_header(&headers, "n")) == NULL)) {
 		log_warnx("%s: evhttp_find_header", __func__);
-		goto cleanup;
+		goto error;
 	}
 
 	ci->version = strdup(v);
@@ -109,10 +110,12 @@ struct certinfo
 	ci->network_uid = strdup(w);
 	ci->node_uid = strdup(n);
 
-cleanup:
-	evhttp_clear_headers(&headers);
-	certinfo_destroy(ci);
+	goto out;
 
+error:
+	certinfo_destroy(ci);
+out:
+	evhttp_clear_headers(&headers);
 	return (ci);
 }
 
