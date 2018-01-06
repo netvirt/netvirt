@@ -15,7 +15,12 @@
 
 // XXX refactor this file
 
+#include <sys/queue.h>
+
 #include <string.h>
+
+#include <event2/http.h>
+#include <event2/keyvalq_struct.h>
 
 #include <openssl/ssl.h>
 #include <openssl/bio.h>
@@ -64,49 +69,49 @@ certinfo_destroy(struct certinfo *ci)
 struct certinfo
 *certinfo(X509 *cert)
 {
-	X509_NAME	*subj;
-	struct certinfo	*ci;
-	size_t		 i;
-	char		 cn[64];
-	char		*tokens[5];
-	char		*tok;
-	char		*last;
+	X509_NAME		*subj;
+	struct evkeyvalq	 headers = TAILQ_HEAD_INITIALIZER(headers);
+	struct certinfo		*ci = NULL;
+	const char		*v, *t, *w, *n;
+	char			 cn[64];
 
 	if ((subj = X509_get_subject_name(cert)) == NULL) {
 		log_warnx("%s: X509_get_subject_name", __func__);
-		return (NULL);
+		goto cleanup;
 	}
 
 	if (X509_NAME_get_text_by_NID(subj, NID_commonName, cn, sizeof(cn)) < 0) {
 		log_warnx("%s: X509_NAME_get_text_by_NID", __func__);
-		return (NULL);
+		goto cleanup;
 	}
 
-	for ((i = 0, tok = strtok_r(cn, ":", &last)); tok;
-	    (tok = strtok_r(NULL, ":", &last))) {
-		if (i < sizeof(tokens)) {
-			tokens[i++] = tok;
-		}
-	}
-	tokens[i] = NULL;
-
-	if (tokens[0] == NULL ||
-	    tokens[1] == NULL ||
-	    tokens[2] == NULL ||
-	    tokens[3] == NULL) {
-		log_warnx("%s: token is NULL", __func__);
-		return (NULL);
+	if ((evhttp_parse_query_str(cn, &headers)) < 0) {
+		log_warnx("%s: evhttp_parse_query_str", __func__);
+		goto cleanup;
 	}
 
-	if ((ci = malloc(sizeof(struct certinfo))) == NULL) {
+	// XXX create a constructor
+	if ((ci = calloc(1, sizeof(struct certinfo))) == NULL) {
 		log_warnx("%s: malloc", __func__);
-		return (NULL);
+		goto cleanup;
 	}
 
-	ci->version = strdup(tokens[0]);
-	ci->type = strdup(tokens[1]);
-	ci->network_uid = strdup(tokens[2]);
-	ci->node_uid = strdup(tokens[3]);
+	if (((v = evhttp_find_header(&headers, "v")) == NULL) ||
+	    ((t = evhttp_find_header(&headers, "t")) == NULL) ||
+	    ((w = evhttp_find_header(&headers, "w")) == NULL) ||
+	    ((n = evhttp_find_header(&headers, "n")) == NULL)) {
+		log_warnx("%s: evhttp_find_header", __func__);
+		goto cleanup;
+	}
+
+	ci->version = strdup(v);
+	ci->type = strdup(t);
+	ci->network_uid = strdup(w);
+	ci->node_uid = strdup(n);
+
+cleanup:
+	evhttp_clear_headers(&headers);
+	certinfo_destroy(ci);
 
 	return (ci);
 }
