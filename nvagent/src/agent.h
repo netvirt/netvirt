@@ -17,6 +17,8 @@
 #ifndef NVAGENT_H
 #define NVAGENT_H
 
+#include <sys/tree.h>
+
 #include <event2/event.h>
 
 #include <tapcfg.h>
@@ -27,14 +29,22 @@
 extern "C" {
 #endif
 
+struct network {
+	RB_ENTRY(network)	 entry;
+	size_t			 idx;
+	char			*name;
+	char			*ctlsrv_addr;
+	char			*cert;
+	char			*pvkey;
+	char			*cacert;
+};
+
 void	switch_fini(void);
-int	switch_init(tapcfg_t *, int, const char *, const char *);
+int	switch_init(tapcfg_t *, int, const char *, const char *, const char *);
 
 int	ndb_init(void);
 void	ndb_networks(void);
-int	ndb_network_add(const char *, const char *,
-	    const char *, const char *);
-int	ndb_network(const char *, const char **, const char **, const char **);
+struct network *ndb_network(const char *);
 int	ndb_provisioning(const char *, const char *);
 
 int	control_init(const char *);

@@ -14,6 +14,7 @@
  * GNU General Public License for more details.
  */
 
+#include <err.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -58,7 +59,6 @@ main(int argc, char *argv[])
 	char		*provcode = NULL;
 	char		*network_name = NULL;
 	char		 new_name[64];
-	char		 line[64];
 
 	while ((ch = getopt(argc, argv, "hk:lc:")) != -1) {
 
@@ -113,7 +113,7 @@ main(int argc, char *argv[])
 	if (provcode != NULL) {
 		printf("Give this network a name: ");
 		if (fgets(new_name, sizeof(new_name)-1, stdin) == NULL)
-			fatalx("fgets");
+			errx(0, "fgets");
 
 		if ((p = strchr(new_name, '\n')) != NULL)
 			*p = '\0';

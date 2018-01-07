@@ -188,6 +188,7 @@ client_onread_cb(struct bufferevent *bev, void *arg)
 	size_t			 n_read_out;
 	const char		*action;
 	const char		*ipaddr;
+	const char		*vswitch_addr;
 	char			*msg = NULL;
 
 	while (evbuffer_get_length(bufferevent_get_input(bev)) > 0) {
@@ -210,13 +211,13 @@ client_onread_cb(struct bufferevent *bev, void *arg)
 
 		if (strcmp(action, "networkinfo") == 0) {
 
-			if (json_unpack(jmsg, "{s:s}", "ipaddr", &ipaddr)
+			if (json_unpack(jmsg, "{s:s, s:s}", "vswitch_addr", &vswitch_addr, "ipaddr", &ipaddr)
 			    < 0) {
 				log_warnx("%s: json_unpack ipaddr", __func__);
 				goto error;
 			}
 
-			switch_init(c->tapcfg, c->tapfd, ipaddr, netname);
+			switch_init(c->tapcfg, c->tapfd, vswitch_addr, ipaddr, netname);
 		}
 	}
 
@@ -384,11 +385,9 @@ tls_client_free(struct tls_client *c)
 int
 control_init(const char *network_name)
 {
+	struct network		*netcf;
 	struct tls_client	*c;
 	passport_t		*passport;
-	const char		*pvkey;
-	const char		*cert;
-	const char		*cacert;
 
 	// XXX init globally
 	SSL_library_init();
@@ -400,19 +399,19 @@ control_init(const char *network_name)
 	printf("network name: %s\n", network_name);
 	netname = network_name;
 
-	if (ndb_network(network_name, &pvkey, &cert, &cacert) < 0) {
+	if ((netcf = ndb_network(network_name)) == NULL) {
 		log_warnx("%s: the network doesn't exist: %s\n",
 		    __func__, network_name);
 		goto error;
 	}
 
-	if ((passport = pki_passport_load_from_memory(cert, pvkey, cacert))
+	if ((passport = pki_passport_load_from_memory(netcf->cert, netcf->pvkey, netcf->cacert))
 	    == NULL) {
 		log_warnx("%s: pki_passport_load_from_memory", __func__);
 		goto error;
 	}
 
-	if ((c = tls_client_new("127.0.0.1", "7032", passport)) == NULL) {
+	if ((c = tls_client_new(netcf->ctlsrv_addr, "7032", passport)) == NULL) {
 		log_warnx("%s: tls_client_new", __func__);
 		goto error;
 	}

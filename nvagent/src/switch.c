@@ -245,7 +245,7 @@ error:
 }
 
 int
-switch_connect(const char *network_name)
+switch_connect(const char *vswitch_addr, const char *network_name)
 {
 	BIO			*bio = NULL;
 	EC_KEY			*ecdh;
@@ -253,13 +253,10 @@ switch_connect(const char *network_name)
 	struct event		*ev_udpclient;
 	struct addrinfo	 	hints;
 	struct dtls_peer	*p;
+	struct network		*netcf;
 	int			 status;
 	int			 flag;
 	int			 ret;
-	const char		*pvkey;
-	const char		*cert;
-	const char		*cacert;
-	const char		*ip = "127.0.0.1";
 	const char		*port = "9090";
 
 	printf("Connecting...\n");
@@ -268,13 +265,13 @@ switch_connect(const char *network_name)
 	p->state = DTLS_CONNECT;
 	p->handshake_timer = evtimer_new(ev_base, dtls_handshake_timeout_cb, p);
 
-	if (ndb_network(network_name, &pvkey, &cert, &cacert) < 0) {
+	if ((netcf = ndb_network(network_name)) == NULL) {
 		fprintf(stderr, "%s: The network specified doesn't exist: %s\n",
 		    __func__, network_name);
 		return (-1);
 	}
 
-	if ((passport = pki_passport_load_from_memory(cert, pvkey, cacert))
+	if ((passport = pki_passport_load_from_memory(netcf->cert, netcf->pvkey, netcf->cacert))
 	    == NULL)
 		err(1, "%s: pki_passport_load_from_memory", __func__);
 
@@ -306,7 +303,7 @@ switch_connect(const char *network_name)
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_DGRAM;
 
-	if ((status = getaddrinfo(ip, port, &hints, &ai)) != 0)
+	if ((status = getaddrinfo(vswitch_addr, port, &hints, &ai)) != 0)
 		errx(1, "%s: getaddrinfo %s", gai_strerror(status), __func__);
 
 	if ((p->sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) < 0)
@@ -349,7 +346,7 @@ switch_connect(const char *network_name)
 }
 
 int
-switch_init(tapcfg_t *tapcfg, int tapfd, const char *ipaddr,
+switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *ipaddr,
     const char *network_name)
 {
 	struct event		*ev_iface;
@@ -369,7 +366,7 @@ switch_init(tapcfg_t *tapcfg, int tapfd, const char *ipaddr,
 		warn("%s:%d", "event_new", __LINE__);
 	event_add(ev_iface, NULL);
 
-	switch_connect(network_name);
+	switch_connect(vswitch_addr, network_name);
 
 	return (0);	
 }

@@ -14,6 +14,7 @@
  * GNU General Public License for more details.
  */
 
+#include <sys/queue.h>
 #include <sys/stat.h>
 #include <sys/tree.h>
 
@@ -22,6 +23,8 @@
 #include <event2/buffer.h>
 #include <event2/http.h>
 #include <event2/http_struct.h>
+#include <event2/keyvalq_struct.h>
+#include <event2/util.h>
 
 #include <jansson.h>
 
@@ -31,20 +34,6 @@
 
 #define NDB_VERSION 1
 
-struct prov_info {
-	const char	*network_name;
-	const char	*pvkey;
-};
-
-struct network {
-	RB_ENTRY(network)	 entry;
-	size_t			 idx;
-	char			*name;
-	char			*cert;
-	char			*pvkey;
-	char			*cacert;
-};
-
 RB_HEAD(network_tree, network);
 
 struct network_tree	 networks;
@@ -53,9 +42,10 @@ json_t			*jnetworks;
 int			 version;
 char			 ndb_path[256];
 
-static int	ndb_save();
-static int	ndb_fullpath(const char *, char *);
-static int	network_cmp(const struct network *, const struct network *);
+static struct network	*ndb_network_new();
+static int		 ndb_save();
+static int		 ndb_fullpath(const char *, char *);
+static int		 network_cmp(const struct network *, const struct network *);
 RB_PROTOTYPE_STATIC(network_tree, network, entry, network_cmp);
 
 int
@@ -64,7 +54,7 @@ network_cmp(const struct network *a, const struct network *b)
 	return strcmp(a->name, b->name);
 }
 
-#if defined(__unix__) && !defined(__APPLE__)
+#if defined(__unix__) || defined(__APPLE__)
 static int
 mkfullpath(const char *fullpath)
 {
@@ -108,12 +98,12 @@ ndb_init(void)
 	int		 version;
 	size_t		 array_size;
 	size_t		 i;
-	char		 path[256];
 
-#if defined(__unix__)
+#if defined(__unix__) || defined(__APPLE__)
 	{
 		/* Create ~/.config/netvirt/ if it doesn't exist. */
 		struct	 stat st;
+		char	 path[256];
 
 		if (ndb_fullpath("", path) < 0) {
 			fprintf(stderr, "%s: ndb_fullpath\n", __func__);
@@ -130,7 +120,7 @@ ndb_init(void)
 	}
 #endif
 
-	if (ndb_fullpath("nvswitch.nv", ndb_path) < 0) {
+	if (ndb_fullpath("nvagent.json", ndb_path) < 0) {
 		fprintf(stderr, "%s: ndb_fullpath\n", __func__);
 		exit(-1);
 	}
@@ -152,11 +142,14 @@ ndb_init(void)
 		if ((jnetwork = json_array_get(jnetworks, i)) == NULL)
 			continue;
 
-		if ((n = malloc(sizeof(struct network))) == NULL)
+		if ((n = ndb_network_new()) == NULL)
 			return (-1);
 
-		json_unpack(jnetwork, "{s:s, s:s, s:s, s:s}", "name", &n->name,
-		    "cert", &n->cert, "pvkey", &n->pvkey, "cacert", &n->cacert);
+		if (json_unpack(jnetwork, "{s:s, s:s, s:s, s:s, s:s}", "name", &n->name, "ctlsrv_addr", &n->ctlsrv_addr,
+		    "cert", &n->cert, "pvkey", &n->pvkey, "cacert", &n->cacert) < 0) {
+			fprintf(stderr, "%s: json_unpack\n", __func__);
+			return (-1);
+		}
 		n->idx = i;
 
 		RB_INSERT(network_tree, &networks, n);
@@ -171,30 +164,50 @@ ndb_networks(void)
 	struct network	*n;
 	printf("Networks:\n");
 	RB_FOREACH(n, network_tree, &networks) {
-		printf("\tname \"%s\"\n", n->name);
+		printf("\t[%zu] \"%s\"\n", n->idx, n->name);
 	}
 }
 
-
-int
-ndb_network_add(const char *network_name, const char *pvkey,
-    const char *cert, const char *cacert)
+void
+ndb_network_free(struct network *n)
 {
+	if (n == NULL)
+		return;
 
-	struct network	*n;
+	free(n->name);
+	free(n->ctlsrv_addr);
+	free(n->cert);
+	free(n->pvkey);
+	free(n->cacert);
+	free(n);
+}
+
+struct network *
+ndb_network_new()
+{
+	struct network	*n = NULL;
 
 	if ((n = malloc(sizeof(struct network))) == NULL) {
 		fprintf(stderr, "%s: malloc\n", __func__);
-		return -1;
+		return (NULL);
 	}
+	n->idx = 0;
+	n->name = NULL;
+	n->ctlsrv_addr = NULL;
+	n->cert = NULL;
+	n->pvkey = NULL;
+	n->cacert = NULL;
 
-	n->name = strdup(network_name);
-	n->pvkey = strdup(pvkey);
-	n->cert = strdup(cert);
-	n->cacert = strdup(cacert);
+	return (n);
+}
 
-	RB_INSERT(network_tree, &networks, n);
+int
+ndb_network_add(struct network *netcf, const char *cert, const char *cacert)
+{
+	netcf->cert = strdup(cert);
+	netcf->cacert = strdup(cacert);
 
+	RB_INSERT(network_tree, &networks, netcf);
 	ndb_save();
 
 	return (0);
@@ -207,21 +220,15 @@ ndb_network_remove(const char *network_name)
 	return (0);
 }
 
-
-int
-ndb_network(const char *network_name, const char **pvkey, const char **cert,
-    const char **cacert)
+struct network *
+ndb_network(const char *network_name)
 {
-	struct network	needle, *n;
+	struct network	needle, *n = NULL;
 	needle.name = (char *)network_name;
 	if ((n = RB_FIND(network_tree, &networks, &needle)) == NULL)
-		return (-1);
+		return (NULL);
 
-	*pvkey = n->pvkey;
-	*cert = n->cert;
-	*cacert = n->cacert;
-
-	return (0);
+	return (n);
 }
 
 int
@@ -264,6 +271,8 @@ ndb_save()
 
 		if (json_object_set_new_nocheck(jnetwork, "name",
 		    json_string(n->name)) < 0 ||
+		    json_object_set_new_nocheck(jnetwork, "ctlsrv_addr",
+		    json_string(n->ctlsrv_addr)) < 0 ||
 		    json_object_set_new_nocheck(jnetwork, "pvkey",
 		    json_string(n->pvkey)) < 0 ||
 		    json_object_set_new_nocheck(jnetwork, "cert",
@@ -295,7 +304,8 @@ ndb_prov_cb(struct evhttp_request *req, void *arg)
 	json_t			*jmsg;
 	json_error_t		 error;
 	struct evbuffer         *buf;
-	struct prov_info	*prov_info;
+	struct network		*netcfg = arg;
+	const char		*ctlsrv_addr;
 	const char		*cacert;
 	const char		*cert;
 	void                    *p;
@@ -309,18 +319,17 @@ ndb_prov_cb(struct evhttp_request *req, void *arg)
 		goto err;
 	}
 
-	if (json_unpack(jmsg, "{s:s,s:s}", "cert", &cert, "cacert", &cacert)
-	    < 0) {
+	if (json_unpack(jmsg, "{s:s, s:s, s:s}",
+	    "ctlsrv_addr", &ctlsrv_addr, "cert", &cert, "cacert", &cacert) < 0) {
 		fprintf(stdout, "%s: json_unpack", __func__);
 		goto err;
 	}
 
-	prov_info = arg;
-	ndb_network_add(prov_info->network_name, prov_info->pvkey, cert,
-	    cacert);
+	netcfg->ctlsrv_addr = strdup(ctlsrv_addr);
 
-	printf("Network `%s` successfully provisioned.\n",
-	    prov_info->network_name);
+	ndb_network_add(netcfg, cert, cacert);
+
+	printf("Network `%s` successfully provisioned.\n", netcfg->name);
 
 	exit(0);
 err:
@@ -329,18 +338,22 @@ err:
 }
 
 int
-ndb_provisioning(const char *provkey, const char *network_name)
+ndb_provisioning(const char *provlink, const char *network_name)
 {
-	struct evhttp_connection	*evhttp_conn;
-	struct evhttp_request		*req;
-	struct evkeyvalq		*output_headers;
-	struct evbuffer			*output_buffer;
-	struct prov_info		*prov_info;
 	EVP_PKEY			*keyring = NULL;
 	X509_REQ			*certreq = NULL;
-	digital_id_t			*nva_id = NULL;
 	json_t				*jresp;
+	digital_id_t			*nva_id = NULL;
+	struct evhttp_connection	*evhttp_conn;
+	struct evhttp_request		*req;
+	struct evkeyvalq		 headers = TAILQ_HEAD_INITIALIZER(headers);
+	struct evkeyvalq		*output_headers;
+	struct evbuffer			*output_buffer;
+	struct evhttp_uri		*uri;
+	struct network			*netcf;
 	long				 size = 0;
+	const char			*version;
+	const char			*provsrv_addr;
 	char				*resp;
 	char				*certreq_pem = NULL;
 	char				*pvkey_pem = NULL;
@@ -359,14 +372,25 @@ ndb_provisioning(const char *provkey, const char *network_name)
 	/* write the private key in PEM format */
 	pki_write_privatekey_in_mem(keyring, &pvkey_pem, &size);
 
-	if ((prov_info = malloc(sizeof(struct prov_info))) == NULL)
+	if ((uri = evhttp_uri_parse(provlink)) == NULL)
 		return (-1);
 
-	prov_info->network_name = network_name;
-	prov_info->pvkey = pvkey_pem;
+	if ((evhttp_parse_query_str(evhttp_uri_get_query(uri), &headers)) < 0)
+		return (-1);
 
-	evhttp_conn = evhttp_connection_base_new(ev_base, NULL, "127.0.0.1", 8080);
-	req = evhttp_request_new(ndb_prov_cb, prov_info);
+	if ((netcf = ndb_network_new()) == NULL)
+		return (-1);
+
+	netcf->name = strdup(network_name);
+	netcf->pvkey = strdup(pvkey_pem);
+
+	if ( ((version = evhttp_find_header(&headers, "v")) == NULL) ||
+	     ((provsrv_addr = evhttp_find_header(&headers, "a")) == NULL) ) {
+			return (-1);
+	}
+
+	evhttp_conn = evhttp_connection_base_new(ev_base, NULL, provsrv_addr, 8080);
+	req = evhttp_request_new(ndb_prov_cb, netcf);
 
 	output_headers = evhttp_request_get_output_headers(req);
 	evhttp_add_header(output_headers, "Content-Type", "application/json");
@@ -374,13 +398,16 @@ ndb_provisioning(const char *provkey, const char *network_name)
 	jresp = json_object();
 	json_object_set_new(jresp, "csr", json_string(certreq_pem));
 
-	json_object_set_new(jresp, "provkey", json_string(provkey));
+	json_object_set_new(jresp, "provlink", json_string(provlink));
 	resp = json_dumps(jresp, 0);
 
 	output_buffer = evhttp_request_get_output_buffer(req);
 	evbuffer_add(output_buffer, resp, strlen(resp));
 
 	evhttp_make_request(evhttp_conn, req, EVHTTP_REQ_POST, "/v1/provisioning");
+
+	evhttp_clear_headers(&headers);
+	evhttp_uri_free(uri);
 
 	return (0);
 }
