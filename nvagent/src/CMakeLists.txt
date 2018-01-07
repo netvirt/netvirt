@@ -1,4 +1,4 @@
-set(CMAKE_C_FLAGS "-I/usr/local/include -L/usr/local/lib -g -W -Wall -DNVAGENT_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
+set(CMAKE_C_FLAGS " -I/usr/local/opt/openssl/include -L/usr/local/opt/openssl/lib  -I/usr/local/include -L/usr/local/lib -g -W -Wall -DNVAGENT_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_subdirectory(tests)
@@ -73,6 +73,10 @@ if (APPLE)
 		nv
 		ssl
 		crypto
+		jansson
+		event_core
+		event_extra
+		event_openssl
 	)
 elseif (WIN32)
 	target_link_libraries(netvirt-agent

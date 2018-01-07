@@ -21,9 +21,9 @@ set(HARDENING OPTIONS_COMMON
 if (WIN32)
     set(compiler_options "${HARDENING_OPTIONS_COMMON} -fPIE -O1")
 elseif(APPLE)
-    set(MACOS_10_6_FLAG "-stdlib=libstdc++")
-    set(CMAKE_OSX_SYSROOT "/SDKs/MacOSX10.6.sdk/")
-    set(compiler_options "${HARDENING_OPTIONS_COMMON} -fPIE ${MACOS_10_6_FLAG} -O1")
+#    set(MACOS_10_6_FLAG "-stdlib=libstdc++")
+#    set(CMAKE_OSX_SYSROOT "/SDKs/MacOSX10.6.sdk/")
+#    set(compiler_options "${HARDENING_OPTIONS_COMMON} -fPIE ${MACOS_10_6_FLAG} -O1")
 elseif(UNIX)
     set(HARDENING_OPTIONS_LINUX
         ${HARDENING_OPTIONS_COMMON}
@@ -45,6 +45,7 @@ endif()
 
 add_subdirectory(libnv)
 
+option (WITH_GUI "WITH_GUI" OFF)
 option (WITH_NVAGENT "WITH_NVAGENT" ON)
 
 if (WITH_NVAGENT)
