@@ -56,6 +56,7 @@ extern json_t			*config;
 extern struct event_base	*ev_base;
 extern const char		*provsrv_addr;
 extern const char		*vswitch_addr;
+extern const char		*ctlsrv_addr;
 
 void controller_init(void);
 void controller_fini(void);

@@ -822,6 +822,8 @@ node_provisioning(const char *msg, char **resp)
 	}
 
 	if ((jresp = json_object()) == NULL ||
+	    json_object_set_new_nocheck(jresp, "ctlsrv_addr",
+	    json_string(ctlsrv_addr)) < 0 ||
 	    json_object_set_new_nocheck(jresp, "cert",
 	    json_string(node_cert)) < 0 ||
 	    json_object_set_new_nocheck(jresp, "cacert",

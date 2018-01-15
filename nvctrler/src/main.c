@@ -41,6 +41,7 @@ json_t			*config = NULL;
 struct event_base	*ev_base = NULL;
 const char		*provsrv_addr = NULL;
 const char		*vswitch_addr = NULL;
+const char		*ctlsrv_addr = NULL;
 
 void
 sighandler(int signal, short events, void *arg)
@@ -99,6 +100,9 @@ main(int argc, char *argv[])
 
 	if (json_unpack(config, "{s:s}", "vswitch_addr", &vswitch_addr) < 0)
 		fatalx("vswitch_addr not found in config");
+
+	if (json_unpack(config, "{s:s}", "ctlsrv_addr", &ctlsrv_addr) < 0)
+		fatalx("ctlsrv_addr not found in config");
 
 	if ((ev_base = event_base_new()) == NULL)
 		fatalx("event_init");
