@@ -264,7 +264,7 @@ ndb_save()
 			goto out;
 		}
 
-		if ((json_array_append(jnetworks, jnetwork)) < 0) {
+		if ((json_array_append_new(jnetworks, jnetwork)) < 0) {
 			fprintf(stderr, "%s: json_array_append\n", __func__);
 			goto out;
 		}
@@ -311,8 +311,7 @@ ndb_prov_cb(struct evhttp_request *req, void *arg)
 	void                    *p;
 
 	buf = evhttp_request_get_input_buffer(req);
-
-        p = evbuffer_pullup(buf, -1);
+	p = evbuffer_pullup(buf, -1);
 
 	if ((jmsg = json_loadb(p, evbuffer_get_length(buf), 0, &error)) == NULL) {
 		fprintf(stdout, "%s: json_loadb - %s\n", __func__, error.text);
@@ -326,15 +325,13 @@ ndb_prov_cb(struct evhttp_request *req, void *arg)
 	}
 
 	netcfg->ctlsrv_addr = strdup(ctlsrv_addr);
-
 	ndb_network_add(netcfg, cert, cacert);
 
-	printf("Network `%s` successfully provisioned.\n", netcfg->name);
+	json_decref(jmsg);
 
 	exit(0);
 err:
 	return;
-
 }
 
 int
@@ -365,12 +362,15 @@ ndb_provisioning(const char *provlink, const char *network_name)
 
 	/* create a certificate signing request */
 	certreq = pki_certificate_request(keyring, nva_id);
+	pki_free_digital_id(nva_id); // XXX that shounld't even exist
 
 	/* write the certreq in PEM format */
 	pki_write_certreq_in_mem(certreq, &certreq_pem, &size);
+	X509_REQ_free(certreq);
 
 	/* write the private key in PEM format */
 	pki_write_privatekey_in_mem(keyring, &pvkey_pem, &size);
+	EVP_PKEY_free(keyring);
 
 	if ((uri = evhttp_uri_parse(provlink)) == NULL)
 		return (-1);
@@ -382,7 +382,7 @@ ndb_provisioning(const char *provlink, const char *network_name)
 		return (-1);
 
 	netcf->name = strdup(network_name);
-	netcf->pvkey = strdup(pvkey_pem);
+	netcf->pvkey = pvkey_pem; // Steal the pointer
 
 	if ( ((version = evhttp_find_header(&headers, "v")) == NULL) ||
 	     ((provsrv_addr = evhttp_find_header(&headers, "a")) == NULL) ) {
@@ -403,12 +403,15 @@ ndb_provisioning(const char *provlink, const char *network_name)
 
 	output_buffer = evhttp_request_get_output_buffer(req);
 	evbuffer_add(output_buffer, resp, strlen(resp));
+	free(resp); // XXX could use only buffer pointer
 
 	evhttp_make_request(evhttp_conn, req, EVHTTP_REQ_POST, "/v1/provisioning");
 
 	evhttp_clear_headers(&headers);
 	evhttp_uri_free(uri);
 
+	json_decref(jresp);
+	free(certreq_pem);
 	return (0);
 }
 

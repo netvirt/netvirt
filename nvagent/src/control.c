@@ -48,7 +48,9 @@ struct tls_client {
 
 static void	 tls_client_free(struct tls_client *);
 
-const char	*netname;
+const char			*netname;
+static passport_t		*passport;
+static struct tls_client	*client;
 
 #ifdef _WIN32
         #include <winsock2.h>
@@ -176,6 +178,7 @@ xmit_nodeinfo(struct bufferevent *bev, struct tls_client *c)
 out:
 	json_decref(jmsg);
 	free(msg);
+	free(lipaddr);
 	return (ret);
 }
 
@@ -386,8 +389,6 @@ int
 control_init(const char *network_name)
 {
 	struct network		*netcf;
-	struct tls_client	*c;
-	passport_t		*passport;
 
 	// XXX init globally
 	SSL_library_init();
@@ -411,7 +412,7 @@ control_init(const char *network_name)
 		goto error;
 	}
 
-	if ((c = tls_client_new(netcf->ctlsrv_addr, "7032", passport)) == NULL) {
+	if ((client = tls_client_new(netcf->ctlsrv_addr, "7032", passport)) == NULL) {
 		log_warnx("%s: tls_client_new", __func__);
 		goto error;
 	}
@@ -426,5 +427,6 @@ error:
 void
 control_fini(void)
 {
-	// XXX free everything
+	pki_passport_destroy(passport);
+	tls_client_free(client);
 }

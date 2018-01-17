@@ -125,6 +125,9 @@ main(int argc, char *argv[])
 		control_init(network_name);
 
 	event_base_dispatch(ev_base);
+
+	event_free(ev_sigint);
+	event_free(ev_sigterm);
 	event_base_free(ev_base);
 
 	return (0);
