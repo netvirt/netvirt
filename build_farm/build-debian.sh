@@ -6,7 +6,7 @@ release_dir="$1"
 
 
 function install_build_dependencies() {
-    apt-get install -y git scons cmake build-essential libqt4-dev libssl-dev
+    apt-get install -y git scons cmake build-essential libevent-dev libssl-dev
 }
 
 function mcd () {
@@ -19,7 +19,7 @@ function clone_or_pull () {
          git pull || exit 1
          popd
      else
-         git clone "$1" "$2" || exit 1
+         git clone -b proto1.2 "$1" "$2" || exit 1
      fi
 }
 
@@ -44,16 +44,6 @@ function fix_libconfig_git () {
 }
 
 function build_dependencies () {
-    pushd udt4
-    make
-    popd
-
-    pushd libconfig
-    fix_libconfig_git
-    [ ! -f Makefile ] && ./configure
-    make
-    popd
-
     pushd tapcfg
     ./buildall.sh
     popd
@@ -85,7 +75,7 @@ function build_nvagent_gui () {
 
 function build_nvagent () {
     build_nvagent_cli
-    build_nvagent_gui
+#    build_nvagent_gui
 }
 
 install_build_dependencies
