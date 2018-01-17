@@ -252,6 +252,10 @@ EVP_PKEY
 	pubkey = EVP_PKEY_get1_EC_KEY(keyring);
 	EC_KEY_set_asn1_flag(pubkey, OPENSSL_EC_NAMED_CURVE);
 
+	EC_KEY_free(pubkey);
+	EVP_PKEY_free(params);
+	EVP_PKEY_CTX_free(key_ctx);
+	EVP_PKEY_CTX_free(params_ctx);
 	return keyring;
 
 }
@@ -706,14 +710,17 @@ void
 pki_write_certreq_in_mem(X509_REQ *certreq, char **certreq_ptr, long *size)
 {
 	BIO *bio_mem = NULL;
+	char	*ptr = NULL;
 
 	bio_mem = BIO_new(BIO_s_mem());
 	PEM_write_bio_X509_REQ(bio_mem, certreq);
 
-	*size = BIO_get_mem_data(bio_mem, certreq_ptr);
-	*(*certreq_ptr + *size) = '\0';
+	*size = BIO_get_mem_data(bio_mem, &ptr);
+	*(ptr + *size) = '\0';
 
-	(void)BIO_set_close(bio_mem, BIO_NOCLOSE);
+	*certreq_ptr = strdup(ptr);
+
+	(void)BIO_set_close(bio_mem, BIO_CLOSE);
 	BIO_free(bio_mem);
 }
 
