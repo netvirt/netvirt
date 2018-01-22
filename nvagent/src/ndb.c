@@ -404,9 +404,9 @@ ndb_provisioning(const char *provlink, const char *network_name)
 	output_buffer = evhttp_request_get_output_buffer(req);
 	evbuffer_add(output_buffer, resp, strlen(resp));
 
-	char size[22];
-	evutil_snprintf(size, sizeof(size), "%d", strlen(resp));
-	evhttp_add_header(output_headers, "Content-Length", size);
+	char size_cl[22];
+	evutil_snprintf(size_cl, sizeof(size_cl), "%d", strlen(resp));
+	evhttp_add_header(output_headers, "Content-Length", size_cl);
 
 	free(resp); // XXX could use only buffer pointer
 
