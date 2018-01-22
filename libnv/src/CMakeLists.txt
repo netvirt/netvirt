@@ -6,6 +6,10 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 	set(compat_src bsd-asprintf.c)
 endif (CMAKE_SYSTEM_NAME MATCHES "Linux")
 
+if (WIN32)
+	set(compat_src bsd-asprintf.c err.c)
+endif()
+
 set(NV_SRCS
 	bitv.c
 	log.c
