@@ -80,11 +80,19 @@ if (APPLE)
 		event_openssl
 	)
 elseif (WIN32)
+
+	file(GLOB LIBS_FOR_WIN32
+		${LIBRESSL_ROOT_DIR}/ssl/.libs/libssl*dll
+		${LIBRESSL_ROOT_DIR}/crypto/.libs/libcrypto*dll
+		${LIBJANSSON_ROOT_DIR}/src/.libs/libjansson*dll
+		${LIBEVENT_ROOT_DIR}/.libs/libevent*dll)
+
 	target_link_libraries(netvirt-agent
 		ws2_32
 		nv
-		${CMAKE_SOURCE_DIR}/tapcfg/build/tapcfg.dll
+		${LIBS_FOR_WIN32}
 		${OPENSSL_LIBRARIES}
+		${CMAKE_SOURCE_DIR}/tapcfg/build/tapcfg.dll
 	)
 else()
 	target_link_libraries(netvirt-agent
