@@ -1,4 +1,4 @@
-set(CMAKE_C_FLAGS "-I/usr/local/opt/openssl/include -L/usr/local/opt/openssl/lib  -I/usr/local/include -L/usr/local/lib -g -W -Wall -DHAVE_VA_COPY ${compiler_options}")
+set(CMAKE_C_FLAGS "-I/usr/local/include -L/usr/local/lib -g -W -Wall -DHAVE_VA_COPY ${compiler_options}")
 
 add_subdirectory(tests)
 
@@ -7,6 +7,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 endif (CMAKE_SYSTEM_NAME MATCHES "Linux")
 
 if (WIN32)
+	include_directories("${LIBRESSL_ROOT_DIR}/include/" "${LIBEVENT_ROOT_DIR}/include/" "${LIBJANSSON_ROOT_DIR}/include" "${CMAKE_SOURCE_DIR}/libnv/src/")
 	set(compat_src bsd-asprintf.c err.c)
 endif()
 
