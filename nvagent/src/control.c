@@ -14,10 +14,18 @@
  * GNU General Public License for more details.
  */
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <netinet/tcp.h>
+#ifdef _WIN32
+	#include <winsock2.h>
+	#include <ws2tcpip.h>
+#else
+	#include <sys/types.h>
+	#include <netinet/in.h>
+	#include <netinet/tcp.h>
+	#include <arpa/inet.h>
+	#include <sys/socket.h>
+	#include <netdb.h>
+	#include <unistd.h>
+#endif
 
 #include <errno.h>
 #include <syslog.h>
@@ -294,12 +302,14 @@ tls_client_new(const char *hostname, const char *port, passport_t *passport)
 		goto cleanup;
 	}
 
+#ifndef WIN32
 	flag = 1;
 	if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(flag)) < 0 ||
-            setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
-                log_warn("%s: setsockopt", __func__);
-                goto cleanup;
-        }
+	    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
+		log_warn("%s: setsockopt", __func__);
+		goto cleanup;
+	}
+#endif
 
 	if (evutil_make_socket_nonblocking(fd) < 0) {
 		log_warnx("%s: evutil_make_socket_nonblocking", __func__);
