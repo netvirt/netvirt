@@ -61,15 +61,39 @@ static passport_t		*passport;
 static struct tls_client	*client;
 
 #ifdef _WIN32
-        #include <winsock2.h>
-        #include <ws2tcpip.h>
-#else
-        #include <sys/types.h>
-        #include <netinet/in.h>
-        #include <arpa/inet.h>
-        #include <sys/socket.h>
-        #include <netdb.h>
-        #include <unistd.h>
+const char* inet_ntop(int af, const void* src, char* dst, int cnt)
+{
+	struct sockaddr_in srcaddr;
+	memset(&srcaddr, 0, sizeof(struct sockaddr_in));
+	memcpy(&(srcaddr.sin_addr), src, sizeof(srcaddr.sin_addr));
+	srcaddr.sin_family = af;
+
+	if (WSAAddressToString((struct sockaddr*) &srcaddr, sizeof(struct sockaddr_in), 0, dst, (LPDWORD) &cnt) != 0) {
+		WSAGetLastError();
+		return NULL;
+	}
+	return dst;
+}
+
+int inet_pton(int af, const char *src, void *dst)
+{
+	struct sockaddr_storage ss;
+	int size = sizeof(ss);
+	char src_tmp[INET_ADDRSTRLEN+1];
+
+	ZeroMemory(&ss, sizeof(ss));
+	strncpy (src_tmp, src, INET_ADDRSTRLEN+1);
+	src_tmp[INET_ADDRSTRLEN] = 0;
+
+	if (WSAStringToAddress(src_tmp, af, NULL, (struct sockaddr *)&ss, &size) == 0) {
+		switch(af) {
+		case AF_INET:
+			*(struct in_addr *)dst = ((struct sockaddr_in *)&ss)->sin_addr;
+			return 1;
+		}
+	}
+	return 0;
+}
 #endif
 
 char *
