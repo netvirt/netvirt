@@ -1,11 +1,14 @@
-set(CMAKE_C_FLAGS " -I/usr/local/opt/openssl/include -L/usr/local/opt/openssl/lib  -I/usr/local/include -L/usr/local/lib -g -W -Wall -DNVAGENT_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
+set(CMAKE_C_FLAGS "-I/usr/local/include -L/usr/local/lib -g -W -Wall -DNVAGENT_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_subdirectory(tests)
 
 option (WITH_GUI "WITH_GUI" ON)
 
+include_directories("${CMAKE_SOURCE_DIR}/tapcfg/src/include/")
+
 if (WIN32)
+	include_directories("${LIBRESSL_ROOT_DIR}/include/" "${LIBEVENT_ROOT_DIR}/include/" "${LIBJANSSON_ROOT_DIR}/src/" "${CMAKE_SOURCE_DIR}/libnv/src/")
 	set (win_rc_icon gui/rc/icon.rc)
 else()
 	set (win_rc_icon "")
@@ -64,8 +67,6 @@ else()
 
 	add_executable(netvirt-agent MACOSX_BUNDLE ${nvagent_sources} ${cli_sources})
 endif()
-
-include_directories("${CMAKE_SOURCE_DIR}/tapcfg/src/include/")
 
 if (APPLE)
 	target_link_libraries(netvirt-agent
