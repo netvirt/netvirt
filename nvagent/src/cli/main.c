@@ -80,6 +80,12 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
+#ifdef _WIN32
+        WORD wVersionRequested = MAKEWORD(1,1);
+        WSADATA wsaData;
+        WSAStartup(wVersionRequested, &wsaData);
+#endif
+
 	if (ndb_init() < 0) {
 		fprintf(stderr, "%s: db_init\n", __func__);
 		exit(-1);
