@@ -2,6 +2,8 @@
 
 extern char *__progname = "netvirt";
 void openlog(const char *ident, int option, int facility) {}
+void vsyslog(int priority, const char *format, va_list ap) {}
+
 void warn (const char *fmt, ...) { }
 void warnx (const char *fmt, ...) { }
 void err (int eval, const char *fmt, ...) { }
