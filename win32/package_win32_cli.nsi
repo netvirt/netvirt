@@ -66,15 +66,17 @@ SetCompressor /FINAL /SOLID lzma
 		setOutPath $INSTDIR
 
 		File ${BDIR}/nvagent/src/netvirt-agent.exe
-		File ${UDT4_PATH}/src/libudt.dll
-		File ${LIBCONFIG_PATH}/lib/.libs/libconfig-9.dll
 		File ${TAPCFG_PATH}/build/tapcfg.dll
 		File ${MINGW_PATH}/libgcc_s_sjlj-1.dll
 		File ${MINGW_PATH}/libstdc++-6.dll
 		File ${MINGW_PATH}/libssp-0.dll
-		File ${PTHREAD_PATH}/pthreadGC2.dll
-		File ${OPENSSL_PATH}/libeay32.dll
-		File ${OPENSSL_PATH}/ssleay32.dll
+		File ${LIBRESSL_PATH}/ssl/.libs/libssl-44.dll
+		File ${LIBRESSL_PATH}/crypto/.libs/libcrypto-42.dll
+		File ${LIBEVENT_PATH}/.libs/libevent-2-0-5.dll
+		File ${LIBEVENT_PATH}/.libs/libevent_core-2-0-5.dll
+		File ${LIBEVENT_PATH}/.libs/libevent_extra-2-0-5.dll
+		File ${LIBEVENT_PATH}/.libs/libevent_openssl-2-0-5.dll
+		File ${LIBJANSSON_PATH}/src/.libs/libjansson-4.dll
 
 		CreateDirectory $APPDATA\netvirt\default
 
