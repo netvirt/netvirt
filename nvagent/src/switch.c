@@ -14,12 +14,21 @@
  * GNU General Public License for more details.
  */
 
-#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
+
+#ifdef _WIN32
+	#include <winsock2.h>
+	#include <ws2tcpip.h>
+#else
+	#include <sys/types.h>
+	#include <netinet/in.h>
+	#include <netinet/tcp.h>
+	#include <arpa/inet.h>
+	#include <sys/socket.h>
+	#include <netdb.h>
+	#include <unistd.h>
+#endif
 
 #include <err.h>
 #include <stdio.h>
