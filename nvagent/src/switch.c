@@ -318,9 +318,11 @@ switch_connect(const char *vswitch_addr, const char *network_name)
 	if ((p->sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) < 0)
 		errx(1, "%s: socket", __func__);
 
+#ifndef WIN32
 	flag = 1;
 	if (setsockopt(p->sock, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) < 0)
 		errx(1, "%s: setsockopt", __func__);
+#endif
 
 	if (connect(p->sock, ai->ai_addr, ai->ai_addrlen) < 0)
 		warn("%s: connect", __func__);
