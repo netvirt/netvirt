@@ -100,40 +100,40 @@ char *
 local_ipaddr()
 {
 #ifdef _WIN32
-        WORD	wVersionRequested = MAKEWORD(1,1);
-        WSADATA wsaData;
+	WORD	wVersionRequested = MAKEWORD(1,1);
+	WSADATA wsaData;
 #endif
-        struct addrinfo		*serv_info;
-        struct sockaddr_in	 name;
-        int			 sock;
-        const char		*addr_ptr;
-        char			*listen_addr = "dynvpn.com";
-        char			*port = "9092";
+	struct addrinfo		*serv_info;
+	struct sockaddr_in	 name;
+	int			 sock;
+	const char		*addr_ptr;
+	char			*listen_addr = "dynvpn.com";
+	char			*port = "9092";
 	char			 local_ip[16];
 
 #ifdef _WIN32
-        /* init Winsocket */
-        WSAStartup(wVersionRequested, &wsaData);
+	/* init Winsocket */
+	WSAStartup(wVersionRequested, &wsaData);
 #endif
 	// XXX handler errors
-        sock = socket(AF_INET, SOCK_DGRAM, 0);
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
 
-        getaddrinfo(listen_addr, port, NULL, &serv_info);
-        connect(sock, serv_info->ai_addr, serv_info->ai_addrlen);
-        freeaddrinfo(serv_info);
+	getaddrinfo(listen_addr, port, NULL, &serv_info);
+	connect(sock, serv_info->ai_addr, serv_info->ai_addrlen);
+	freeaddrinfo(serv_info);
 
-        socklen_t namelen = sizeof(name);
-        getsockname(sock, (struct sockaddr *)&name, &namelen);
+	socklen_t namelen = sizeof(name);
+	getsockname(sock, (struct sockaddr *)&name, &namelen);
 
 #ifdef _WIN32
-        closesocket(sock);
-        WSACleanup();
+	closesocket(sock);
+	WSACleanup();
 #else
-        close(sock);
+	close(sock);
 #endif
 
-        if ((addr_ptr = inet_ntop(AF_INET, &name.sin_addr, local_ip,
-	    INET_ADDRSTRLEN)) == NULL)
+	if ((addr_ptr = inet_ntop(AF_INET, &name.sin_addr, local_ip,
+	 INET_ADDRSTRLEN)) == NULL)
 		return (NULL);
 
 	return strdup(local_ip);
