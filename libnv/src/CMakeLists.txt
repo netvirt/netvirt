@@ -7,7 +7,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 endif (CMAKE_SYSTEM_NAME MATCHES "Linux")
 
 if (WIN32)
-	include_directories("${LIBRESSL_ROOT_DIR}/include/" "${LIBEVENT_ROOT_DIR}/include/" "${LIBJANSSON_ROOT_DIR}/include" "${CMAKE_SOURCE_DIR}/libnv/src/")
+	include_directories("${LIBRESSL_ROOT_DIR}/include/" "${LIBEVENT_ROOT_DIR}/include/" "${CMAKE_SOURCE_DIR}/libnv/src/")
 	set(compat_src bsd-asprintf.c err.c)
 endif()
 
