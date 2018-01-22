@@ -80,7 +80,7 @@ if (APPLE)
 	)
 elseif (WIN32)
 	target_link_libraries(netvirt-agent
-		config
+		ws2_32
 		nv
 		${CMAKE_SOURCE_DIR}/tapcfg/build/tapcfg.dll
 		${OPENSSL_LIBRARIES}
