@@ -35,7 +35,10 @@ SetCompressor /FINAL /SOLID lzma
 	!include "x64.nsh"
 	!define /date NOW "%y.%m.%d"
 	Name "NetVirt Agent CLI"
-	OutFile "${BDIR}/netvirt-agent-cli-${NOW}_x86.exe"
+	!ifndef OUTFILE
+		!define OUTFILE "${BDIR}/netvirt-agent-cli-${NOW}_x86.exe"
+	!endif
+	OutFile "${OUTFILE}"
 	InstallDir $PROGRAMFILES\netvirt-agent-cli
 
 	; Ask admin privileges

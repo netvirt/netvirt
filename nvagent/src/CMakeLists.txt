@@ -5,7 +5,11 @@ add_subdirectory(tests)
 
 option (WITH_GUI "WITH_GUI" ON)
 
-include_directories("${CMAKE_SOURCE_DIR}/tapcfg/src/include/")
+if (NOT TAPCFG_ROOT_DIR)
+  set(TAPCFG_ROOT_DIR ${CMAKE_SOURCE_DIR}/tapcfg)
+endif()
+
+include_directories("${TAPCFG_ROOT_DIR}/src/include/")
 
 if (WIN32)
 	include_directories("${LIBRESSL_ROOT_DIR}/include/" "${LIBEVENT_ROOT_DIR}/include/" "${LIBJANSSON_ROOT_DIR}/src/" "${CMAKE_SOURCE_DIR}/libnv/src/")
@@ -21,7 +25,7 @@ set(nvagent_sources
 
 message(STATUS "CMAKE_SOURCE_DIR" ${CMAKE_SOURCE_DIR})
 
-link_directories("${CMAKE_SOURCE_DIR}/tapcfg/build")
+link_directories("${TAPCFG_ROOT_DIR}/build")
 
 if (WITH_GUI)
 	add_definitions( -DQT_EDITION=QT_EDITION_OPENSOURCE )
@@ -70,7 +74,7 @@ endif()
 
 if (APPLE)
 	target_link_libraries(netvirt-agent
-		${CMAKE_SOURCE_DIR}/tapcfg/build/libtapcfg.a
+		${TAPCFG_ROOT_DIR}/build/libtapcfg.a
 		nv
 		ssl
 		crypto
@@ -92,7 +96,7 @@ elseif (WIN32)
 		nv
 		${LIBS_FOR_WIN32}
 		${OPENSSL_LIBRARIES}
-		${CMAKE_SOURCE_DIR}/tapcfg/build/tapcfg.dll
+		${TAPCFG_ROOT_DIR}/build/tapcfg.dll
 	)
 else()
 	target_link_libraries(netvirt-agent
