@@ -401,10 +401,13 @@ ndb_provisioning(const char *provlink, const char *network_name)
 	json_object_set_new(jresp, "provlink", json_string(provlink));
 	resp = json_dumps(jresp, 0);
 
-	evhttp_add_header(output_headers, "Content-Length", strlen(resp));
-
 	output_buffer = evhttp_request_get_output_buffer(req);
 	evbuffer_add(output_buffer, resp, strlen(resp));
+
+	char size[22];
+	evutil_snprintf(size, sizeof(size), "%d", strlen(resp));
+	evhttp_add_header(output_headers, "Content-Length", size);
+
 	free(resp); // XXX could use only buffer pointer
 
 	evhttp_make_request(evhttp_conn, req, EVHTTP_REQ_POST, "/v1/provisioning");
