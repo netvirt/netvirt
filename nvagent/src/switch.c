@@ -223,9 +223,9 @@ iface_cb(int sock, short what, void *arg)
 	(void)sock;
 	(void)what;
 
-	struct dtls_peer	*p;
+	struct dtls_peer	*p = arg;
 	int			 ret;
-	char			 buf[5000] = {0};
+	uint8_t			 buf[5000] = {0};
 
 	p = arg;
 
