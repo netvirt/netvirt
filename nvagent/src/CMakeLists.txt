@@ -84,6 +84,7 @@ if (APPLE)
 	target_link_libraries(netvirt-agent
 		${TAPCFG_ROOT_DIR}/build/libtapcfg.a
 		nv
+		pthread
 		ssl
 		crypto
 		jansson
