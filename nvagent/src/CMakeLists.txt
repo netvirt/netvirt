@@ -5,6 +5,14 @@ add_subdirectory(tests)
 
 option (WITH_GUI "WITH_GUI" ON)
 
+if (APPLE)
+  if (NOT OPENSSL_ROOT_DIR)
+    set(OPENSSL_ROOT_DIR /usr/local/opt/openssl)
+  endif()
+  include_directories("${OPENSSL_ROOT_DIR}/include")
+  link_directories("${OPENSSL_ROOT_DIR}/lib")
+endif()
+
 if (NOT TAPCFG_ROOT_DIR)
   set(TAPCFG_ROOT_DIR ${CMAKE_SOURCE_DIR}/tapcfg)
 endif()
