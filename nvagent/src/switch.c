@@ -17,6 +17,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#if defined(_WIN32) || defined(__APPLE__)
+	#include <pthread.h>
+#endif
+
 #ifdef _WIN32
 	#include <winsock2.h>
 	#include <ws2tcpip.h>
@@ -356,6 +360,16 @@ switch_connect(const char *vswitch_addr, const char *network_name)
 	return (0);
 }
 
+void *poke_tap(void *arg)
+{
+	// XXX add circuit-breaker
+	while (1) {
+		iface_cb(0, 0, arg);
+	}
+
+	return (NULL);
+}
+
 int
 switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *ipaddr,
     const char *network_name)
@@ -372,10 +386,19 @@ switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *i
 	tapcfg_iface_set_status(tapcfg, TAPCFG_STATUS_IPV4_UP);
 	tapcfg_iface_set_ipv4(tapcfg, ipaddr, 24);
 
+
+#if defined(_WIN32) || defined(__APPLE__)
+	pthread_t thread_poke_tap;
+	pthread_attr_t	attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	pthread_create(&thread_poke_tap, &attr, poke_tap, (void *)p);
+#elif
 	if ((ev_iface = event_new(ev_base, tapfd,
 	    EV_READ | EV_PERSIST, iface_cb, p)) == NULL)
 		warn("%s:%d", "event_new", __LINE__);
 	event_add(ev_iface, NULL);
+#endif
 
 	switch_connect(vswitch_addr, network_name);
 
