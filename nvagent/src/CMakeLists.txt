@@ -1,4 +1,4 @@
-set(CMAKE_C_FLAGS "-I/usr/local/include -L/usr/local/lib -g -W -Wall -DNVAGENT_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
+set(CMAKE_C_FLAGS "-I/usr/local/include -g -W -Wall -DNVAGENT_VERSION='\"${CPACK_PACKAGE_VERSION}\"' ${compiler_options}")
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_subdirectory(tests)
