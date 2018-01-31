@@ -20,8 +20,10 @@
 
 #ifndef SYSLOG_H
 #define	SYSLOG_H
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#ifdef _WIN32
+  #define WIN32_LEAN_AND_MEAN
+  #include <windows.h>
+#endif
 
 #define	LOG_EMERG	1
 #define	LOG_ALERT	1
