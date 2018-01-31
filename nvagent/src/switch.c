@@ -393,7 +393,7 @@ switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *i
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	pthread_create(&thread_poke_tap, &attr, poke_tap, (void *)p);
-#elif
+#else
 	if ((ev_iface = event_new(ev_base, tapfd,
 	    EV_READ | EV_PERSIST, iface_cb, p)) == NULL)
 		warn("%s:%d", "event_new", __LINE__);
