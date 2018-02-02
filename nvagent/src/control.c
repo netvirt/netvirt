@@ -17,6 +17,7 @@
 #ifdef _WIN32
 	#include <winsock2.h>
 	#include <ws2tcpip.h>
+	#include <syslog-compat.h>
 #else
 	#include <sys/types.h>
 	#include <netinet/in.h>
@@ -25,10 +26,10 @@
 	#include <sys/socket.h>
 	#include <netdb.h>
 	#include <unistd.h>
+	#include <syslog.h>
 #endif
 
 #include <errno.h>
-#include <syslog.h>
 #include <unistd.h>
 
 #include <event2/buffer.h>

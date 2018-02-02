@@ -18,7 +18,11 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include <syslog.h>
+#ifdef _WIN32
+	#include <syslog-compat.h>
+#else
+	#include <syslog.h>
+#endif
 #include <errno.h>
 #include <time.h>
 
