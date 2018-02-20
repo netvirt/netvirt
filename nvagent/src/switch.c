@@ -14,6 +14,7 @@
  * GNU General Public License for more details.
  */
 
+#include <sys/queue.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -74,12 +75,22 @@ struct eth_hdr {
 	uint16_t	ethertype;
 } __attribute__((packed));
 
+struct packets {
+	int			 len;
+	uint8_t			 buf[5000];
+	TAILQ_ENTRY(packets)	 entries;
+};
+
 static SSL_CTX			*ctx;
 static passport_t		*passport;
 static struct addrinfo		*ai;
 struct event_base		*ev_base;
 struct dtls_peer		 switch_peer;
 struct eth_hdr			 eth_ping;
+pthread_mutex_t			 mutex;
+struct event			*ev_iface;
+
+TAILQ_HEAD(tailhead, packets)	 tailq_head;
 
 static int	 certverify_cb(int, X509_STORE_CTX *);
 static void	 dtls_peer_free(struct dtls_peer *);
@@ -87,6 +98,7 @@ static void	 dtls_handshake_timeout_cb(int, short, void *);
 static int	 dtls_handle(struct dtls_peer *);
 static void	 iface_cb(int, short, void *);
 static void	 udpclient_cb(int, short, void *);
+
 
 int
 certverify_cb(int ok, X509_STORE_CTX *store)
@@ -360,11 +372,45 @@ switch_connect(const char *vswitch_addr, const char *network_name)
 	return (0);
 }
 
+void
+cb_test(int sock, short what, void *arg)
+{
+	struct packets		 *pkt;
+	struct dtls_peer	 *p = arg;
+
+	pthread_mutex_lock(&mutex);
+	while ((pkt = TAILQ_FIRST(&tailq_head)) == NULL) {
+		pthread_mutex_unlock(&mutex);
+		return;
+	}
+	pthread_mutex_unlock(&mutex);
+
+	if (p->state == DTLS_ESTABLISHED) {
+		SSL_write(p->ssl, pkt->buf, pkt->len);
+		// XXX check ret
+	}
+
+	pthread_mutex_lock(&mutex);
+	TAILQ_REMOVE(&tailq_head, pkt, entries);
+	pthread_mutex_unlock(&mutex);
+}
+
 void *poke_tap(void *arg)
 {
-	// XXX add circuit-breaker
-	while (1) {
-		iface_cb(0, 0, arg);
+	struct dtls_peer	*p = arg;
+	struct packets		 *pkt;
+
+	pkt = malloc(sizeof(struct packets));
+
+	while (1) { // XXX add circuit-breaker
+
+		pkt->len = tapcfg_read(p->tapcfg, pkt->buf, sizeof(pkt->buf));
+		// XXX check len
+
+		pthread_mutex_lock(&mutex);
+		TAILQ_INSERT_TAIL(&tailq_head, pkt, entries);
+		pthread_mutex_unlock(&mutex);
+		event_active(ev_iface, EV_TIMEOUT, 0);
 	}
 
 	return (NULL);
@@ -374,8 +420,9 @@ int
 switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *ipaddr,
     const char *network_name)
 {
-	struct event		*ev_iface;
 	struct dtls_peer	*p;
+
+	TAILQ_INIT(&tailq_head);
 
 	eth_ping.ethertype = htons(0x9000);
 	p = &switch_peer;
@@ -386,13 +433,16 @@ switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *i
 	tapcfg_iface_set_status(tapcfg, TAPCFG_STATUS_IPV4_UP);
 	tapcfg_iface_set_ipv4(tapcfg, ipaddr, 24);
 
-
 #if defined(_WIN32) || defined(__APPLE__)
 	pthread_t thread_poke_tap;
 	pthread_attr_t	attr;
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	pthread_create(&thread_poke_tap, &attr, poke_tap, (void *)p);
+
+	if ((ev_iface = event_new(ev_base, 0, EV_TIMEOUT, cb_test, p)) == NULL)
+		warn("%s:%d", "event_new", __LINE__);
+	event_add(ev_iface, NULL);
 #else
 	if ((ev_iface = event_new(ev_base, tapfd,
 	    EV_READ | EV_PERSIST, iface_cb, p)) == NULL)
@@ -410,4 +460,3 @@ agent_fini()
 {
 
 }
-

@@ -20,6 +20,7 @@
 #include <unistd.h>
 
 #include <event2/event.h>
+#include <event2/thread.h>
 
 #include "../agent.h"
 
@@ -84,6 +85,10 @@ main(int argc, char *argv[])
         WORD wVersionRequested = MAKEWORD(1,1);
         WSADATA wsaData;
         WSAStartup(wVersionRequested, &wsaData);
+#endif
+
+#if defined(_WIN32) || defined(__APPLE__)
+	evthread_use_pthreads();
 #endif
 
 	if (ndb_init() < 0) {
