@@ -87,7 +87,9 @@ static struct addrinfo		*ai;
 struct event_base		*ev_base;
 struct dtls_peer		 switch_peer;
 struct eth_hdr			 eth_ping;
+#if defined(_WIN32) || defined(__APPLE__)
 pthread_mutex_t			 mutex;
+#endif
 struct event			*ev_iface;
 
 TAILQ_HEAD(tailhead, packets)	 tailq_head;
@@ -372,6 +374,7 @@ switch_connect(const char *vswitch_addr, const char *network_name)
 	return (0);
 }
 
+#if defined(_WIN32) || defined(__APPLE__)
 void
 cb_test(int sock, short what, void *arg)
 {
@@ -415,6 +418,7 @@ void *poke_tap(void *arg)
 
 	return (NULL);
 }
+#endif
 
 int
 switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *ipaddr,
