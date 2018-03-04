@@ -17,6 +17,7 @@
 #include <err.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <event2/event.h>
@@ -91,6 +92,11 @@ main(int argc, char *argv[])
 	evthread_use_pthreads();
 #endif
 
+	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
+		fprintf(stderr, "%s: signal", __func__);
+		exit(-1);
+	}
+
 	if (ndb_init() < 0) {
 		fprintf(stderr, "%s: db_init\n", __func__);
 		exit(-1);
@@ -137,6 +143,8 @@ main(int argc, char *argv[])
 
 	event_base_dispatch(ev_base);
 
+	ndb_fini();
+	control_fini();
 	event_free(ev_sigint);
 	event_free(ev_sigterm);
 	event_base_free(ev_base);

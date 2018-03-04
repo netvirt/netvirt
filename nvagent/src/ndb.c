@@ -37,12 +37,13 @@
 RB_HEAD(network_tree, network);
 
 struct network_tree	 networks;
-json_t			*jdb;
+json_t			*g_jdb = NULL;
 json_t			*jnetworks;
 int			 version;
 char			 ndb_path[256];
 
 static struct network	*ndb_network_new();
+void			 ndb_network_free(struct network *);
 static int		 ndb_save();
 static int		 ndb_fullpath(const char *, char *);
 static int		 network_cmp(const struct network *, const struct network *);
@@ -125,15 +126,15 @@ ndb_init(void)
 		exit(-1);
 	}
 
-	if ((jdb = json_load_file(ndb_path, 0, &error)) == NULL)
+	if ((g_jdb = json_load_file(ndb_path, 0, &error)) == NULL)
 		return (0);
 
-	if ((json_unpack(jdb, "{s:i}", "version", &version)) == -1) {
+	if ((json_unpack(g_jdb, "{s:i}", "version", &version)) == -1) {
 		fprintf(stderr, "%s: json_unpack\n", __func__);
 		return (-1);
 	}
 
-	if ((jnetworks = json_object_get(jdb, "networks")) == NULL)
+	if ((jnetworks = json_object_get(g_jdb, "networks")) == NULL)
 		return (0);
 
 	array_size = json_array_size(jnetworks);
@@ -159,6 +160,19 @@ ndb_init(void)
 }
 
 void
+ndb_fini()
+{
+	struct network	*n;
+
+	json_decref(g_jdb);
+
+	while ((n = RB_ROOT(&networks)) != NULL) {
+		RB_REMOVE(network_tree, &networks, n);
+		ndb_network_free(n);
+	}
+}
+
+void
 ndb_networks(void)
 {
 	struct network	*n;
@@ -174,11 +188,11 @@ ndb_network_free(struct network *n)
 	if (n == NULL)
 		return;
 
-	free(n->name);
-	free(n->ctlsrv_addr);
-	free(n->cert);
-	free(n->pvkey);
-	free(n->cacert);
+//	free(n->name);
+//	free(n->ctlsrv_addr);
+//	free(n->cert);
+//	free(n->pvkey);
+//	free(n->cacert);
 	free(n);
 }
 
@@ -405,7 +419,7 @@ ndb_provisioning(const char *provlink, const char *network_name)
 	evbuffer_add(output_buffer, resp, strlen(resp));
 
 	char size_cl[22];
-	evutil_snprintf(size_cl, sizeof(size_cl), "%d", strlen(resp));
+	evutil_snprintf(size_cl, sizeof(size_cl), "%zu", strlen(resp));
 	evhttp_add_header(output_headers, "Content-Length", size_cl);
 
 	free(resp); // XXX could use only buffer pointer
@@ -418,12 +432,6 @@ ndb_provisioning(const char *provlink, const char *network_name)
 	json_decref(jresp);
 	free(certreq_pem);
 	return (0);
-}
-
-void
-ndb_fini()
-{
-
 }
 
 RB_GENERATE_STATIC(network_tree, network, entry, network_cmp);

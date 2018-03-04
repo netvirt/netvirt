@@ -30,6 +30,7 @@
 #endif
 
 #include <errno.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <event2/buffer.h>
@@ -47,19 +48,28 @@
 
 #include "agent.h"
 
-struct tls_client {
+struct tls_conn {
 	struct bufferevent	*bev;
 	SSL			*ssl;
 	SSL_CTX			*ctx;
-	tapcfg_t		*tapcfg;
-	int			 tapfd;
+	struct tapif		*tapif;
 };
 
-static void	 tls_client_free(struct tls_client *);
+struct ctlinfo {
+	struct tls_conn	*conn;
+	char		*srv_addr;
+	char		*srv_port;
+	tapcfg_t	*tapcfg;
+	int		 tapfd;
+	char		*netname;
+	passport_t	*passport;
+};
 
-const char			*netname;
-static passport_t		*passport;
-static struct tls_client	*client;
+static struct tls_conn	*tls_conn_new(struct ctlinfo *);
+static void		 tls_conn_free(struct tls_conn *);
+static struct ctlinfo	*ctlinfo_new();
+static void		 ctlinfo_free(struct ctlinfo *);
+static void		 control_reconnect(struct ctlinfo *);
 
 #ifdef _WIN32
 const char* inet_ntop(int af, const void* src, char* dst, int cnt)
@@ -141,7 +151,7 @@ local_ipaddr()
 }
 
 int
-xmit_nodeinfo(struct bufferevent *bev, struct tls_client *c)
+xmit_nodeinfo(struct ctlinfo *ctl)
 {
 	json_t		*jmsg = NULL;
 	int		 ret;
@@ -153,25 +163,25 @@ xmit_nodeinfo(struct bufferevent *bev, struct tls_client *c)
 
 	ret = -1;
 
-	if ((c->tapcfg = tapcfg_init()) == NULL) {
+	// XXX move that at the creation of the ctl object
+	if ((ctl->tapcfg = tapcfg_init()) == NULL) {
 		log_warnx("%s: tapcfg_init", __func__);
-		goto out;
+		goto error;
 	}
 
-	if ((c->tapfd = tapcfg_start(c->tapcfg, "netvirt0", 1)) < 0) {
+	if ((ctl->tapfd = tapcfg_start(ctl->tapcfg, "netvirt0", 1)) < 0) {
 		log_warnx("%s: tapcfg_start", __func__);
-		goto out;
 	}
 
-	if ((lladdr = tapcfg_iface_get_hwaddr(c->tapcfg, &lladdr_len))
+	if ((lladdr = tapcfg_iface_get_hwaddr(ctl->tapcfg, &lladdr_len))
 	    == NULL) {
 		log_warnx("%s: tapcfg_iface_get_hwaddr", __func__);
-		goto out;
+		goto error;
 	}
 
 	if ((lipaddr = local_ipaddr()) == NULL) {
 		log_warnx("%s: local_ipaddr", __func__);
-		goto out;
+		goto error;
 	}
 
 	snprintf(lladdr_str, sizeof(lladdr_str),
@@ -188,27 +198,28 @@ xmit_nodeinfo(struct bufferevent *bev, struct tls_client *c)
 	    "local_ipaddr", lipaddr,
 	    "lladdr", lladdr_str)) == NULL) {
 		log_warnx("%s: json_pack", __func__);
-		goto out;
+		goto error;
 	}
 
 	if ((msg = json_dumps(jmsg, 0)) == NULL) {
 		log_warnx("%s: json_dumps", __func__);
-		goto out;
+		goto error;
 	}
 
-	if (bufferevent_write(bev, msg, strlen(msg)) != 0) {
+	// XXX use buffer and then one write
+	if (bufferevent_write(ctl->conn->bev, msg, strlen(msg)) != 0) {
 		log_warnx("%s: bufferevent_write", __func__);
-		goto out;
+		goto error;
 	}
 
-	if (bufferevent_write(bev, "\n", strlen("\n")) != 0) {
+	if (bufferevent_write(ctl->conn->bev, "\n", strlen("\n")) != 0) {
 		log_warnx("%s: bufferevent_write", __func__);
-		goto out;
+		goto error;
 	}
 
 	ret = 0;
 
-out:
+error:
 	json_decref(jmsg);
 	free(msg);
 	free(lipaddr);
@@ -220,7 +231,7 @@ client_onread_cb(struct bufferevent *bev, void *arg)
 {
 	json_error_t		 error;
 	json_t			*jmsg = NULL;
-	struct tls_client	*c = arg;
+	struct ctlinfo		*ctl = arg;
 	size_t			 n_read_out;
 	const char		*action;
 	const char		*ipaddr;
@@ -253,7 +264,7 @@ client_onread_cb(struct bufferevent *bev, void *arg)
 				goto error;
 			}
 
-			switch_init(c->tapcfg, c->tapfd, vswitch_addr, ipaddr, netname);
+			switch_init(ctl->tapcfg, ctl->tapfd, vswitch_addr, ipaddr, ctl->netname);
 		}
 	}
 
@@ -264,38 +275,90 @@ client_onread_cb(struct bufferevent *bev, void *arg)
 error:
 	json_decref(jmsg);
 	free(msg);
-	bufferevent_free(bev);
+
+	control_reconnect(ctl);
 }
 
 void
 client_onevent_cb(struct bufferevent *bev, short events, void *arg)
 {
-	struct tls_client	*c;
-	unsigned long		 e;
-
-	c = arg;
+	struct ctlinfo	*ctl = arg;
+	unsigned long	 e;
 
 	if (events & BEV_EVENT_CONNECTED) {
 
 		printf("event connected\n");
 
-		xmit_nodeinfo(bev, c);
+		if (xmit_nodeinfo(ctl) < 0)
+			goto error;
 
 	} else if (events & (BEV_EVENT_TIMEOUT | BEV_EVENT_EOF)) {
 
+		printf("timeout | EOF\n");
+
+		goto error;
+
 	} else if (events &  BEV_EVENT_ERROR) {
+
+		printf("error: %s\n", evutil_socket_error_to_string(EVUTIL_SOCKET_ERROR()));
 
 		while ((e = bufferevent_get_openssl_error(bev)) > 0) {
 			log_warnx("%s: TLS error: %s", __func__,
 			    ERR_reason_error_string(e));
 		}
+
+		goto error;
 	}
+
+	return;
+
+error:
+	control_reconnect(ctl);
 }
 
-struct tls_client *
-tls_client_new(const char *hostname, const char *port, passport_t *passport)
+struct ctlinfo *
+ctlinfo_new()
 {
-	struct tls_client	*c = NULL;
+	struct ctlinfo	*ctl = NULL;
+
+	if ((ctl = malloc(sizeof(*ctl))) == NULL) {
+		log_warn("%s: malloc", __func__);
+		goto error;
+	}
+	ctl->conn = NULL;
+	ctl->tapcfg = NULL;
+	ctl->netname = NULL;
+	ctl->passport = NULL;
+	ctl->srv_addr = NULL;
+	ctl->srv_port = NULL;
+
+	return (ctl);
+
+error:
+	ctlinfo_free(ctl);
+	return (NULL);
+}
+
+void
+ctlinfo_free(struct ctlinfo *ctl)
+{
+	if (ctl == NULL)
+		return;
+
+	pki_passport_destroy(ctl->passport);
+	tls_conn_free(ctl->conn);
+	tapcfg_destroy(ctl->tapcfg);
+	free(ctl->srv_addr);
+	free(ctl->srv_port);
+	free(ctl->netname);
+
+	free(ctl);
+}
+
+struct tls_conn *
+tls_conn_new(struct ctlinfo *ctl)
+{
+	struct tls_conn		*conn = NULL;
 	struct addrinfo		*res = NULL;
 	struct addrinfo		 hints;
 	EC_KEY			*ecdh = NULL;
@@ -304,20 +367,18 @@ tls_client_new(const char *hostname, const char *port, passport_t *passport)
 	int			 flag;
 	int			 ret;
 
-	if ((c = malloc(sizeof(*c))) == NULL) {
+	if ((conn = malloc(sizeof(struct tls_conn))) == NULL) {
 		log_warn("%s: malloc", __func__);
 		goto cleanup;
 	}
-	c->ssl = NULL;
-	c->ctx = NULL;
-	c->bev = NULL;
-	c->tapcfg = NULL;
-	c->tapfd = -1;
+	conn->ssl = NULL;
+	conn->ctx = NULL;
+	conn->bev = NULL;
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
-	if ((ret = getaddrinfo(hostname, port, &hints, &res)) < 0) {
+	if ((ret = getaddrinfo(ctl->srv_addr, ctl->srv_port, &hints, &res)) < 0) {
 		log_warnx("%s: getaddrinfo %s", __func__, gai_strerror(ret));
 		goto cleanup;
 	}
@@ -341,7 +402,7 @@ tls_client_new(const char *hostname, const char *port, passport_t *passport)
 		goto cleanup;
 	}
 
-	if ((c->ctx = SSL_CTX_new(TLSv1_2_client_method())) == NULL) {
+	if ((conn->ctx = SSL_CTX_new(TLSv1_2_client_method())) == NULL) {
 		log_warnx("%s: SSL_CTX_new", __func__);
 		while ((e = ERR_get_error()))
 			log_warnx("%s", ERR_error_string(e, NULL));
@@ -349,7 +410,7 @@ tls_client_new(const char *hostname, const char *port, passport_t *passport)
 		goto cleanup;
 	}
 
-	if (SSL_CTX_set_cipher_list(c->ctx,
+	if (SSL_CTX_set_cipher_list(conn->ctx,
 	    "ECDHE-ECDSA-CHACHA20-POLY1305,"
 	    "ECDHE-ECDSA-AES256-GCM-SHA384") != 1) {
 		log_warnx("%s: SSL_CTX_set_cipher", __func__);
@@ -363,36 +424,37 @@ tls_client_new(const char *hostname, const char *port, passport_t *passport)
 		goto cleanup;
 	}
 
-	SSL_CTX_set_cert_store(c->ctx, passport->cacert_store);
+	SSL_CTX_set_cert_store(conn->ctx, ctl->passport->cacert_store);
+	X509_STORE_up_ref(ctl->passport->cacert_store);
 
-	if ((SSL_CTX_use_certificate(c->ctx, passport->certificate)) != 1) {
+	if ((SSL_CTX_use_certificate(conn->ctx, ctl->passport->certificate)) != 1) {
 		log_warnx("%s: SSL_CTX_use_certificate", __func__);
 		goto cleanup;
 	}
 
-	if ((SSL_CTX_use_PrivateKey(c->ctx, passport->keyring)) != 1) {
+	if ((SSL_CTX_use_PrivateKey(conn->ctx, ctl->passport->keyring)) != 1) {
 		log_warnx("%s: SSL_CTX_use_PrivateKey", __func__);
 		goto cleanup;
 	}
 
-	if ((c->ssl = SSL_new(c->ctx)) == NULL) {
+	if ((conn->ssl = SSL_new(conn->ctx)) == NULL) {
 		log_warnx("%s: SSL_new", __func__);
 		goto cleanup;
 	}
 
-	SSL_set_tlsext_host_name(c->ssl, passport->certinfo->network_uid);
+	SSL_set_tlsext_host_name(conn->ssl, ctl->passport->certinfo->network_uid);
 
-	if ((c->bev = bufferevent_openssl_socket_new(ev_base, fd, c->ssl,
-	    BUFFEREVENT_SSL_CONNECTING, BEV_OPT_CLOSE_ON_FREE)) == NULL) {
+	if ((conn->bev = bufferevent_openssl_socket_new(ev_base, fd, conn->ssl,
+	    BUFFEREVENT_SSL_CONNECTING, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS)) == NULL) {
 		log_warnx("%s: bufferevent_openssl_socket_new", __func__);
 		goto cleanup;
 	}
 
-	bufferevent_enable(c->bev, EV_READ | EV_WRITE);
-	bufferevent_setcb(c->bev, client_onread_cb, NULL, client_onevent_cb,
-	    c);
+	bufferevent_setcb(conn->bev,
+	    client_onread_cb, NULL, client_onevent_cb, ctl);
+	bufferevent_enable(conn->bev, EV_READ | EV_WRITE);
 
-	if (bufferevent_socket_connect(c->bev, res->ai_addr, res->ai_addrlen)
+	if (bufferevent_socket_connect(conn->bev, res->ai_addr, res->ai_addrlen)
 	    < 0) {
 		log_warnx("%s: bufferevent_socket_connected", __func__);
 		goto cleanup;
@@ -400,30 +462,82 @@ tls_client_new(const char *hostname, const char *port, passport_t *passport)
 
 	EC_KEY_free(ecdh);
 	freeaddrinfo(res);
-	return (c);
+
+	return (conn);
 
 cleanup:
 	EC_KEY_free(ecdh);
-	tls_client_free(c);
+	tls_conn_free(conn);
 	freeaddrinfo(res);
 	close(fd);
+
 	return (NULL);
 }
 
 void
-tls_client_free(struct tls_client *c)
+tls_conn_free(struct tls_conn *conn)
 {
-	SSL_free(c->ssl);
-	SSL_CTX_free(c->ctx);
-	if (c->bev != NULL)
-		bufferevent_free(c->bev);
-	free(c);
+	if (conn == NULL)
+		return;
+
+	if (conn->ssl != NULL) {
+		SSL_set_shutdown(conn->ssl, SSL_RECEIVED_SHUTDOWN);
+		SSL_shutdown(conn->ssl);
+	}
+
+	if (conn->bev != NULL) {
+		bufferevent_free(conn->bev);
+	}
+
+	if (conn->ctx != NULL)
+		SSL_CTX_free(conn->ctx);
+
+	free(conn);
 }
+
+void
+control_connstart(evutil_socket_t fd, short what, void *arg)
+{
+	struct ctlinfo	*ctl = arg;
+	(void)fd;
+	(void)what;
+
+	if (ctl->conn != NULL) {
+		tls_conn_free(ctl->conn);
+		ctl->conn = NULL;
+	}
+
+	if ((ctl->conn = tls_conn_new(ctl)) == NULL) {
+		log_warnx("%s: tls_conn_new", __func__);
+		goto error;
+	}
+
+	return;
+
+error:
+	control_reconnect(ctl);
+}
+
+void
+control_reconnect(struct ctlinfo *ctl)
+{
+	struct timeval	one_sec = {1, 0};
+
+	if (ctl->conn != NULL && ctl->conn->bev != NULL) {
+		bufferevent_disable(ctl->conn->bev, EV_READ | EV_WRITE);
+	}
+
+	if (event_base_once(ev_base, -1, EV_TIMEOUT,
+	    control_connstart, ctl, &one_sec) < 0)
+		log_warnx("%s: event_base_once", __func__);
+}
+
+struct ctlinfo		*ctl = NULL;
 
 int
 control_init(const char *network_name)
 {
-	struct network		*netcf;
+	struct network		*netcf = NULL;
 
 	// XXX init globally
 	SSL_library_init();
@@ -433,35 +547,49 @@ control_init(const char *network_name)
 	log_init(2, LOG_DAEMON);
 
 	printf("network name: %s\n", network_name);
-	netname = network_name;
 
 	if ((netcf = ndb_network(network_name)) == NULL) {
-		log_warnx("%s: the network doesn't exist: %s\n",
+		log_warnx("%s: the network doesn't exist: %s",
 		    __func__, network_name);
 		goto error;
 	}
 
-	if ((passport = pki_passport_load_from_memory(netcf->cert, netcf->pvkey, netcf->cacert))
+	if ((ctl = ctlinfo_new()) == NULL) {
+		log_warnx("%s: ctlinfo_new", __func__);
+		goto error;
+	}
+
+	if ((ctl->netname = strdup(network_name)) == NULL) {
+		log_warn("%s: strdup", __func__);
+		goto error;
+	}
+
+	if ((ctl->srv_addr = strdup(netcf->ctlsrv_addr)) == NULL) {
+		log_warn("%s: strdup", __func__);
+		goto error;
+	}
+
+	if ((ctl->srv_port = strdup("7032")) == NULL) {
+		log_warn("%s: strdup", __func__);
+		goto error;
+	}
+
+	if ((ctl->passport = pki_passport_load_from_memory(netcf->cert, netcf->pvkey, netcf->cacert))
 	    == NULL) {
 		log_warnx("%s: pki_passport_load_from_memory", __func__);
 		goto error;
 	}
 
-	if ((client = tls_client_new(netcf->ctlsrv_addr, "7032", passport)) == NULL) {
-		log_warnx("%s: tls_client_new", __func__);
-		goto error;
-	}
+	control_reconnect(ctl);
 
 	return (0);
 
 error:
-
 	return (-1);
 }
 
 void
 control_fini(void)
 {
-	pki_passport_destroy(passport);
-	tls_client_free(client);
+	ctlinfo_free(ctl);
 }
