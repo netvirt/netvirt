@@ -556,7 +556,7 @@ v1_node_delete(struct evhttp_request *req, void *arg)
 	    "X-netvirt-apikey")) == NULL) {
 		log_warnx("%s: evhttp_find_header X-netvirt-apikey", __func__);
 		goto out;
-}
+	}
 
 	if (evhttp_parse_query_str(evhttp_uri_get_query(
 	    evhttp_request_get_evhttp_uri(req)), &qheaders) < 0) {
