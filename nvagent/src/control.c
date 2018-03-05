@@ -163,16 +163,6 @@ xmit_nodeinfo(struct ctlinfo *ctl)
 
 	ret = -1;
 
-	// XXX move that at the creation of the ctl object
-	if ((ctl->tapcfg = tapcfg_init()) == NULL) {
-		log_warnx("%s: tapcfg_init", __func__);
-		goto error;
-	}
-
-	if ((ctl->tapfd = tapcfg_start(ctl->tapcfg, "netvirt0", 1)) < 0) {
-		log_warnx("%s: tapcfg_start", __func__);
-	}
-
 	if ((lladdr = tapcfg_iface_get_hwaddr(ctl->tapcfg, &lladdr_len))
 	    == NULL) {
 		log_warnx("%s: tapcfg_iface_get_hwaddr", __func__);
@@ -557,6 +547,15 @@ control_init(const char *network_name)
 	if ((ctl = ctlinfo_new()) == NULL) {
 		log_warnx("%s: ctlinfo_new", __func__);
 		goto error;
+	}
+
+	if ((ctl->tapcfg = tapcfg_init()) == NULL) {
+		log_warnx("%s: tapcfg_init", __func__);
+		goto error;
+	}
+
+	if ((ctl->tapfd = tapcfg_start(ctl->tapcfg, "netvirt0", 1)) < 0) {
+		log_warnx("%s: tapcfg_start", __func__);
 	}
 
 	if ((ctl->netname = strdup(network_name)) == NULL) {
