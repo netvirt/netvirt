@@ -72,25 +72,32 @@ static void		 ctlinfo_free(struct ctlinfo *);
 static void		 control_reconnect(struct ctlinfo *);
 
 #ifdef _WIN32
-const char* inet_ntop(int af, const void* src, char* dst, int cnt)
+const char *
+inet_ntop(int af, const void* src, char* dst, int cnt)
 {
-	struct sockaddr_in srcaddr;
+	struct sockaddr_in	srcaddr;
+
 	memset(&srcaddr, 0, sizeof(struct sockaddr_in));
 	memcpy(&(srcaddr.sin_addr), src, sizeof(srcaddr.sin_addr));
 	srcaddr.sin_family = af;
 
-	if (WSAAddressToString((struct sockaddr*) &srcaddr, sizeof(struct sockaddr_in), 0, dst, (LPDWORD) &cnt) != 0) {
+	if (WSAAddressToString((struct sockaddr*) &srcaddr,
+	    sizeof(struct sockaddr_in), 0, dst, (LPDWORD) &cnt) != 0) {
 		WSAGetLastError();
-		return NULL;
+		return (NULL);
 	}
-	return dst;
+
+	return (dst);
 }
 
-int inet_pton(int af, const char *src, void *dst)
+int
+inet_pton(int af, const char *src, void *dst)
 {
-	struct sockaddr_storage ss;
-	int size = sizeof(ss);
-	char src_tmp[INET_ADDRSTRLEN+1];
+	struct sockaddr_storage	ss;
+	int			size;
+	char			src_tmp[INET_ADDRSTRLEN+1];
+
+	size = sizeof(ss);
 
 	ZeroMemory(&ss, sizeof(ss));
 	strncpy (src_tmp, src, INET_ADDRSTRLEN+1);
@@ -100,10 +107,11 @@ int inet_pton(int af, const char *src, void *dst)
 		switch(af) {
 		case AF_INET:
 			*(struct in_addr *)dst = ((struct sockaddr_in *)&ss)->sin_addr;
-			return 1;
+			return (1);
 		}
 	}
-	return 0;
+
+	return (0);
 }
 #endif
 
@@ -147,7 +155,7 @@ local_ipaddr()
 	 INET_ADDRSTRLEN)) == NULL)
 		return (NULL);
 
-	return strdup(local_ip);
+	return (strdup(local_ip));
 }
 
 int
@@ -213,6 +221,7 @@ error:
 	json_decref(jmsg);
 	free(msg);
 	free(lipaddr);
+
 	return (ret);
 }
 
@@ -260,13 +269,15 @@ client_onread_cb(struct bufferevent *bev, void *arg)
 
 	json_decref(jmsg);
 	free(msg);
+
 	return;
 
 error:
 	json_decref(jmsg);
 	free(msg);
-
 	control_reconnect(ctl);
+
+	return;
 }
 
 void
@@ -304,6 +315,8 @@ client_onevent_cb(struct bufferevent *bev, short events, void *arg)
 
 error:
 	control_reconnect(ctl);
+
+	return;
 }
 
 struct ctlinfo *
@@ -326,6 +339,7 @@ ctlinfo_new()
 
 error:
 	ctlinfo_free(ctl);
+
 	return (NULL);
 }
 
@@ -338,11 +352,13 @@ ctlinfo_free(struct ctlinfo *ctl)
 	pki_passport_destroy(ctl->passport);
 	tls_conn_free(ctl->conn);
 	tapcfg_destroy(ctl->tapcfg);
+
 	free(ctl->srv_addr);
 	free(ctl->srv_port);
 	free(ctl->netname);
-
 	free(ctl);
+
+	return;
 }
 
 struct tls_conn *
@@ -475,14 +491,15 @@ tls_conn_free(struct tls_conn *conn)
 		SSL_shutdown(conn->ssl);
 	}
 
-	if (conn->bev != NULL) {
+	if (conn->bev != NULL)
 		bufferevent_free(conn->bev);
-	}
 
 	if (conn->ctx != NULL)
 		SSL_CTX_free(conn->ctx);
 
 	free(conn);
+
+	return;
 }
 
 void
@@ -506,6 +523,8 @@ control_connstart(evutil_socket_t fd, short what, void *arg)
 
 error:
 	control_reconnect(ctl);
+
+	return;
 }
 
 void
@@ -522,6 +541,7 @@ control_reconnect(struct ctlinfo *ctl)
 		log_warnx("%s: event_base_once", __func__);
 }
 
+// XXX need a ctlinfo list
 struct ctlinfo		*ctl = NULL;
 
 int
@@ -573,8 +593,8 @@ control_init(const char *network_name)
 		goto error;
 	}
 
-	if ((ctl->passport = pki_passport_load_from_memory(netcf->cert, netcf->pvkey, netcf->cacert))
-	    == NULL) {
+	if ((ctl->passport =
+	    pki_passport_load_from_memory(netcf->cert, netcf->pvkey, netcf->cacert)) == NULL) {
 		log_warnx("%s: pki_passport_load_from_memory", __func__);
 		goto error;
 	}
