@@ -31,6 +31,8 @@ int network_create(char *, const char *);
 int network_delete(const char *, const char *);
 int network_list(const char *, char **);
 
+int regions_list(const char *, char **);
+
 int node_create(const char *, const char *);
 int node_delete(const char *, const char *);
 int node_list(const char *, const char *, char **);

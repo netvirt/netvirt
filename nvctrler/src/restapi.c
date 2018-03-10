@@ -37,6 +37,61 @@ cleanup_cb(const void *data, size_t datalen, void *extra)
 }
 
 void
+v1_regions_cb(struct evhttp_request *req, void *arg)
+{
+	struct evbuffer	*respbuf = NULL;
+	int		 code;
+	const char	*apikey;
+	const char	*phrase;
+	char		*msg;
+
+	code = 500;
+	phrase = "Internal Server Error";
+
+	if (evhttp_request_get_command(req) != EVHTTP_REQ_GET) {
+		log_warnx("%s: evhttp_request_get_command", __func__);
+		goto out;
+	}
+
+	if ((apikey = evhttp_find_header(evhttp_request_get_input_headers(req),
+	    "X-netvirt-apikey")) == NULL) {
+		log_warnx("%s: evhttp_find_header", __func__);
+		goto out;
+	}
+
+	if (regions_list(apikey, &msg) < 0) {
+		code = 403;
+		phrase = "Forbidden";
+		log_warnx("%s: regions_list", __func__);
+		goto out;
+	}
+
+	if (evhttp_add_header(req->output_headers, "Content-Type",
+	    "application/json") < 0) {
+		log_warnx("%s: evhttp_add_header", __func__);
+		goto out;
+	}
+
+	if ((respbuf = evbuffer_new()) == NULL) {
+		log_warnx("%s: evbuffer_new", __func__);
+		goto out;
+	}
+
+	if (evbuffer_add_reference(respbuf, msg, strlen(msg),
+	    cleanup_cb, NULL) < 0) {
+		log_warnx("%s: evbuffer_add_reference", __func__);
+		goto out;
+	}
+
+	code = HTTP_OK;
+	phrase = "OK";
+out:
+	evhttp_send_reply(req, code, phrase, respbuf);
+	if (respbuf != NULL)
+		evbuffer_free(respbuf);
+}
+
+void
 v1_client_create_cb(struct evhttp_request *req, void *arg)
 {
 	struct evbuffer		*buf;
@@ -777,6 +832,10 @@ restapi_init(json_t *config, struct event_base *evbase)
 	if (evhttp_set_cb(http, "/v1/provisioning",
 	    v1_provisioning_cb, NULL) < 0)
 		errx(1, "evhttp_set_cb /v1/provisioning");
+
+	if (evhttp_set_cb(http, "/v1/regions",
+	    v1_regions_cb, NULL) < 0)
+		errx(1, "evhttp_set_cb /v1/regions");
 
 	if ((handle = evhttp_bind_socket_with_handle(http,
 	    "0.0.0.0", 8080)) == NULL)

@@ -528,6 +528,51 @@ cleanup:
 	return (ret);
 }
 
+// XXX store it in DB
+int
+regions_list(const char *apikey, char **resp)
+{
+	json_t	*array;
+	json_t	*region;
+	json_t	*jresp = NULL;
+	int	 ret = -1;
+
+	if ((array = json_array()) == NULL) {
+		log_warnx("%s: json_array", __func__);
+		goto cleanup;
+	}
+
+	// TODO hardcoded for now
+	if ((region = json_object()) == NULL) {
+		log_warnx("%s: json_array", __func__);
+		goto cleanup;
+	}
+	json_object_set_new(region, "name", json_string("New York 1"));
+	json_object_set_new(region, "tag", json_string("NY1"));
+	json_array_append_new(array, region);
+
+	if ((region = json_object()) == NULL) {
+		log_warnx("%s: json_array", __func__);
+		goto cleanup;
+	}
+	json_object_set_new(region, "name", json_string("London 1"));
+	json_object_set_new(region, "tag", json_string("LN1"));
+	json_array_append_new(array, region);
+
+	if ((jresp = json_object()) == NULL ||
+	    json_object_set_new(jresp, "regions", array) < 0 ||
+	   (*resp = json_dumps(jresp, JSON_INDENT(1))) == NULL) {
+		goto cleanup;
+	}
+
+	ret = 0;
+
+cleanup:
+	json_decref(jresp);
+
+	return (ret);
+}
+
 int
 network_delete(const char *description, const char *apikey)
 {
