@@ -3,7 +3,7 @@ exit_error() {
 #	exit 1
 }
 
-EMAIL=test@example.com
+EMAIL=`mktemp -u XXXXXX`@example.com
 PASSWORD=testpassword
 
 ###
@@ -42,7 +42,7 @@ fi
 
 ###
 testname="Add network"
-NET_DESC="home-network"
+NET_DESC=`mktemp -u XXXXXX`
 SUBNET="10.40.0.0"
 NETMASK="255.255.0.0"
 curl -i -H 'X-netvirt-apikey: '${APIKEY}'' -H 'Content-Type: application/json' -d '{"description":"'${NET_DESC}'", "subnet":"'${SUBNET}'", "netmask":"'${NETMASK}'"}' \
@@ -56,7 +56,7 @@ fi
 
 ###
 testname="Add node"
-NODE_DESC="pc-home3"
+NODE_DESC=`mktemp -u XXXXXX`
 curl -i -H 'X-netvirt-apikey: '${APIKEY}'' -H 'Content-Type: application/json' -d '{"network_description":"'${NET_DESC}'", "description":"'${NODE_DESC}'"}' \
 -X POST http://127.0.0.1:8080/v1/node | grep "201 Created"
 
@@ -68,10 +68,20 @@ fi
 
 ###
 testname="Add node2"
-NODE_DESC2="pc-home2"
+NODE_DESC2=`mktemp -u XXXXXX`
 curl -i -H 'X-netvirt-apikey: '${APIKEY}'' -H 'Content-Type: application/json' -d '{"network_description":"'${NET_DESC}'", "description":"'${NODE_DESC2}'"}' \
 -X POST http://127.0.0.1:8080/v1/node | grep "201 Created"
 
+if [ "$?" != "0" ]; then
+	exit_error
+else
+	printf "\e[0;32m ${testname} \e[0m\n"
+fi
+
+###
+testname="List regions"
+###
+curl -s -H 'X-netvirt-apikey: '${APIKEY}'' http://127.0.0.1:8080/v1/regions
 if [ "$?" != "0" ]; then
 	exit_error
 else
