@@ -20,6 +20,8 @@
 
 #include <string.h>
 
+#include <curl/curl.h>
+
 #include <event2/buffer.h>
 #include <event2/http.h>
 #include <event2/http_struct.h>
@@ -308,21 +310,16 @@ out:
 }
 
 void
-ndb_prov_cb(struct evhttp_request *req, void *arg)
+ndb_prov_cb(void *ptr, size_t size, size_t nmemb, void *arg)
 {
 	json_t			*jmsg;
 	json_error_t		 error;
-	struct evbuffer         *buf;
 	struct network		*netcfg = arg;
 	const char		*ctlsrv_addr;
 	const char		*cacert;
 	const char		*cert;
-	void                    *p;
 
-	buf = evhttp_request_get_input_buffer(req);
-	p = evbuffer_pullup(buf, -1);
-
-	if ((jmsg = json_loadb(p, evbuffer_get_length(buf), 0, &error)) == NULL) {
+	if ((jmsg = json_loadb(ptr, size*nmemb, 0, &error)) == NULL) {
 		fprintf(stdout, "%s: json_loadb - %s\n", __func__, error.text);
 		goto err;
 	}
@@ -350,19 +347,15 @@ ndb_provisioning(const char *provlink, const char *network_name)
 	X509_REQ			*certreq = NULL;
 	json_t				*jresp;
 	digital_id_t			*nva_id = NULL;
-	struct evhttp_connection	*evhttp_conn;
-	struct evhttp_request		*req;
 	struct evkeyvalq		 headers = TAILQ_HEAD_INITIALIZER(headers);
-	struct evkeyvalq		*output_headers;
-	struct evbuffer			*output_buffer;
-	struct evhttp_uri		*uri;
+	struct evhttp_uri		 *uri = NULL;
 	struct network			*netcf;
 	long				 size = 0;
-	const char			*version;
-	const char			*provsrv_addr;
 	char				*resp;
 	char				*certreq_pem = NULL;
 	char				*pvkey_pem = NULL;
+	const char			*provsrv_addr;
+	const char			*version;
 
 	nva_id = pki_digital_id("",  "", "", "", "contact@dynvpn.com", "www.dynvpn.com");
 
@@ -381,28 +374,11 @@ ndb_provisioning(const char *provlink, const char *network_name)
 	pki_write_privatekey_in_mem(keyring, &pvkey_pem, &size);
 	EVP_PKEY_free(keyring);
 
-	if ((uri = evhttp_uri_parse(provlink)) == NULL)
-		return (-1);
-
-	if ((evhttp_parse_query_str(evhttp_uri_get_query(uri), &headers)) < 0)
-		return (-1);
-
 	if ((netcf = ndb_network_new()) == NULL)
 		return (-1);
 
 	netcf->name = strdup(network_name);
 	netcf->pvkey = pvkey_pem; // Steal the pointer
-
-	if ( ((version = evhttp_find_header(&headers, "v")) == NULL) ||
-	     ((provsrv_addr = evhttp_find_header(&headers, "a")) == NULL) ) {
-			return (-1);
-	}
-
-	evhttp_conn = evhttp_connection_base_new(ev_base, NULL, provsrv_addr, 8080);
-	req = evhttp_request_new(ndb_prov_cb, netcf);
-
-	output_headers = evhttp_request_get_output_headers(req);
-	evhttp_add_header(output_headers, "Content-Type", "application/json");
 
 	jresp = json_object();
 	json_object_set_new(jresp, "csr", json_string(certreq_pem));
@@ -410,20 +386,60 @@ ndb_provisioning(const char *provlink, const char *network_name)
 	json_object_set_new(jresp, "provlink", json_string(provlink));
 	resp = json_dumps(jresp, 0);
 
-	output_buffer = evhttp_request_get_output_buffer(req);
-	evbuffer_add(output_buffer, resp, strlen(resp));
+	if ((uri = evhttp_uri_parse(provlink)) == NULL)
+		return (-1);
 
-	char size_cl[22];
-	evutil_snprintf(size_cl, sizeof(size_cl), "%zu", strlen(resp));
-	evhttp_add_header(output_headers, "Content-Length", size_cl);
+	if ((evhttp_parse_query_str(evhttp_uri_get_query(uri), &headers)) < 0)
+		return (-1);
 
-	free(resp); // XXX could use only buffer pointer
+	if (((version = evhttp_find_header(&headers, "v")) == NULL) ||
+	    ((provsrv_addr = evhttp_find_header(&headers, "a")) == NULL) ) {
+		return (-1);
+	}
 
-	evhttp_make_request(evhttp_conn, req, EVHTTP_REQ_POST, "/v1/provisioning");
 
+	/* XXX cleanup needed */
+
+	CURL			*curl;
+	CURLcode	 	 res;
+	struct curl_slist	*req_headers = NULL;
+	char			 url[256];
+
+	snprintf(url, sizeof(url), "https://%s:81/v1/provisioning", provsrv_addr);
+
+	/* In windows, this will init the winsock stuff */
+	curl_global_init(CURL_GLOBAL_ALL);
+
+	/* get a curl handle */
+	curl = curl_easy_init();
+	if (curl) {
+		curl_easy_setopt(curl, CURLOPT_URL, url);
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, ndb_prov_cb);
+
+		req_headers = curl_slist_append(req_headers, "Content-Type: application/json");
+		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, req_headers);
+
+		/* Now specify the POST data */
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, resp);
+
+		/* Perform the request, res will get the return code */
+		res = curl_easy_perform(curl);
+
+		/* Check for errors */
+		if (res != CURLE_OK)
+			fprintf(stderr, "curl_easy_perform() failed: %s\n",
+			    curl_easy_strerror(res));
+
+		/* always cleanup */
+		curl_easy_cleanup(curl);
+	}
+	curl_global_cleanup();
+
+	if (uri != NULL)
+		evhttp_uri_free(uri);
 	evhttp_clear_headers(&headers);
-	evhttp_uri_free(uri);
 
+	free(resp);
 	json_decref(jresp);
 	free(certreq_pem);
 	return (0);

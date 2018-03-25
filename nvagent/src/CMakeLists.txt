@@ -110,6 +110,7 @@ elseif (WIN32)
 	)
 else()
 	target_link_libraries(netvirt-agent
+		curl
 		tapcfg
 		nv
 		ssl
