@@ -83,6 +83,7 @@ endif()
 if (APPLE)
 	target_link_libraries(netvirt-agent
 		${TAPCFG_ROOT_DIR}/build/libtapcfg.a
+		curl
 		nv
 		ssl
 		crypto
