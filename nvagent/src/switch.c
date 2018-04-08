@@ -189,10 +189,10 @@ dtls_handshake_timeout_cb(int fd, short event, void *arg)
 void
 iface_cb(int sock, short what, void *arg)
 {
-	struct packets		 *pkt;
-	struct dtls_conn	 *conn = arg;
 	(void)sock;
 	(void)what;
+	struct packets		 *pkt;
+	struct vlink		 *vlink = arg;
 
 	pthread_mutex_lock(&mutex);
 	while ((pkt = TAILQ_FIRST(&tailq_head)) == NULL) {
@@ -201,8 +201,8 @@ iface_cb(int sock, short what, void *arg)
 	}
 	pthread_mutex_unlock(&mutex);
 
-	if (conn->state == DTLS_ESTABLISHED) {
-		SSL_write(conn->ssl, pkt->buf, pkt->len);
+	if (vlink->conn != NULL && vlink->conn->state == DTLS_ESTABLISHED) {
+		SSL_write(vlink->conn->ssl, pkt->buf, pkt->len);
 		// XXX check ret
 	}
 
@@ -258,10 +258,13 @@ iface_cb(int sock, short what, void *arg)
 int
 dtls_handle(struct vlink *vlink)
 {
-	struct timeval	tv;
-	enum dtls_state	next_state;
-	int		ret;
-	char		buf[5000] = {0};
+	struct timeval	 tv;
+	enum dtls_state	 next_state;
+	unsigned long	 e;
+	int		 ret;
+	int		 line;
+	char		 buf[5000] = {0};
+	const char	*file;
 
 	for (;;) {
 
@@ -300,9 +303,21 @@ dtls_handle(struct vlink *vlink)
 				return (-1);
 			}
 			return (0);
-
+#ifdef _WIN32
+		case SSL_ERROR_SYSCALL:
+			/* An existing connection was forcibly closed by the remote host. */
+			if (WSAGetLastError() != 10054)
+				return (0);
+			// fall to default
+#endif
 		default:
 			fprintf(stderr, "%s: ssl error\n", __func__);
+
+			do {
+				e = ERR_get_error_line(&file, &line);
+				printf("%s: %s", __func__, ERR_error_string(e, NULL));
+			} while (e);
+
 			return (-1);
 		}
 
@@ -378,7 +393,6 @@ dtls_conn_new(struct vlink *vlink)
 	struct addrinfo	 	hints;
 	struct dtls_conn	*conn;
 	unsigned long		 e;
-	int			 flag;
 	int			 ret;
 	const char		*port = "9090";
 
@@ -608,7 +622,7 @@ switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *i
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	pthread_create(&thread_poke_tap, &attr, poke_tap, (void *)vlink);
 
-	if ((ev_iface = event_new(ev_base, 0, EV_TIMEOUT, iface_cb, vlink)) == NULL)
+	if ((ev_iface = event_new(ev_base, 0, EV_TIMEOUT, iface_cb, (void*)vlink)) == NULL)
 		warn("%s:%d", "event_new", __LINE__);
 	event_add(ev_iface, NULL);
 #else
