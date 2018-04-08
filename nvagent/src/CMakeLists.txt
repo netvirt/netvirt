@@ -20,7 +20,7 @@ endif()
 include_directories("${TAPCFG_ROOT_DIR}/src/include/")
 
 if (WIN32)
-	include_directories("${LIBRESSL_ROOT_DIR}/include/" "${LIBEVENT_ROOT_DIR}/include/" "${LIBJANSSON_ROOT_DIR}/src/" "${CMAKE_SOURCE_DIR}/libnv/src/")
+	include_directories("${LIBCURL_ROOT_DIR}/include/"  "${LIBRESSL_ROOT_DIR}/include/" "${LIBEVENT_ROOT_DIR}/include/" "${LIBJANSSON_ROOT_DIR}/src/" "${CMAKE_SOURCE_DIR}/libnv/src/")
 	set (win_rc_icon gui/rc/icon.rc)
 else()
 	set (win_rc_icon "")
@@ -96,6 +96,7 @@ if (APPLE)
 elseif (WIN32)
 
 	file(GLOB LIBS_FOR_WIN32
+		${LIBCURL_ROOT_DIR}/lib/.libs/libcurl*.dll
 		${LIBRESSL_ROOT_DIR}/ssl/.libs/libssl*dll
 		${LIBRESSL_ROOT_DIR}/crypto/.libs/libcrypto*dll
 		${LIBJANSSON_ROOT_DIR}/src/.libs/libjansson*dll
