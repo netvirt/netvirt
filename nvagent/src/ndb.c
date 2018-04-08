@@ -180,7 +180,11 @@ ndb_networks(void)
 	struct network	*n;
 	printf("Networks:\n");
 	RB_FOREACH(n, network_tree, &networks) {
+#ifdef _WIN32
+		printf("\t[%u] \"%s\"\n", n->idx, n->name);
+#else
 		printf("\t[%zu] \"%s\"\n", n->idx, n->name);
+#endif
 	}
 }
 
@@ -416,6 +420,10 @@ ndb_provisioning(const char *provlink, const char *network_name)
 		curl_easy_setopt(curl, CURLOPT_URL, url);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, ndb_prov_cb);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, netcf);
+
+#ifdef _WIN32
+		curl_easy_setopt(curl, CURLOPT_CAINFO, "curl-ca-bundle.crt");
+#endif
 
 		req_headers = curl_slist_append(req_headers, "Content-Type: application/json");
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, req_headers);
