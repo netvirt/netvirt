@@ -92,10 +92,12 @@ main(int argc, char *argv[])
 	evthread_use_pthreads();
 #endif
 
+#ifndef _WIN32
 	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
 		fprintf(stderr, "%s: signal", __func__);
 		exit(-1);
 	}
+#endif
 
 	if (ndb_init() < 0) {
 		fprintf(stderr, "%s: db_init\n", __func__);
