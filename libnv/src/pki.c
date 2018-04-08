@@ -37,6 +37,20 @@
 
 // openssl x509 -in ./certificate.pem -text
 
+/* OpenSSL 1.1.0 introduced some useful additions to the api */
+#if (OPENSSL_VERSION_NUMBER >= 0x10002000L)
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
+    (defined (LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2070000fL)
+int X509_STORE_up_ref(X509_STORE *vfy)
+{
+    int n;
+
+    n = CRYPTO_add(&vfy->references, 1, CRYPTO_LOCK_X509_STORE);
+
+    return (n > 1) ? 1 : 0;
+}
+#endif
+#endif
 
 // XXX still needed ?
 char *cert_cname(X509 *cert)
