@@ -99,7 +99,9 @@ struct packets {
 static struct addrinfo		*ai;
 struct event_base		*ev_base;
 struct eth_hdr			 eth_ping;
+#if defined(_WIN32) || defined(__APPLE__)
 pthread_mutex_t			 mutex;
+#endif
 struct event			*ev_iface;
 
 TAILQ_HEAD(tailhead, packets)	 tailq_head;
