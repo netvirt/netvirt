@@ -49,6 +49,7 @@
 
 #include <jansson.h>
 
+#include <inet.h>
 #include <pki.h>
 #include <log.h>
 #include <tapcfg.h>
@@ -64,10 +65,12 @@ struct dtls_conn {
 	struct event	*ev_udpclient;
 	struct event	*handshake_timer;
 	struct event	*ping_timer;
+	struct event	*ping_timeout;
 	enum dtls_state	 state;
 	SSL		*ssl;
 	SSL_CTX		*ctx;
 	int		 sock;
+	int		 ping;
 };
 
 enum vlink_state {
@@ -138,10 +141,17 @@ ping_timeout_cb(int fd, short event, void *arg)
 	(void)event;
 	(void)fd;
 
-	SSL	*ssl = arg;
+	struct vlink	*vlink = arg;
 
-	printf("ping timeout !\n");
-	SSL_write(ssl, (void *)&eth_ping, sizeof(struct eth_hdr));
+	if (vlink->conn->ping > 3) {
+		printf("not received > 3 keep alive\n");
+		vlink_reconnect(vlink);
+		return;
+	}
+
+	printf("send keep alive!\n");
+	SSL_write(vlink->conn->ssl, (void *)&eth_ping, sizeof(struct eth_hdr));
+	vlink->conn->ping++;
 }
 
 void
@@ -158,7 +168,7 @@ info_cb(const SSL *ssl, int where, int ret)
 	vlink = SSL_get_app_data(ssl);
 
 	vlink->conn->ping_timer = event_new(ev_base, -1, EV_TIMEOUT | EV_PERSIST,
-	    ping_timeout_cb, (SSL *)ssl);
+	    ping_timeout_cb, (void *)vlink);
 	event_add(vlink->conn->ping_timer, &timeout);
 
 	// Reset the ev_udpclient event to remove the EV_TIMEOUT.
@@ -279,6 +289,11 @@ dtls_handle(struct vlink *vlink)
 			// XXX check ret
 			next_state = DTLS_ESTABLISHED;
 			if (ret > 0) {
+
+				if (inet_ethertype(buf) == ETHERTYPE_PING) {
+					vlink->conn->ping = 0;
+					return (0);
+				}
 				ret = tapcfg_write(vlink->tapcfg, buf, ret);
 				// XXX check ret
 				return (0);
@@ -414,6 +429,7 @@ dtls_conn_new(struct vlink *vlink)
 	conn->ping_timer = NULL;
 	conn->state = DTLS_CONNECT;
 	conn->ssl = NULL;
+	conn->ping = 0;
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
@@ -565,6 +581,10 @@ vlink_reconnect(struct vlink *vlink)
 	// Disable timeout on the UDP socket to prevent calling reconnect again.
 	if (vlink->conn != NULL && vlink->conn->ev_udpclient != NULL)
 		evtimer_del(vlink->conn->ev_udpclient);
+
+	if (vlink->conn != NULL && vlink->conn->ping_timer != NULL)
+		event_del(vlink->conn->ping_timer);
+
 
 	if (event_base_once(ev_base, -1, EV_TIMEOUT,
 	    vlink_connstart, vlink, &one_sec) < 0)
