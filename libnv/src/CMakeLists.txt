@@ -21,6 +21,7 @@ endif()
 
 set(NV_SRCS
 	bitv.c
+	inet.c
 	log.c
 	pki.c
 
