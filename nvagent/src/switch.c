@@ -428,8 +428,8 @@ dtls_conn_new(struct vlink *vlink)
 		goto cleanup;
 	}
 
-#ifndef WIN32
-	flag = 1;
+#ifndef _WIN32
+	int flag = 1;
 	if (setsockopt(conn->sock, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) < 0) {
 		log_warn("%s: setsockopt", __func__);
 		goto cleanup;
