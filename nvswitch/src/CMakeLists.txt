@@ -4,7 +4,6 @@ add_subdirectory(tests)
 
 add_executable(netvirt-switch
 	control.c
-	inet.c
 	main.c
 	switch.c
 )
