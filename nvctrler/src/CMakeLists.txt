@@ -18,6 +18,8 @@ add_executable(netvirt-controller
 )
 
 target_link_libraries(netvirt-controller
+	ssl
+	crypto
 	nv
 	pq
 	jansson

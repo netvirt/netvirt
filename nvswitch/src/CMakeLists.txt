@@ -9,6 +9,8 @@ add_executable(netvirt-switch
 )
 
 target_link_libraries(netvirt-switch
+	ssl
+	crypto
 	nv
 	jansson
 	event_core
