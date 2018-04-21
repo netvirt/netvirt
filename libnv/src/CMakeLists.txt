@@ -3,7 +3,7 @@ set(CMAKE_C_FLAGS "-I/usr/local/include -L/usr/local/lib -g -W -Wall -DHAVE_VA_C
 add_subdirectory(tests)
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-	set(compat_src bsd-asprintf.c)
+	set(compat_src bsd-asprintf.c bsd-strtonum.c)
 endif (CMAKE_SYSTEM_NAME MATCHES "Linux")
 
 if (APPLE)
