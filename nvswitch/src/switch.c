@@ -237,7 +237,7 @@ dtls_peer_cmp(const struct dtls_peer *a, const struct dtls_peer *b)
 {
 	if (a->ss_len < b->ss_len)
 		return (-1);
-	if (b->ss_len > b->ss_len)
+	if (a->ss_len > b->ss_len)
 		return (1);
 	return (memcmp(&a->ss, &b->ss, a->ss_len));
 }
