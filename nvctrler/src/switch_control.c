@@ -16,6 +16,7 @@
 #include <err.h>
 #include <errno.h>
 #include <signal.h>
+#include <string.h>
 
 #include <openssl/err.h>
 #include <openssl/ssl.h>
