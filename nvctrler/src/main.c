@@ -125,13 +125,13 @@ main(int argc, char *argv[])
 
 	restapi_init(config, ev_base);
 
-	json_decref(config);
 	event_base_dispatch(ev_base);
 
 	agent_control_fini();
 	controller_fini();
 	dao_fini();
 	restapi_fini();
+	json_decref(config);
 
 	event_free(ev_sigint);
 	event_free(ev_sigterm);

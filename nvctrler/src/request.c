@@ -115,7 +115,7 @@ client_create(char *msg)
 	ret = 0;
 
 cleanup:
-	evhttp_clear_headers(output_headers);
+	//evhttp_clear_headers(output_headers);
 	evhttp_connection_free(evhttp_conn);
 	evhttp_request_free(req);
 
@@ -300,8 +300,13 @@ client_get_newresetkey(char *msg, char **resp)
 	ret = 0;
 
 cleanup:
+	//evhttp_clear_headers(output_headers);
+	evhttp_connection_free(evhttp_conn);
+	evhttp_request_free(req);
+
 	json_decref(jmsg);
 	json_decref(jresp);
+
 	free(resetkey);
 	free(emailquery);
 	free(email_encoded);
@@ -611,16 +616,16 @@ node_create(const char *msg, const char *apikey)
 	int		 ret = 0;
 	int		 pool_size;
 	char		*client_id = NULL;
-	char		*network_uid;
-	char		*uid;
+	char		*network_uid = NULL;
+	char		*uid = NULL;
 	char		*key = NULL;
 	char		*network_description = NULL;
 	char		*description = NULL;
 	char		*ipaddress = NULL;
-	char		*subnet;
-	char		*netmask;
-	unsigned char	*ippool_bin = NULL;
-	char		 provlink[256];
+	char		*subnet = NULL;
+	char		*netmask = NULL;
+	unsigned char	*ippool_bin = NULL, *tmp_pool = NULL;
+	char		 provlink[512];
 
 	ret = -1;
 
@@ -649,7 +654,7 @@ node_create(const char *msg, const char *apikey)
 	}
 
 	ippool = ippool_new(subnet, netmask);
-	free(ippool->pool);
+	tmp_pool = ippool->pool;
 	ippool->pool = (uint8_t*)ippool_bin;
 	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
 	ipaddress = ippool_get_ip(ippool);
@@ -678,6 +683,7 @@ node_create(const char *msg, const char *apikey)
 		log_warnx("%s: dao_network_update_ippool", __func__);
 		goto cleanup;
 	}
+	ippool->pool = tmp_pool;
 
 	/* forward new node to nvswitch */
 	char	*fwd_resp_str = NULL;
@@ -719,7 +725,13 @@ node_create(const char *msg, const char *apikey)
 cleanup:
 	json_decref(jmsg);
 	ippool_free(ippool);
+
+	free(network_uid);
+	free(subnet);
+	free(netmask);
+	free(ippool_bin);
 	free(client_id);
+	free(uid);
 	free(key);
 
 	return (ret);
