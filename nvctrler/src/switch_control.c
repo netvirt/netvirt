@@ -317,6 +317,7 @@ evssl_init()
 	}
 
 	SSL_CTX_set_cert_store(ctx, passport->cacert_store);
+	X509_STORE_up_ref(passport->cacert_store);
 
 	if (SSL_CTX_use_certificate(ctx, passport->certificate) != 1) {
 		log_warn("SSL_CTX_use_certificate");
@@ -379,9 +380,10 @@ controller_init()
 	if ((listener = evconnlistener_new_bind(ev_base, accept_conn_cb, NULL,
 	    LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1,
 	    res->ai_addr, res->ai_addrlen)) == NULL)
-		errx(1, "evconnlistener_new_bind failed");
+		errx(1, "switch_control_init: evconnlistener_new_bind failed");
 
 	evconnlistener_set_error_cb(listener, accept_error_cb);
+	freeaddrinfo(res);
 }
 
 void

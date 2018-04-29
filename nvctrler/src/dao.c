@@ -269,6 +269,10 @@ dao_prepare_statements()
 			0,
 			NULL);
 
+	if (check_result_status(result) == -1)
+		goto error;
+	PQclear(result);
+
 	result = PQprepare(dbconn,
 			"dao_node_list",
 			"SELECT node.uid, node.description, node.provkey, node.ipaddress, node.status "
@@ -372,6 +376,7 @@ dao_reset_node_state()
 
 	result = PQexec(dbconn, "UPDATE node SET status = 0 WHERE status = 1;");
 	check_result_status(result);
+	PQclear(result);
 }
 
 int

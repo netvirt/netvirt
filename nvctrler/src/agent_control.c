@@ -17,6 +17,7 @@
 #include <sys/tree.h>
 
 #include <errno.h>
+#include <string.h>
 
 #include <openssl/err.h>
 #include <openssl/ssl.h>
@@ -614,7 +615,7 @@ listen_error_cb(struct evconnlistener *listener, void *arg)
 	printf("listen_error_cb\n");
 }
 
-int
+void
 agent_control_init(void)
 {
 	struct addrinfo		*res;
@@ -622,15 +623,11 @@ agent_control_init(void)
 
 	SSL_load_error_strings();
 
-	if (dao_switch_network_list(NULL, network_listall_cb) < 0) {
-		log_warnx("%s: dao_switch_network_list", __func__);
-		goto error;
-	}
+	if (dao_switch_network_list(NULL, network_listall_cb) < 0)
+		fatalx("%s: dao_switch_network_list", __func__);
 
-	if (dao_node_listall(NULL, node_listall_cb) < 0) {
-		log_warnx("%s: dao_node_listall", __func__);
-		goto error;
-	}
+	if (dao_node_listall(NULL, node_listall_cb) < 0)
+		fatalx("%s: dao_node_listall", __func__);
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
@@ -639,22 +636,17 @@ agent_control_init(void)
 
 	if ((listener = evconnlistener_new_bind(ev_base, listen_accept_cb, NULL,
 	    LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
-	    res->ai_addr, res->ai_addrlen)) == NULL) {
-		log_warnx("%s: evconnlistener_new_bind", __func__);
-		goto error;
-	}
+	    res->ai_addr, res->ai_addrlen)) == NULL)
+		errx(1, "agent_control_init: evconnlistener_new_bind");
+
 	evconnlistener_set_error_cb(listener, listen_error_cb);
-
-	return (0);
-
-error:
-	return (-1);
+	freeaddrinfo(res);
 }
 
 void
 agent_control_fini(void)
 {
-	// XXX free everything
+	evconnlistener_free(listener);
 }
 
 RB_GENERATE_STATIC(vnetwork_tree, vnetwork, entry, vnetwork_cmp);

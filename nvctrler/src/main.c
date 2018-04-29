@@ -120,18 +120,22 @@ main(int argc, char *argv[])
 	if (dao_init(dbname, dbuser, dbpwd, dbhost) < 0)
 		fatalx("%s: dao_init", __func__);
 
-	if (agent_control_init() < 0)
-		fatalx("%s: agent_control_init", __func__);
-
+	agent_control_init();
 	controller_init();
-
+/*
 	if (restapi_init(config, ev_base) < 0)
 		fatalx("prov_init");
-
+*/
+	json_decref(config);
 	event_base_dispatch(ev_base);
 
+	agent_control_fini();
 	controller_fini();
 	dao_fini();
+
+	event_free(ev_sigint);
+	event_free(ev_sigterm);
+	event_base_free(ev_base);
 
 	log_info("now off");
 
