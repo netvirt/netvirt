@@ -429,7 +429,11 @@ int
 dtls_handle(struct dtls_peer *p)
 {
 	struct timeval		 tv;
+#if !defined(LIBRESSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+	BIO_ADDR		*caddr;
+#else
 	struct sockaddr		 caddr;
+#endif
 	enum dtls_state		 next_state;
 	int			 ret;
 	char			 buf[5000] = {0};
@@ -438,10 +442,22 @@ dtls_handle(struct dtls_peer *p)
 	int			 line;
 	unsigned long		 e;
 
+#if !defined(LIBRESSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+	if ((caddr = BIO_ADDR_new()) == NULL) {
+		log_warnx("%s: %s", __func__, "BIO_ADDR_new failed");
+		goto error;
+	}
+#endif
+
 	for (;;) {
 		switch (p->state) {
 		case DTLS_LISTEN:
+#if !defined(LIBRESSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+			ret = DTLSv1_listen(p->ssl, caddr);
+			BIO_ADDR_free(caddr);
+#else
 			ret = DTLSv1_listen(p->ssl, &caddr);
+#endif
 			next_state = DTLS_ACCEPT;
 			break;
 		case DTLS_ACCEPT:
