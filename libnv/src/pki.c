@@ -387,6 +387,7 @@ pki_certificate(X509_NAME *issuer, X509_REQ *certreq,
 		subjAltName_pos = X509v3_get_ext_by_NID(req_exts, OBJ_sn2nid("subjectAltName"), -1);
 		subjAltName = X509v3_get_ext(req_exts, subjAltName_pos);
 		X509_add_ext(certificate, subjAltName, -1);
+		sk_X509_EXTENSION_pop_free(req_exts, X509_EXTENSION_free);
 	}
 
 	/* set certificate 'Issuer:' */
@@ -415,6 +416,7 @@ pki_certificate(X509_NAME *issuer, X509_REQ *certreq,
 	/* set certificate expiration delay */
 	X509_gmtime_adj(X509_get_notAfter(certificate), expire);
 
+	EVP_PKEY_free(pub_key);
 	return certificate;
 }
 
