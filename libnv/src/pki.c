@@ -441,8 +441,6 @@ static void b64enc(const uint8_t *buf, size_t length, char **b64buf)
 	(void)BIO_flush(bio);
 
 	BIO_get_mem_ptr(bio, &memptr);
-	(void)BIO_set_close(bio, BIO_NOCLOSE);
-	BIO_free_all(bio);
 
 	*b64buf = calloc(1, memptr->length+1);
 	strncpy(*b64buf, memptr->data, memptr->length);
@@ -458,7 +456,7 @@ static void b64enc(const uint8_t *buf, size_t length, char **b64buf)
 		p++;
 	}
 
-	BUF_MEM_free(memptr);
+	BIO_free_all(bio);
 }
 
 char *
