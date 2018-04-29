@@ -646,7 +646,12 @@ agent_control_init(void)
 void
 agent_control_fini(void)
 {
+	struct vnetwork	*vnet;
+
 	evconnlistener_free(listener);
+
+	while ((vnet = RB_ROOT(&vnetworks)) != NULL)
+		agent_control_network_delete(vnet->uid);
 }
 
 RB_GENERATE_STATIC(vnetwork_tree, vnetwork, entry, vnetwork_cmp);

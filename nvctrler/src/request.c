@@ -54,9 +54,9 @@ req_cb(struct evhttp_request *req, void *arg)
 int
 client_create(char *msg)
 {
-	struct evhttp_connection	*evhttp_conn;
+	struct evhttp_connection	*evhttp_conn = NULL;
 	struct evhttp_request		*req;
-	struct evkeyvalq		*output_headers;
+	struct evkeyvalq		*output_headers = NULL;
 	json_t				*jmsg = NULL;
 	json_error_t			 error;
 	int				 ret;
@@ -115,7 +115,12 @@ client_create(char *msg)
 	ret = 0;
 
 cleanup:
+	evhttp_clear_headers(output_headers);
+	evhttp_connection_free(evhttp_conn);
+	evhttp_request_free(req);
+
 	json_decref(jmsg);
+
 	free(apikey);
 	free(emailquery);
 	free(email_encoded);
@@ -470,6 +475,7 @@ cleanup:
 	pki_embassy_free(emb);
 	ippool_free(ippool);
 
+	free(network_uid);
 	free(serv_cert_ptr);
 	free(serv_pvkey_ptr);
 	free(emb_cert_ptr);
