@@ -30,6 +30,8 @@
 
 #include "request.h"
 
+struct evhttp			*http;
+
 void
 cleanup_cb(const void *data, size_t datalen, void *extra)
 {
@@ -792,10 +794,9 @@ out:
 		evbuffer_free(respbuf);
 }
 
-int
+void
 restapi_init(json_t *config, struct event_base *evbase)
 {
-	struct evhttp			*http;
 	struct evhttp_bound_socket	*handle;
 
 	if ((http = evhttp_new(evbase)) == NULL)
@@ -840,6 +841,10 @@ restapi_init(json_t *config, struct event_base *evbase)
 	if ((handle = evhttp_bind_socket_with_handle(http,
 	    "0.0.0.0", 8080)) == NULL)
 		errx(1, "evhttp_bind_socket_with_handle");
+}
 
-	return (0);
+void
+restapi_fini(void)
+{
+	evhttp_free(http);
 }

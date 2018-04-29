@@ -71,6 +71,7 @@ void agent_control_network_create(const char *, const char *, const char *, cons
 void agent_control_node_delete(const char *, const char *);
 void agent_control_node_create(const char *, const char *, const char *, const char *);
 
-int restapi_init(json_t *, struct event_base *);
+void restapi_init(json_t *, struct event_base *);
+void restapi_fini(void);
 
 #endif

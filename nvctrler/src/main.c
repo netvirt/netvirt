@@ -122,16 +122,16 @@ main(int argc, char *argv[])
 
 	agent_control_init();
 	controller_init();
-/*
-	if (restapi_init(config, ev_base) < 0)
-		fatalx("prov_init");
-*/
+
+	restapi_init(config, ev_base);
+
 	json_decref(config);
 	event_base_dispatch(ev_base);
 
 	agent_control_fini();
 	controller_fini();
 	dao_fini();
+	restapi_fini();
 
 	event_free(ev_sigint);
 	event_free(ev_sigterm);
