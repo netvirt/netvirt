@@ -69,16 +69,16 @@ main(int argc, char *argv[])
 	event_add(ev_sigterm, NULL);
 
 	control_init();
-
 	switch_init(config);
-
 	json_decref(config);
+
 	event_base_dispatch(ev_base);
+	control_fini();
+	switch_fini();
+
 	event_free(ev_sigint);
 	event_free(ev_sigterm);
 	event_base_free(ev_base);
-
-	switch_fini();
 
 	warnx("now off");
 

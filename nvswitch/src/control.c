@@ -513,6 +513,7 @@ evssl_init()
 	}
 
 	SSL_CTX_set_cert_store(ctx, passport->cacert_store);
+	X509_STORE_up_ref(passport->cacert_store);
 
 	if ((SSL_CTX_use_certificate(ctx, passport->certificate)) != 1) {
 		log_warnx("SSL_CTX_use_certificate");
@@ -538,6 +539,19 @@ error:
 void
 peer_free(struct peer *p)
 {
+	if (peer == NULL)
+		return;
+
+	if (peer->ssl != NULL) {
+		SSL_set_shutdown(p->ssl, SSL_RECEIVED_SHUTDOWN);
+		SSL_shutdown(p->ssl);
+		bufferevent_free(peer->bufev);
+	}
+
+	if (peer->ctx != NULL)
+		SSL_CTX_free(peer->ctx);
+
+
 	free(p);
 }
 
@@ -650,5 +664,6 @@ void
 control_fini()
 {
 	pki_passport_destroy(passport);
+	peer_free(peer);
 	//vnetworks_free();
 }

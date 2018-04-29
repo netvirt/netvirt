@@ -894,6 +894,8 @@ switch_init(json_t *config)
 void
 switch_fini()
 {
+	event_free(ev_udplisten);
+
 	SSL_CTX_free(ctx);
 	freeaddrinfo(ai);
 
