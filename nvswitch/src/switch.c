@@ -334,6 +334,8 @@ dtls_peer_free(struct dtls_peer *p)
 	if (p->lladdr != NULL)
 		RB_REMOVE(vnet_lladdr_tree, &p->vnet->arpcache, p->lladdr);
 
+	// XXX if peer was ESTABLISHED send a notification
+
 	event_free(p->handshake_timer);
 	event_free(p->ping_timer);
 	SSL_CTX_free(p->ctx);
@@ -571,6 +573,8 @@ info_cb(const SSL *ssl, int where, int ret)
 
 	p = SSL_get_app_data(ssl);
 	RB_INSERT(vnet_peer_tree, &p->vnet->peers, p);
+
+	// XXX send notification node is up
 
 	printf("connected !\n");
 }
