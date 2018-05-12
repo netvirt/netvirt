@@ -65,6 +65,7 @@ static SSL_CTX		*evssl_init();
 
 static passport_t	*passport;
 static struct peer	*peer;
+struct event		*ev;
 
 int
 response_node_delete(json_t *jmsg)
@@ -107,7 +108,7 @@ response_node_delete(json_t *jmsg)
 		}
 
 		if ((node = vnetwork_find_node(vnet, uid)) == NULL) {
-			log_warnx("%s: vnetwork_find_node", __func__);
+			log_warnx("%s: vnetwork_find_node (%s)", __func__, uid);
 			return (-1);
 		}
 
@@ -448,8 +449,6 @@ on_read_cb(struct bufferevent *bev, void *arg)
 error:
 	json_decref(jmsg);
 	free(msg);
-	/* Disconnect */
-	bufferevent_free(bev);
 }
 
 void
@@ -462,7 +461,6 @@ on_timeout_cb(evutil_socket_t fd, short what, void *arg)
 void
 on_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
 {
-	struct event	*ev;
 	struct timeval	 tv = {1, 0};
 	unsigned long	 e = 0;
 
@@ -477,8 +475,8 @@ on_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
 			log_warnx("%s: ssl error: %s", __func__,
 			    ERR_error_string(e, NULL));
 
-		bufferevent_free(peer->bufev);
-
+		if (ev != NULL)
+			event_free(ev);
 		ev = event_new(ev_base, -1, EV_TIMEOUT, on_timeout_cb, NULL);
 		event_add(ev, &tv);
 	}
@@ -545,12 +543,11 @@ peer_free(struct peer *p)
 	if (peer->ssl != NULL) {
 		SSL_set_shutdown(p->ssl, SSL_RECEIVED_SHUTDOWN);
 		SSL_shutdown(p->ssl);
-		bufferevent_free(peer->bufev);
+		bufferevent_free(p->bufev);
 	}
 
 	if (peer->ctx != NULL)
-		SSL_CTX_free(peer->ctx);
-
+		SSL_CTX_free(p->ctx);
 
 	free(p);
 }
@@ -664,6 +661,9 @@ void
 control_fini()
 {
 	pki_passport_destroy(passport);
+	if (ev != NULL)
+		event_free(ev);
 	peer_free(peer);
+	peer = NULL;
 	//vnetworks_free();
 }

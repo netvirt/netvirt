@@ -154,8 +154,9 @@ struct vnetwork
 void
 vnetwork_free(struct vnetwork *vnet)
 {
-	struct lladdr	*lladdr;
-	struct node	*node;
+	struct lladdr		*lladdr;
+	struct node		*node;
+	struct dtls_peer	*peer;
 
 	if (vnet == NULL)
 		return;
@@ -166,6 +167,9 @@ vnetwork_free(struct vnetwork *vnet)
 		free(lladdr);
 	while ((node = RB_ROOT(&vnet->aclnode)) != NULL)
 		vnetwork_del_node(vnet, node);
+	while ((peer = RB_ROOT(&vnet->peers)) != NULL)
+		dtls_peer_free(peer);
+
 	pki_passport_destroy(vnet->passport);
 	// XXX crash SSL_CTX_free(vnet->ctx);
 	free(vnet->uid);
@@ -898,6 +902,13 @@ switch_fini()
 
 	SSL_CTX_free(ctx);
 	freeaddrinfo(ai);
+
+	struct vnetwork	*vnet;
+
+	while ((vnet = RB_ROOT(&vnetworks)) != NULL) {
+		printf("uid %s\n", vnet->uid);
+		vnetwork_free(vnet);
+	}
 
 	EC_KEY_free(ecdh);
 	ERR_remove_state(0);
