@@ -167,6 +167,9 @@ info_cb(const SSL *ssl, int where, int ret)
 
 	vlink = SSL_get_app_data(ssl);
 
+	if (vlink->conn == NULL)
+		return;
+
 	vlink->conn->ping_timer = event_new(ev_base, -1, EV_TIMEOUT | EV_PERSIST,
 	    ping_timeout_cb, (void *)vlink);
 	event_add(vlink->conn->ping_timer, &timeout);
