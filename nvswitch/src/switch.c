@@ -83,6 +83,7 @@ struct dtls_peer {
 	SSL			*ssl;
 	SSL_CTX			*ctx;
 	struct vnetwork		*vnet;
+	struct node		*node;
 	uint8_t			 macaddr[ETHER_ADDR_LEN];
 };
 
@@ -259,6 +260,7 @@ dtls_peer_new(int sock)
 	}
 	p->ssl = NULL;
 	p->vnet = NULL;
+	p->node = NULL;
 	p->ss_len = 0;
 	p->state = DTLS_LISTEN;
 	p->handshake_timer = NULL;
@@ -339,6 +341,8 @@ dtls_peer_free(struct dtls_peer *p)
 		RB_REMOVE(vnet_lladdr_tree, &p->vnet->arpcache, p->lladdr);
 
 	// XXX if peer was ESTABLISHED send a notification
+	if (p->node != NULL && p->vnet != NULL)
+		request_update_node_status("0", "", p->node->uid, p->vnet->uid);
 
 	event_free(p->handshake_timer);
 	event_free(p->ping_timer);
@@ -537,16 +541,21 @@ dtls_handshake_timeout_cb(int fd, short event, void *arg)
 int
 cert_verify_cb(int ok, X509_STORE_CTX *store)
 {
-	struct vnetwork *vnet;
-	struct node	*node;
-	struct certinfo	*ci;
-	X509		*cert;
-	X509_NAME	*name;
-	char		 buf[256];
+	struct vnetwork 	*vnet;
+	struct node		*node;
+	struct certinfo		*ci;
+	struct dtls_peer	*p;
+	SSL			*ssl;
+	X509			*cert;
+	X509_NAME		*name;
+	char			 buf[256];
 
 	cert = X509_STORE_CTX_get_current_cert(store);
 	name = X509_get_subject_name(cert);
 	X509_NAME_get_text_by_NID(name, NID_commonName, buf, 256);
+
+	ssl = X509_STORE_CTX_get_ex_data(store, SSL_get_ex_data_X509_STORE_CTX_idx());
+	p = SSL_get_app_data(ssl);
 
 	if (strcmp(buf, "embassy") == 0)
 		return (ok);
@@ -564,6 +573,9 @@ cert_verify_cb(int ok, X509_STORE_CTX *store)
 		return (!ok);
 	}
 
+	/* associate the peer to a specific node */
+	p->node = node;
+
 	return (ok);
 }
 
@@ -571,6 +583,7 @@ void
 info_cb(const SSL *ssl, int where, int ret)
 {
 	struct dtls_peer	*p;
+	char			 ipsrc[INET6_ADDRSTRLEN];
 
 	if ((where & SSL_CB_HANDSHAKE_DONE) == 0)
 		return;
@@ -578,9 +591,10 @@ info_cb(const SSL *ssl, int where, int ret)
 	p = SSL_get_app_data(ssl);
 	RB_INSERT(vnet_peer_tree, &p->vnet->peers, p);
 
-	// XXX send notification node is up
+	inet_ntop(p->ss.ss_family, &((struct sockaddr_in*)&p->ss)->sin_addr, ipsrc, sizeof(ipsrc)),
+	    ntohs(&((struct sockaddr_in*)&p->ss)->sin_port);
 
-	printf("connected !\n");
+	request_update_node_status("1", ipsrc, p->node->uid, p->vnet->uid);
 }
 
 int
@@ -596,8 +610,6 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 		log_warnx("%s: no servername received", __func__);
 		return (SSL_TLSEXT_ERR_ALERT_FATAL);
 	}
-
-	printf(">>> name %s\n", servername);
 
 	if ((vnet = vnetwork_lookup(servername)) == NULL)
 		return (SSL_TLSEXT_ERR_ALERT_FATAL);
@@ -793,18 +805,11 @@ udplisten_cb(int sock, short what, void *ctx)
 
 	recvfrom(sock, NULL, 0, MSG_PEEK, (struct sockaddr *)&needle.ss,
 	    &needle.ss_len);
-/*
-	char s[INET6_ADDRSTRLEN];
-	printf("got packet from %s :: %d\n",
-		inet_ntop(needle.ss.ss_family,
-		&((struct sockaddr_in*)&needle.ss)->sin_addr, s, sizeof(s)),
-		ntohs(&((struct sockaddr_in*)&needle.ss)->sin_port));
-*/
+
 	if ((p = RB_FIND(dtls_peer_tree, &dtls_peers, &needle)) == NULL) {
 		if ((p = dtls_peer_new(sock)) == NULL)
 			goto error;
 		else {
-			printf(" new peer !\n");
 			p->ss = needle.ss;
 			p->ss_len = needle.ss_len;
 			RB_INSERT(dtls_peer_tree, &dtls_peers, p);
@@ -905,10 +910,8 @@ switch_fini()
 
 	struct vnetwork	*vnet;
 
-	while ((vnet = RB_ROOT(&vnetworks)) != NULL) {
-		printf("uid %s\n", vnet->uid);
+	while ((vnet = RB_ROOT(&vnetworks)) != NULL)
 		vnetwork_free(vnet);
-	}
 
 	EC_KEY_free(ecdh);
 	ERR_remove_state(0);

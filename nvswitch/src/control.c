@@ -268,6 +268,94 @@ out:
 }
 
 int
+request_update_node_status(char *status, char *ipsrc, char *uid, char *network_uid)
+{
+	json_t		*query = NULL;
+	json_t		*node = NULL;
+	struct evbuffer	*buf = NULL;
+	int		 ret;
+	char		*query_str = NULL;
+
+	ret = -1;
+	if ((query = json_object()) == NULL) {
+		log_warnx("%s: query json_object", __func__);
+		goto out;
+	}
+
+	if ((json_object_set_new(query, "action", json_string("switch-update-node-status"))) == -1) {
+		log_warnx("%s: json_object_set_new action", __func__);
+		goto out;
+	}
+
+	if ((node = json_object()) == NULL) {
+		log_warnx("%s: node json_object", __func__);
+		goto out;
+	}
+
+	if ((json_object_set_new(query, "node", node)) == -1) {
+		log_warnx("%s: json_object_set_new node", __func__);
+		goto out;
+	}
+
+	if ((json_object_set_new(node, "status", json_string(status))) == -1) {
+		log_warnx("%s: json_object_set_new status", __func__);
+		goto out;
+	}
+
+	if ((json_object_set_new(node, "ipsrc", json_string(ipsrc))) == -1) {
+		log_warnx("%s: json_object_set_new ipsrc", __func__);
+		goto out;
+	}
+
+	if ((json_object_set_new(node, "uid", json_string(uid))) == -1) {
+		log_warnx("%s: json_object_set_new uid", __func__);
+		goto out;
+	}
+
+	if ((json_object_set_new(node, "networkuid", json_string(network_uid))) == -1) {
+		log_warnx("%s: json_object_set_new networkuid", __func__);
+		goto out;
+	}
+
+	if ((query_str = json_dumps(query, 0)) == NULL) {
+		log_warnx("%s: json_dumps", __func__);
+		goto out;
+	}
+
+	printf("query %s\n", query_str);
+
+	if ((buf = evbuffer_new()) == NULL) {
+		log_warnx("%s: evbuffer_new", __func__);
+		goto out;
+	}
+
+	if (evbuffer_add_reference(buf, query_str,
+	    strlen(query_str), NULL, NULL) < 0) {
+		log_warnx("%s: evbuffer_add_reference", __func__);
+		goto out;
+	}
+
+	if (evbuffer_add(buf, "\n", 1) < 0) {
+		log_warnx("%s: evbuffer_add", __func__);
+		goto out;
+	}
+
+	if (bufferevent_write_buffer(peer->bufev, buf) < 0) {
+		log_warnx("%s: bufferevent_write_buffer", __func__);
+		goto out;
+	}
+
+	ret = 0;
+
+out:
+	if (buf != NULL)
+		evbuffer_free(buf);
+	json_decref(query);
+	free(query_str);
+	return (ret);
+}
+
+int
 request_node_list()
 {
 	struct evbuffer	*buf = NULL;
