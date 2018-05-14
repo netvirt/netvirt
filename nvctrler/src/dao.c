@@ -386,7 +386,7 @@ dao_reset_node_state()
 {
 	PGresult *result;
 
-	result = PQexec(dbconn, "UPDATE node SET status = 0, ipsrc = "" WHERE status = 1;");
+	result = PQexec(dbconn, "UPDATE node SET status = 0, ipsrc = '' WHERE status = 1;");
 	check_result_status(result);
 	PQclear(result);
 }
