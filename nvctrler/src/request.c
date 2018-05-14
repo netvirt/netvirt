@@ -1287,31 +1287,24 @@ cleanup:
 int
 switch_node_update_status(struct session_info *sinfo, json_t *jmsg)
 {
-#if 0
-	//jlog(L_DEBUG, "update-node-status");
+	printf("update-node-status");
 
 	char	*status;
-	char	*local_ipaddr = NULL;
-	char	*uuid = NULL;
-	char	*network_uuid = NULL;
+	char	*ipsrc = NULL;
+	char	*uid = NULL;
+	char	*network_uid = NULL;
 
 	json_t	*node;
 
 
 	node = json_object_get(jmsg, "node");
 	json_unpack(node, "{s:s}", "status", &status);
-	json_unpack(node, "{s:s}", "local-ipaddr", &local_ipaddr);
-	json_unpack(node, "{s:s}", "uuid", &uuid);
-	json_unpack(node, "{s:s}", "networkuuid", &network_uuid);
+	json_unpack(node, "{s:s}", "ipsrc", &ipsrc);
+	json_unpack(node, "{s:s}", "uid", &uid);
+	json_unpack(node, "{s:s}", "networkuid", &network_uid);
 
-	dao_update_node_status(network_uuid, uuid, status, local_ipaddr);
-
-	json_decref(node);
-#endif
+	dao_update_node_status(network_uid, uid, status, ipsrc);
 
 	return (0);
 }
-
-
-
 

@@ -261,6 +261,18 @@ dao_prepare_statements()
 	PQclear(result);
 
 	result = PQprepare(dbconn,
+			"dao_update_node_status",
+			"UPDATE node "
+			"SET status = $3, ipsrc = $4 "
+			"WHERE network_uid = $1 AND uid = $2;",
+			0,
+			NULL);
+
+	if (check_result_status(result) == -1)
+		goto error;
+	PQclear(result);
+
+	result = PQprepare(dbconn,
 			"dao_node_netinfo",
 			"SELECT node.ipaddress, network.uid, network.subnet, network.netmask, network.ippool "
 			"FROM node, network "
@@ -374,7 +386,7 @@ dao_reset_node_state()
 {
 	PGresult *result;
 
-	result = PQexec(dbconn, "UPDATE node SET status = 0 WHERE status = 1;");
+	result = PQexec(dbconn, "UPDATE node SET status = 0, ipsrc = "" WHERE status = 1;");
 	check_result_status(result);
 	PQclear(result);
 }
@@ -984,6 +996,46 @@ dao_node_delete(char **uid, const char *description, const char *apikey)
 
 	return (0);
 }
+
+int
+dao_update_node_status(char *network_uid, char *uid, char *status, char *ipsrc)
+{
+	PGresult	*result = NULL;
+	int		 paramLengths[4];
+	const char	*paramValues[4];
+
+	if (!network_uid || !uid || !status || !ipsrc) {
+		warnx("invalid parameter");
+		return (-1);
+	}
+
+	paramValues[0] = network_uid;
+	paramValues[1] = uid;
+	paramValues[2] = status;
+	paramValues[3] = ipsrc;
+
+	paramLengths[0] = strlen(network_uid);
+	paramLengths[1] = strlen(uid);
+	paramLengths[2] = strlen(status);
+	paramLengths[3] = strlen(ipsrc);
+
+	result = PQexecPrepared(dbconn, "dao_update_node_status", 4, paramValues, paramLengths, NULL, 1);
+
+	if (!result) {
+		warnx("PQexec command failed: %s", PQerrorMessage(dbconn));
+		return (-1);
+	}
+
+	if (check_result_status(result) == -1) {
+		PQclear(result);
+		return (-1);
+	}
+
+	PQclear(result);
+
+	return (0);
+}
+
 
 int
 dao_node_netinfo(const char *description, const char *apikey,

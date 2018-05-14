@@ -140,8 +140,6 @@ on_read_cb(struct bufferevent *bev, void *arg)
 	const char		*action;
 	char			*msg;
 
-	printf("on read cb\n");
-
 	session = arg;
 
 	while (evbuffer_get_length(bufferevent_get_input(bev)) > 0) {
@@ -167,6 +165,11 @@ on_read_cb(struct bufferevent *bev, void *arg)
 		} else if (strcmp(action, "switch-node-list") == 0) {
 			if (switch_node_list(session, jmsg) < 0) {
 				log_warnx("%s: switch_node_list", __func__);
+				goto error;
+			}
+		} else if (strcmp(action, "switch-update-node-status") == 0) {
+			if (switch_node_update_status(session, jmsg) < 0) {
+				log_warnx("%s: update_node_status", __func__);
 				goto error;
 			}
 		} else
