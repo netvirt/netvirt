@@ -172,7 +172,7 @@ vnetwork_free(struct vnetwork *vnet)
 		dtls_peer_free(peer);
 
 	pki_passport_destroy(vnet->passport);
-	// XXX crash SSL_CTX_free(vnet->ctx);
+	SSL_CTX_free(vnet->ctx);
 	free(vnet->uid);
 	free(vnet);
 }
@@ -634,6 +634,7 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 
 		/* Load the trusted certificate store into our SSL_CTX */
 		SSL_CTX_set_cert_store(vnet->ctx, vnet->passport->cacert_store);
+		X509_STORE_up_ref(vnet->passport->cacert_store);
 
 	} else
 		ctx = vnet->ctx;
