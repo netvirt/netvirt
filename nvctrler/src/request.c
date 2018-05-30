@@ -1060,6 +1060,8 @@ switch_network_list_cb(void *arg, int left,
 	ret = 0;
 
 error:
+	if (buf != NULL)
+		evbuffer_free(buf);
 	json_decref(resp);
 	return (ret);
 }
@@ -1210,15 +1212,18 @@ switch_node_list_cb(void *arg, int left,
 		goto error;
 	}
 
-	if (sinfo != NULL && sinfo->bev != NULL)
+	if (sinfo != NULL && sinfo->bev != NULL) {
 		if (bufferevent_write_buffer(sinfo->bev, buf) < 0) {
 			log_warnx("%s: bufferevent_write_buffer", __func__);
 			goto error;
 		}
+	}
 
 	ret = 0;
 
 error:
+	if (buf != NULL)
+		evbuffer_free(buf);
 	json_decref(resp);
 	return (ret);
 }
