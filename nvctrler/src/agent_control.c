@@ -228,6 +228,7 @@ tls_peer_new(void)
 	p->bev = NULL;
 	p->ssl = NULL;
 	p->ctx = NULL;
+	p->ci = NULL;
 
 	if ((p->ctx = SSL_CTX_new(TLSv1_2_server_method())) == NULL) {
 		log_warnx("%s: SSL_CTX_new", __func__);
@@ -284,8 +285,8 @@ tls_peer_free(struct tls_peer *p)
 
 	if (p->bev != NULL)
 		bufferevent_free(p->bev);
-	SSL_free(p->ssl);
 	SSL_CTX_free(p->ctx);
+	certinfo_destroy(p->ci);
 	free(p);
 }
 
@@ -460,7 +461,8 @@ servername_cb(SSL *ssl, int *ad, void *arg)
 		goto error;
 	}
 
-        SSL_CTX_set_cert_store(p->ctx, p->vnet->passport->cacert_store);
+	SSL_CTX_set_cert_store(p->ctx, p->vnet->passport->cacert_store);
+	X509_STORE_up_ref(p->vnet->passport->cacert_store);
 
 	SSL_set_SSL_CTX(p->ssl, p->ctx);
         if ((SSL_use_certificate(p->ssl, p->vnet->passport->certificate)) != 1) {
@@ -483,7 +485,10 @@ int
 xmit_networkinfo(struct tls_peer *p)
 {
 	json_t		*jmsg = NULL;
+	int		 ret;
 	char		*msg = NULL;
+
+	ret = -1;
 
 	if ((jmsg = json_pack("{s:s, s:s, s:s}",
 	    "action", "networkinfo",
@@ -508,12 +513,12 @@ xmit_networkinfo(struct tls_peer *p)
 		goto error;
 	}
 
-	return (0);
+	ret = 0;
 
 error:
 	json_decref(jmsg);
 	free(msg);
-	return (-1);
+	return (ret);
 }
 
 void
@@ -572,11 +577,11 @@ tls_peer_onevent_cb(struct bufferevent *bev, short events, void *arg)
 
 
 	} else if (events & (BEV_EVENT_ERROR | BEV_EVENT_TIMEOUT | BEV_EVENT_EOF)) {
-
-                while ((e = bufferevent_get_openssl_error(bev)) > 0) {
+		while ((e = bufferevent_get_openssl_error(bev)) > 0) {
 			log_warnx("%s: TLS error: %s", __func__,
 			    ERR_reason_error_string(e));
-                }
+		}
+		tls_peer_free(arg);
 	}
 }
 
