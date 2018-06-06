@@ -409,7 +409,7 @@ ndb_provisioning(const char *provlink, const char *network_name)
 	struct curl_slist	*req_headers = NULL;
 	char			 url[256];
 
-	snprintf(url, sizeof(url), "http://%s/v1/provisioning", provsrv_addr);
+	snprintf(url, sizeof(url), "https://%s/v1/provisioning", provsrv_addr);
 
 	/* In windows, this will init the winsock stuff */
 	curl_global_init(CURL_GLOBAL_ALL);
