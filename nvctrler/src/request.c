@@ -46,7 +46,11 @@ buf_free_cb(const void *data, size_t datalen, void *extra)
 void
 req_cb(struct evhttp_request *req, void *arg)
 {
+	struct evkeyvalq	*output_headers = NULL;
+
 	evhttp_connection_free(arg);
+	output_headers = evhttp_request_get_output_headers(req);
+	evhttp_clear_headers(output_headers);
 
 	return;
 }
@@ -104,8 +108,6 @@ client_create(char *msg)
 	asprintf(&emailquery, "/email?msgtype=welcome&key=%s&to=\"%s\"",
 	    apikey, email_encoded);
 
-	evhttp_make_request(evhttp_conn, req, EVHTTP_REQ_GET, emailquery);
-
 	// XXX debug purpose
 	FILE    *tmp;
 	tmp = fopen("/tmp/apikey", "w");
@@ -115,10 +117,6 @@ client_create(char *msg)
 	ret = 0;
 
 cleanup:
-	//evhttp_clear_headers(output_headers);
-	evhttp_connection_free(evhttp_conn);
-	evhttp_request_free(req);
-
 	json_decref(jmsg);
 
 	free(apikey);
@@ -300,10 +298,6 @@ client_get_newresetkey(char *msg, char **resp)
 	ret = 0;
 
 cleanup:
-	//evhttp_clear_headers(output_headers);
-	evhttp_connection_free(evhttp_conn);
-	evhttp_request_free(req);
-
 	json_decref(jmsg);
 	json_decref(jresp);
 
