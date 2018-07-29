@@ -103,7 +103,9 @@ static struct addrinfo		*ai;
 struct event_base		*ev_base;
 struct eth_hdr			 eth_ping;
 #if defined(_WIN32) || defined(__APPLE__)
+pthread_t			 thread_poke_tap;
 pthread_mutex_t			 mutex;
+int				 switch_running = 0;
 #endif
 struct event			*ev_iface;
 
@@ -229,10 +231,12 @@ void *poke_tap(void *arg)
 	struct vlink	*vlink = arg;
 	struct packets	*pkt;
 
-	// XXX
-	pkt = malloc(sizeof(struct packets));
+	if ((pkt = malloc(sizeof(struct packets))) == NULL) {
+		log_warn("%s: malloc", __func__);
+		return (NULL);
+	}
 
-	while (1) { // XXX add circuit-breaker
+	while (switch_running) {
 
 		pkt->len = tapcfg_read(vlink->tapcfg, pkt->buf, sizeof(pkt->buf));
 		// XXX check len
@@ -639,21 +643,22 @@ switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *i
 #if defined(_WIN32) || defined(__APPLE__)
 	TAILQ_INIT(&tailq_head);
 
-	pthread_t thread_poke_tap;
+	switch_running = 1;
+
 	pthread_attr_t	attr;
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	pthread_create(&thread_poke_tap, &attr, poke_tap, (void *)vlink);
+	pthread_create(&thread_poke_tap, &attr, poke_tap, vlink);
 
-	if ((ev_iface = event_new(ev_base, 0, EV_TIMEOUT, iface_cb, (void*)vlink)) == NULL)
+	if ((ev_iface = event_new(ev_base, 0,
+		EV_TIMEOUT, iface_cb, vlink)) == NULL)
 		warn("%s:%d", "event_new", __LINE__);
-	event_add(ev_iface, NULL);
 #else
 	if ((ev_iface = event_new(ev_base, tapfd,
 	    EV_READ | EV_PERSIST, iface_cb, vlink)) == NULL)
 		warn("%s:%d", "event_new", __LINE__);
-	event_add(ev_iface, NULL);
 #endif
+	event_add(ev_iface, NULL);
 
 	vlink_reconnect(vlink);
 
@@ -665,7 +670,10 @@ cleanup:
 }
 
 void
-agent_fini()
+switch_fini(void)
 {
-
+#if defined(_WIN32) || defined(__APPLE__)
+	switch_running = 0;
+	pthread_join(thread_poke_tap, NULL);
+#endif
 }
