@@ -351,7 +351,9 @@ ctlinfo_free(struct ctlinfo *ctl)
 
 	pki_passport_destroy(ctl->passport);
 	tls_conn_free(ctl->conn);
+#ifndef __APPLE__
 	tapcfg_destroy(ctl->tapcfg);
+#endif
 
 	free(ctl->srv_addr);
 	free(ctl->srv_port);
