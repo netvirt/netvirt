@@ -401,6 +401,7 @@ vlink_connect(evutil_socket_t fd, short what, void *arg)
 		log_warnx("%s: tls_peer_new", __func__);
 		goto error;
 	}
+	vlink->peer->vlink = vlink;
 
 	if (tls_peer_connect(vlink->peer, vlink) < 0) {
 		log_warnx("%s: tls_peer_connect", __func__);
