@@ -40,12 +40,14 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <openssl/bio.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <openssl/rand.h>
 
 #include <event2/event.h>
+#include <event2/buffer.h>
+#include <event2/bufferevent.h>
+#include <event2/bufferevent_ssl.h>
 
 #include <jansson.h>
 
@@ -56,35 +58,22 @@
 
 #include "agent.h"
 
-enum dtls_state {
-	DTLS_CONNECT,
-	DTLS_ESTABLISHED
-};
-
-struct dtls_conn {
-	struct event	*ev_udpclient;
-	struct event	*handshake_timer;
-	struct event	*ping_timer;
-	struct event	*ping_timeout;
-	enum dtls_state	 state;
-	SSL		*ssl;
-	SSL_CTX		*ctx;
-	int		 sock;
-	int		 ping;
-};
-
-enum vlink_state {
-	VSWITCH_DISCONNECTED,
-	VSWITCH_CONNECTED
-};
-
 struct vlink {
 	passport_t		*passport;
 	tapcfg_t		*tapcfg;
-	struct dtls_conn	*conn;
+	struct tls_peer		*peer;
 	int			 tapfd;
 	char			*addr;
-	enum vlink_state	 state;
+};
+
+struct tls_peer {
+	SSL			*ssl;
+	SSL_CTX			*ctx;
+	socklen_t		 ss_len;
+	struct bufferevent	*bev;
+	struct sockaddr_storage	 ss;
+	struct vlink		*vlink;
+	int			 sock;
 };
 
 struct eth_hdr {
@@ -99,7 +88,6 @@ struct packets {
 	TAILQ_ENTRY(packets)	 entries;
 };
 
-static struct addrinfo		*ai;
 struct event_base		*ev_base;
 struct eth_hdr			 eth_ping;
 #if defined(_WIN32) || defined(__APPLE__)
@@ -111,18 +99,191 @@ struct event			*ev_iface;
 
 TAILQ_HEAD(tailhead, packets)	 tailq_head;
 
-static int	 	 certverify_cb(int, X509_STORE_CTX *);
-static void	 	 dtls_conn_free(struct dtls_conn *);
-static struct dtls_conn	*dtls_conn_new(struct vlink *);
-static void	 	 dtls_handshake_timeout_cb(int, short, void *);
-static int	 	 dtls_handle(struct vlink *);
-static void	 	 udpclient_cb(int, short, void *);
+static void		 tls_peer_free(struct tls_peer *);
+static struct tls_peer	*tls_peer_new();
+static int		 tls_peer_connect(struct tls_peer *, struct vlink *);
 
-static void		 vlink_reconnect(struct vlink *);
+static SSL_CTX		*ctx_init();
+
+static int	 	 cert_verify_cb(int, X509_STORE_CTX *);
+static void		 info_cb(const SSL *, int, int);
+
 static void	 	 iface_cb(int, short, void *);
 
+static void		 vlink_connect(evutil_socket_t, short, void *);
+static void		 vlink_reconnect(struct vlink *);
+static void		 peer_event_cb(struct bufferevent *, short, void *);
+static void		 peer_read_cb(struct bufferevent *, void *);
+
+void
+tls_peer_free(struct tls_peer *p)
+{
+	if (p == NULL)
+		return;
+
+	free(p);
+}
+
+struct tls_peer *
+tls_peer_new()
+{
+	struct tls_peer		*p;
+
+	if ((p = malloc(sizeof(*p))) == NULL) {
+		log_warn("%s: malloc", __func__);
+		goto error;
+	}
+	p->ssl = NULL;
+	p->ctx = NULL;
+	p->ss_len = 0;
+	p->bev = NULL;
+	p->vlink = NULL;
+
+	if ((p->ctx = ctx_init()) == NULL) {
+		log_warnx("%s: ctx_init", __func__);
+		goto error;
+	}
+
+	if ((p->ssl = SSL_new(p->ctx)) == NULL ||
+	    SSL_set_app_data(p->ssl, p) != 1) {
+		log_warnx("%s: SSL_new", __func__);
+		goto error;
+	}
+
+	return (p);
+
+error:
+	tls_peer_free(p);
+	return (NULL);
+}
+
 int
-certverify_cb(int ok, X509_STORE_CTX *store)
+tls_peer_connect(struct tls_peer *p, struct vlink *v)
+{
+	struct addrinfo	 	 hints;
+	struct addrinfo		*res = NULL;
+	EC_KEY			*ecdh = NULL;
+	int			 err, ret;
+	const char		*port = "9090";
+
+	ret = -1;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+
+	if ((err = getaddrinfo(v->addr, port, &hints, &res)) < 0) {
+		log_warnx("%s: getaddrinfo %s", __func__, gai_strerror(err));
+		goto out;
+	}
+
+	if ((p->sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0) {
+		log_warnx("%s: socket", __func__);
+		goto out;
+	}
+
+#ifndef _WIN32
+	int flag = 1;
+
+	if (setsockopt(p->sock, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(flag)) < 0 ||
+	    setsockopt(p->sock, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
+		log_warn("%s: setsockopt", __func__);
+		goto out;
+	}
+#endif
+
+	if (evutil_make_socket_nonblocking(p->sock) > 0) {
+		log_warnx("%s: evutil_make_socket_nonblocking", __func__);
+		goto out;
+	}
+
+	SSL_set_tlsext_host_name(p->ssl, v->passport->certinfo->network_uid);
+
+	SSL_CTX_set_cert_store(p->ctx, v->passport->cacert_store);
+	X509_STORE_up_ref(v->passport->cacert_store);
+
+	SSL_set_SSL_CTX(p->ssl, p->ctx);
+
+	if ((SSL_use_certificate(p->ssl, v->passport->certificate)) != 1) {
+		log_warnx("%s: SSL_CTX_use_certificate", __func__);
+		goto out;
+	}
+
+	if ((SSL_use_PrivateKey(p->ssl, v->passport->keyring)) != 1) {
+		log_warnx("%s: SSL_CTX_use_PrivateKey", __func__);
+		goto out;
+	}
+
+	if ((p->bev = bufferevent_openssl_socket_new(ev_base, p->sock, p->ssl,
+	    BUFFEREVENT_SSL_CONNECTING, BEV_OPT_CLOSE_ON_FREE))
+	    == NULL) {
+		log_warnx("%s: bufferevent_openssl_socket_new", __func__);
+		goto out;
+	}
+
+	bufferevent_setcb(p->bev, peer_read_cb, NULL, peer_event_cb, p);
+	bufferevent_enable(p->bev, EV_READ | EV_WRITE);
+
+	if (bufferevent_socket_connect(p->bev, res->ai_addr, res->ai_addrlen)
+	    < 0) {
+		log_warnx("%s: bufferevent_socket_connected", __func__);
+		goto out;
+	}
+
+	ret = 0;
+
+out:
+	EC_KEY_free(ecdh);
+	freeaddrinfo(res);
+
+	return (ret);
+}
+
+SSL_CTX *
+ctx_init()
+{
+	EC_KEY	*ecdh = NULL;
+	SSL_CTX	*ctx = NULL;
+	int	 err;
+
+	err = -1;
+
+	if ((ctx = SSL_CTX_new(TLSv1_2_method())) == NULL) {
+		log_warnx("%s: SSL_CTX_new", __func__);
+		goto out;
+	}
+
+	if (SSL_CTX_set_cipher_list(ctx, "ECDHE-ECDSA-AES256-GCM-SHA384") != 1) {
+		log_warnx("%s: SSL_CTX_set_cipher_list", __func__);
+		goto out;
+	}
+
+	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL) {
+		log_warnx("%s: EC_KEY_new_by_curve_name", __func__);
+		goto out;
+	}
+
+	SSL_CTX_set_tmp_ecdh(ctx, ecdh);
+
+	SSL_CTX_set_verify(ctx,
+	    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, cert_verify_cb);
+
+	SSL_CTX_set_info_callback(ctx, info_cb);
+
+	err = 0;
+
+out:
+	if (err < 0) {
+		SSL_CTX_free(ctx);
+		ctx = NULL;
+	}
+
+	EC_KEY_free(ecdh);
+	return (ctx);
+}
+
+int
+cert_verify_cb(int ok, X509_STORE_CTX *store)
 {
 	X509		*cert;
 	X509_NAME	*name;
@@ -138,66 +299,14 @@ certverify_cb(int ok, X509_STORE_CTX *store)
 }
 
 void
-ping_timeout_cb(int fd, short event, void *arg)
-{
-	(void)event;
-	(void)fd;
-
-	struct vlink	*vlink = arg;
-
-	if (vlink->conn->ping > 3) {
-		printf("not received > 3 keep alive\n");
-		vlink_reconnect(vlink);
-		return;
-	}
-
-	printf("send keep alive!\n");
-	SSL_write(vlink->conn->ssl, (void *)&eth_ping, sizeof(struct eth_hdr));
-	vlink->conn->ping++;
-}
-
-void
 info_cb(const SSL *ssl, int where, int ret)
 {
 	(void)ret;
 
-	struct vlink	*vlink;
-	struct timeval	 timeout = {5, 0};
-
 	if ((where & SSL_CB_HANDSHAKE_DONE) == 0)
 		return;
 
-	vlink = SSL_get_app_data(ssl);
-
-	if (vlink->conn == NULL)
-		return;
-
-	vlink->conn->ping_timer = event_new(ev_base, -1, EV_TIMEOUT | EV_PERSIST,
-	    ping_timeout_cb, (void *)vlink);
-	event_add(vlink->conn->ping_timer, &timeout);
-
-	// Reset the ev_udpclient event to remove the EV_TIMEOUT.
-	evtimer_del(vlink->conn->ev_udpclient);
-	event_assign(vlink->conn->ev_udpclient, ev_base, vlink->conn->sock,
-	    EV_READ | EV_PERSIST, udpclient_cb, vlink);
-	evtimer_add(vlink->conn->ev_udpclient, NULL);
-
 	printf("connected !\n");
-}
-
-void
-dtls_handshake_timeout_cb(int fd, short event, void *arg)
-{
-	(void)fd;
-	(void)event;
-
-	struct vlink	*vlink = arg;
-
-	DTLSv1_handle_timeout(vlink->conn->ssl);
-
-	if (dtls_handle(vlink) < 0) {
-		vlink_reconnect(vlink);
-	}
 }
 
 #if defined(_WIN32) || defined(__APPLE__)
@@ -206,9 +315,9 @@ iface_cb(int sock, short what, void *arg)
 {
 	(void)sock;
 	(void)what;
-	struct packets		 *pkt;
-	struct vlink		 *vlink = arg;
-
+	struct packets		*pkt;
+	struct vlink		*vlink = arg;
+	int			 ret;
 	pthread_mutex_lock(&mutex);
 	while ((pkt = TAILQ_FIRST(&tailq_head)) == NULL) {
 		pthread_mutex_unlock(&mutex);
@@ -216,8 +325,9 @@ iface_cb(int sock, short what, void *arg)
 	}
 	pthread_mutex_unlock(&mutex);
 
-	if (vlink->conn != NULL && vlink->conn->state == DTLS_ESTABLISHED) {
-		SSL_write(vlink->conn->ssl, pkt->buf, pkt->len);
+	if (vlink->peer != NULL) {
+		ret = SSL_write(vlink->peer->ssl, pkt->buf, pkt->len);
+		printf("ssl write: ret %d\n", ret);
 		// XXX check ret
 	}
 
@@ -239,6 +349,7 @@ void *poke_tap(void *arg)
 	while (switch_running) {
 
 		pkt->len = tapcfg_read(vlink->tapcfg, pkt->buf, sizeof(pkt->buf));
+		printf("tapcfg_read %d\n", pkt->len);
 		// XXX check len
 
 		pthread_mutex_lock(&mutex);
@@ -263,310 +374,36 @@ iface_cb(int sock, short what, void *arg)
 	vlink = arg;
 
 	ret = tapcfg_read(vlink->tapcfg, buf, sizeof(buf));
+	printf("tapcfg_read: ret %d\n", ret);
 	// XXX check ret
 
-	if (vlink->conn != NULL && vlink->conn->state == DTLS_ESTABLISHED) {
-		ret = SSL_write(vlink->conn->ssl, buf, ret);
+	if (vlink->peer != NULL) {
+		ret = SSL_write(vlink->peer->ssl, buf, ret);
+		printf("ssl_write: ret %d\n", ret);
 		// XXX check ret
 	}
 }
 #endif
 
-int
-dtls_handle(struct vlink *vlink)
-{
-	struct timeval	 tv;
-	enum dtls_state	 next_state;
-	unsigned long	 e;
-	int		 ret;
-	int		 line;
-	char		 buf[5000] = {0};
-	const char	*file;
-
-	for (;;) {
-
-		switch (vlink->conn->state) {
-		case DTLS_CONNECT:
-			ret = SSL_do_handshake(vlink->conn->ssl);
-			next_state = DTLS_ESTABLISHED;
-			break;
-
-		case DTLS_ESTABLISHED:
-			ret = SSL_read(vlink->conn->ssl, buf, sizeof(buf));
-			// XXX check ret
-			next_state = DTLS_ESTABLISHED;
-			if (ret > 0) {
-
-				if (inet_ethertype(buf) == ETHERTYPE_PING) {
-					vlink->conn->ping = 0;
-					return (0);
-				}
-				ret = tapcfg_write(vlink->tapcfg, buf, ret);
-				// XXX check ret
-				return (0);
-			}
-			break;
-
-		default:
-			fprintf(stderr, "%s: invalid DTLS peer state\n", __func__);
-			return (-1);
-		}
-
-		switch (SSL_get_error(vlink->conn->ssl, ret)) {
-		case SSL_ERROR_NONE:
-			break;
-
-		case SSL_ERROR_WANT_WRITE:
-			return (0);
-
-		case SSL_ERROR_WANT_READ:
-			if (DTLSv1_get_timeout(vlink->conn->ssl, &tv) == 1 &&
-			    evtimer_add(vlink->conn->handshake_timer, &tv) < 0) {
-				return (-1);
-			}
-			return (0);
-#ifdef _WIN32
-		case SSL_ERROR_SYSCALL:
-			/* An existing connection was forcibly closed by the remote host. */
-			if (WSAGetLastError() != 10054)
-				return (0);
-			// fall to default
-#endif
-		default:
-			fprintf(stderr, "%s: ssl error\n", __func__);
-
-			do {
-				e = ERR_get_error_line(&file, &line);
-				printf("%s: %s", __func__, ERR_error_string(e, NULL));
-			} while (e);
-
-			return (-1);
-		}
-
-		vlink->conn->state = next_state;
-	}
-
-	return (0);
-}
-
 void
-udpclient_cb(int sock, short what, void *arg)
-{
-	(void)sock;
-	(void)what;
-	(void)arg;
-
-	struct vlink	*vlink = arg;
-
-	printf("udpclient_cb\n");
-
-	if (what & EV_TIMEOUT) {
-		printf("sock timeout !\n");
-		goto error;
-	}
-
-	if (dtls_handle(vlink) < 0) {
-		printf("dtls handle failed\n");
-		goto error;
-	}
-
-	return;
-
-error:
-	vlink_reconnect(vlink);
-	return;
-}
-
-void
-dtls_conn_free(struct dtls_conn *conn)
-{
-	if (conn == NULL)
-		return;
-
-	if (conn->ssl != NULL) {
-		SSL_set_shutdown(conn->ssl, SSL_RECEIVED_SHUTDOWN);
-		SSL_shutdown(conn->ssl);
-		SSL_free(conn->ssl);
-	}
-
-	close(conn->sock);
-
-	if (conn->ctx != NULL)
-		SSL_CTX_free(conn->ctx);
-
-	if (conn->handshake_timer != NULL)
-		event_del(conn->handshake_timer);
-
-	if (conn->ping_timer != NULL)
-		event_del(conn->ping_timer);
-
-	if (conn->ev_udpclient != NULL)
-		evtimer_del(conn->ev_udpclient);
-
-	free(conn);
-}
-
-struct dtls_conn *
-dtls_conn_new(struct vlink *vlink)
-{
-	BIO			*bio = NULL;
-	EC_KEY			*ecdh;
-	struct timeval		timeout = {5, 0};
-	struct addrinfo	 	hints;
-	struct dtls_conn	*conn;
-	unsigned long		 e;
-	int			 ret;
-	const char		*port = "9090";
-
-	// XXX global init! 
-	{
-		SSL_library_init();
-		SSL_load_error_strings();
-		if (!RAND_poll())
-			err(1, "%s: RAND_poll", __func__);
-	}
-
-	printf("Connecting to %s\n", vlink->addr);
-
-	if ((conn = malloc(sizeof(struct dtls_conn))) == NULL) {
-		log_warn("%s: malloc", __func__);
-		goto cleanup;
-	}
-	conn->handshake_timer = NULL;
-	conn->ping_timer = NULL;
-	conn->state = DTLS_CONNECT;
-	conn->ssl = NULL;
-	conn->ping = 0;
-
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_DGRAM;
-	if ((ret = getaddrinfo(vlink->addr, port, &hints, &ai)) < 0) {
-		log_warnx("%s: getaddrinfo %s", __func__, gai_strerror(ret));
-		goto cleanup;
-	}
-
-	if ((conn->sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) < 0) {
-		log_warnx("%s: socket", __func__);
-		goto cleanup;
-	}
-
-#ifndef _WIN32
-	int flag = 1;
-	if (setsockopt(conn->sock, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) < 0) {
-		log_warn("%s: setsockopt", __func__);
-		goto cleanup;
-	}
-#endif
-
-	if (evutil_make_socket_nonblocking(conn->sock) > 0) {
-		log_warnx("%s: evutil_make_socket_nonblocking", __func__);
-		goto cleanup;
-	}
-
-	if (connect(conn->sock, ai->ai_addr, ai->ai_addrlen) < 0) {
-		log_warn("%s: connect", __func__);
-		goto cleanup;
-	}
-
-	if ((conn->ctx = SSL_CTX_new(DTLSv1_client_method())) == NULL) {
-		log_warnx("%s: SSL_CTX_new", __func__);
-		while ((e = ERR_get_error()))
-			log_warnx("%s", ERR_error_string(e, NULL));
-		goto cleanup;
-	}
-
-	if (SSL_CTX_set_cipher_list(conn->ctx, "ECDHE-ECDSA-AES256-SHA") != 1) {
-		log_warnx("%s: SSL_CTX_set_cipher_list", __func__);
-		while ((e = ERR_get_error()))
-			log_warnx("%s", ERR_error_string(e, NULL));
-		goto cleanup;
-	}
-
-	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL) {
-		log_warnx("%s: EC_KEY_new_by_curve_name", __func__);
-		goto cleanup;
-	}
-	SSL_CTX_set_tmp_ecdh(conn->ctx, ecdh);
-	EC_KEY_free(ecdh);
-
-
-	SSL_CTX_set_cert_store(conn->ctx, vlink->passport->cacert_store);
-	X509_STORE_up_ref(vlink->passport->cacert_store);
-
-	if ((SSL_CTX_use_certificate(conn->ctx, vlink->passport->certificate)) != 1) {
-		log_warnx("%s: SSL_CTX_use_certificate", __func__);
-		goto cleanup;
-	}
-	if ((SSL_CTX_use_PrivateKey(conn->ctx, vlink->passport->keyring)) != 1) {
-		log_warnx("%s: SSL_CTX_use_PrivateKey", __func__);
-		goto cleanup;
-	}
-
-	SSL_CTX_set_read_ahead(conn->ctx, 1);
-
-	if ((conn->ssl = SSL_new(conn->ctx)) == NULL) {
-		log_warnx("%s: SSL_new", __func__);
-		goto cleanup;
-	}
-
-	if (SSL_set_app_data(conn->ssl, vlink) != 1) {
-		log_warnx("%s: SSL_set_app_data", __func__);
-		goto cleanup;
-	}
-
-	SSL_set_info_callback(conn->ssl, info_cb);
-	SSL_set_tlsext_host_name(conn->ssl, vlink->passport->certinfo->network_uid);
-	SSL_set_verify(conn->ssl,
-	    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, certverify_cb);
-
-	if ((bio = BIO_new_dgram(conn->sock, BIO_NOCLOSE)) == NULL) {
-		log_warnx("%s: BIO_new_dgram", __func__);
-		goto cleanup;
-	}
-
-	BIO_ctrl(bio, BIO_CTRL_DGRAM_SET_CONNECTED, 0, &ai->ai_addr);
-
-	SSL_set_bio(conn->ssl, bio, bio);
-
-	SSL_set_connect_state(conn->ssl);
-
-	if ((conn->ev_udpclient = event_new(ev_base, conn->sock,
-	    EV_READ|EV_PERSIST, udpclient_cb, vlink)) == NULL) {
-		log_warnx("%s: event_new", __func__);
-		goto cleanup;
-	}
-	event_add(conn->ev_udpclient, &timeout);
-
-	if ((conn->handshake_timer = evtimer_new(ev_base, dtls_handshake_timeout_cb, vlink)) == NULL) {
-		log_warnx("%s: evtimer_new", __func__);
-		goto cleanup;
-	}
-
-	SSL_connect(conn->ssl);
-
-	return (conn);
-
-cleanup:
-
-	vlink_reconnect(vlink);
-	return (NULL);
-}
-
-void
-vlink_connstart(evutil_socket_t fd, short what, void *arg)
+vlink_connect(evutil_socket_t fd, short what, void *arg)
 {
 	struct vlink	*vlink = arg;
 	(void)fd;
 	(void)what;
 
-	if (vlink->conn != NULL) {
-		dtls_conn_free(vlink->conn);
-		vlink->conn = NULL;
+	if (vlink->peer != NULL) {
+		tls_peer_free(vlink->peer);
+		vlink->peer = NULL;
 	}
 
-	if ((vlink->conn = dtls_conn_new(vlink)) == NULL) {
-		log_warnx("%s: dtls_conn_new", __func__);
+	if ((vlink->peer = tls_peer_new()) == NULL) {
+		log_warnx("%s: tls_peer_new", __func__);
+		goto error;
+	}
+
+	if (tls_peer_connect(vlink->peer, vlink) < 0) {
+		log_warnx("%s: tls_peer_connect", __func__);
 		goto error;
 	}
 
@@ -574,28 +411,59 @@ vlink_connstart(evutil_socket_t fd, short what, void *arg)
 
 error:
 	vlink_reconnect(vlink);
-
 	return;
 }
 
 void
 vlink_reconnect(struct vlink *vlink)
 {
-	struct timeval	one_sec = {5, 0};
-
-	vlink->state = VSWITCH_DISCONNECTED;
-
-	// Disable timeout on the UDP socket to prevent calling reconnect again.
-	if (vlink->conn != NULL && vlink->conn->ev_udpclient != NULL)
-		evtimer_del(vlink->conn->ev_udpclient);
-
-	if (vlink->conn != NULL && vlink->conn->ping_timer != NULL)
-		event_del(vlink->conn->ping_timer);
-
+	struct timeval	wait_sec = {5, 0};
 
 	if (event_base_once(ev_base, -1, EV_TIMEOUT,
-	    vlink_connstart, vlink, &one_sec) < 0)
+	    vlink_connect, vlink, &wait_sec) < 0)
 		log_warnx("%s: event_base_once", __func__);
+}
+
+void
+peer_event_cb(struct bufferevent *bev, short events, void *arg)
+{
+	unsigned long	 e;
+
+	if (events & BEV_EVENT_CONNECTED) {
+
+	} else if (events & (BEV_EVENT_ERROR | BEV_EVENT_TIMEOUT | BEV_EVENT_EOF)) {
+		while ((e = bufferevent_get_openssl_error(bev)) > 0) {
+			log_warnx("%s: TLS error: %s", __func__,
+			    ERR_reason_error_string(e));
+		}
+		tls_peer_free(arg);
+	}
+
+	return;
+}
+
+void
+peer_read_cb(struct bufferevent *bev, void *arg)
+{
+	struct evbuffer	*input;
+	struct tls_peer *p = arg;
+	int		 n;
+	uint8_t		 buf[2000];
+
+	input = bufferevent_get_input(bev);
+
+	n = evbuffer_remove(input, buf, sizeof(buf));
+	printf("evbuffer remove : %d\n", n);
+
+	n = tapcfg_write(p->vlink->tapcfg, buf, n);
+	printf("tapcfg_write: %d\n", n);
+
+	return;
+
+	goto error;
+
+error:
+	tls_peer_free(p);
 }
 
 int
@@ -613,7 +481,7 @@ switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *i
 	}
 	vlink->passport = NULL;
 	vlink->tapcfg = NULL;
-	vlink->conn = NULL;
+	vlink->peer = NULL;
 	vlink->addr = NULL;
 
 	vlink->tapcfg = tapcfg;
