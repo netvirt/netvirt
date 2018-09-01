@@ -73,8 +73,8 @@ main(int argc, char *argv[])
 	json_decref(config);
 
 	event_base_dispatch(ev_base);
-	control_fini();
 	switch_fini();
+	control_fini();
 
 	event_free(ev_sigint);
 	event_free(ev_sigterm);
