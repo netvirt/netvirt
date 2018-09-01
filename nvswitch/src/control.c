@@ -102,8 +102,8 @@ response_node_delete(json_t *jmsg)
 			return (-1);
 		}
 
-		if ((vnet = vnetwork_lookup(network_uid)) == NULL) {
-			log_warnx("%s: vnetwork_lookup", __func__);
+		if ((vnet = vnetwork_find(network_uid)) == NULL) {
+			log_warnx("%s: vnetwork_find", __func__);
 			return (-1);
 		}
 
@@ -150,12 +150,12 @@ response_network_delete(json_t *jmsg)
 			return (-1);
 		}
 
-		if ((vnet = vnetwork_lookup(network_uid)) == NULL) {
-			log_warnx("%s: vnetwork_lookup", __func__);
+		if ((vnet = vnetwork_find(network_uid)) == NULL) {
+			log_warnx("%s: vnetwork_find", __func__);
 			return (-1);
 		}
 
-		vnetwork_free(vnet);
+		vnetwork_del(vnet);
 	}
 
 	return (0);
@@ -197,7 +197,7 @@ static	size_t		 total = 1;
 			return -1;
 		}
 
-		if ((vnet = vnetwork_lookup(network_uid)) != NULL)
+		if ((vnet = vnetwork_find(network_uid)) != NULL)
 			vnetwork_add_node(vnet, uid);
 	}
 
@@ -251,7 +251,7 @@ response_network_list(json_t *jmsg)
 		    "cert", &cert, "pvkey", &pvkey, "cacert", &cacert) < 0)
 			log_warnx("%s: json_unpack", __func__);
 
-		vnetwork_create(uid, cert, pvkey, cacert);
+		vnetwork_add(uid, cert, pvkey, cacert);
 	}
 
 
@@ -321,8 +321,6 @@ request_update_node_status(char *status, char *ipsrc, char *uid, char *network_u
 		log_warnx("%s: json_dumps", __func__);
 		goto out;
 	}
-
-	printf("query %s\n", query_str);
 
 	if ((buf = evbuffer_new()) == NULL) {
 		log_warnx("%s: evbuffer_new", __func__);
@@ -578,7 +576,7 @@ evssl_init()
 	int		 ret;
 
 	ret = -1;
-	if ((ctx = SSL_CTX_new(TLSv1_2_method())) == NULL) {
+	if ((ctx = SSL_CTX_new(TLS_method())) == NULL) {
 		log_warnx("SSL_CTX_new");
 		return (NULL);
 	}
