@@ -40,20 +40,18 @@ struct switch_config {
 struct vnetwork;
 struct node;
 
-void		 vnetwork_free(struct vnetwork *);
-struct vnetwork	*vnetwork_lookup(const char *);
-void		 vnetworks_free(void);
-int		 vnetwork_create(char *, char *, char *, char *);
-int		 vnetwork_init(void);
-int		 vnetwork_add_node(struct vnetwork *, const char *);
-void		 vnetwork_del_node(struct vnetwork *, struct node *);
-struct node	*vnetwork_find_node(struct vnetwork *, const char *);
-
 void		 switch_init(json_t *);
 void		 switch_fini(void);
+struct vnetwork	*vnetwork_find(const char *);
+void		 vnetwork_del(struct vnetwork *);
+int		 vnetwork_add(char *, char *, char *, char *);
+struct node	*vnetwork_find_node(struct vnetwork *, const char *);
+void		 vnetwork_del_node(struct vnetwork *, struct node *);
+int		 vnetwork_add_node(struct vnetwork *, const char *);
 
 void		 control_init(void);
 void		 control_fini(void);
+int		 request_update_node_status(char *, char *, char *, char *);
 
 extern json_t			*config;
 extern struct event_base	*ev_base;

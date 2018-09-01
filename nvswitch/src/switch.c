@@ -25,12 +25,14 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <openssl/bio.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <openssl/rand.h>
 
-#include <event2/event.h>
+#include <event2/buffer.h>
+#include <event2/bufferevent.h>
+#include <event2/bufferevent_ssl.h>
+#include <event2/listener.h>
 
 #include <log.h>
 #include <pki.h>
@@ -38,317 +40,91 @@
 #include "inet.h"
 #include "switch.h"
 
-RB_HEAD(vnet_node_tree, node);
-RB_HEAD(vnet_peer_tree, dtls_peer);
-RB_HEAD(vnet_lladdr_tree, lladdr);
+RB_HEAD(acl_node_tree, node);
+RB_HEAD(tls_peer_tree, tls_peer);
+RB_HEAD(lladdr_tree, lladdr);
 
 struct vnetwork {
 	RB_ENTRY(vnetwork)	 entry;
-	struct vnet_node_tree	 aclnode;
-	struct vnet_peer_tree	 peers;
-	struct vnet_lladdr_tree	 arpcache;
 	passport_t		*passport;
-	SSL_CTX			*ctx;
-	char			*uid;
+	struct acl_node_tree	 acl_node;
+	struct lladdr_tree	 mac_table;
+	struct tls_peer_tree	 peers;
 	uint32_t		 active_node;
+	char			*uid;
 };
 
 struct node {
 	RB_ENTRY(node)		 entry;
+	struct tls_peer		*peer;
 	char			*uid;
-	struct dtls_peer	*peer;
 };
 
 struct lladdr {
 	RB_ENTRY(lladdr)	 entry;
 	uint8_t			 macaddr[ETHER_ADDR_LEN];
-	struct dtls_peer	*peer;
+	struct tls_peer		*peer;
 };
 
-enum dtls_state {
-	DTLS_LISTEN,
-	DTLS_ACCEPT,
-	DTLS_ESTABLISHED
-};
-
-struct dtls_peer {
-	RB_ENTRY(dtls_peer)	 entry;
-	RB_ENTRY(dtls_peer)	 vn_entry;
-	struct lladdr		*lladdr;
-	struct sockaddr_storage  ss;
-	struct event		*handshake_timer;
-	struct event		*ping_timer;
-	enum dtls_state		 state;
-	socklen_t		 ss_len;
+struct tls_peer {
+	RB_ENTRY(tls_peer)	 entry;
 	SSL			*ssl;
 	SSL_CTX			*ctx;
-	struct vnetwork		*vnet;
+	socklen_t		 ss_len;
+	struct bufferevent	*bev;
+	struct event		*timeout;
 	struct node		*node;
-	uint8_t			 macaddr[ETHER_ADDR_LEN];
+	struct sockaddr_storage  ss;
+	struct vnetwork		*vnet;
 };
 
-RB_HEAD(vnet_tree, vnetwork);
-RB_HEAD(dtls_peer_tree, dtls_peer);
+RB_HEAD(vnetwork_tree, vnetwork);
 
-static struct vnet_tree		 vnetworks;
-static struct dtls_peer_tree	 dtls_peers;
-static EC_KEY			*ecdh;
-static SSL_CTX			*ctx;
-static struct event		*ev_udplisten;
-static struct addrinfo		*ai;
-static int			 cookie_initialized;
-static unsigned char		 cookie_secret[16];
+static struct evconnlistener	*listener = NULL;
+static struct vnetwork_tree	 vnetworks;
 
-static void		 info_cb(const SSL *, int, int);
-static int		 servername_cb(SSL *, int *, void *);
-static int		 generate_cookie(SSL *, unsigned char *, unsigned int *);
-static int		 verify_cookie(SSL *, unsigned char *, unsigned int);
-static int		 cert_verify_cb(int, X509_STORE_CTX *);
-static void		 ping_timeout_cb(int, short, void *);
-static struct lladdr	*lladdr_new(struct dtls_peer *, uint8_t *);
-static void		 lladdr_free(struct lladdr *);
 static int		 lladdr_cmp(const struct lladdr *,
 			    const struct lladdr *);
-static struct dtls_peer	*dtls_peer_new(int);
-static void		 dtls_peer_free(struct dtls_peer *);
-static int		 dtls_handle(struct dtls_peer *);
-static void		 dtls_handshake_timeout_cb(int, short, void *);
-static int		 dtls_peer_cmp(const struct dtls_peer *,
-			    const struct dtls_peer *);
+static void		 lladdr_free(struct lladdr *);
+static struct lladdr	*lladdr_new(struct tls_peer *, uint8_t *);
+
 static int		 node_cmp(const struct node *, const struct node *);
+static void		 node_free(struct node *n);
+static struct node	*node_new(const char *);
+
+static int		 tls_peer_cmp(const struct tls_peer *,
+			    const struct tls_peer *);
+static void		 tls_peer_free(struct tls_peer *);
+static struct tls_peer	*tls_peer_new();
+static void		 tls_peer_disconnect(struct tls_peer *);
+static void		 tls_peer_timeout_cb(int, short, void *);
+
 static int		 vnetwork_cmp(const struct vnetwork *,
 			    const struct vnetwork *);
+static void		 vnetwork_free(struct vnetwork *);
+static struct vnetwork	*vnetwork_new(char *, char *, char *, char *);
 
-RB_PROTOTYPE_STATIC(vnet_tree, vnetwork, entry, vnetwork_cmp);
-RB_PROTOTYPE_STATIC(vnet_peer_tree, dtls_peer, vn_entry, dtls_peer_cmp);
-RB_PROTOTYPE_STATIC(dtls_peer_tree, dtls_peer, entry, dtls_peer_cmp);
-RB_PROTOTYPE_STATIC(vnet_lladdr_tree, lladdr, entry, lladdr_cmp);
-RB_PROTOTYPE_STATIC(vnet_node_tree, node, entry, node_cmp);
+static SSL_CTX		*ctx_init(void *);
 
-int
-node_cmp(const struct node *a, const struct node *b)
-{
-	return strcmp(a->uid, b->uid);
-}
+static int		 cert_verify_cb(int, X509_STORE_CTX *);
+static void		 info_cb(const SSL *, int, int);
+static int		 servername_cb(SSL *, int *, void *);
+
+static void		 peer_event_cb(struct bufferevent *, short, void *);
+static void		 peer_read_cb(struct bufferevent *, void *);
+static void		 listen_error_cb(struct evconnlistener *, void *);
+static void		 listen_conn_cb(struct evconnlistener *, int,
+			    struct sockaddr *, int, void *);
+
+RB_PROTOTYPE_STATIC(lladdr_tree, lladdr, entry, lladdr_cmp);
+RB_PROTOTYPE_STATIC(acl_node_tree, node, entry, node_cmp);
+RB_PROTOTYPE_STATIC(tls_peer_tree, tls_peer, entry, tls_peer_cmp);
+RB_PROTOTYPE_STATIC(vnetwork_tree, vnetwork, entry, vnetwork_cmp);
 
 int
 lladdr_cmp(const struct lladdr *a, const struct lladdr *b)
 {
 	return memcmp(a->macaddr, b->macaddr, ETHER_ADDR_LEN);
-}
-
-int
-vnetwork_cmp(const struct vnetwork *a, const struct vnetwork *b)
-{
-	return strcmp(a->uid, b->uid);
-}
-
-struct vnetwork
-*vnetwork_lookup(const char *uid)
-{
-	struct vnetwork	match;
-
-	match.uid = (char *)uid;
-	return RB_FIND(vnet_tree, &vnetworks, &match);
-}
-
-void
-vnetwork_free(struct vnetwork *vnet)
-{
-	struct lladdr		*lladdr;
-	struct node		*node;
-	struct dtls_peer	*peer;
-
-	if (vnet == NULL)
-		return;
-
-	RB_REMOVE(vnet_tree, &vnetworks, vnet);
-
-	while ((lladdr = RB_ROOT(&vnet->arpcache)) != NULL)
-		free(lladdr);
-	while ((node = RB_ROOT(&vnet->aclnode)) != NULL)
-		vnetwork_del_node(vnet, node);
-	while ((peer = RB_ROOT(&vnet->peers)) != NULL)
-		dtls_peer_free(peer);
-
-	pki_passport_destroy(vnet->passport);
-	SSL_CTX_free(vnet->ctx);
-	free(vnet->uid);
-	free(vnet);
-}
-
-int
-vnetwork_create(char *uid, char *cert, char *pvkey, char *cacert)
-{
-	struct vnetwork *vnet;
-
-	if ((vnet = malloc(sizeof(*vnet))) == NULL) {
-		log_warnx("%s: malloc", __func__);
-		return (-1);
-	}
-
-	RB_INIT(&vnet->aclnode);
-	RB_INIT(&vnet->peers);
-	RB_INIT(&vnet->arpcache);
-	vnet->uid = strdup(uid);
-	vnet->passport = pki_passport_load_from_memory(cert, pvkey, cacert);
-	vnet->active_node = 0;
-	vnet->ctx = NULL;
-
-	RB_INSERT(vnet_tree, &vnetworks, vnet);
-
-	return (0);
-}
-
-int
-vnetwork_add_node(struct vnetwork *vnet, const char *uid)
-{
-	struct node	*node;
-
-	if ((node = malloc(sizeof(*node))) == NULL) {
-		log_warnx("%s: malloc", __func__);
-		return (-1);
-	}
-
-	node->uid = strdup(uid);
-
-	RB_INSERT(vnet_node_tree, &vnet->aclnode, node);
-
-	return (0);
-}
-
-void
-vnetwork_del_node(struct vnetwork *vnet, struct node *node)
-{
-	// XXX safe to call if find() used first
-	RB_REMOVE(vnet_node_tree, &vnet->aclnode, node);
-
-	// XXX Disconnect the peer if connected
-	free(node->uid);
-	free(node);
-}
-
-struct node *
-vnetwork_find_node(struct vnetwork *vnet, const char *uid)
-{
-	struct node	match;
-
-	match.uid = (char *)uid;
-	return RB_FIND(vnet_node_tree, &vnet->aclnode, &match);
-}
-
-int
-dtls_peer_cmp(const struct dtls_peer *a, const struct dtls_peer *b)
-{
-	if (a->ss_len < b->ss_len)
-		return (-1);
-	if (a->ss_len > b->ss_len)
-		return (1);
-	return (memcmp(&a->ss, &b->ss, a->ss_len));
-}
-
-struct dtls_peer *
-dtls_peer_new(int sock)
-{
-	BIO			*bio = NULL;
-	struct dtls_peer	*p = NULL;
-	struct timeval		 tv = {10, 0};
-
-	if ((p = malloc(sizeof(*p))) == NULL) {
-		log_warn("%s: malloc", __func__);
-		goto error;
-	}
-	p->ssl = NULL;
-	p->vnet = NULL;
-	p->node = NULL;
-	p->ss_len = 0;
-	p->state = DTLS_LISTEN;
-	p->handshake_timer = NULL;
-	p->ping_timer = NULL;
-	p->lladdr = NULL;
-
-	if ((p->handshake_timer = evtimer_new(ev_base,
-	    dtls_handshake_timeout_cb, p)) == NULL) {
-		log_warnx("%s: evtimer_new", __func__);
-		goto error;
-	}
-
-	if ((p->ping_timer = evtimer_new(ev_base,
-	    ping_timeout_cb, p)) == NULL) {
-		log_warnx("%s: evtimer_new", __func__);
-		goto error;
-	}
-
-	if ((p->ctx = SSL_CTX_new(DTLSv1_method())) == NULL) {
-		log_warnx("%s: SSL_CTX_new", __func__);
-		goto error;
-	}
-
-	SSL_CTX_set_read_ahead(p->ctx, 1);
-
-	SSL_CTX_set_cookie_generate_cb(p->ctx, generate_cookie);
-	SSL_CTX_set_cookie_verify_cb(p->ctx, verify_cookie);
-	SSL_CTX_set_tlsext_servername_callback(p->ctx, servername_cb);
-	SSL_CTX_set_tlsext_servername_arg(p->ctx, NULL);
-
-	if ((p->ssl = SSL_new(p->ctx)) == NULL ||
-	    SSL_set_app_data(p->ssl, p) != 1) {
-		log_warnx("%s: SSL_new", __func__);
-		goto error;
-	}
-
-	SSL_set_info_callback(p->ssl, info_cb);
-	SSL_set_accept_state(p->ssl);
-	SSL_set_verify(p->ssl,
-	    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
-	    cert_verify_cb);
-
-	if ((bio = BIO_new_dgram(sock, BIO_NOCLOSE)) == NULL) {
-		log_warnx("%s: BIO_new_dgram", __func__);
-		goto error;
-	}
-
-	SSL_set_bio(p->ssl, bio, bio);
-	bio = NULL;
-
-	if (evtimer_add(p->ping_timer, &tv) < 0)
-		goto error;
-
-	return (p);
-
-error:
-	BIO_free(bio);
-	dtls_peer_free(p);
-	return (NULL);
-}
-
-void
-dtls_peer_free(struct dtls_peer *p)
-{
-	struct dtls_peer	*pp;
-
-	if (p == NULL)
-		return;
-
-	if (p->vnet != NULL) {
-		if ((pp = RB_FIND(vnet_peer_tree, &p->vnet->peers, p)) != NULL)
-			RB_REMOVE(vnet_peer_tree, &p->vnet->peers, pp);
-	}
-
-	if (p->ss_len != 0)
-		RB_REMOVE(dtls_peer_tree, &dtls_peers, p);
-	if (p->lladdr != NULL)
-		RB_REMOVE(vnet_lladdr_tree, &p->vnet->arpcache, p->lladdr);
-
-	// XXX if peer was ESTABLISHED send a notification
-	if (p->node != NULL && p->vnet != NULL)
-		request_update_node_status("0", "", p->node->uid, p->vnet->uid);
-
-	event_free(p->handshake_timer);
-	event_free(p->ping_timer);
-	SSL_CTX_free(p->ctx);
-	SSL_free(p->ssl);
-	free(p);
 }
 
 void
@@ -361,7 +137,7 @@ lladdr_free(struct lladdr *l)
 }
 
 struct lladdr *
-lladdr_new(struct dtls_peer *p, uint8_t *macaddr)
+lladdr_new(struct tls_peer *p, uint8_t *macaddr)
 {
 	struct lladdr	*l;
 
@@ -369,9 +145,8 @@ lladdr_new(struct dtls_peer *p, uint8_t *macaddr)
 		log_warnx("%s: malloc", __func__);
 		goto error;
 	}
-
 	l->peer = p;
-	p->lladdr = l;
+
 	memcpy(l->macaddr, macaddr, ETHER_ADDR_LEN);
 
 	return (l);
@@ -381,16 +156,282 @@ error:
 	return (NULL);
 }
 
-void
-link_switch_recv(struct dtls_peer *p, uint8_t *frame, size_t len)
+int
+node_cmp(const struct node *a, const struct node *b)
 {
-	struct dtls_peer	*pp;
+	return strcmp(a->uid, b->uid);
+}
+
+void
+node_free(struct node *n)
+{
+	if (n == NULL)
+		return;
+
+	free(n->uid);
+	free(n);
+}
+
+struct node *
+node_new(const char *uid)
+{
+	struct node	*n = NULL;
+
+	if ((n = malloc(sizeof(*n))) == NULL) {
+		log_warnx("%s: malloc", __func__);
+		goto error;
+	}
+	n->uid = strdup(uid);
+
+	return (n);
+
+error:
+	node_free(n);
+	return (NULL);
+}
+
+int
+tls_peer_cmp(const struct tls_peer *a, const struct tls_peer *b)
+{
+	if (a->ss_len < b->ss_len)
+		return (-1);
+	if (a->ss_len > b->ss_len)
+		return (1);
+	return (memcmp(&a->ss, &b->ss, a->ss_len));
+}
+
+void
+tls_peer_free(struct tls_peer *p)
+{
+	if (p == NULL)
+		return;
+	if (p->bev != NULL)
+		bufferevent_free(p->bev);
+	else
+		SSL_free(p->ssl);
+
+	event_free(p->timeout);
+	SSL_CTX_free(p->ctx);
+	free(p);
+}
+
+struct tls_peer *
+tls_peer_new()
+{
+	struct tls_peer	*p;
+	struct timeval	 tv = {10, 0};
+
+	if ((p = malloc(sizeof(*p))) == NULL) {
+		log_warn("%s: malloc", __func__);
+		goto error;
+	}
+	p->ssl = NULL;
+	p->ctx = NULL;
+	p->ss_len = 0;
+	p->bev = NULL;
+	p->timeout = NULL;
+	p->node = NULL;
+	p->vnet = NULL;
+
+	if ((p->timeout = evtimer_new(ev_base,
+	    tls_peer_timeout_cb, p)) == NULL) {
+		log_warnx("%s: evtimer_new", __func__);
+		goto error;
+	}
+
+	if ((p->ctx = ctx_init(p)) == NULL) {
+		log_warnx("%s: SSL_CTX_new", __func__);
+		goto error;
+	}
+
+	if ((p->ssl = SSL_new(p->ctx)) == NULL ||
+	    SSL_set_app_data(p->ssl, p) != 1) {
+		log_warnx("%s: SSL_new", __func__);
+		goto error;
+	}
+
+	if (evtimer_add(p->timeout, &tv) < 0)
+		goto error;
+
+	return (p);
+
+error:
+	tls_peer_free(p);
+	return (NULL);
+}
+
+void
+tls_peer_disconnect(struct tls_peer *p)
+{
+	struct tls_peer *pp;
+	struct lladdr	*l, *ll;
+
+	if (p == NULL)
+		return;
+
+	if (p->vnet != NULL) {
+		if ((pp = RB_FIND(tls_peer_tree, &p->vnet->peers, p)) != NULL)
+			RB_REMOVE(tls_peer_tree, &p->vnet->peers, pp);
+	}
+
+	RB_FOREACH_SAFE(l, lladdr_tree, &p->vnet->mac_table, ll) {
+		if (l->peer == p) {
+			RB_REMOVE(lladdr_tree, &p->vnet->mac_table, l);
+			lladdr_free(l);
+		}
+	}
+
+	if (p->node != NULL && p->vnet != NULL)
+		request_update_node_status("0", "", p->node->uid, p->vnet->uid);
+
+	tls_peer_free(p);
+}
+
+void
+tls_peer_timeout_cb(int fd, short event, void *arg)
+{
+
+}
+
+int
+vnetwork_cmp(const struct vnetwork *a, const struct vnetwork *b)
+{
+	return strcmp(a->uid, b->uid);
+}
+
+void
+vnetwork_free(struct vnetwork *v)
+{
+	if (v == NULL)
+		return;
+
+	pki_passport_destroy(v->passport);
+	free(v->uid);
+	free(v);
+}
+
+struct vnetwork *
+vnetwork_new(char *uid, char *cert, char *pvkey, char *cacert)
+{
+	struct vnetwork *v;
+
+	if ((v = malloc(sizeof(*v))) == NULL) {
+		log_warnx("%s: malloc", __func__);
+		goto error;
+	}
+	v->passport = pki_passport_load_from_memory(cert, pvkey, cacert);
+	RB_INIT(&v->acl_node);
+	RB_INIT(&v->mac_table);
+	RB_INIT(&v->peers);
+	v->uid = strdup(uid);
+	v->active_node = 0;
+
+	return (v);
+
+error:
+	vnetwork_free(v);
+	return (NULL);
+}
+
+int
+vnetwork_add(char *uid, char *cert, char *pvkey, char *cacert)
+{
+	struct vnetwork	*v;
+
+	if ((v = vnetwork_new(uid, cert, pvkey, cacert)) == NULL) {
+		log_warnx("%s: vnetwork_new", __func__);
+		goto error;
+	}
+
+	RB_INSERT(vnetwork_tree, &vnetworks, v);
+
+	return (0);
+
+error:
+	return (-1);
+}
+
+void
+vnetwork_del(struct vnetwork *v)
+{
+	struct lladdr		*lladdr;
+	struct node		*node;
+	struct tls_peer		*peer;
+
+	RB_REMOVE(vnetwork_tree, &vnetworks, v);
+
+	while ((lladdr = RB_ROOT(&v->mac_table)) != NULL) {
+		RB_REMOVE(lladdr_tree, &v->mac_table, lladdr);
+		lladdr_free(lladdr);
+	}
+
+	while ((peer = RB_ROOT(&v->peers)) != NULL)
+		tls_peer_disconnect(peer);
+
+
+	while ((node = RB_ROOT(&v->acl_node)) != NULL)
+		vnetwork_del_node(v, node);
+	vnetwork_free(v);
+}
+
+struct vnetwork
+*vnetwork_find(const char *uid)
+{
+	struct vnetwork	needle;
+
+	needle.uid = (char *)uid;
+	return RB_FIND(vnetwork_tree, &vnetworks, &needle);
+}
+
+int
+vnetwork_add_node(struct vnetwork *v, const char *uid)
+{
+	struct node	*n;
+
+	if ((n = node_new(uid)) == NULL) {
+		log_warnx("%s: node_new", __func__);
+		goto error;
+	}
+
+	RB_INSERT(acl_node_tree, &v->acl_node, n);
+
+	return (0);
+
+error:
+	return (-1);
+}
+
+void
+vnetwork_del_node(struct vnetwork *vnet, struct node *node)
+{
+	// XXX safe to call if find() used first
+	RB_REMOVE(acl_node_tree, &vnet->acl_node, node);
+
+	node_free(node);
+
+	// XXX if peer connected, free and disconnect
+}
+
+struct node *
+vnetwork_find_node(struct vnetwork *v, const char *uid)
+{
+	struct node	 needle;
+
+	needle.uid = (char *)uid;
+	return RB_FIND(acl_node_tree, &v->acl_node, &needle);
+}
+
+void
+switching(struct tls_peer *p, uint8_t *frame, size_t len)
+{
+	struct tls_peer		*pp;
 	struct lladdr		*l, *ll, needle;
+	int			 ret;
 	uint8_t			 saddr[ETHER_ADDR_LEN];
 
 	if (inet_ethertype(frame) == ETHERTYPE_PING) {
-		if (SSL_write(p->ssl, frame, len) <= 0) {
-			log_warnx("%s: SSL_write", __func__);
+		if ((ret = bufferevent_write(p->bev, frame, len)) < 0) {
+			log_warnx("%s: bufferevent_write: %d", __func__, ret);
 			goto cleanup;
 		}
 		return;
@@ -401,24 +442,25 @@ link_switch_recv(struct dtls_peer *p, uint8_t *frame, size_t len)
 	/* Make sure we know the source */
 	inet_macaddr_src(frame, needle.macaddr);
 
-	if ((l = RB_FIND(vnet_lladdr_tree, &p->vnet->arpcache, &needle))
+	if ((l = RB_FIND(lladdr_tree, &p->vnet->mac_table, &needle))
 	    == NULL) {
 		if ((l = lladdr_new(p, (uint8_t *)&needle.macaddr))
 		    == NULL)
 			goto cleanup;
-		RB_INSERT(vnet_lladdr_tree, &p->vnet->arpcache, l);
+		RB_INSERT(lladdr_tree, &p->vnet->mac_table, l);
 	}
 
 	/* Verify if we know the destination */
 	inet_macaddr_dst(frame, needle.macaddr);
-	if ((ll = RB_FIND(vnet_lladdr_tree, &p->vnet->arpcache, &needle))
+	if ((ll = RB_FIND(lladdr_tree, &p->vnet->mac_table, &needle))
 	    != NULL) {
 		if (SSL_write(ll->peer->ssl, frame, len) <= 0) {
 			log_warnx("%s: SSL_write", __func__);
 			goto cleanup;
 		}
 	} else {
-		RB_FOREACH(pp, vnet_peer_tree, &p->vnet->peers) {
+		/* Flooding */
+		RB_FOREACH(pp, tls_peer_tree, &p->vnet->peers) {
 			if (pp != p) {
 				if (SSL_write(pp->ssl, frame, len) <= 0) {
 					log_warnx("%s: SSL_write", __func__);
@@ -431,417 +473,282 @@ link_switch_recv(struct dtls_peer *p, uint8_t *frame, size_t len)
 	return;
 
 cleanup:
-	dtls_peer_free(p);
+	tls_peer_disconnect(p);
 	return;
 }
 
-int
-dtls_handle(struct dtls_peer *p)
+SSL_CTX *
+ctx_init(void *arg)
 {
-	struct timeval		 tv;
-#if !defined(LIBRESSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-	BIO_ADDR		*caddr;
-#else
-	struct sockaddr		 caddr;
-#endif
-	enum dtls_state		 next_state;
-	int			 ret;
-	char			 buf[5000] = {0};
+	EC_KEY  *ecdh = NULL;
+	SSL_CTX *ctx = NULL;
+	int      err;
 
-	const char		*file;
-	int			 line;
-	unsigned long		 e;
+	SSL_load_error_strings();
+	SSL_library_init();
 
-#if !defined(LIBRESSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-	if ((caddr = BIO_ADDR_new()) == NULL) {
-		log_warnx("%s: %s", __func__, "BIO_ADDR_new failed");
-		goto error;
+	err = -1;
+
+	if (!RAND_poll())
+		goto out;
+
+	if ((ctx = SSL_CTX_new(TLS_server_method())) == NULL) {
+		log_warn("%s: SSL_CTX_new", __func__);
+		goto out;
 	}
-#endif
 
-	for (;;) {
-		switch (p->state) {
-		case DTLS_LISTEN:
-#if !defined(LIBRESSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-			ret = DTLSv1_listen(p->ssl, caddr);
-			BIO_ADDR_free(caddr);
-#else
-			ret = DTLSv1_listen(p->ssl, &caddr);
-#endif
-			next_state = DTLS_ACCEPT;
-			break;
-		case DTLS_ACCEPT:
-			ret = SSL_accept(p->ssl);
-			next_state = DTLS_ESTABLISHED;
-			break;
-		case DTLS_ESTABLISHED:
-			next_state = DTLS_ESTABLISHED;
-			if ((ret = SSL_read(p->ssl, buf, sizeof(buf))) > 0)
-				link_switch_recv(p, buf, ret);
-			goto out;
-		default:
-			log_warnx("invalid DTLS peer state");
-			goto error;
-		}
+	// XXX disable old versions : int SSL_CTX_set_max_proto_version
+	SSL_CTX_set_options(ctx, SSL_OP_SINGLE_ECDH_USE);
 
-		switch (SSL_get_error(p->ssl, ret)) {
-		case SSL_ERROR_NONE:
-			break;
-		case SSL_ERROR_WANT_READ:
-			if (DTLSv1_get_timeout(p->ssl, &tv) == 1 &&
-			    evtimer_add(p->handshake_timer, &tv) < 0) {
-				goto error;
-			}
-			goto out;
-		default:
-			do {
-				e = ERR_get_error_line(&file, &line);
-				log_warnx("%s: %s", __func__, ERR_error_string(e, NULL));
-			} while (e);
-			goto error;
-		}
-
-		p->state = next_state;
+	if (SSL_CTX_set_cipher_list(ctx,
+	    "ECDHE-ECDSA-CHACHA20-POLY1305,"
+	    "ECDHE-ECDSA-AES256-GCM-SHA384") != 1) {
+		log_warn("%s: SSL_CTX_set_cipher", __func__);
+		goto out;
 	}
+
+	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL) {
+		log_warn("%s: EC_KEY_new_by_curve_name", __func__);
+		goto out;
+	}
+
+	if (SSL_CTX_set_tmp_ecdh(ctx, ecdh) != 1) {
+		log_warn("%s: SSL_CTX_set_tmp_ecdh", __func__);
+		goto out;
+	}
+
+	SSL_CTX_set_verify(ctx,
+		SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, cert_verify_cb);
+
+	SSL_CTX_set_tlsext_servername_callback(ctx, servername_cb);
+	SSL_CTX_set_tlsext_servername_arg(ctx, arg);
+
+	SSL_CTX_set_info_callback(ctx, info_cb);
+
+	err = 0;
 
 out:
-	if (p->state == DTLS_ESTABLISHED) {
-		evtimer_del(p->ping_timer);
-		tv.tv_sec = 10;
-		tv.tv_usec = 0;
-		evtimer_add(p->ping_timer, &tv);
+	if (err < 0) {
+		SSL_CTX_free(ctx);
+		ctx = NULL;
 	}
 
-	return (0);
-
-error:
-	return (-1);
-}
-
-void
-ping_timeout_cb(int fd, short event, void *arg)
-{
-	struct dtls_peer	*p = arg;
-
-	log_warnx("%s: keepalive expired", __func__);
-	dtls_peer_free(p);
-}
-
-void
-dtls_handshake_timeout_cb(int fd, short event, void *arg)
-{
-	struct dtls_peer	*p = arg;
-
-	DTLSv1_handle_timeout(p->ssl);
-
-	if (dtls_handle(p) < 0)
-		dtls_peer_free(p);
+	EC_KEY_free(ecdh);
+	return (ctx);
 }
 
 int
-cert_verify_cb(int ok, X509_STORE_CTX *store)
+cert_verify_cb(int preverify_ok, X509_STORE_CTX *store)
 {
 	struct vnetwork 	*vnet;
 	struct node		*node;
-	struct certinfo		*ci;
-	struct dtls_peer	*p;
-	SSL			*ssl;
+	struct certinfo		*ci = NULL;
+	struct tls_peer		*p;
 	X509			*cert;
-	X509_NAME		*name;
-	char			 buf[256];
+	int			 ok;
+	char			 cname[256];
+
+	ok = 0; /* Failure */
+
+	if (preverify_ok == 0) {
+		log_warnx("%s: certificate preverify", __func__);
+		goto out;
+	}
+
+	p = SSL_get_app_data(X509_STORE_CTX_get_ex_data(store,
+	    SSL_get_ex_data_X509_STORE_CTX_idx()));
 
 	cert = X509_STORE_CTX_get_current_cert(store);
-	name = X509_get_subject_name(cert);
-	X509_NAME_get_text_by_NID(name, NID_commonName, buf, 256);
+	X509_NAME_get_text_by_NID(X509_get_subject_name(cert),
+	    NID_commonName, cname, sizeof(cname));
 
-	ssl = X509_STORE_CTX_get_ex_data(store, SSL_get_ex_data_X509_STORE_CTX_idx());
-	p = SSL_get_app_data(ssl);
+	if (strcmp(cname, "embassy") == 0) {
+		ok = 1;
+		goto out;
+	}
 
-	if (strcmp(buf, "embassy") == 0)
-		return (ok);
+	if ((ci = certinfo(cert)) == NULL) {
+		log_warnx("%s: certinfo", __func__);
+		goto out;
+	}
 
-	if ((ci = certinfo(cert)) == NULL)
-		return (!ok);
-
-	if ((vnet = vnetwork_lookup(ci->network_uid)) == NULL) {
-		log_warnx("%s: vnetwork_lookup", __func__);
-		return (!ok);
+	if ((vnet = vnetwork_find(ci->network_uid)) == NULL) {
+		log_warnx("%s: vnetwork_find", __func__);
+		goto out;
 	}
 
 	if ((node = vnetwork_find_node(vnet, ci->node_uid)) == NULL) {
 		log_warnx("%s: vnetwork_find_node: access denied", __func__);
-		return (!ok);
+		goto out;
 	}
 
-	/* associate the peer to a specific node */
+	/* Associate the peer to a specific node */
 	p->node = node;
 
+	ok = 1; /* Success */
+
+	printf("certificate ok\n");
+
+out:
+	certinfo_destroy(ci);
 	return (ok);
 }
 
 void
 info_cb(const SSL *ssl, int where, int ret)
 {
-	struct dtls_peer	*p;
+	struct tls_peer		*p;
 	char			 ipsrc[INET6_ADDRSTRLEN];
 
 	if ((where & SSL_CB_HANDSHAKE_DONE) == 0)
 		return;
 
 	p = SSL_get_app_data(ssl);
-	RB_INSERT(vnet_peer_tree, &p->vnet->peers, p);
+	printf("inserted? %p\n", RB_INSERT(tls_peer_tree, &p->vnet->peers, p));
+
+	// XXX make a function to return char *
 
 	inet_ntop(p->ss.ss_family, &((struct sockaddr_in*)&p->ss)->sin_addr, ipsrc, sizeof(ipsrc)),
 	    ntohs(&((struct sockaddr_in*)&p->ss)->sin_port);
 
 	request_update_node_status("1", ipsrc, p->node->uid, p->vnet->uid);
+
+	printf("info_cb ok <%s>\n", ipsrc);
+
+	// XXX send gratuitous ARP / Neighbor Advertisement
 }
 
 int
 servername_cb(SSL *ssl, int *ad, void *arg)
 {
-	struct vnetwork		*vnet;
-	struct dtls_peer	*p;
-	static EC_KEY		*ecdh;
+	struct tls_peer		*p = arg;
 	const char		*servername;
+
 
 	if ((servername = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name))
 	    == NULL) {
-		log_warnx("%s: no servername received", __func__);
-		return (SSL_TLSEXT_ERR_ALERT_FATAL);
+		log_warnx("%s: SSL_get_servername", __func__);
+		goto error;
 	}
 
-	if ((vnet = vnetwork_lookup(servername)) == NULL)
-		return (SSL_TLSEXT_ERR_ALERT_FATAL);
+	printf("servername %s\n", servername);
 
-	if (vnet->ctx == NULL) {
+	if ((p->vnet = vnetwork_find(servername)) == NULL) {
+		log_warnx("%s: servername not found: %s", __func__, servername);
+		goto error;
+	}
 
-		if ((vnet->ctx = SSL_CTX_new(DTLSv1_method())) == NULL)
-			log_warnx("%s: SSL_CTX_new", __func__);
+	/* Load the trusted certificate store into ctx */
+	SSL_CTX_set_cert_store(p->ctx, p->vnet->passport->cacert_store);
+	X509_STORE_up_ref(p->vnet->passport->cacert_store);
 
-		SSL_CTX_set_read_ahead(vnet->ctx, 1);
+	SSL_set_SSL_CTX(p->ssl, p->ctx);
+	if ((SSL_use_certificate(p->ssl, p->vnet->passport->certificate)) != 1) {
+		log_warnx("%s: SSL_use_certificate", __func__);
+		goto error;
+	}
 
-		SSL_CTX_set_options(vnet->ctx, SSL_OP_SINGLE_ECDH_USE);
-		if (SSL_CTX_set_cipher_list(vnet->ctx, "ECDHE-ECDSA-AES256-SHA")
-		    == 0)
-			log_warnx("%s: SSL_CTX_set_cipher_list", __func__);
-
-		if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1))
-		    == NULL)
-			fatalx("%s: EC_KEY_new_by_curve_name", __func__);
-
-		SSL_CTX_set_tmp_ecdh(vnet->ctx, ecdh);
-
-		/* Load the trusted certificate store into our SSL_CTX */
-		SSL_CTX_set_cert_store(vnet->ctx, vnet->passport->cacert_store);
-		X509_STORE_up_ref(vnet->passport->cacert_store);
-
-	} else
-		ctx = vnet->ctx;
-
-	SSL_set_SSL_CTX(ssl, vnet->ctx);
-	SSL_use_certificate(ssl, vnet->passport->certificate);
-	SSL_use_PrivateKey(ssl, vnet->passport->keyring);
-
-	p = SSL_get_app_data(ssl);
-	p->vnet = vnet;
+	if ((SSL_use_PrivateKey(p->ssl, p->vnet->passport->keyring)) != 1) {
+		log_warnx("%s: SSL_CTX_use_PrivateKey", __func__);
+		goto error;
+	}
 
 	return (SSL_TLSEXT_ERR_OK);
-}
 
-/* generate_cookie and verify_cookie
- * taken from openssl apps/s_cb.c
- */
-int
-generate_cookie(SSL *ssl, unsigned char *cookie, unsigned int *cookie_len)
-{
-	unsigned char	*buffer;
-	unsigned char	 result[EVP_MAX_MD_SIZE];
-	unsigned int	 length, resultlength;
-
-	union {
-		struct sockaddr sa;
-		struct sockaddr_in s4;
-#if OPENSSL_USE_IPV6
-		struct sockaddr_in6 s6;
-#endif
-	} peer;
-
-	/* Initialize a random secret */
-	if (cookie_initialized == 0) {
-		if (RAND_bytes(cookie_secret, sizeof(cookie_secret)) <= 0)
-			return (0);
-		cookie_initialized = 1;
-	}
-
-	/* Read peer information */
-	(void)BIO_dgram_get_peer(SSL_get_rbio(ssl), &peer);
-
-	/* Create buffer with peer's address and port */
-	length = 0;
-	switch (peer.sa.sa_family) {
-	case AF_INET:
-		length += sizeof(struct in_addr);
-		length += sizeof(peer.s4.sin_port);
-		break;
-#if OPENSSL_USE_IPV6
-	case AF_INET6:
-		length += sizeof(struct in6_addr);
-		length += sizeof(peer.s6.sin6_port);
-		break;
-#endif
-	default:
-		return (0);
-	}
-
-	if ((buffer = OPENSSL_malloc(length)) == NULL)
-		return (0);
-
-	switch (peer.sa.sa_family) {
-	case AF_INET:
-		memcpy(buffer, &peer.s4.sin_port, sizeof(peer.s4.sin_port));
-		memcpy(buffer + sizeof(peer.s4.sin_port),
-		    &peer.s4.sin_addr, sizeof(struct in_addr));
-		break;
-#if OPENSSL_USE_IPV6
-	case AF_INET6:
-		memcpy(buffer, &peer.s6.sin6_port, sizeof(peer.s6.sin6_port));
-		memcpy(buffer + sizeof(peer.s6.sin6_port),
-		    &peer.s6.sin6_addr, sizeof(struct in6_addr));
-		break;
-#endif
-	default:
-		return (0);
-	}
-
-	/* Calculate HMAC of buffer using the secret */
-	HMAC(EVP_sha1(), cookie_secret, sizeof(cookie_secret),
-	    buffer, length, result, &resultlength);
-	OPENSSL_free(buffer);
-
-	memcpy(cookie, result, resultlength);
-	*cookie_len = resultlength;
-
-    return (1);
-}
-
-int
-verify_cookie(SSL *ssl, unsigned char *cookie, unsigned int cookie_len)
-{
-	unsigned char	*buffer;
-	unsigned char	 result[EVP_MAX_MD_SIZE];
-	unsigned int	 length, resultlength;
-
-	union {
-		struct sockaddr sa;
-		struct sockaddr_in s4;
-#if OPENSSL_USE_IPV6
-		struct sockaddr_in6 s6;
-#endif
-	} peer;
-
-	/* If secret isn't initialized yet, the cookie can't be valid */
-	if (cookie_initialized == 0)
-		return (0);
-
-	/* Read peer information */
-	(void)BIO_dgram_get_peer(SSL_get_rbio(ssl), &peer);
-
-	/* Create buffer with peer's address and port */
-	length = 0;
-	switch (peer.sa.sa_family) {
-	case AF_INET:
-		length += sizeof(struct in_addr);
-		length += sizeof(peer.s4.sin_port);
-		break;
-#if OPENSSL_USE_IPV6
-	case AF_INET6:
-		length += sizeof(struct in6_addr);
-		length += sizeof(peer.s6.sin6_port);
-		break;
-#endif
-	default:
-		return (0);
-	}
-
-	if ((buffer = OPENSSL_malloc(length)) == NULL)
-		return (0);
-
-	switch (peer.sa.sa_family) {
-	case AF_INET:
-		memcpy(buffer, &peer.s4.sin_port, sizeof(peer.s4.sin_port));
-		memcpy(buffer + sizeof(peer.s4.sin_port),
-		    &peer.s4.sin_addr, sizeof(struct in_addr));
-		break;
-#if OPENSSL_USE_IPV6
-	case AF_INET6:
-		memcpy(buffer, &peer.s6.sin6_port, sizeof(peer.s6.sin6_port));
-		memcpy(buffer + sizeof(peer.s6.sin6_port),
-		    &peer.s6.sin6_addr, sizeof(struct in6_addr));
-		break;
-#endif
-	default:
-		return (0);
-	}
-
-	/* Calculate HMAC of buffer using the secret */
-	HMAC(EVP_sha1(), cookie_secret, sizeof(cookie_secret),
-	    buffer, length, result, &resultlength);
-	OPENSSL_free(buffer);
-
-	if (cookie_len == resultlength
-	    && memcmp(result, cookie, resultlength) == 0)
-		return (1);
-
-    return (0);
+error:
+	return (SSL_TLSEXT_ERR_ALERT_FATAL);
 }
 
 void
-udplisten_cb(int sock, short what, void *ctx)
+peer_event_cb(struct bufferevent *bev, short events, void *arg)
 {
-	struct dtls_peer	*p, needle;
-	char			 buf[2000];
+	unsigned long	 e;
 
-	needle.ss_len = sizeof(struct dtls_peer);
-
-	recvfrom(sock, NULL, 0, MSG_PEEK, (struct sockaddr *)&needle.ss,
-	    &needle.ss_len);
-
-	if ((p = RB_FIND(dtls_peer_tree, &dtls_peers, &needle)) == NULL) {
-		if ((p = dtls_peer_new(sock)) == NULL)
-			goto error;
-		else {
-			p->ss = needle.ss;
-			p->ss_len = needle.ss_len;
-			RB_INSERT(dtls_peer_tree, &dtls_peers, p);
+	if (events & (BEV_EVENT_ERROR | BEV_EVENT_TIMEOUT | BEV_EVENT_EOF)) {
+		printf("disconnected\n");
+		while ((e = bufferevent_get_openssl_error(bev)) > 0) {
+			log_warnx("%s: TLS error: %s", __func__,
+			    ERR_reason_error_string(e));
 		}
+		tls_peer_disconnect(arg);
 	}
 
-	if (dtls_handle(p) < 0 )
+	return;
+}
+
+void
+peer_read_cb(struct bufferevent *bev, void *arg)
+{
+	struct evbuffer	*input;
+	struct tls_peer	*p = arg;
+	int		 n;
+	uint8_t		 buf[2000];
+
+	input = bufferevent_get_input(bev);
+
+	n = evbuffer_remove(input, buf, sizeof(buf));
+	printf("evbuffer remove: %d\n", n);
+
+	switching(p, buf, n);
+
+	return;
+
+	goto error;
+
+error:
+	tls_peer_disconnect(p);
+	return;
+}
+
+void
+listen_error_cb(struct evconnlistener *l, void *arg)
+{
+
+}
+
+void
+listen_conn_cb(struct evconnlistener *l, int fd,
+    struct sockaddr *address, int socklen, void *arg)
+{
+	struct tls_peer	*p;
+	struct timeval	 tv;
+
+	if ((p = tls_peer_new()) == NULL) {
+		log_warnx("%s: tls_peer_new", __func__);
 		goto error;
+	}
+	memcpy(&p->ss, address, socklen);
+	p->ss_len = socklen;
+
+	if ((p->bev = bufferevent_openssl_socket_new(
+	    evconnlistener_get_base(listener), fd, p->ssl,
+	    BUFFEREVENT_SSL_ACCEPTING, BEV_OPT_CLOSE_ON_FREE)) == NULL) {
+		log_warnx("%s: bufferevent_openssl_socket_new", __func__);
+		goto error;
+	}
+
+	tv.tv_sec = 5;
+	tv.tv_usec = 0;
+	bufferevent_set_timeouts(p->bev, &tv, NULL);
+
+	bufferevent_enable(p->bev, EV_READ | EV_WRITE);
+	bufferevent_setcb(p->bev, peer_read_cb, NULL,
+	    peer_event_cb, p);
 
 	return;
 
 error:
-	recvfrom(sock, buf, sizeof(buf), 0, (struct sockaddr *)&needle.ss,
-	    &needle.ss_len);
-
-	dtls_peer_free(p);
+	tls_peer_free(p);
 	return;
 }
 
 void
 switch_init(json_t *config)
 {
-	struct addrinfo	 hints;
+	struct addrinfo	 hints, *ai;
 	int		 status;
-	int		 sock;
-	int		 flag;
 	const char	*ip;
 	const char	*port;
-	const char	*cert;
-	const char	*pkey;
-	const char	*cacert;
 
 	if (json_unpack(config, "{s:s}", "switch_ip", &ip) < 0)
 		fatalx("%s: switch_ip not found in config", __func__);
@@ -849,80 +756,39 @@ switch_init(json_t *config)
 	if (json_unpack(config, "{s:s}", "switch_port", &port) < 0)
 		fatalx("%s: switch_port not found config", __func__);
 
-	if (json_unpack(config, "{s:s}", "cert", &cert) < 0)
-		fatalx("%s: 'cert' not found in config", __func__);
-
-	if (json_unpack(config, "{s:s}", "pvkey", &pkey) < 0)
-		fatalx("%s: 'pvkey' not found in config", __func__);
-
-	if (json_unpack(config, "{s:s}", "cacert", &cacert) < 0)
-		fatalx("%s: 'cacert' not found in config", __func__);
-
-	SSL_load_error_strings();
-	SSL_library_init();
-
-	if (!RAND_poll())
-		fatalx("%s: RAND_poll", __func__);
-
-	if ((ctx = SSL_CTX_new(DTLSv1_method())) == NULL)
-		fatalx("%s: SSL_CTX_new", __func__);
-
-	SSL_CTX_set_read_ahead(ctx, 1);
-
-	SSL_CTX_set_cookie_generate_cb(ctx, generate_cookie);
-	SSL_CTX_set_cookie_verify_cb(ctx, verify_cookie);
-	SSL_CTX_set_tlsext_servername_callback(ctx, servername_cb);
-	SSL_CTX_set_tlsext_servername_arg(ctx, NULL);
-
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_DGRAM;
+	hints.ai_socktype = SOCK_STREAM;
 
 	if ((status = getaddrinfo(ip, port, &hints, &ai)) != 0)
 		fatalx("%s: getaddrinfo: %s", __func__, gai_strerror(status));
 
-	if ((sock = socket(ai->ai_family, ai->ai_socktype,
-	    ai->ai_protocol)) < 0)
-		fatal("%s: socket", __func__);
+	if ((listener = evconnlistener_new_bind(ev_base, listen_conn_cb, NULL,
+	    LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
+	    ai->ai_addr, ai->ai_addrlen)) == NULL)
+		fatalx("%s: evconnlistener_new_bind", __func__);
 
-	flag = 1;
-	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) < 0)
-		fatal("%s: setsockopt", __func__);
+	evconnlistener_set_error_cb(listener, listen_error_cb);
 
-	if (evutil_make_socket_nonblocking(sock) > 0)
-		fatalx("%s: evutil_make_socket_nonblocking", __func__);
-
-	if (bind(sock, ai->ai_addr, ai->ai_addrlen) < 0)
-		fatal("%s: bind", __func__);
-
-	if ((ev_udplisten = event_new(ev_base, sock,
-	    EV_READ | EV_PERSIST, udplisten_cb, ctx)) == NULL)
-		fatal("%s: event_new", __func__);
-	event_add(ev_udplisten, NULL);
+	freeaddrinfo(ai);
 }
 
 void
 switch_fini()
 {
-	event_free(ev_udplisten);
+	struct vnetwork	*v;
 
-	SSL_CTX_free(ctx);
-	freeaddrinfo(ai);
+	evconnlistener_free(listener);
 
-	struct vnetwork	*vnet;
+	while ((v = RB_ROOT(&vnetworks)) != NULL)
+		vnetwork_del(v);
 
-	while ((vnet = RB_ROOT(&vnetworks)) != NULL)
-		vnetwork_free(vnet);
-
-	EC_KEY_free(ecdh);
-	ERR_remove_state(0);
 	ERR_free_strings();
 	EVP_cleanup();
 	CRYPTO_cleanup_all_ex_data();
 }
 
-RB_GENERATE_STATIC(vnet_tree, vnetwork, entry, vnetwork_cmp);
-RB_GENERATE_STATIC(vnet_peer_tree, dtls_peer, vn_entry, dtls_peer_cmp);
-RB_GENERATE_STATIC(dtls_peer_tree, dtls_peer, entry, dtls_peer_cmp);
-RB_GENERATE_STATIC(vnet_lladdr_tree, lladdr, entry, lladdr_cmp);
-RB_GENERATE_STATIC(vnet_node_tree, node, entry, node_cmp);
+RB_GENERATE_STATIC(lladdr_tree, lladdr, entry, lladdr_cmp);
+RB_GENERATE_STATIC(acl_node_tree, node, entry, node_cmp);
+RB_GENERATE_STATIC(tls_peer_tree, tls_peer, entry, tls_peer_cmp);
+RB_GENERATE_STATIC(vnetwork_tree, vnetwork, entry, vnetwork_cmp);
