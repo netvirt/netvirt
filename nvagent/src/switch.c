@@ -58,6 +58,17 @@
 
 #include "agent.h"
 
+enum nv_type {
+	NV_KEEPALIVE		= 0,
+	NV_L2		 	= 1,
+};
+
+struct nv_hdr {
+	uint16_t		 length;
+	uint16_t		 type;
+	char			 value[];
+} __attribute__((__packed__));
+
 struct vlink {
 	passport_t		*passport;
 	tapcfg_t		*tapcfg;
@@ -367,8 +378,8 @@ iface_cb(int sock, short what, void *arg)
 	pthread_mutex_unlock(&mutex);
 
 	if (vlink->peer != NULL && vlink->peer->status == 1) {
-		ret = bufferevent_write(vlink->peer->bev, pkt->buf, pkt->len);
-		printf("bev write: ret %d\n", ret);
+		ret = vlink_send(vlink->peer->bev, NV_L2, pkt->buf, pkt->len);
+		printf("vlink_send: ret %d\n", ret);
 		if (ret < 0)
 			vlink_reconnect(vlink);
 	}
@@ -409,7 +420,7 @@ iface_cb(int sock, short what, void *arg)
 	(void)sock;
 	(void)what;
 
-	struct vlink	*vlink = arg;
+	struct vlink		*vlink = arg;
 	int			 ret;
 	uint8_t			 buf[5000] = {0};
 
@@ -419,11 +430,10 @@ iface_cb(int sock, short what, void *arg)
 	printf("tapcfg_read: ret %d\n", ret);
 	// XXX check ret
 
-	if (vlink->peer != NULL && vlink->peer->status == 1) {
-		ret = bufferevent_write(vlink->peer->bev, buf, ret);
-		printf("bev write: ret %d\n", ret);
-		// XXX check ret
-	}
+	if (vlink->peer != NULL && vlink->peer->status == 1)
+		vlink_send(vlink->peer, NV_L2, buf, ret);
+
+	// XXX reset keepalive
 }
 #endif
 
@@ -435,8 +445,7 @@ vlink_keepalive(evutil_socket_t fd, short event, void *arg)
 	struct vlink	*vlink = arg;
 
 	printf("keep alive\n");
-	bufferevent_write(vlink->peer->bev, (void *)&eth_ping, sizeof(struct eth_hdr));
-	bufferevent_flush(vlink->peer->bev, EV_WRITE, BEV_FLUSH);
+	vlink_send(vlink->peer, NV_KEEPALIVE, NULL, 0);
 }
 
 void
@@ -487,6 +496,23 @@ vlink_reconnect(struct vlink *vlink)
 	if (event_base_once(ev_base, -1, EV_TIMEOUT,
 	    vlink_reset, vlink, &wait_sec) < 0)
 		log_warnx("%s: event_base_once", __func__);
+}
+
+int
+vlink_send(struct tls_peer *p, enum nv_type type, const void *data,
+    size_t size)
+{
+	struct nv_hdr	 hdr;
+
+	hdr.type = htons(type);
+	hdr.length = htons(size + sizeof(hdr.type));
+	if (bufferevent_write(p->bev, &hdr, sizeof(hdr)) < 0 ||
+	    (size != 0 &&
+	    bufferevent_write(p->bev, data, size) < 0) ||
+	    bufferevent_flush(p->bev, EV_WRITE, BEV_FLUSH) < 0)
+		return (-1);
+
+	return (0);
 }
 
 void
@@ -550,16 +576,46 @@ peer_event_cb(struct bufferevent *bev, short events, void *arg)
 void
 peer_read_cb(struct bufferevent *bev, void *arg)
 {
-	struct tls_peer *p = arg;
-	int		 n, ret;
-	uint8_t		 buf[2000];
+	struct evbuffer		*in;
+	struct tls_peer		*p = arg;
+	const struct nv_hdr	*hdr;
+	int			 n;
+	size_t			 payload;
 
-	ret = bufferevent_read(bev, buf, sizeof(buf));
-	printf("bufferevent read %d\n", ret);
+	in = bufferevent_get_input(bev);
 
-	n = tapcfg_write(p->vlink->tapcfg, buf, ret);
-	printf("tapcfg_write: %d\n", n);
+	if (evbuffer_get_length(in) < sizeof(*hdr))
+		return;
+	if ((hdr = (const struct nv_hdr *)evbuffer_pullup(in,
+	    sizeof(*hdr))) == NULL)
+		goto error;
 
+	if (ntohs(hdr->length) < sizeof(hdr->type))
+		goto error;
+	payload = ntohs(hdr->length) - sizeof(hdr->type);
+
+	if (evbuffer_get_length(in) < sizeof(*hdr) + payload)
+		return;
+	if ((hdr = (const struct nv_hdr *)evbuffer_pullup(in,
+	    sizeof(*hdr) + payload)) == NULL)
+		goto error;
+
+	switch (ntohs(hdr->type)) {
+	case NV_KEEPALIVE:
+		break;
+	case NV_L2:
+		n = tapcfg_write(p->vlink->tapcfg, (uint8_t *)&hdr->value, payload);
+		printf("tapcfg_write: %d\n", n);
+		break;
+	default:
+		break;
+	}
+
+	return;
+
+error:
+	// XXX
+	printf("should disconnect from server\n");
 	return;
 
 }
