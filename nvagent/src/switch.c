@@ -526,7 +526,7 @@ peer_event_cb(struct bufferevent *bev, short events, void *arg)
 		p->status = 1;
 		event_del(p->vlink->ev_reconnect);
 
-		tv.tv_sec = 10;
+		tv.tv_sec = 5;
 		tv.tv_usec = 0;
 		bufferevent_set_timeouts(p->bev, &tv, NULL);
 
