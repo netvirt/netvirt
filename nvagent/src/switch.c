@@ -62,6 +62,8 @@ struct vlink {
 	passport_t		*passport;
 	tapcfg_t		*tapcfg;
 	struct tls_peer		*peer;
+	struct event		*ev_reconnect;
+	struct event		*ev_keepalive;
 	int			 tapfd;
 	char			*addr;
 };
@@ -74,6 +76,7 @@ struct tls_peer {
 	struct sockaddr_storage	 ss;
 	struct vlink		*vlink;
 	int			 sock;
+	int			 status;
 };
 
 struct eth_hdr {
@@ -89,19 +92,21 @@ struct packets {
 };
 
 struct event_base		*ev_base;
-struct eth_hdr			 eth_ping;
+static struct event		*ev_iface;
+static struct eth_hdr		 eth_ping;
+static struct network		*netcf;
+static struct vlink		*vlink;
+
 #if defined(_WIN32) || defined(__APPLE__)
-pthread_t			 thread_poke_tap;
-pthread_mutex_t			 mutex;
-int				 switch_running = 0;
+static pthread_t		 thread_poke_tap;
+static pthread_mutex_t		 mutex;
+static int			 switch_running = 0;
 #endif
-struct event			*ev_iface;
 
 TAILQ_HEAD(tailhead, packets)	 tailq_head;
 
 static void		 tls_peer_free(struct tls_peer *);
 static struct tls_peer	*tls_peer_new();
-static int		 tls_peer_connect(struct tls_peer *, struct vlink *);
 
 static SSL_CTX		*ctx_init();
 
@@ -110,16 +115,43 @@ static void		 info_cb(const SSL *, int, int);
 
 static void	 	 iface_cb(int, short, void *);
 
-static void		 vlink_connect(evutil_socket_t, short, void *);
+static void		 vlink_free(struct vlink *);
+static void		 vlink_keepalive(evutil_socket_t, short, void *);
+static void		 vlink_reset(evutil_socket_t, short, void *);
 static void		 vlink_reconnect(struct vlink *);
+static int		 vlink_connect(struct tls_peer *, struct vlink *);
 static void		 peer_event_cb(struct bufferevent *, short, void *);
 static void		 peer_read_cb(struct bufferevent *, void *);
+
+void
+vlink_free(struct vlink *v)
+{
+	if (v == NULL)
+		return;
+
+	pki_passport_destroy(v->passport);
+	event_free(v->ev_reconnect);
+	event_free(v->ev_keepalive);
+	tls_peer_free(v->peer);
+	free(v->addr);
+	free(v);
+}
 
 void
 tls_peer_free(struct tls_peer *p)
 {
 	if (p == NULL)
 		return;
+
+	if (p->vlink != NULL)
+		p->vlink->peer = NULL;
+
+	if (p->bev != NULL)
+		bufferevent_free(p->bev);
+	else
+		SSL_free(p->ssl);
+
+	SSL_CTX_free(p->ctx);
 
 	free(p);
 }
@@ -138,6 +170,7 @@ tls_peer_new()
 	p->ss_len = 0;
 	p->bev = NULL;
 	p->vlink = NULL;
+	p->status = 0;
 
 	if ((p->ctx = ctx_init()) == NULL) {
 		log_warnx("%s: ctx_init", __func__);
@@ -158,15 +191,23 @@ error:
 }
 
 int
-tls_peer_connect(struct tls_peer *p, struct vlink *v)
+vlink_connect(struct tls_peer *p, struct vlink *v)
 {
 	struct addrinfo	 	 hints;
 	struct addrinfo		*res = NULL;
+	struct timeval		 tv;
 	EC_KEY			*ecdh = NULL;
 	int			 err, ret;
 	const char		*port = "9090";
 
 	ret = -1;
+
+	tv.tv_sec = 5;
+	tv.tv_usec = 0;
+	if (event_add(v->ev_reconnect, &tv) < 0) {
+		log_warn("%s: event_add", __func__);
+		goto out;
+	}
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
@@ -184,7 +225,6 @@ tls_peer_connect(struct tls_peer *p, struct vlink *v)
 
 #ifndef _WIN32
 	int flag = 1;
-
 	if (setsockopt(p->sock, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(flag)) < 0 ||
 	    setsockopt(p->sock, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
 		log_warn("%s: setsockopt", __func__);
@@ -301,6 +341,7 @@ cert_verify_cb(int ok, X509_STORE_CTX *store)
 void
 info_cb(const SSL *ssl, int where, int ret)
 {
+	(void)ssl;
 	(void)ret;
 
 	if ((where & SSL_CB_HANDSHAKE_DONE) == 0)
@@ -325,10 +366,11 @@ iface_cb(int sock, short what, void *arg)
 	}
 	pthread_mutex_unlock(&mutex);
 
-	if (vlink->peer != NULL) {
-		ret = SSL_write(vlink->peer->ssl, pkt->buf, pkt->len);
-		printf("ssl write: ret %d\n", ret);
-		// XXX check ret
+	if (vlink->peer != NULL && vlink->peer->status == 1) {
+		ret = bufferevent_write(vlink->peer->bev, pkt->buf, pkt->len);
+		printf("bev write: ret %d\n", ret);
+		if (ret < 0)
+			vlink_reconnect(vlink);
 	}
 
 	pthread_mutex_lock(&mutex);
@@ -377,21 +419,36 @@ iface_cb(int sock, short what, void *arg)
 	printf("tapcfg_read: ret %d\n", ret);
 	// XXX check ret
 
-	if (vlink->peer != NULL) {
-		ret = SSL_write(vlink->peer->ssl, buf, ret);
-		printf("ssl_write: ret %d\n", ret);
+	if (vlink->peer != NULL && vlink->peer->status == 1) {
+		ret = bufferevent_write(vlink->peer->bev, buf, ret);
+		printf("bev write: ret %d\n", ret);
 		// XXX check ret
 	}
 }
 #endif
 
 void
-vlink_connect(evutil_socket_t fd, short what, void *arg)
+vlink_keepalive(evutil_socket_t fd, short event, void *arg)
+{
+	(void)event;
+	(void)fd;
+	struct vlink	*vlink = arg;
+
+	printf("keep alive\n");
+	bufferevent_write(vlink->peer->bev, (void *)&eth_ping, sizeof(struct eth_hdr));
+	bufferevent_flush(vlink->peer->bev, EV_WRITE, BEV_FLUSH);
+}
+
+void
+vlink_reset(evutil_socket_t fd, short what, void *arg)
 {
 	struct vlink	*vlink = arg;
 	(void)fd;
 	(void)what;
 
+	printf("vlink reset\n");
+	event_del(vlink->ev_reconnect);
+	event_del(vlink->ev_keepalive);
 	if (vlink->peer != NULL) {
 		tls_peer_free(vlink->peer);
 		vlink->peer = NULL;
@@ -403,8 +460,8 @@ vlink_connect(evutil_socket_t fd, short what, void *arg)
 	}
 	vlink->peer->vlink = vlink;
 
-	if (tls_peer_connect(vlink->peer, vlink) < 0) {
-		log_warnx("%s: tls_peer_connect", __func__);
+	if (vlink_connect(vlink->peer, vlink) < 0) {
+		log_warnx("%s: vlink_connect", __func__);
 		goto error;
 	}
 
@@ -420,24 +477,71 @@ vlink_reconnect(struct vlink *vlink)
 {
 	struct timeval	wait_sec = {5, 0};
 
+	printf("reconnect...\n");
+	event_del(vlink->ev_reconnect);
+	event_del(vlink->ev_keepalive);
+
+	if (vlink->peer && vlink->peer->bev)
+		bufferevent_disable(vlink->peer->bev, EV_READ | EV_WRITE);
+
 	if (event_base_once(ev_base, -1, EV_TIMEOUT,
-	    vlink_connect, vlink, &wait_sec) < 0)
+	    vlink_reset, vlink, &wait_sec) < 0)
 		log_warnx("%s: event_base_once", __func__);
 }
 
 void
 peer_event_cb(struct bufferevent *bev, short events, void *arg)
 {
+	struct tls_peer	*p = arg;
+	struct timeval	 tv;
 	unsigned long	 e;
 
+	printf("event cb\n");
+
+	if (events & (BEV_EVENT_READING)) {
+		printf("timeout reading\n");
+	}
+
+	if (events & (BEV_EVENT_WRITING)) {
+		printf("timeout writing\n");
+	}
+
+	if (events & BEV_EVENT_TIMEOUT) {
+		printf("timeout\n");
+	}
+
+	if (events & BEV_EVENT_ERROR) {
+		printf("bev event error\n");
+		printf("err: %s\n", evutil_socket_error_to_string(EVUTIL_SOCKET_ERROR()));
+
+	}
+
+	if (events & BEV_EVENT_EOF) {
+		printf("bev eof\n");
+	}
+
 	if (events & BEV_EVENT_CONNECTED) {
+
+		printf("connected?\n");
+		p->status = 1;
+		event_del(p->vlink->ev_reconnect);
+
+		tv.tv_sec = 10;
+		tv.tv_usec = 0;
+		bufferevent_set_timeouts(p->bev, &tv, NULL);
+
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
+		if (event_add(p->vlink->ev_keepalive, &tv) < 0) {
+			log_warn("%s: event_add", __func__);
+		}
 
 	} else if (events & (BEV_EVENT_ERROR | BEV_EVENT_TIMEOUT | BEV_EVENT_EOF)) {
 		while ((e = bufferevent_get_openssl_error(bev)) > 0) {
 			log_warnx("%s: TLS error: %s", __func__,
 			    ERR_reason_error_string(e));
 		}
-		tls_peer_free(arg);
+		vlink_reconnect(p->vlink);
 	}
 
 	return;
@@ -446,34 +550,24 @@ peer_event_cb(struct bufferevent *bev, short events, void *arg)
 void
 peer_read_cb(struct bufferevent *bev, void *arg)
 {
-	struct evbuffer	*input;
 	struct tls_peer *p = arg;
-	int		 n;
+	int		 n, ret;
 	uint8_t		 buf[2000];
 
-	input = bufferevent_get_input(bev);
+	ret = bufferevent_read(bev, buf, sizeof(buf));
+	printf("bufferevent read %d\n", ret);
 
-	n = evbuffer_remove(input, buf, sizeof(buf));
-	printf("evbuffer remove : %d\n", n);
-
-	n = tapcfg_write(p->vlink->tapcfg, buf, n);
+	n = tapcfg_write(p->vlink->tapcfg, buf, ret);
 	printf("tapcfg_write: %d\n", n);
 
 	return;
 
-	goto error;
-
-error:
-	tls_peer_free(p);
 }
 
 int
 switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *ipaddr,
     const char *network_name)
 {
-	struct network	*netcf = NULL;
-	struct vlink	*vlink = NULL;
-
 	eth_ping.ethertype = htons(0x9000);
 
 	if ((vlink = malloc(sizeof(struct vlink))) == NULL) {
@@ -487,6 +581,14 @@ switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *i
 
 	vlink->tapcfg = tapcfg;
 	vlink->tapfd = tapfd;
+
+	if ((vlink->ev_reconnect = event_new(ev_base, 0,
+	    EV_TIMEOUT, vlink_reset, vlink)) == NULL)
+		warn("%s:%d", "event_new", __LINE__);
+
+	if ((vlink->ev_keepalive = event_new(ev_base, 0,
+	    EV_TIMEOUT | EV_PERSIST , vlink_keepalive, vlink)) == NULL)
+		warn("%s:%d", "event_new", __LINE__);
 
 	if ((vlink->addr = strdup(vswitch_addr)) == NULL) {
 		log_warn("%s: strdup", __func__);
@@ -529,7 +631,7 @@ switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *i
 #endif
 	event_add(ev_iface, NULL);
 
-	vlink_reconnect(vlink);
+	event_active(vlink->ev_reconnect, EV_TIMEOUT, 0);
 
 	return (0);
 
@@ -541,6 +643,9 @@ cleanup:
 void
 switch_fini(void)
 {
+	vlink_free(vlink);
+	event_free(ev_iface);
+
 #if defined(_WIN32) || defined(__APPLE__)
 	switch_running = 0;
 	pthread_join(thread_poke_tap, NULL);
