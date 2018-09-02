@@ -378,7 +378,7 @@ iface_cb(int sock, short what, void *arg)
 	pthread_mutex_unlock(&mutex);
 
 	if (vlink->peer != NULL && vlink->peer->status == 1) {
-		ret = vlink_send(vlink->peer->bev, NV_L2, pkt->buf, pkt->len);
+		ret = vlink_send(vlink->peer, NV_L2, pkt->buf, pkt->len);
 		printf("vlink_send: ret %d\n", ret);
 		if (ret < 0)
 			vlink_reconnect(vlink);
@@ -444,7 +444,6 @@ vlink_keepalive(evutil_socket_t fd, short event, void *arg)
 	(void)fd;
 	struct vlink	*vlink = arg;
 
-	printf("keep alive\n");
 	vlink_send(vlink->peer, NV_KEEPALIVE, NULL, 0);
 }
 
@@ -594,6 +593,8 @@ peer_read_cb(struct bufferevent *bev, void *arg)
 		goto error;
 	payload = ntohs(hdr->length) - sizeof(hdr->type);
 
+	printf("payload %d\n", payload);
+
 	if (evbuffer_get_length(in) < sizeof(*hdr) + payload)
 		return;
 	if ((hdr = (const struct nv_hdr *)evbuffer_pullup(in,
@@ -609,6 +610,12 @@ peer_read_cb(struct bufferevent *bev, void *arg)
 		break;
 	default:
 		break;
+	}
+
+	if (evbuffer_drain(in,
+	    sizeof(*hdr) - sizeof(hdr->type) + ntohs(hdr->length)) < 0)
+		goto error;
+
 	}
 
 	return;
