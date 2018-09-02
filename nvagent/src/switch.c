@@ -368,11 +368,14 @@ iface_cb(int sock, short what, void *arg)
 {
 	(void)sock;
 	(void)what;
+	struct timeval		 tv;
 	struct packets		*pkt;
 	struct vlink		*vlink = arg;
 	int			 ret;
+
+
 	pthread_mutex_lock(&mutex);
-	while ((pkt = TAILQ_FIRST(&tailq_head)) == NULL) {
+	if ((pkt = TAILQ_FIRST(&tailq_head)) == NULL) {
 		pthread_mutex_unlock(&mutex);
 		return;
 	}
@@ -380,35 +383,48 @@ iface_cb(int sock, short what, void *arg)
 
 	if (vlink->peer != NULL && vlink->peer->status == 1) {
 		ret = vlink_send(vlink->peer, NV_L2, pkt->buf, pkt->len);
-		printf("vlink_send: ret %d\n", ret);
-		if (ret < 0)
+		if (ret < 0) {
 			vlink_reconnect(vlink);
+			return;
+		}
 	}
 
 	pthread_mutex_lock(&mutex);
 	TAILQ_REMOVE(&tailq_head, pkt, entries);
+	if (!event_pending(ev_iface, EV_TIMEOUT, NULL)) {
+		tv.tv_sec = 0;
+		tv.tv_usec = 0;
+		evtimer_add(ev_iface, &tv);
+	}
 	pthread_mutex_unlock(&mutex);
+	free(pkt);
 }
 
 void *poke_tap(void *arg)
 {
+	struct timeval	 tv;
 	struct vlink	*vlink = arg;
 	struct packets	*pkt;
 
-	if ((pkt = malloc(sizeof(struct packets))) == NULL) {
-		log_warn("%s: malloc", __func__);
-		return (NULL);
-	}
-
 	while (switch_running) {
+
+		if ((pkt = malloc(sizeof(struct packets))) == NULL) {
+			log_warn("%s: malloc", __func__);
+			return (NULL);
+		}
 
 		pkt->len = tapcfg_read(vlink->tapcfg, pkt->buf, sizeof(pkt->buf));
 		// XXX check len
 
 		pthread_mutex_lock(&mutex);
 		TAILQ_INSERT_TAIL(&tailq_head, pkt, entries);
+
+		if (!event_pending(ev_iface, EV_TIMEOUT, NULL)) {
+			tv.tv_sec = 0;
+			tv.tv_usec = 0;
+			evtimer_add(ev_iface, &tv);
+		}
 		pthread_mutex_unlock(&mutex);
-		event_active(ev_iface, EV_TIMEOUT, 0);
 	}
 
 	return (NULL);
