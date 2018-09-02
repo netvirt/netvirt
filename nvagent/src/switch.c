@@ -616,8 +616,6 @@ peer_read_cb(struct bufferevent *bev, void *arg)
 	    sizeof(*hdr) - sizeof(hdr->type) + ntohs(hdr->length)) < 0)
 		goto error;
 
-	}
-
 	return;
 
 error:
