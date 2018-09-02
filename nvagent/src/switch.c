@@ -402,7 +402,6 @@ void *poke_tap(void *arg)
 	while (switch_running) {
 
 		pkt->len = tapcfg_read(vlink->tapcfg, pkt->buf, sizeof(pkt->buf));
-		printf("tapcfg_read %d\n", pkt->len);
 		// XXX check len
 
 		pthread_mutex_lock(&mutex);
@@ -427,7 +426,6 @@ iface_cb(int sock, short what, void *arg)
 	vlink = arg;
 
 	ret = tapcfg_read(vlink->tapcfg, buf, sizeof(buf));
-	printf("tapcfg_read: ret %d\n", ret);
 	// XXX check ret
 
 	if (vlink->peer != NULL && vlink->peer->status == 1)
@@ -593,8 +591,6 @@ peer_read_cb(struct bufferevent *bev, void *arg)
 		goto error;
 	payload = ntohs(hdr->length) - sizeof(hdr->type);
 
-	printf("payload %d\n", payload);
-
 	if (evbuffer_get_length(in) < sizeof(*hdr) + payload)
 		return;
 	if ((hdr = (const struct nv_hdr *)evbuffer_pullup(in,
@@ -606,7 +602,6 @@ peer_read_cb(struct bufferevent *bev, void *arg)
 		break;
 	case NV_L2:
 		n = tapcfg_write(p->vlink->tapcfg, (uint8_t *)&hdr->value, payload);
-		printf("tapcfg_write: %d\n", n);
 		break;
 	default:
 		break;
