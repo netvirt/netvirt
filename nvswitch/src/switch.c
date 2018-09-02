@@ -44,6 +44,17 @@ RB_HEAD(acl_node_tree, node);
 RB_HEAD(tls_peer_tree, tls_peer);
 RB_HEAD(lladdr_tree, lladdr);
 
+enum nv_type {
+	NV_KEEPALIVE		= 0,
+	NV_L2			= 1,
+};
+
+struct nv_hdr {
+	uint16_t		 length;
+	uint16_t		 type;
+	char			 value[];
+} __attribute__((__packed__));
+
 struct vnetwork {
 	RB_ENTRY(vnetwork)	 entry;
 	passport_t		*passport;
@@ -421,21 +432,29 @@ vnetwork_find_node(struct vnetwork *v, const char *uid)
 	return RB_FIND(acl_node_tree, &v->acl_node, &needle);
 }
 
+int
+switch_send(struct tls_peer *p, enum nv_type type, const void *data,
+    size_t size)
+{
+	struct nv_hdr	 hdr;
+
+	hdr.type = htons(type);
+	hdr.length = htons(size + sizeof(hdr.type));
+	if (bufferevent_write(p->bev, &hdr, sizeof(hdr)) < 0 ||
+	    (size != 0 &&
+	    bufferevent_write(p->bev, data, size) < 0) ||
+	    bufferevent_flush(p->bev, EV_WRITE, BEV_FLUSH) < 0)
+		return (-1);
+
+	return (0);
+}
+
 void
 switching(struct tls_peer *p, uint8_t *frame, size_t len)
 {
 	struct tls_peer		*pp;
 	struct lladdr		*l, *ll, needle;
-	int			 ret;
 	uint8_t			 saddr[ETHER_ADDR_LEN];
-
-	if (inet_ethertype(frame) == ETHERTYPE_PING) {
-		if ((ret = bufferevent_write(p->bev, frame, len)) < 0) {
-			log_warnx("%s: bufferevent_write: %d", __func__, ret);
-			goto cleanup;
-		}
-		return;
-	}
 
 	inet_macaddr_src(frame, saddr);
 
@@ -454,16 +473,16 @@ switching(struct tls_peer *p, uint8_t *frame, size_t len)
 	inet_macaddr_dst(frame, needle.macaddr);
 	if ((ll = RB_FIND(lladdr_tree, &p->vnet->mac_table, &needle))
 	    != NULL) {
-		if (SSL_write(ll->peer->ssl, frame, len) <= 0) {
-			log_warnx("%s: SSL_write", __func__);
+		if (switch_send(ll->peer, NV_L2, frame, len) < 0) {
+			log_warnx("%s: switch_send", __func__);
 			goto cleanup;
 		}
 	} else {
 		/* Flooding */
 		RB_FOREACH(pp, tls_peer_tree, &p->vnet->peers) {
 			if (pp != p) {
-				if (SSL_write(pp->ssl, frame, len) <= 0) {
-					log_warnx("%s: SSL_write", __func__);
+				if (switch_send(pp, NV_L2, frame, len) < 0) {
+					log_warnx("%s: switch_send", __func__);
 					goto cleanup;
 				}
 			}
@@ -598,22 +617,21 @@ void
 info_cb(const SSL *ssl, int where, int ret)
 {
 	struct tls_peer		*p;
-	char			 ipsrc[INET6_ADDRSTRLEN];
 
 	if ((where & SSL_CB_HANDSHAKE_DONE) == 0)
 		return;
 
 	p = SSL_get_app_data(ssl);
-	printf("inserted? %p\n", RB_INSERT(tls_peer_tree, &p->vnet->peers, p));
 
 	// XXX make a function to return char *
 
+	char			 ipsrc[INET6_ADDRSTRLEN];
 	inet_ntop(p->ss.ss_family, &((struct sockaddr_in*)&p->ss)->sin_addr, ipsrc, sizeof(ipsrc)),
 	    ntohs(&((struct sockaddr_in*)&p->ss)->sin_port);
+	printf("info_cb ipsrc <%s>\n", ipsrc);
 
 	request_update_node_status("1", ipsrc, p->node->uid, p->vnet->uid);
 
-	printf("info_cb ok <%s>\n", ipsrc);
 
 	// XXX send gratuitous ARP / Neighbor Advertisement
 }
@@ -679,21 +697,45 @@ peer_event_cb(struct bufferevent *bev, short events, void *arg)
 void
 peer_read_cb(struct bufferevent *bev, void *arg)
 {
-	struct evbuffer	*input;
-	struct tls_peer	*p = arg;
-	int		 n;
-	uint8_t		 buf[2000];
+	struct evbuffer		*in;
+	struct tls_peer		*p = arg;
+	const struct nv_hdr	*hdr;
+	size_t			 payload;
 
-	input = bufferevent_get_input(bev);
+	in = bufferevent_get_input(bev);
 
-	n = evbuffer_remove(input, buf, sizeof(buf));
-	printf("evbuffer remove: %d\n", n);
+	if (evbuffer_get_length(in) < sizeof(*hdr))
+		return;
+	if ((hdr = (const struct nv_hdr *)evbuffer_pullup(in,
+	    sizeof(*hdr))) == NULL)
+		goto error;
 
-	switching(p, buf, n);
+	if (ntohs(hdr->length) < sizeof(hdr->type))
+		goto error;
+	payload = ntohs(hdr->length) - sizeof(hdr->type);
+
+	if (evbuffer_get_length(in) < sizeof(*hdr) + payload)
+		return;
+	if ((hdr = (const struct nv_hdr *)evbuffer_pullup(in,
+	    sizeof(*hdr) + payload)) == NULL)
+		goto error;
+
+	switch (ntohs(hdr->type)) {
+	case NV_KEEPALIVE:
+		switch_send(p, NV_KEEPALIVE, NULL, 0);
+		break;
+	case NV_L2:
+		switching(p, (uint8_t *)&hdr->value, payload);
+		break;
+	default:
+		break;
+	}
+
+	if (evbuffer_drain(in,
+	    sizeof(*hdr) - sizeof(hdr->type) + ntohs(hdr->length)) < 0)
+		goto error;
 
 	return;
-
-	goto error;
 
 error:
 	tls_peer_disconnect(p);
