@@ -75,6 +75,7 @@ struct vlink {
 	struct tls_peer		*peer;
 	struct event		*ev_reconnect;
 	struct event		*ev_keepalive;
+	struct event		*ev_readagain;
 	int			 tapfd;
 	char			*addr;
 };
@@ -436,6 +437,17 @@ iface_cb(int sock, short what, void *arg)
 #endif
 
 void
+vlink_readagain(evutil_socket_t fd, short event, void *arg)
+{
+	(void)fd;
+	(void)event;
+
+	struct vlink	*v = arg;
+
+	peer_read_cb(v->peer->bev, v->peer);
+}
+
+void
 vlink_keepalive(evutil_socket_t fd, short event, void *arg)
 {
 	(void)event;
@@ -573,6 +585,7 @@ peer_event_cb(struct bufferevent *bev, short events, void *arg)
 void
 peer_read_cb(struct bufferevent *bev, void *arg)
 {
+	struct timeval		 tv;
 	struct evbuffer		*in;
 	struct tls_peer		*p = arg;
 	const struct nv_hdr	*hdr;
@@ -611,6 +624,11 @@ peer_read_cb(struct bufferevent *bev, void *arg)
 	    sizeof(*hdr) - sizeof(hdr->type) + ntohs(hdr->length)) < 0)
 		goto error;
 
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
+	if (evtimer_add(vlink->ev_readagain, &tv) < 0)
+		goto error;
+
 	return;
 
 error:
@@ -644,6 +662,10 @@ switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *i
 
 	if ((vlink->ev_keepalive = event_new(ev_base, 0,
 	    EV_TIMEOUT | EV_PERSIST , vlink_keepalive, vlink)) == NULL)
+		warn("%s:%d", "event_new", __LINE__);
+
+	if ((vlink->ev_readagain = event_new(ev_base, 0,
+	    EV_TIMEOUT, vlink_readagain, vlink)) == NULL)
 		warn("%s:%d", "event_new", __LINE__);
 
 	if ((vlink->addr = strdup(vswitch_addr)) == NULL) {
