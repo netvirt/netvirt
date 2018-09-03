@@ -391,11 +391,9 @@ iface_cb(int sock, short what, void *arg)
 
 	pthread_mutex_lock(&mutex);
 	TAILQ_REMOVE(&tailq_head, pkt, entries);
-	if (!event_pending(ev_iface, EV_TIMEOUT, NULL)) {
 		tv.tv_sec = 0;
 		tv.tv_usec = 0;
 		evtimer_add(ev_iface, &tv);
-	}
 	pthread_mutex_unlock(&mutex);
 	free(pkt);
 }
@@ -419,11 +417,9 @@ void *poke_tap(void *arg)
 		pthread_mutex_lock(&mutex);
 		TAILQ_INSERT_TAIL(&tailq_head, pkt, entries);
 
-		if (!event_pending(ev_iface, EV_TIMEOUT, NULL)) {
 			tv.tv_sec = 0;
 			tv.tv_usec = 0;
 			evtimer_add(ev_iface, &tv);
-		}
 		pthread_mutex_unlock(&mutex);
 	}
 
