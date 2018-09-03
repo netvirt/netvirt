@@ -88,10 +88,6 @@ main(int argc, char *argv[])
         WSAStartup(wVersionRequested, &wsaData);
 #endif
 
-#if defined(_WIN32) || defined(__APPLE__)
-	evthread_use_pthreads();
-#endif
-
 #ifndef _WIN32
 	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
 		fprintf(stderr, "%s: signal", __func__);

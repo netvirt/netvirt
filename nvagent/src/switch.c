@@ -18,10 +18,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#if defined(_WIN32) || defined(__APPLE__)
-	#include <pthread.h>
-#endif
-
 #ifdef _WIN32
 	#include <winsock2.h>
 	#include <ws2tcpip.h>
@@ -109,12 +105,6 @@ static struct eth_hdr		 eth_ping;
 static struct network		*netcf;
 static struct vlink		*vlink;
 
-#if defined(_WIN32) || defined(__APPLE__)
-static pthread_t		 thread_poke_tap;
-static pthread_mutex_t		 mutex;
-static int			 switch_running = 0;
-#endif
-
 TAILQ_HEAD(tailhead, packets)	 tailq_head;
 
 static void		 tls_peer_free(struct tls_peer *);
@@ -132,6 +122,8 @@ static void		 vlink_keepalive(evutil_socket_t, short, void *);
 static void		 vlink_reset(evutil_socket_t, short, void *);
 static void		 vlink_reconnect(struct vlink *);
 static int		 vlink_connect(struct tls_peer *, struct vlink *);
+static int		 vlink_send(struct tls_peer *, enum nv_type, const void *, size_t);
+
 static void		 peer_event_cb(struct bufferevent *, short, void *);
 static void		 peer_read_cb(struct bufferevent *, void *);
 
@@ -368,62 +360,35 @@ iface_cb(int sock, short what, void *arg)
 {
 	(void)sock;
 	(void)what;
-	struct timeval		 tv;
-	struct packets		*pkt;
-	struct vlink		*vlink = arg;
-	int			 ret;
+	struct timeval	 tv;
+	struct vlink	*vlink = arg;
+	struct packets	 pkt;
+	int		 ret;
 
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
 
-	pthread_mutex_lock(&mutex);
-	if ((pkt = TAILQ_FIRST(&tailq_head)) == NULL) {
-		pthread_mutex_unlock(&mutex);
-		return;
+	ret = tapcfg_wait_readable(vlink->tapcfg, 0);
+	if (ret == 0) {
+		tv.tv_sec = 0;
+		tv.tv_usec = 10000;
+		goto out;
 	}
-	pthread_mutex_unlock(&mutex);
+
+	pkt.len = tapcfg_read(vlink->tapcfg, pkt.buf, sizeof(pkt.buf));
 
 	if (vlink->peer != NULL && vlink->peer->status == 1) {
-		ret = vlink_send(vlink->peer, NV_L2, pkt->buf, pkt->len);
+		ret = vlink_send(vlink->peer, NV_L2, pkt.buf, pkt.len);
 		if (ret < 0) {
 			vlink_reconnect(vlink);
 			return;
 		}
 	}
 
-	pthread_mutex_lock(&mutex);
-	TAILQ_REMOVE(&tailq_head, pkt, entries);
-		tv.tv_sec = 0;
-		tv.tv_usec = 0;
-		evtimer_add(ev_iface, &tv);
-	pthread_mutex_unlock(&mutex);
-	free(pkt);
-}
+out:
+	evtimer_add(ev_iface, &tv);
 
-void *poke_tap(void *arg)
-{
-	struct timeval	 tv;
-	struct vlink	*vlink = arg;
-	struct packets	*pkt;
-
-	while (switch_running) {
-
-		if ((pkt = malloc(sizeof(struct packets))) == NULL) {
-			log_warn("%s: malloc", __func__);
-			return (NULL);
-		}
-
-		pkt->len = tapcfg_read(vlink->tapcfg, pkt->buf, sizeof(pkt->buf));
-		// XXX check len
-
-		pthread_mutex_lock(&mutex);
-		TAILQ_INSERT_TAIL(&tailq_head, pkt, entries);
-
-			tv.tv_sec = 0;
-			tv.tv_usec = 0;
-			evtimer_add(ev_iface, &tv);
-		pthread_mutex_unlock(&mutex);
-	}
-
-	return (NULL);
+	return;
 }
 #else
 void
@@ -443,8 +408,6 @@ iface_cb(int sock, short what, void *arg)
 
 	if (vlink->peer != NULL && vlink->peer->status == 1)
 		vlink_send(vlink->peer, NV_L2, buf, ret);
-
-	// XXX reset keepalive
 }
 #endif
 
@@ -702,15 +665,6 @@ switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *i
 	}
 
 #if defined(_WIN32) || defined(__APPLE__)
-	TAILQ_INIT(&tailq_head);
-
-	switch_running = 1;
-
-	pthread_attr_t	attr;
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	pthread_create(&thread_poke_tap, &attr, poke_tap, vlink);
-
 	if ((ev_iface = event_new(ev_base, 0,
 		EV_TIMEOUT, iface_cb, vlink)) == NULL)
 		warn("%s:%d", "event_new", __LINE__);
@@ -719,7 +673,8 @@ switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *i
 	    EV_READ | EV_PERSIST, iface_cb, vlink)) == NULL)
 		warn("%s:%d", "event_new", __LINE__);
 #endif
-	event_add(ev_iface, NULL);
+
+	event_active(ev_iface, EV_TIMEOUT, 0);
 
 	event_active(vlink->ev_reconnect, EV_TIMEOUT, 0);
 
@@ -735,9 +690,4 @@ switch_fini(void)
 {
 	vlink_free(vlink);
 	event_free(ev_iface);
-
-#if defined(_WIN32) || defined(__APPLE__)
-	switch_running = 0;
-	pthread_join(thread_poke_tap, NULL);
-#endif
 }
