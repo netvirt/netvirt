@@ -622,6 +622,7 @@ info_cb(const SSL *ssl, int where, int ret)
 		return;
 
 	p = SSL_get_app_data(ssl);
+	RB_INSERT(tls_peer_tree, &p->vnet->peers, p);
 
 	// XXX make a function to return char *
 
