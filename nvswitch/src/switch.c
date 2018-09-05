@@ -277,6 +277,8 @@ tls_peer_disconnect(struct tls_peer *p)
 	struct tls_peer *pp;
 	struct lladdr	*l, *ll;
 
+	bufferevent_disable(p->bev, EV_READ | EV_WRITE);
+
 	if (p == NULL)
 		return;
 
