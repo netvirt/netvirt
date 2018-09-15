@@ -668,13 +668,16 @@ switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *i
 	if ((ev_iface = event_new(ev_base, 0,
 		EV_TIMEOUT, iface_cb, vlink)) == NULL)
 		warn("%s:%d", "event_new", __LINE__);
+
+	event_active(ev_iface, EV_TIMEOUT, 0);
 #else
 	if ((ev_iface = event_new(ev_base, tapfd,
 	    EV_READ | EV_PERSIST, iface_cb, vlink)) == NULL)
 		warn("%s:%d", "event_new", __LINE__);
+
+	event_add(ev_iface, NULL);
 #endif
 
-	event_active(ev_iface, EV_TIMEOUT, 0);
 
 	event_active(vlink->ev_reconnect, EV_TIMEOUT, 0);
 
