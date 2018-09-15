@@ -285,12 +285,12 @@ tls_peer_disconnect(struct tls_peer *p)
 	if (p->vnet != NULL) {
 		if ((pp = RB_FIND(tls_peer_tree, &p->vnet->peers, p)) != NULL)
 			RB_REMOVE(tls_peer_tree, &p->vnet->peers, pp);
-	}
 
-	RB_FOREACH_SAFE(l, lladdr_tree, &p->vnet->mac_table, ll) {
-		if (l->peer == p) {
-			RB_REMOVE(lladdr_tree, &p->vnet->mac_table, l);
-			lladdr_free(l);
+		RB_FOREACH_SAFE(l, lladdr_tree, &p->vnet->mac_table, ll) {
+			if (l->peer == p) {
+				RB_REMOVE(lladdr_tree, &p->vnet->mac_table, l);
+				lladdr_free(l);
+			}
 		}
 	}
 
