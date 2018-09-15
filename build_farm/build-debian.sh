@@ -6,7 +6,7 @@ release_dir="$1"
 
 
 function install_build_dependencies() {
-    apt-get install -y git scons cmake build-essential libevent-dev libssl-dev
+    apt-get install -y git scons cmake build-essential libevent-dev libssl-dev libjansson-dev libcurl4-openssl-dev
 }
 
 function mcd () {
