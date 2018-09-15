@@ -84,6 +84,7 @@ struct tls_peer {
 	socklen_t		 ss_len;
 	struct bufferevent	*bev;
 	struct event		*timeout;
+	struct event		*ev_readagain;
 	struct node		*node;
 	struct sockaddr_storage  ss;
 	struct vnetwork		*vnet;
@@ -109,6 +110,7 @@ static void		 tls_peer_free(struct tls_peer *);
 static struct tls_peer	*tls_peer_new();
 static void		 tls_peer_disconnect(struct tls_peer *);
 static void		 tls_peer_timeout_cb(int, short, void *);
+static void		 tls_peer_readagain_cb(int, short, void *);
 
 static int		 vnetwork_cmp(const struct vnetwork *,
 			    const struct vnetwork *);
@@ -222,6 +224,7 @@ tls_peer_free(struct tls_peer *p)
 		SSL_free(p->ssl);
 
 	event_free(p->timeout);
+	event_free(p->ev_readagain);
 	SSL_CTX_free(p->ctx);
 	free(p);
 }
@@ -241,6 +244,7 @@ tls_peer_new()
 	p->ss_len = 0;
 	p->bev = NULL;
 	p->timeout = NULL;
+	p->ev_readagain = NULL;
 	p->node = NULL;
 	p->vnet = NULL;
 
@@ -249,6 +253,10 @@ tls_peer_new()
 		log_warnx("%s: evtimer_new", __func__);
 		goto error;
 	}
+
+	if ((p->ev_readagain = event_new(ev_base, 0,
+	    EV_TIMEOUT, tls_peer_readagain_cb, p)) == NULL)
+		log_warnx("%s: event_new", __func__);
 
 	if ((p->ctx = ctx_init(p)) == NULL) {
 		log_warnx("%s: SSL_CTX_new", __func__);
@@ -304,6 +312,17 @@ void
 tls_peer_timeout_cb(int fd, short event, void *arg)
 {
 
+}
+
+void
+tls_peer_readagain_cb(int fd, short event, void *arg)
+{
+	(void)fd;
+	(void)event;
+
+	struct tls_peer	*p = arg;
+
+	peer_read_cb(p->bev, p);
 }
 
 int
@@ -700,6 +719,7 @@ peer_event_cb(struct bufferevent *bev, short events, void *arg)
 void
 peer_read_cb(struct bufferevent *bev, void *arg)
 {
+	struct timeval		 tv;
 	struct evbuffer		*in;
 	struct tls_peer		*p = arg;
 	const struct nv_hdr	*hdr;
@@ -736,6 +756,11 @@ peer_read_cb(struct bufferevent *bev, void *arg)
 
 	if (evbuffer_drain(in,
 	    sizeof(*hdr) - sizeof(hdr->type) + ntohs(hdr->length)) < 0)
+		goto error;
+
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
+	if (evtimer_add(p->ev_readagain, &tv) < 0)
 		goto error;
 
 	return;
