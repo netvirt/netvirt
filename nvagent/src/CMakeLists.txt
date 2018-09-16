@@ -113,7 +113,7 @@ elseif (WIN32)
 else()
 	target_link_libraries(netvirt-agent2
 		curl
-		tapcfg
+		${TAPCFG_ROOT_DIR}/build/libtapcfg.a
 		nv
 		ssl
 		crypto
