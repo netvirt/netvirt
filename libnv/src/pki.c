@@ -37,8 +37,7 @@
 
 // openssl x509 -in ./certificate.pem -text
 
-/* OpenSSL 1.1.0 introduced some useful additions to the api */
-#if (OPENSSL_VERSION_NUMBER >= 0x10002000L)
+/* Add OpenSSL 1.1.0 compatibility API */
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
     (defined (LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2070000fL)
 int X509_STORE_up_ref(X509_STORE *vfy)
@@ -49,7 +48,6 @@ int X509_STORE_up_ref(X509_STORE *vfy)
 
     return (n > 1) ? 1 : 0;
 }
-#endif
 #endif
 
 // XXX still needed ?
