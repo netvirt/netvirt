@@ -65,23 +65,23 @@ if (WITH_GUI)
 	include(${QT_USE_FILE})
 	add_definitions(${QT_DEFINITIONS})
 
-	add_executable(netvirt-agent MACOSX_BUNDLE WIN32 ${nvagent_sources} ${gui_sources} ${gui_headers_moc} ${gui_form_headers} ${gui_rccs_srcs} ${win_rc_icon})
+	add_executable(netvirt-agent2 MACOSX_BUNDLE WIN32 ${nvagent_sources} ${gui_sources} ${gui_headers_moc} ${gui_form_headers} ${gui_rccs_srcs} ${win_rc_icon})
 
 	if (WIN32)
-		set_target_properties(netvirt-agent PROPERTIES LINK_FLAGS "-mwindows")
+		set_target_properties(netvirt-agent2 PROPERTIES LINK_FLAGS "-mwindows")
 	endif()
 
-	target_link_libraries(netvirt-agent ${QT_LIBRARIES})
+	target_link_libraries(netvirt-agent2 ${QT_LIBRARIES})
 
 else()
 	set(cli_sources
 		cli/main.c)
 
-	add_executable(netvirt-agent MACOSX_BUNDLE ${nvagent_sources} ${cli_sources})
+	add_executable(netvirt-agent2 MACOSX_BUNDLE ${nvagent_sources} ${cli_sources})
 endif()
 
 if (APPLE)
-	target_link_libraries(netvirt-agent
+	target_link_libraries(netvirt-agent2
 		${TAPCFG_ROOT_DIR}/build/libtapcfg.a
 		curl
 		nv
@@ -102,7 +102,7 @@ elseif (WIN32)
 		${LIBJANSSON_ROOT_DIR}/src/.libs/libjansson*dll
 		${LIBEVENT_ROOT_DIR}/.libs/libevent*dll)
 
-	target_link_libraries(netvirt-agent
+	target_link_libraries(netvirt-agent2
 		ws2_32
 		pthread
 		nv
@@ -111,7 +111,7 @@ elseif (WIN32)
 		${TAPCFG_ROOT_DIR}/build/tapcfg.dll
 	)
 else()
-	target_link_libraries(netvirt-agent
+	target_link_libraries(netvirt-agent2
 		curl
 		tapcfg
 		nv
@@ -124,7 +124,7 @@ else()
 	)
 endif()
 
-install(TARGETS netvirt-agent
+install(TARGETS netvirt-agent2
     BUNDLE DESTINATION . COMPONENT Runtime
     RUNTIME DESTINATION bin COMPONENT Runtime
     )
