@@ -39,11 +39,9 @@ typedef struct passport {
 } passport_t;
 
 /* OpenSSL 1.1.0 introduced some useful additions to the api */
-#if (OPENSSL_VERSION_NUMBER >= 0x10002000L)
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
     (defined (LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2070000fL)
 int X509_STORE_up_ref(X509_STORE *);
-#endif
 #endif
 
 
