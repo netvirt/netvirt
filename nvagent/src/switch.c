@@ -155,6 +155,12 @@ tls_peer_free(struct tls_peer *p)
 	else
 		SSL_free(p->ssl);
 
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
+    (defined (LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2070000fL)
+	// Remove the reference to the store, otherwise OpenSSL will try to free it.
+	// OpenSSL 1.0.1 doesn't have the function X509_STORE_up_ref().
+	p->ctx->cert_store = NULL;
+#endif
 	SSL_CTX_free(p->ctx);
 
 	free(p);
