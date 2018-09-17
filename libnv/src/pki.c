@@ -42,11 +42,8 @@
     (defined (LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2070000fL)
 int X509_STORE_up_ref(X509_STORE *vfy)
 {
-    int n;
-
-    n = CRYPTO_add(&vfy->references, 1, CRYPTO_LOCK_X509_STORE);
-
-    return (n > 1) ? 1 : 0;
+	// NOOP
+	return 0;
 }
 #endif
 
