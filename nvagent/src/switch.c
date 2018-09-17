@@ -136,6 +136,7 @@ vlink_free(struct vlink *v)
 	pki_passport_destroy(v->passport);
 	event_free(v->ev_reconnect);
 	event_free(v->ev_keepalive);
+	event_free(v->ev_readagain);
 	tls_peer_free(v->peer);
 	free(v->addr);
 	free(v);
