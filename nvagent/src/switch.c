@@ -480,9 +480,16 @@ vlink_reconnect(struct vlink *vlink)
 	printf("reconnect...\n");
 	event_del(vlink->ev_reconnect);
 	event_del(vlink->ev_keepalive);
+	event_del(vlink->ev_readagain);
 
-	if (vlink->peer && vlink->peer->bev)
-		bufferevent_disable(vlink->peer->bev, EV_READ | EV_WRITE);
+	if (vlink->peer) {
+		vlink->peer->status = 0;
+
+		if (vlink->peer->bev) {
+			bufferevent_set_timeouts(vlink->peer->bev, NULL, NULL);
+			bufferevent_disable(vlink->peer->bev, EV_READ | EV_WRITE);
+		}
+	}
 
 	if (event_base_once(ev_base, -1, EV_TIMEOUT,
 	    vlink_reset, vlink, &wait_sec) < 0)
