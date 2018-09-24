@@ -96,7 +96,7 @@ if (APPLE)
 elseif (WIN32)
 
 	file(GLOB LIBS_FOR_WIN32
-		${LIBCURL_ROOT_DIR}/lib/.libs/libcurl*.dll
+		${LIBCURL_ROOT_DIR}/lib/.libs/libcurl*dll
 		${LIBRESSL_ROOT_DIR}/ssl/.libs/libssl*dll
 		${LIBRESSL_ROOT_DIR}/crypto/.libs/libcrypto*dll
 		${LIBJANSSON_ROOT_DIR}/src/.libs/libjansson*dll
