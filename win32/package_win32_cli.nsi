@@ -36,10 +36,10 @@ SetCompressor /FINAL /SOLID lzma
 	!define /date NOW "%y.%m.%d"
 	Name "NetVirt Agent CLI"
 	!ifndef OUTFILE
-		!define OUTFILE "${BDIR}/netvirt-agent-cli-${NOW}_x86.exe"
+		!define OUTFILE "${BDIR}/netvirt-agent2-cli-${NOW}_x86.exe"
 	!endif
 	OutFile "${OUTFILE}"
-	InstallDir $PROGRAMFILES\netvirt-agent-cli
+	InstallDir $PROGRAMFILES\netvirt-agent2-cli
 
 	; Ask admin privileges
 	RequestExecutionLevel admin
@@ -68,7 +68,7 @@ SetCompressor /FINAL /SOLID lzma
 	Section "NetVirt Agent CLI"
 		setOutPath $INSTDIR
 
-		File ${BDIR}/nvagent/src/netvirt-agent.exe
+		File ${BDIR}/nvagent/src/netvirt-agent2.exe
 		File ${TAPCFG_PATH}/build/tapcfg.dll
 		File ${MINGW_PATH}/libgcc_s_sjlj-1.dll
 		File ${MINGW_PATH}/libstdc++-6.dll
@@ -80,11 +80,12 @@ SetCompressor /FINAL /SOLID lzma
 		File ${LIBEVENT_PATH}/.libs/libevent_extra-2-0-5.dll
 		File ${LIBEVENT_PATH}/.libs/libevent_openssl-2-0-5.dll
 		File ${LIBJANSSON_PATH}/src/.libs/libjansson-4.dll
+		File ${LIBCURL_PATH}/lib/.libs/libcurl-4.dll
 
 		CreateDirectory $APPDATA\netvirt\default
 
 		; Create uninstaller
-		WriteUninstaller "$INSTDIR\netvirt-agent-uninstall.exe"
+		WriteUninstaller "$INSTDIR\netvirt-agent2-uninstall.exe"
 
 	sectionEnd
 
