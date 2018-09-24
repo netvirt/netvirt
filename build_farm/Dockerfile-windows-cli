@@ -25,6 +25,16 @@ RUN CC=i686-w64-mingw32-gcc CPPFLAGS="-D__MINGW_USE_VC2005_COMPAT" ./configure -
                 LDFLAGS="-L/usr/src/libressl-${LIBRESSL_VERSION}/ssl/.libs/ -L/usr/src/libressl-${LIBRESSL_VERSION}/crypto/.libs/"
 RUN make
 
+ENV LIBCURL_VERSION "7.61.1"
+ENV LIBCURL_URL "https://curl.haxx.se/download/curl-${LIBCURL_VERSION}.tar.gz"
+RUN curl "${LIBCURL_URL}" | tar xzf - -C /usr/src
+WORKDIR "/usr/src/curl-${LIBCURL_VERSION}"
+RUN CC=i686-w64-mingw32-gcc ./configure --host=i686-w64-mingw32 --disable-ftp --disable-file --disable-ldap --disable-ldaps --disable-rtsp --disable-proxy --disable-dict --disable-telnet --disable-tftp --disable-pop3 --disable-imap --disable-smb --disable-smtp --disable-gopher \
+		CPPFLAGS="-I/usr/src/libressl-${LIBRESSL_VERSION}/include/" \
+                LDFLAGS="-L/usr/src/libressl-${LIBRESSL_VERSION}/ssl/.libs/ -L/usr/src/libressl-${LIBRESSL_VERSION}/crypto/.libs/"
+RUN make
+
+
 CMD true && \
     cp -r /usr/src/netvirt/tapcfg /usr/src/tapcfg && \
     cd /usr/src/tapcfg && \
@@ -35,17 +45,19 @@ CMD true && \
           -DLIBRESSL_ROOT_DIR="/usr/src/libressl-${LIBRESSL_VERSION}" \
           -DLIBJANSSON_ROOT_DIR="/usr/src/jansson-${LIBJANSSON_VERSION}" \
           -DLIBEVENT_ROOT_DIR="/usr/src/libevent-${LIBEVENT_VERSION}-stable" \
+          -DLIBCURL_ROOT_DIR="/usr/src/curl-${LIBCURL_VERSION}" \
           -DTAPCFG_ROOT_DIR="/usr/src/tapcfg" \
           -DCROSS_COMPILER="i686-w64-mingw32" \
           -DWITH_GUI="no" \
           ../netvirt && \
-    make netvirt-agent VERBOSE=1 && \
+    make netvirt-agent2 VERBOSE=1 && \
     makensis -DLIBRESSL_PATH="/usr/src/libressl-${LIBRESSL_VERSION}" \
              -DLIBEVENT_PATH="/usr/src/libevent-${LIBEVENT_VERSION}-stable" \
+             -DLIBCURL_PATH="/usr/src/curl-${LIBCURL_VERSION}" \
              -DLIBJANSSON_PATH="/usr/src/jansson-${LIBJANSSON_VERSION}" \
              -DTAPCFG_PATH="/usr/src/tapcfg" \
              -DMINGW_PATH="/usr/lib/gcc/i686-w64-mingw32/6.3-win32" \
              -DBDIR="${PWD}" \
-             -DOUTFILE="/tmp/netvirt-agent-cli_x86.exe" \
+             -DOUTFILE="/tmp/netvirt-agent2-cli_x86.exe" \
              ../netvirt/win32/package_win32_cli.nsi && \
     true
