@@ -13,6 +13,8 @@
  * GNU Affero General Public License for more details
  */
 
+#ifndef _WIN32
+
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -109,3 +111,5 @@ inet_print_macaddr(uint8_t *macaddr)
 	macaddr[4],
 	macaddr[5]);
 }
+
+#endif
