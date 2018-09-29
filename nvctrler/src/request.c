@@ -1286,7 +1286,7 @@ cleanup:
 int
 switch_node_update_status(struct session_info *sinfo, json_t *jmsg)
 {
-	printf("update-node-status");
+	printf("update-node-status\n");
 
 	char	*status;
 	char	*ipsrc = NULL;
