@@ -50,16 +50,20 @@ v1_regions_cb(struct evhttp_request *req, void *arg)
 	code = 500;
 	phrase = "Internal Server Error";
 
+/* XXX
 	if (evhttp_request_get_command(req) != EVHTTP_REQ_GET) {
 		log_warnx("%s: evhttp_request_get_command", __func__);
 		goto out;
 	}
+*/
 
+/* XXX
 	if ((apikey = evhttp_find_header(evhttp_request_get_input_headers(req),
 	    "X-netvirt-apikey")) == NULL) {
 		log_warnx("%s: evhttp_find_header", __func__);
 		goto out;
 	}
+*/
 
 	if (regions_list(apikey, &msg) < 0) {
 		code = 403;

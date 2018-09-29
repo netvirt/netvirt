@@ -108,6 +108,8 @@ client_create(char *msg)
 	asprintf(&emailquery, "/email?msgtype=welcome&key=%s&to=\"%s\"",
 	    apikey, email_encoded);
 
+	evhttp_make_request(evhttp_conn, req, EVHTTP_REQ_GET, emailquery);
+
 	// XXX debug purpose
 	FILE    *tmp;
 	tmp = fopen("/tmp/apikey", "w");
@@ -556,6 +558,7 @@ regions_list(const char *apikey, char **resp)
 	json_object_set_new(region, "tag", json_string("NY1"));
 	json_array_append_new(array, region);
 
+/*
 	if ((region = json_object()) == NULL) {
 		log_warnx("%s: json_array", __func__);
 		goto cleanup;
@@ -563,6 +566,7 @@ regions_list(const char *apikey, char **resp)
 	json_object_set_new(region, "name", json_string("London 1"));
 	json_object_set_new(region, "tag", json_string("LN1"));
 	json_array_append_new(array, region);
+*/
 
 	if ((jresp = json_object()) == NULL ||
 	    json_object_set_new(jresp, "regions", array) < 0 ||
