@@ -218,6 +218,7 @@ tls_peer_free(struct tls_peer *p)
 {
 	if (p == NULL)
 		return;
+
 	if (p->bev != NULL)
 		bufferevent_free(p->bev);
 	else
@@ -225,7 +226,10 @@ tls_peer_free(struct tls_peer *p)
 
 	event_free(p->timeout);
 	event_free(p->ev_readagain);
-	SSL_CTX_free(p->ctx);
+
+	if (p->ctx != NULL)
+		SSL_CTX_free(p->ctx);
+
 	free(p);
 }
 
