@@ -40,32 +40,48 @@
 
 #include "switch.h"
 
-struct peer {
-	struct bufferevent	*bufev;
-	SSL			*ssl;
-	SSL_CTX			*ctx;
-	int			 fd;
+struct vlink {
+	passport_t		*passport;
+	struct event		*ev_reconnect;
+	struct event		*ev_keepalive;
+	struct event		*ev_readagain;
+	struct tls_peer		*peer;
 };
 
-static int		 request_node_list();
-static int		 request_network_list();
+struct tls_peer {
+	SSL			*ssl;
+	SSL_CTX			*ctx;
+	struct bufferevent	*bev;
+	struct vlink		*vlink;
+	int			 sock;
+	int			 status;
+};
+
+static int		 request_node_list(struct bufferevent *bev);
+static int		 request_network_list(struct bufferevent *bev);
 
 static int		 response_node_delete(json_t *);
 static int		 response_network_delete(json_t *);
 static int		 response_node_list(json_t *);
 static int		 response_network_list(json_t *);
 
-static void		 on_read_cb(struct bufferevent *, void *);
-static void		 on_event_cb(struct bufferevent *, short, void *);
+static void		 tls_peer_free(struct tls_peer *);
+static struct tls_peer	*tls_peer_new();
+static int		 cert_verify_cb(int, X509_STORE_CTX *);
+static void		 info_cb(const SSL *, int, int);
+static SSL_CTX		*ctx_init();
 
-static struct peer	*peer_new();
-static void		 peer_free(struct peer *);
+static void		 vlink_free(struct vlink *);
+static int		 vlink_connect(struct tls_peer *, struct vlink *);
+static void		 vlink_keepalive(evutil_socket_t, short, void *);
+static void		 vlink_readagain(evutil_socket_t, short, void *);
+static void		 vlink_reconnect(evutil_socket_t, short, void *);
+static void		 vlink_reset(struct vlink *vlink);
 
-static SSL_CTX		*evssl_init();
+static void		 peer_read_cb(struct bufferevent *, void *);
+static void		 peer_event_cb(struct bufferevent *, short, void *);
 
-static passport_t	*passport;
-static struct peer	*peer;
-struct event		*ev;
+struct vlink	*vlink;
 
 int
 response_node_delete(json_t *jmsg)
@@ -338,7 +354,7 @@ request_update_node_status(char *status, char *ipsrc, char *uid, char *network_u
 		goto out;
 	}
 
-	if (bufferevent_write_buffer(peer->bufev, buf) < 0) {
+	if (bufferevent_write_buffer(vlink->peer->bev, buf) < 0) {
 		log_warnx("%s: bufferevent_write_buffer", __func__);
 		goto out;
 	}
@@ -354,7 +370,7 @@ out:
 }
 
 int
-request_node_list()
+request_node_list(struct bufferevent *bev)
 {
 	struct evbuffer	*buf = NULL;
 	json_t		*request = NULL;
@@ -394,7 +410,7 @@ request_node_list()
 		goto error;
 	}
 
-	if (bufferevent_write_buffer(peer->bufev, buf) < 0) {
+	if (bufferevent_write_buffer(bev, buf) < 0) {
 		log_warnx("%s: bufferevent_write_buffer", __func__);
 		goto error;
 	}
@@ -410,7 +426,7 @@ error:
 }
 
 int
-request_network_list()
+request_network_list(struct bufferevent *bev)
 {
 	struct evbuffer	*buf = NULL;
 	json_t		*request = NULL;
@@ -450,7 +466,7 @@ request_network_list()
 		goto error;
 	}
 
-	if (bufferevent_write_buffer(peer->bufev, buf) < 0) {
+	if (bufferevent_write_buffer(bev, buf) < 0) {
 		log_warnx("%s: bufferevent_write_buffer", __func__);
 		goto error;
 	}
@@ -465,11 +481,306 @@ error:
 	return (ret);
 }
 
+
 void
-on_read_cb(struct bufferevent *bev, void *arg)
+tls_peer_free(struct tls_peer *p)
+{
+	if (p == NULL)
+		return;
+
+	if (p->vlink != NULL)
+		p->vlink->peer = NULL;
+
+	if (p->bev != NULL)
+		bufferevent_free(p->bev);
+	else
+		SSL_free(p->ssl);
+
+
+	if (p->ctx != NULL) {
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
+    (defined (LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2070000fL)
+                // Remove the reference to the store, otherwise OpenSSL will try to free it.
+                // OpenSSL 1.0.1 doesn't have the function X509_STORE_up_ref().
+                p->ctx->cert_store = NULL;
+#endif
+                SSL_CTX_free(p->ctx);
+        }
+
+	free(p);
+}
+
+struct tls_peer *
+tls_peer_new()
+{
+	struct tls_peer		*p;
+
+	if ((p = malloc(sizeof(struct tls_peer))) == NULL) {
+		log_warn("%s: malloc", __func__);
+		goto error;
+	}
+	p->ssl = NULL;
+	p->ctx = NULL;
+	p->bev = NULL;
+	p->vlink = NULL;
+	p->status = 0;
+
+	if ((p->ctx = ctx_init()) == NULL) {
+		log_warnx("%s: ctx_init", __func__);
+		goto error;
+	}
+
+	if ((p->ssl = SSL_new(p->ctx)) == NULL ||
+	    SSL_set_app_data(p->ssl, p) != 1) {
+		log_warnx("%s: SSL_new", __func__);
+		goto error;
+	}
+
+	return (p);
+
+error:
+	tls_peer_free(p);
+	return (NULL);
+}
+
+int
+cert_verify_cb(int ok, X509_STORE_CTX *store)
+{
+        X509            *cert;
+        X509_NAME       *name;
+        char             buf[256];
+
+        cert = X509_STORE_CTX_get_current_cert(store);
+        name = X509_get_subject_name(cert);
+        X509_NAME_get_text_by_NID(name, NID_commonName, buf, 256);
+
+        printf("CN: %s\n", buf);
+
+        return (ok);
+}
+
+void
+info_cb(const SSL *ssl, int where, int ret)
+{
+        (void)ssl;
+        (void)ret;
+
+        if ((where & SSL_CB_HANDSHAKE_DONE) == 0)
+                return;
+
+        printf("connected to controller !\n");
+}
+
+SSL_CTX *
+ctx_init()
+{
+	EC_KEY		*ecdh = NULL;
+	SSL_CTX		*ctx = NULL;
+	int		 err = -1;
+
+	if ((ctx = SSL_CTX_new(TLS_method())) == NULL) {
+		log_warnx("%s: SSL_CTX_new", __func__);
+		goto error;
+	}
+
+	if (SSL_CTX_set_cipher_list(ctx, "ECDHE-ECDSA-CHACHA20-POLY1305") != 1) {
+		log_warnx("%s: SSL_CTX_set_cipher", __func__);
+		goto error;
+	}
+
+	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL) {
+		log_warnx("%s: EC_KEY_new_by_curve_name", __func__);
+		goto error;
+	}
+
+	if (SSL_CTX_set_tmp_ecdh(ctx, ecdh) != 1) {
+		log_warnx("%s: SSL_CTX_set_tmp_ecdh", __func__);
+		goto error;
+	}
+
+	SSL_CTX_set_verify(ctx,
+	    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, cert_verify_cb);
+
+	SSL_CTX_set_info_callback(ctx, info_cb);
+
+	err = 0;
+
+error:
+	if (err < 0) {
+		SSL_CTX_free(ctx);
+		ctx = NULL;
+	}
+	EC_KEY_free(ecdh);
+	return (ctx);
+}
+
+void
+vlink_free(struct vlink *v)
+{
+	if (v == NULL)
+		return;
+
+	pki_passport_destroy(v->passport);
+	event_free(v->ev_reconnect);
+	event_free(v->ev_keepalive);
+	event_free(v->ev_readagain);
+	tls_peer_free(v->peer);
+	free(v);
+}
+
+int
+vlink_connect(struct tls_peer *p, struct vlink *v)
+{
+	struct addrinfo		 hints;
+	struct addrinfo		*res = NULL;
+	struct timeval		 tv;
+	EC_KEY			*ecdh = NULL;
+	int			 ret;
+	int			 err = -1;
+	int			 flag;
+	const char		*local = "127.0.0.1";
+	const char		*port = "9093";
+
+	tv.tv_sec = 5;
+	tv.tv_usec = 0;
+	if (event_add(v->ev_reconnect, &tv) < 0) {
+		log_warn("%s: event_add", __func__);
+		goto out;
+	}
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+
+	if ((ret = getaddrinfo(local, port, &hints, &res)) < 0) {
+		log_warnx("%s: getaddrinfo %s", __func__, gai_strerror(err));
+		goto out;
+	}
+
+	if ((p->sock = socket(res->ai_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+		log_warn("%s: socket", __func__);
+		goto out;
+	}
+
+	flag = 1;
+	if (setsockopt(p->sock, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(flag)) < 0 ||
+	    setsockopt(p->sock, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
+		log_warn("%s: setsockopt", __func__);
+		goto out;
+	}
+
+	if (evutil_make_socket_nonblocking(p->sock) < 0) {
+		log_warn("%s: evutil_make_socket_nonblocking", __func__);
+		goto out;
+	}
+
+	SSL_CTX_set_cert_store(p->ctx, vlink->passport->cacert_store);
+	X509_STORE_up_ref(vlink->passport->cacert_store);
+
+	SSL_set_SSL_CTX(p->ssl, p->ctx);
+
+	if ((SSL_use_certificate(p->ssl, vlink->passport->certificate)) != 1) {
+		log_warnx("%s: SSL_CTX_use_certificate", __func__);
+		goto out;
+	}
+
+	if ((SSL_use_PrivateKey(p->ssl, vlink->passport->keyring)) != 1) {
+		log_warnx("%s: SSL_CTX_use_PrivateKey", __func__);
+		goto out;
+	}
+
+	if ((p->bev = bufferevent_openssl_socket_new(ev_base, p->sock, p->ssl,
+	    BUFFEREVENT_SSL_CONNECTING, BEV_OPT_CLOSE_ON_FREE))
+	    == NULL) {
+		log_warnx("%s: bufferevent_openssl_socket_new", __func__);
+		goto out;
+	}
+
+	bufferevent_enable(p->bev, EV_READ|EV_WRITE);
+	bufferevent_setcb(p->bev, peer_read_cb, NULL, peer_event_cb, p);
+
+	if (bufferevent_socket_connect(p->bev, res->ai_addr, res->ai_addrlen) < 0) {
+		log_warnx("%s: bufferevent_socket_connected", __func__);
+		goto out;
+	}
+
+	err = 0;
+
+out:
+	EC_KEY_free(ecdh);
+	freeaddrinfo(res);
+
+	return (err);
+}
+
+void
+vlink_keepalive(evutil_socket_t fd, short event, void *arg)
+{
+}
+
+void
+vlink_readagain(evutil_socket_t fd, short event, void *arg)
+{
+}
+
+void
+vlink_reconnect(evutil_socket_t fd, short event, void *arg)
+{
+	struct vlink	*vlink = arg;
+	(void)fd;
+	(void)event;
+
+	if (vlink->peer != NULL)
+		tls_peer_free(vlink->peer);
+
+	if ((vlink->peer = tls_peer_new()) == NULL) {
+		log_warnx("%s: tls_peer_new", __func__);
+		goto error;
+	}
+	vlink->peer->vlink = vlink;
+
+	if (vlink_connect(vlink->peer, vlink) < 0) {
+		log_warnx("%s: vlink_connect", __func__);
+		goto error;
+	}
+
+	return;
+
+error:
+	vlink_reset(vlink);
+	return;
+}
+
+void
+vlink_reset(struct vlink *vlink)
+{
+	struct timeval	 wait_sec = {5, 0};
+
+	printf("reconnect control...\n");
+	event_del(vlink->ev_keepalive);
+	event_del(vlink->ev_readagain);
+	event_del(vlink->ev_reconnect);
+
+	if (vlink->peer) {
+		vlink->peer->status = 0;
+
+		if (vlink->peer->bev) {
+			bufferevent_set_timeouts(vlink->peer->bev, NULL, NULL);
+			bufferevent_disable(vlink->peer->bev, EV_READ | EV_WRITE);
+		}
+	}
+
+	if (event_base_once(ev_base, -1, EV_TIMEOUT,
+	    vlink_reconnect, vlink, &wait_sec) < 0)
+		log_warnx("%s: event_base_once", __func__);
+}
+
+void
+peer_read_cb(struct bufferevent *bev, void *arg)
 {
 	json_error_t		error;
 	json_t			*jmsg = NULL;
+	struct tls_peer		*p = arg;
 	size_t			n_read_out;
 	int			 ret;
 	const char		*action;
@@ -498,7 +809,7 @@ on_read_cb(struct bufferevent *bev, void *arg)
 			}
 			if (ret == 1 && control_init_done == 0) {
 				log_warnx("networks initalized");
-				if (request_node_list(jmsg) < 0) {
+				if (request_node_list(bev) < 0) {
 					log_warnx("%s: request_node_list",
 					    __func__);
 					goto error;
@@ -535,189 +846,40 @@ on_read_cb(struct bufferevent *bev, void *arg)
 error:
 	json_decref(jmsg);
 	free(msg);
+
+	vlink_reset(p->vlink);
+	return;
 }
 
 void
-on_timeout_cb(evutil_socket_t fd, short what, void *arg)
+peer_event_cb(struct bufferevent *bev, short events, void *arg)
 {
-	peer_free(peer);
-	peer = peer_new();
-}
-
-void
-on_event_cb(struct bufferevent *bufev_sock, short events, void *arg)
-{
-	struct timeval	 tv = {1, 0};
+	struct tls_peer	*p = arg;
 	unsigned long	 e = 0;
 
 	if (events & BEV_EVENT_CONNECTED) {
 
+		printf("connected controller!\n");
+
+		event_del(p->vlink->ev_reconnect);
+
 		control_init_done = 0;
-		request_network_list();
+		request_network_list(bev);
 
-	} else if (events & (BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
+	} else if (events & (BEV_EVENT_TIMEOUT | BEV_EVENT_EOF | BEV_EVENT_ERROR)) {
 
-		while ((e = bufferevent_get_openssl_error(peer->bufev)) > 0)
+		while ((e = bufferevent_get_openssl_error(bev)) > 0)
 			log_warnx("%s: ssl error: %s", __func__,
 			    ERR_error_string(e, NULL));
 
-		if (ev != NULL)
-			event_free(ev);
-		ev = event_new(ev_base, -1, EV_TIMEOUT, on_timeout_cb, NULL);
-		event_add(ev, &tv);
+		vlink_reset(p->vlink);
 	}
-}
-
-SSL_CTX *
-evssl_init()
-{
-	EC_KEY		*ecdh = NULL;
-	SSL_CTX		*ctx = NULL;
-	int		 ret;
-
-	ret = -1;
-	if ((ctx = SSL_CTX_new(TLS_method())) == NULL) {
-		log_warnx("SSL_CTX_new");
-		return (NULL);
-	}
-
-	if (SSL_CTX_set_cipher_list(ctx, "ECDHE-ECDSA-CHACHA20-POLY1305") != 1) {
-		log_warnx("SSL_CTX_set_cipher");
-		goto error;
-	}
-
-	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL) {
-		log_warnx("EC_KEY_new_by_curve_name");
-		goto error;
-	}
-
-	if (SSL_CTX_set_tmp_ecdh(ctx, ecdh) != 1) {
-		log_warnx("SSL_CTX_set_tmp_ecdh");
-		goto error;
-	}
-
-	SSL_CTX_set_cert_store(ctx, passport->cacert_store);
-	X509_STORE_up_ref(passport->cacert_store);
-
-	if ((SSL_CTX_use_certificate(ctx, passport->certificate)) != 1) {
-		log_warnx("SSL_CTX_use_certificate");
-		goto error;
-	}
-
-	if ((SSL_CTX_use_PrivateKey(ctx, passport->keyring)) != 1) {
-		log_warnx("SSL_CTX_use_PrivateKey");
-		goto error;
-	}
-
-	ret = 0;
-
-error:
-	if (ret < 0) {
-		SSL_CTX_free(ctx);
-		ctx = NULL;
-	}
-	EC_KEY_free(ecdh);
-	return (ctx);
-}
-
-void
-peer_free(struct peer *p)
-{
-	if (peer == NULL)
-		return;
-
-	if (peer->ssl != NULL) {
-		SSL_set_shutdown(p->ssl, SSL_RECEIVED_SHUTDOWN);
-		SSL_shutdown(p->ssl);
-		bufferevent_free(p->bufev);
-	}
-
-	if (peer->ctx != NULL)
-		SSL_CTX_free(p->ctx);
-
-	free(p);
-}
-
-struct peer *
-peer_new()
-{
-	struct peer		*p;
-	struct addrinfo		*res = NULL;
-	struct addrinfo		 hints;
-	int			 flag = 1;
-
-	if ((p = malloc(sizeof(struct peer))) == NULL) {
-		log_warn("%s: malloc", __func__);
-		goto error;
-	}
-	p->ssl = NULL;
-	p->ctx = NULL;
-
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_STREAM;
-	getaddrinfo("127.0.0.1", "9093", &hints, &res);
-
-	if ((p->fd = socket(res->ai_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
-		log_warn("%s: socket", __func__);
-		goto error;
-	}
-
-	if (setsockopt(p->fd, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(flag)) < 0 ||
-	    setsockopt(p->fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
-		log_warn("%s: setsockopt", __func__);
-		goto error;
-	}
-
-	if (evutil_make_socket_nonblocking(p->fd) < 0) {
-		log_warn("%s: evutil_make_socket_nonblocking", __func__);
-		goto error;
-	}	
-
-	if ((p->ctx = evssl_init()) == NULL) {
-		log_warnx("%s: evssl_init", __func__);
-		goto error;
-	}
-
-	if ((p->ssl = SSL_new(p->ctx)) == NULL) {
-		log_warnx("%s: SSL_new", __func__);
-		goto error;
-	}
-
-	if ((p->bufev = bufferevent_openssl_socket_new(ev_base, p->fd, p->ssl,
-	    BUFFEREVENT_SSL_CONNECTING, BEV_OPT_CLOSE_ON_FREE)) == NULL) {
-		log_warnx("%s: bufferevent_socket_new failed", __func__);
-		goto error;
-	}
-
-	bufferevent_enable(p->bufev, EV_READ|EV_WRITE);
-	bufferevent_setcb(p->bufev, on_read_cb, NULL, on_event_cb, p);
-
-	if (bufferevent_socket_connect(p->bufev, res->ai_addr,
-	    res->ai_addrlen) < 0) {
-		log_warnx("%s: bufferevent_socket_connected failed", __func__);
-		goto error;
-	}
-
-	if (res != NULL)
-		freeaddrinfo(res);
-
-	return (p);
-
-error:
-	if (res != NULL)
-		freeaddrinfo(res);
-
-	peer_free(p);
-
-	return (NULL);
 }
 
 void
 control_init()
 {
-	const char	*cert;
-	const char	*pvkey, *cacert;
+	const char	*cert, *pvkey, *cacert;
 
 	SSL_load_error_strings();
 	SSL_library_init();
@@ -734,22 +896,36 @@ control_init()
 	if (json_unpack(config, "{s:s}", "cacert", &cacert) < 0)
 		fatalx("'cacert' not found in config");
 
+	if ((vlink = malloc(sizeof(struct vlink))) == NULL)
+		fatalx("%s: malloc", __func__);
+	vlink->passport = NULL;
+	vlink->peer = NULL;
+	vlink->ev_reconnect = NULL;
+	vlink->ev_keepalive = NULL;
+	vlink->ev_readagain = NULL;
+
 	// XXX show which files doesn't get loaded
-	if ((passport = pki_passport_load_from_file(cert,
-	    pvkey, cacert)) == NULL)
+	if ((vlink->passport =
+	    pki_passport_load_from_file(cert, pvkey, cacert)) == NULL)
 		fatalx("pki_passport_load_from_file");
 
-	if ((peer = peer_new()) == NULL)
-		fatalx("peer_new");
+	if ((vlink->ev_reconnect = event_new(ev_base, 0,
+	    EV_TIMEOUT, vlink_reconnect, vlink)) == NULL)
+		fatalx("%s: event_new", __func__);
+
+	if ((vlink->ev_keepalive = event_new(ev_base, 0,
+	    EV_TIMEOUT | EV_PERSIST, vlink_keepalive, vlink)) == NULL)
+		fatalx("%s: event_new", __func__);
+
+	if ((vlink->ev_readagain = event_new(ev_base, 0,
+	    EV_TIMEOUT, vlink_readagain, vlink)) == NULL)
+		fatalx("%s: event_new", __func__);
+
+	event_active(vlink->ev_reconnect, EV_TIMEOUT, 0);
 }
 
 void
 control_fini()
 {
-	pki_passport_destroy(passport);
-	if (ev != NULL)
-		event_free(ev);
-	peer_free(peer);
-	peer = NULL;
-	//vnetworks_free();
+	vlink_free(vlink);
 }

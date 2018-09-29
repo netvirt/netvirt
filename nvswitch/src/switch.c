@@ -375,7 +375,8 @@ vnetwork_add(char *uid, char *cert, char *pvkey, char *cacert)
 		goto error;
 	}
 
-	RB_INSERT(vnetwork_tree, &vnetworks, v);
+	if (RB_INSERT(vnetwork_tree, &vnetworks, v) != NULL)
+		vnetwork_free(v);
 
 	return (0);
 
@@ -425,7 +426,8 @@ vnetwork_add_node(struct vnetwork *v, const char *uid)
 		goto error;
 	}
 
-	RB_INSERT(acl_node_tree, &v->acl_node, n);
+	if (RB_INSERT(acl_node_tree, &v->acl_node, n) != NULL)
+		node_free(n);
 
 	return (0);
 
