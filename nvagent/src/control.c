@@ -496,8 +496,15 @@ tls_conn_free(struct tls_conn *conn)
 	if (conn->bev != NULL)
 		bufferevent_free(conn->bev);
 
-	if (conn->ctx != NULL)
+	if (conn->ctx != NULL) {
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
+    (defined (LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2070000fL)
+		// Remove the reference to the store, otherwise OpenSSL will try to free it.
+		// OpenSSL 1.0.1 doesn't have the function X509_STORE_up_ref().
+		conn->ctx->cert_store = NULL;
+#endif
 		SSL_CTX_free(conn->ctx);
+	}
 
 	free(conn);
 
