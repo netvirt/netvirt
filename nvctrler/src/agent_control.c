@@ -575,6 +575,10 @@ tls_peer_onread_cb(struct bufferevent *bev, void *arg)
 				goto error;
 			}
 		}
+		if (strcmp(action, "keepalive") == 0) {
+			bufferevent_write(bev, msg, strlen(msg));
+			bufferevent_write(bev, "\n", strlen("\n");
+		}
 	}
 
 	json_decref(jmsg);
@@ -591,10 +595,12 @@ error:
 void
 tls_peer_onevent_cb(struct bufferevent *bev, short events, void *arg)
 {
-	unsigned long	e;
+	struct timeval	 tv;
+	unsigned long	 e;
 
 	if (events & BEV_EVENT_CONNECTED) {
 
+		bufferevent_set_timeouts(bev, &tv, NULL);
 
 	} else if (events & (BEV_EVENT_ERROR | BEV_EVENT_TIMEOUT | BEV_EVENT_EOF)) {
 		while ((e = bufferevent_get_openssl_error(bev)) > 0) {
