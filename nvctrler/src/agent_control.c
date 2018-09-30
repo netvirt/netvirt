@@ -106,7 +106,7 @@ tls_peer_cmp(const struct tls_peer *a, const struct tls_peer *b)
         if (a->ss_len < b->ss_len)
                 return (-1);
 
-        if (b->ss_len > b->ss_len)
+        if (a->ss_len > b->ss_len)
                 return (1);
 
         return (memcmp(&a->ss, &b->ss, a->ss_len));
@@ -295,7 +295,20 @@ tls_peer_free(struct tls_peer *p)
 
 	if (p->bev != NULL)
 		bufferevent_free(p->bev);
+
+        if (p->ctx != NULL) {
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
+    (defined (LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2070000fL)
+		// Remove the reference to the store, otherwise OpenSSL will try to free it.
+		// OpenSSL 1.0.1 doesn't have the function X509_STORE_up_ref().
+		p->ctx->cert_store = NULL;
+#endif
+		SSL_CTX_free(p->ctx);
+	}
+
+
 	SSL_CTX_free(p->ctx);
+
 	certinfo_destroy(p->ci);
 	free(p);
 }
