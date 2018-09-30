@@ -577,7 +577,7 @@ tls_peer_onread_cb(struct bufferevent *bev, void *arg)
 		}
 		if (strcmp(action, "keepalive") == 0) {
 			bufferevent_write(bev, msg, strlen(msg));
-			bufferevent_write(bev, "\n", strlen("\n");
+			bufferevent_write(bev, "\n", strlen("\n"));
 		}
 	}
 
