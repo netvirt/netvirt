@@ -553,6 +553,7 @@ peer_read_cb(struct bufferevent *bev, void *arg)
 				goto error;
 			}
 
+			switch_fini();
 			switch_init(p->vlink->tapcfg, p->vlink->tapfd, vswitch_addr, ipaddr, p->vlink->netname);
 		}
 

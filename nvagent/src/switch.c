@@ -100,10 +100,9 @@ struct packets {
 };
 
 struct event_base		*ev_base;
-static struct event		*ev_iface;
-static struct eth_hdr		 eth_ping;
+static struct event		*ev_iface = NULL;
 static struct network		*netcf;
-static struct vlink		*vlink;
+static struct vlink		*vlink = NULL;
 
 TAILQ_HEAD(tailhead, packets)	 tailq_head;
 
@@ -633,8 +632,6 @@ int
 switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *ipaddr,
     const char *network_name)
 {
-	eth_ping.ethertype = htons(0x9000);
-
 	if ((vlink = malloc(sizeof(struct vlink))) == NULL) {
 		log_warn("%s: malloc", __func__);
 		goto cleanup;
@@ -708,5 +705,6 @@ void
 switch_fini(void)
 {
 	vlink_free(vlink);
-	event_free(ev_iface);
+	if (ev_iface != NULL)
+		event_free(ev_iface);
 }
