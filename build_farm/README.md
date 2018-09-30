@@ -24,6 +24,6 @@ To build the builder:
 
 To build the agent:
 
-  NETVIRT_ROOT_DIR=/path/to/netvirt
-  docker run -it --cidfile=/tmp/netvirt-agent-builder.cid -v $NETVIRT_ROOT_DIR:/usr/src/netvirt:ro netvirt/netvirt-agent-builder-windows-cli
-  docker cp $(/tmp/netvirt-agent-builder.cid):/tmp/netvirt-agent-cli_x86.exe /tmp/netvirt-agent-cli_x86.exe
+  NETVIRT_ROOT_DIR=/path/to/netvirt docker run -it --cidfile=/tmp/netvirt-agent-builder.cid -v $NETVIRT_ROOT_DIR:/usr/src/netvirt:ro netvirt/netvirt-agent-builder-windows-cli
+
+  docker cp $(/tmp/netvirt-agent-builder.cid):/tmp/netvirt-agent2-cli_x86.exe /tmp/netvirt-agent2-cli_x86.exe
