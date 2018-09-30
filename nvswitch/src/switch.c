@@ -313,8 +313,12 @@ tls_peer_disconnect(struct tls_peer *p)
 		}
 	}
 
-	if (p->node != NULL && p->vnet != NULL)
-		request_update_node_status("0", "", p->node->uid, p->vnet->uid);
+	if (p->node != NULL) {
+		if (p->vnet != NULL)
+			request_update_node_status("0", "", p->node->uid, p->vnet->uid);
+		p->node->peer = NULL;
+		p->node = NULL;
+	}
 
 	tls_peer_free(p);
 }
@@ -632,6 +636,11 @@ cert_verify_cb(int preverify_ok, X509_STORE_CTX *store)
 
 	if ((node = vnetwork_find_node(vnet, ci->node_uid)) == NULL) {
 		log_warnx("%s: vnetwork_find_node: access denied", __func__);
+		goto out;
+	}
+
+	if (node->peer != NULL) {
+		log_warnx("%s: node `%s` already connected\n", __func__, node->uid);
 		goto out;
 	}
 
