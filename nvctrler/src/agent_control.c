@@ -600,6 +600,8 @@ tls_peer_onevent_cb(struct bufferevent *bev, short events, void *arg)
 
 	if (events & BEV_EVENT_CONNECTED) {
 
+		tv.tv_sec = 5;
+		tv.tv_usec = 0;
 		bufferevent_set_timeouts(bev, &tv, NULL);
 
 	} else if (events & (BEV_EVENT_ERROR | BEV_EVENT_TIMEOUT | BEV_EVENT_EOF)) {
