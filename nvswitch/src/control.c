@@ -67,6 +67,7 @@ static int		 response_network_list(json_t *);
 
 static void		 tls_peer_free(struct tls_peer *);
 static struct tls_peer	*tls_peer_new();
+
 static int		 cert_verify_cb(int, X509_STORE_CTX *);
 static void		 info_cb(const SSL *, int, int);
 static SSL_CTX		*ctx_init();
@@ -496,7 +497,6 @@ tls_peer_free(struct tls_peer *p)
 	else
 		SSL_free(p->ssl);
 
-
 	if (p->ctx != NULL) {
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
     (defined (LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2070000fL)
@@ -508,6 +508,8 @@ tls_peer_free(struct tls_peer *p)
         }
 
 	free(p);
+
+	return;
 }
 
 struct tls_peer *
@@ -631,10 +633,10 @@ vlink_free(struct vlink *v)
 int
 vlink_connect(struct tls_peer *p, struct vlink *v)
 {
+	EC_KEY			*ecdh = NULL;
 	struct addrinfo		 hints;
 	struct addrinfo		*res = NULL;
 	struct timeval		 tv;
-	EC_KEY			*ecdh = NULL;
 	int			 ret;
 	int			 err = -1;
 	int			 flag;
@@ -696,8 +698,8 @@ vlink_connect(struct tls_peer *p, struct vlink *v)
 		goto out;
 	}
 
-	bufferevent_enable(p->bev, EV_READ|EV_WRITE);
 	bufferevent_setcb(p->bev, peer_read_cb, NULL, peer_event_cb, p);
+	bufferevent_enable(p->bev, EV_READ | EV_WRITE);
 
 	if (bufferevent_socket_connect(p->bev, res->ai_addr, res->ai_addrlen) < 0) {
 		log_warnx("%s: bufferevent_socket_connected", __func__);
@@ -855,7 +857,7 @@ void
 peer_event_cb(struct bufferevent *bev, short events, void *arg)
 {
 	struct tls_peer	*p = arg;
-	unsigned long	 e = 0;
+	unsigned long	 e;
 
 	if (events & BEV_EVENT_CONNECTED) {
 
@@ -872,8 +874,14 @@ peer_event_cb(struct bufferevent *bev, short events, void *arg)
 			log_warnx("%s: ssl error: %s", __func__,
 			    ERR_error_string(e, NULL));
 
-		vlink_reset(p->vlink);
+		goto error;
 	}
+
+	return;
+
+error:
+	vlink_reset(p->vlink);
+	return;
 }
 
 void
