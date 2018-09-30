@@ -675,6 +675,7 @@ info_cb(const SSL *ssl, int where, int ret)
 	    ntohs(&((struct sockaddr_in*)&p->ss)->sin_port);
 	printf("info_cb ipsrc <%s>\n", ipsrc);
 
+	p->node->peer = p;
 	request_update_node_status("1", ipsrc, p->node->uid, p->vnet->uid);
 
 
