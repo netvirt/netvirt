@@ -291,9 +291,6 @@ evssl_init()
 	SSL_CTX	*ctx = NULL;
 	int	 ret;
 
-	SSL_load_error_strings();
-	SSL_library_init();
-
 	ret = -1;
 
 	if (!RAND_poll())

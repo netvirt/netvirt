@@ -120,6 +120,9 @@ main(int argc, char *argv[])
 	if (dao_init(dbname, dbuser, dbpwd, dbhost) < 0)
 		fatalx("%s: dao_init", __func__);
 
+	SSL_load_error_strings();
+	SSL_library_init();
+
 	agent_control_init();
 	controller_init();
 
