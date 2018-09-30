@@ -48,72 +48,50 @@
 
 #include "agent.h"
 
-struct tls_conn {
-	struct bufferevent	*bev;
+struct vlink {
+	passport_t		*passport;
+	tapcfg_t		*tapcfg;
+	struct tls_peer		*peer;
+	struct event		*ev_reconnect;
+	struct event		*ev_keepalive;
+	struct event		*ev_readagain;
+	int			 tapfd;
+	char			*addr;
+	char			*port;
+	char			*netname;
+};
+
+struct tls_peer {
 	SSL			*ssl;
 	SSL_CTX			*ctx;
+	struct bufferevent	*bev;
 	struct tapif		*tapif;
+	struct vlink		*vlink;
+	int			 sock;
+	int			 status;
 };
 
-struct ctlinfo {
-	struct tls_conn	*conn;
-	char		*srv_addr;
-	char		*srv_port;
-	tapcfg_t	*tapcfg;
-	int		 tapfd;
-	char		*netname;
-	passport_t	*passport;
-};
+static char			*local_ipaddr();
+static int			 xmit_nodeinfo(struct tls_peer *);
 
-static struct tls_conn	*tls_conn_new(struct ctlinfo *);
-static void		 tls_conn_free(struct tls_conn *);
-static struct ctlinfo	*ctlinfo_new();
-static void		 ctlinfo_free(struct ctlinfo *);
-static void		 control_reconnect(struct ctlinfo *);
+static void			 tls_peer_free(struct tls_peer *);
+static struct tls_peer		*tls_peer_new();
 
-#ifdef _WIN32
-const char *
-inet_ntop(int af, const void* src, char* dst, int cnt)
-{
-	struct sockaddr_in	srcaddr;
+static int			 cert_verify_cb(int, X509_STORE_CTX *);
+static void			 info_cb(const SSL *, int, int);
+static SSL_CTX			*ctx_init();
 
-	memset(&srcaddr, 0, sizeof(struct sockaddr_in));
-	memcpy(&(srcaddr.sin_addr), src, sizeof(srcaddr.sin_addr));
-	srcaddr.sin_family = af;
+static void			 vlink_free(struct vlink *);
+static int			 vlink_connect(struct tls_peer *, struct vlink *);
+static void			 vlink_keepalive(evutil_socket_t, short, void *);
+static void			 vlink_readagain(evutil_socket_t, short, void *);
+static void			 vlink_reconnect(evutil_socket_t, short, void *);
+static void			 vlink_reset(struct vlink *vlink);
 
-	if (WSAAddressToString((struct sockaddr*) &srcaddr,
-	    sizeof(struct sockaddr_in), 0, dst, (LPDWORD) &cnt) != 0) {
-		WSAGetLastError();
-		return (NULL);
-	}
+static void			 peer_event_cb(struct bufferevent *, short, void *);
+static void			 peer_read_cb(struct bufferevent *, void *);
 
-	return (dst);
-}
-
-int
-inet_pton(int af, const char *src, void *dst)
-{
-	struct sockaddr_storage	ss;
-	int			size;
-	char			src_tmp[INET_ADDRSTRLEN+1];
-
-	size = sizeof(ss);
-
-	ZeroMemory(&ss, sizeof(ss));
-	strncpy (src_tmp, src, INET_ADDRSTRLEN+1);
-	src_tmp[INET_ADDRSTRLEN] = 0;
-
-	if (WSAStringToAddress(src_tmp, af, NULL, (struct sockaddr *)&ss, &size) == 0) {
-		switch(af) {
-		case AF_INET:
-			*(struct in_addr *)dst = ((struct sockaddr_in *)&ss)->sin_addr;
-			return (1);
-		}
-	}
-
-	return (0);
-}
-#endif
+static struct vlink	*vlink;
 
 char *
 local_ipaddr()
@@ -151,7 +129,7 @@ local_ipaddr()
 	close(sock);
 #endif
 
-	if ((addr_ptr = inet_ntop(AF_INET, &name.sin_addr, local_ip,
+	if ((addr_ptr = evutil_inet_ntop(AF_INET, &name.sin_addr, local_ip,
 	 INET_ADDRSTRLEN)) == NULL)
 		return (NULL);
 
@@ -159,7 +137,7 @@ local_ipaddr()
 }
 
 int
-xmit_nodeinfo(struct ctlinfo *ctl)
+xmit_nodeinfo(struct tls_peer *p)
 {
 	json_t		*jmsg = NULL;
 	int		 ret;
@@ -171,7 +149,7 @@ xmit_nodeinfo(struct ctlinfo *ctl)
 
 	ret = -1;
 
-	if ((lladdr = tapcfg_iface_get_hwaddr(ctl->tapcfg, &lladdr_len))
+	if ((lladdr = tapcfg_iface_get_hwaddr(p->vlink->tapcfg, &lladdr_len))
 	    == NULL) {
 		log_warnx("%s: tapcfg_iface_get_hwaddr", __func__);
 		goto error;
@@ -205,12 +183,12 @@ xmit_nodeinfo(struct ctlinfo *ctl)
 	}
 
 	// XXX use buffer and then one write
-	if (bufferevent_write(ctl->conn->bev, msg, strlen(msg)) != 0) {
+	if (bufferevent_write(p->bev, msg, strlen(msg)) != 0) {
 		log_warnx("%s: bufferevent_write", __func__);
 		goto error;
 	}
 
-	if (bufferevent_write(ctl->conn->bev, "\n", strlen("\n")) != 0) {
+	if (bufferevent_write(p->bev, "\n", strlen("\n")) != 0) {
 		log_warnx("%s: bufferevent_write", __func__);
 		goto error;
 	}
@@ -226,11 +204,324 @@ error:
 }
 
 void
-client_onread_cb(struct bufferevent *bev, void *arg)
+tls_peer_free(struct tls_peer *p)
+{
+	if (p == NULL)
+		return;
+
+	if (p->vlink != NULL)
+		p->vlink->peer = NULL;
+
+	if (p->bev != NULL)
+		bufferevent_free(p->bev);
+	else
+		SSL_free(p->ssl);
+
+	if (p->ctx != NULL) {
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
+    (defined (LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2070000fL)
+		// Remove the reference to the store, otherwise OpenSSL will try to free it.
+		// OpenSSL 1.0.1 doesn't have the function X509_STORE_up_ref().
+		p->ctx->cert_store = NULL;
+#endif
+		SSL_CTX_free(p->ctx);
+	}
+
+	free(p);
+
+	return;
+}
+
+struct tls_peer *
+tls_peer_new()
+{
+	struct tls_peer		*p;
+
+	if ((p = malloc(sizeof(struct tls_peer))) == NULL) {
+		log_warn("%s: malloc", __func__);
+		goto error;
+	}
+	p->ssl = NULL;
+	p->ctx = NULL;
+	p->bev = NULL;
+	p->vlink = NULL;
+	p->status = 0;
+
+	if ((p->ctx = ctx_init()) == NULL) {
+		log_warnx("%s: ctx_init", __func__);
+		goto error;
+	}
+
+	if ((p->ssl = SSL_new(p->ctx)) == NULL ||
+	    SSL_set_app_data(p->ssl, p) != 1) {
+		log_warnx("%s: SSL_new", __func__);
+		goto error;
+	}
+
+	return (p);
+
+error:
+	tls_peer_free(p);
+	return (NULL);
+}
+
+int
+cert_verify_cb(int ok, X509_STORE_CTX *store)
+{
+	X509		*cert;
+	X509_NAME	*name;
+	char		 buf[256];
+
+	cert = X509_STORE_CTX_get_current_cert(store);
+	name = X509_get_subject_name(cert);
+	X509_NAME_get_text_by_NID(name, NID_commonName, buf, 256);
+
+	printf("CN: %s\n", buf);
+
+	return (ok);
+}
+
+void
+info_cb(const SSL *ssl, int where, int ret)
+{
+	(void)ssl;
+	(void)ret;
+
+	if ((where & SSL_CB_HANDSHAKE_DONE) == 0)
+		return;
+
+	printf("connected to controller !\n");
+}
+
+SSL_CTX *
+ctx_init()
+{
+	EC_KEY		*ecdh = NULL;
+	SSL_CTX		*ctx = NULL;
+	int		 err = -1;
+
+	if ((ctx = SSL_CTX_new(TLSv1_2_client_method())) == NULL) {
+		log_warnx("%s: SSL_CTX_new", __func__);
+		goto error;
+	}
+
+	if (SSL_CTX_set_cipher_list(ctx,
+	    "ECDHE-ECDSA-CHACHA20-POLY1305,"
+	    "ECDHE-ECDSA-AES256-GCM-SHA384") != 1) {
+		log_warnx("%s: SSL_CTX_set_cipher", __func__);
+		goto error;
+	}
+
+	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL) {
+		log_warnx("%s: EC_KEY_new_by_curve", __func__);
+		goto error;
+	}
+
+	if (SSL_CTX_set_tmp_ecdh(ctx, ecdh) != 1) {
+		log_warnx("%s: SSL_CTX_set_tmp_ecdh", __func__);
+		goto error;
+	}
+
+	SSL_CTX_set_verify(ctx,
+	    SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, cert_verify_cb);
+
+	SSL_CTX_set_info_callback(ctx, info_cb);
+
+	err = 0;
+
+error:
+	if (err < 0) {
+		SSL_CTX_free(ctx);
+		ctx = NULL;
+	}
+	EC_KEY_free(ecdh);
+	return (ctx);
+}
+
+void
+vlink_free(struct vlink *v)
+{
+	if (v == NULL)
+		return;
+
+	pki_passport_destroy(v->passport);
+	tls_peer_free(v->peer);
+#ifndef __APPLE__
+	tapcfg_destroy(v->tapcfg);
+#endif
+
+	event_free(v->ev_reconnect);
+	event_free(v->ev_keepalive);
+	event_free(v->ev_readagain);
+
+	free(v->addr);
+	free(v->port);
+	free(v->netname);
+
+	free(v);
+}
+
+int
+vlink_connect(struct tls_peer *p, struct vlink *v)
+{
+	EC_KEY			*ecdh = NULL;
+	struct addrinfo		 hints;
+	struct addrinfo		*res = NULL;
+	struct timeval		 tv;
+	int			 ret;
+	int			 err = -1;
+	int			 flag;
+
+	tv.tv_sec = 5;
+	tv.tv_usec = 0;
+	if (event_add(v->ev_reconnect, &tv) < 0) {
+		log_warn("%s: event_add", __func__);
+		goto out;
+	}
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+
+	if ((ret = getaddrinfo(v->addr, v->port, &hints, &res)) < 0) {
+		log_warnx("%s: getaddrinfo %s", __func__, gai_strerror(ret));
+		goto out;
+	}
+
+	if ((p->sock = socket(res->ai_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+		log_warnx("%s: socket", __func__);
+		goto out;
+	}
+
+#ifndef WIN32
+	flag = 1;
+	if (setsockopt(p->sock, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(flag)) < 0 ||
+	    setsockopt(p->sock, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
+		log_warn("%s: setsockopt", __func__);
+		goto out;
+	}
+#endif
+
+	if (evutil_make_socket_nonblocking(p->sock) < 0) {
+		log_warnx("%s: evutil_make_socket_nonblocking", __func__);
+		goto out;
+	}
+
+	SSL_CTX_set_cert_store(p->ctx, v->passport->cacert_store);
+	X509_STORE_up_ref(v->passport->cacert_store);
+
+	SSL_set_SSL_CTX(p->ssl, p->ctx);
+
+	if ((SSL_use_certificate(p->ssl, v->passport->certificate)) != 1) {
+		log_warnx("%s: SSL_CTX_use_certificate", __func__);
+		goto out;
+	}
+
+	if ((SSL_use_PrivateKey(p->ssl, v->passport->keyring)) != 1) {
+		log_warnx("%s: SSL_CTX_use_PrivateKey", __func__);
+		goto out;
+	}
+
+	SSL_set_tlsext_host_name(p->ssl, vlink->passport->certinfo->network_uid);
+
+	if ((p->bev = bufferevent_openssl_socket_new(ev_base, p->sock, p->ssl,
+	    BUFFEREVENT_SSL_CONNECTING, BEV_OPT_CLOSE_ON_FREE)) == NULL) {
+		log_warnx("%s: bufferevent_openssl_socket_new", __func__);
+		goto out;
+	}
+
+	bufferevent_setcb(p->bev, peer_read_cb, NULL, peer_event_cb, p);
+	bufferevent_enable(p->bev, EV_READ | EV_WRITE);
+
+	if (bufferevent_socket_connect(p->bev, res->ai_addr, res->ai_addrlen) < 0) {
+		log_warnx("%s: bufferevent_socket_connected", __func__);
+		goto out;
+	}
+
+	err = 0;
+
+out:
+	EC_KEY_free(ecdh);
+	freeaddrinfo(res);
+
+	return (err);
+
+}
+
+void
+vlink_keepalive(evutil_socket_t fd, short event, void *arg)
+{
+	(void)fd;
+	(void)event;
+	(void)arg;
+}
+
+void
+vlink_readagain(evutil_socket_t fd, short event, void *arg)
+{
+	(void)fd;
+	(void)event;
+	(void)arg;
+}
+
+void
+vlink_reconnect(evutil_socket_t fd, short event, void *arg)
+{
+	struct vlink	*vlink = arg;
+	(void)fd;
+	(void)event;
+
+	if (vlink->peer != NULL)
+		tls_peer_free(vlink->peer);
+
+	if ((vlink->peer = tls_peer_new()) == NULL) {
+		log_warnx("%s: tls_peer_new", __func__);
+		goto error;
+	}
+	vlink->peer->vlink = vlink;
+
+	if (vlink_connect(vlink->peer, vlink) < 0) {
+		log_warnx("%s: vlink_connect", __func__);
+		goto error;
+	}
+
+	return;
+
+error:
+	vlink_reset(vlink);
+	return;
+}
+
+void
+vlink_reset(struct vlink *vlink)
+{
+	struct timeval	wait_sec = {5, 0};
+
+	printf("reconnect control...\n");
+	event_del(vlink->ev_keepalive);
+	event_del(vlink->ev_readagain);
+	event_del(vlink->ev_reconnect);
+
+	if (vlink->peer) {
+		vlink->peer->status = 0;
+
+		if (vlink->peer->bev) {
+			bufferevent_set_timeouts(vlink->peer->bev, NULL, NULL);
+			bufferevent_disable(vlink->peer->bev, EV_READ | EV_WRITE);
+		}
+	}
+
+	if (event_base_once(ev_base, -1, EV_TIMEOUT,
+	    vlink_reconnect, vlink, &wait_sec) < 0)
+		log_warnx("%s: event_base_once", __func__);
+}
+
+void
+peer_read_cb(struct bufferevent *bev, void *arg)
 {
 	json_error_t		 error;
 	json_t			*jmsg = NULL;
-	struct ctlinfo		*ctl = arg;
+	struct tls_peer		*p = arg;
 	size_t			 n_read_out;
 	const char		*action;
 	const char		*ipaddr;
@@ -241,7 +532,6 @@ client_onread_cb(struct bufferevent *bev, void *arg)
 
 		if ((msg = evbuffer_readln(bufferevent_get_input(bev),
 		    &n_read_out, EVBUFFER_EOL_LF)) == NULL) {
-			/* XXX timeout timer */
 			return;
 		}
 
@@ -263,43 +553,39 @@ client_onread_cb(struct bufferevent *bev, void *arg)
 				goto error;
 			}
 
-			switch_init(ctl->tapcfg, ctl->tapfd, vswitch_addr, ipaddr, ctl->netname);
+			switch_init(p->vlink->tapcfg, p->vlink->tapfd, vswitch_addr, ipaddr, p->vlink->netname);
 		}
-	}
 
-	json_decref(jmsg);
-	free(msg);
+		json_decref(jmsg);
+		free(msg);
+	}
 
 	return;
 
 error:
 	json_decref(jmsg);
 	free(msg);
-	control_reconnect(ctl);
 
+	vlink_reset(p->vlink);
 	return;
 }
 
 void
-client_onevent_cb(struct bufferevent *bev, short events, void *arg)
+peer_event_cb(struct bufferevent *bev, short events, void *arg)
 {
-	struct ctlinfo	*ctl = arg;
+	struct tls_peer	*p = arg;
 	unsigned long	 e;
 
 	if (events & BEV_EVENT_CONNECTED) {
 
-		printf("event connected\n");
+		printf("connected controller !\n");
 
-		if (xmit_nodeinfo(ctl) < 0)
+		event_del(p->vlink->ev_reconnect);
+
+		if (xmit_nodeinfo(p) < 0)
 			goto error;
 
-	} else if (events & (BEV_EVENT_TIMEOUT | BEV_EVENT_EOF)) {
-
-		printf("timeout | EOF\n");
-
-		goto error;
-
-	} else if (events &  BEV_EVENT_ERROR) {
+	} else if (events & (BEV_EVENT_TIMEOUT | BEV_EVENT_EOF | BEV_EVENT_ERROR)) {
 
 		printf("error: %s\n", evutil_socket_error_to_string(EVUTIL_SOCKET_ERROR()));
 
@@ -314,251 +600,15 @@ client_onevent_cb(struct bufferevent *bev, short events, void *arg)
 	return;
 
 error:
-	control_reconnect(ctl);
-
+	vlink_reset(p->vlink);
 	return;
 }
-
-struct ctlinfo *
-ctlinfo_new()
-{
-	struct ctlinfo	*ctl = NULL;
-
-	if ((ctl = malloc(sizeof(*ctl))) == NULL) {
-		log_warn("%s: malloc", __func__);
-		goto error;
-	}
-	ctl->conn = NULL;
-	ctl->tapcfg = NULL;
-	ctl->netname = NULL;
-	ctl->passport = NULL;
-	ctl->srv_addr = NULL;
-	ctl->srv_port = NULL;
-
-	return (ctl);
-
-error:
-	ctlinfo_free(ctl);
-
-	return (NULL);
-}
-
-void
-ctlinfo_free(struct ctlinfo *ctl)
-{
-	if (ctl == NULL)
-		return;
-
-	pki_passport_destroy(ctl->passport);
-	tls_conn_free(ctl->conn);
-#ifndef __APPLE__
-	tapcfg_destroy(ctl->tapcfg);
-#endif
-
-	free(ctl->srv_addr);
-	free(ctl->srv_port);
-	free(ctl->netname);
-	free(ctl);
-
-	return;
-}
-
-struct tls_conn *
-tls_conn_new(struct ctlinfo *ctl)
-{
-	struct tls_conn		*conn = NULL;
-	struct addrinfo		*res = NULL;
-	struct addrinfo		 hints;
-	EC_KEY			*ecdh = NULL;
-	unsigned long		 e;
-	int			 fd = -1;
-	int			 flag;
-	int			 ret;
-
-	if ((conn = malloc(sizeof(struct tls_conn))) == NULL) {
-		log_warn("%s: malloc", __func__);
-		goto cleanup;
-	}
-	conn->ssl = NULL;
-	conn->ctx = NULL;
-	conn->bev = NULL;
-
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_STREAM;
-	if ((ret = getaddrinfo(ctl->srv_addr, ctl->srv_port, &hints, &res)) < 0) {
-		log_warnx("%s: getaddrinfo %s", __func__, gai_strerror(ret));
-		goto cleanup;
-	}
-
-	if ((fd = socket(res->ai_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
-		log_warnx("%s: socket", __func__);
-		goto cleanup;
-	}
-
-#ifndef WIN32
-	flag = 1;
-	if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(flag)) < 0 ||
-	    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
-		log_warn("%s: setsockopt", __func__);
-		goto cleanup;
-	}
-#endif
-
-	if (evutil_make_socket_nonblocking(fd) < 0) {
-		log_warnx("%s: evutil_make_socket_nonblocking", __func__);
-		goto cleanup;
-	}
-
-	if ((conn->ctx = SSL_CTX_new(TLSv1_2_client_method())) == NULL) {
-		log_warnx("%s: SSL_CTX_new", __func__);
-		while ((e = ERR_get_error()))
-			log_warnx("%s", ERR_error_string(e, NULL));
-
-		goto cleanup;
-	}
-
-	if (SSL_CTX_set_cipher_list(conn->ctx,
-	    "ECDHE-ECDSA-CHACHA20-POLY1305,"
-	    "ECDHE-ECDSA-AES256-GCM-SHA384") != 1) {
-		log_warnx("%s: SSL_CTX_set_cipher", __func__);
-		while ((e = ERR_get_error()))
-			log_warnx("%s", ERR_error_string(e, NULL));
-		goto cleanup;
-	}
-
-	if ((ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1)) == NULL) {
-		log_warnx("%s: EC_KEY_new_by_curve", __func__);
-		goto cleanup;
-	}
-
-	SSL_CTX_set_cert_store(conn->ctx, ctl->passport->cacert_store);
-	X509_STORE_up_ref(ctl->passport->cacert_store);
-
-	if ((SSL_CTX_use_certificate(conn->ctx, ctl->passport->certificate)) != 1) {
-		log_warnx("%s: SSL_CTX_use_certificate", __func__);
-		goto cleanup;
-	}
-
-	if ((SSL_CTX_use_PrivateKey(conn->ctx, ctl->passport->keyring)) != 1) {
-		log_warnx("%s: SSL_CTX_use_PrivateKey", __func__);
-		goto cleanup;
-	}
-
-	if ((conn->ssl = SSL_new(conn->ctx)) == NULL) {
-		log_warnx("%s: SSL_new", __func__);
-		goto cleanup;
-	}
-
-	SSL_set_tlsext_host_name(conn->ssl, ctl->passport->certinfo->network_uid);
-
-	if ((conn->bev = bufferevent_openssl_socket_new(ev_base, fd, conn->ssl,
-	    BUFFEREVENT_SSL_CONNECTING, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS)) == NULL) {
-		log_warnx("%s: bufferevent_openssl_socket_new", __func__);
-		goto cleanup;
-	}
-
-	bufferevent_setcb(conn->bev,
-	    client_onread_cb, NULL, client_onevent_cb, ctl);
-	bufferevent_enable(conn->bev, EV_READ | EV_WRITE);
-
-	if (bufferevent_socket_connect(conn->bev, res->ai_addr, res->ai_addrlen)
-	    < 0) {
-		log_warnx("%s: bufferevent_socket_connected", __func__);
-		goto cleanup;
-	}
-
-	EC_KEY_free(ecdh);
-	freeaddrinfo(res);
-
-	return (conn);
-
-cleanup:
-	EC_KEY_free(ecdh);
-	tls_conn_free(conn);
-	freeaddrinfo(res);
-	close(fd);
-
-	return (NULL);
-}
-
-void
-tls_conn_free(struct tls_conn *conn)
-{
-	if (conn == NULL)
-		return;
-
-	if (conn->ssl != NULL) {
-		SSL_set_shutdown(conn->ssl, SSL_RECEIVED_SHUTDOWN);
-		SSL_shutdown(conn->ssl);
-	}
-
-	if (conn->bev != NULL)
-		bufferevent_free(conn->bev);
-
-	if (conn->ctx != NULL) {
-#if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
-    (defined (LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2070000fL)
-		// Remove the reference to the store, otherwise OpenSSL will try to free it.
-		// OpenSSL 1.0.1 doesn't have the function X509_STORE_up_ref().
-		conn->ctx->cert_store = NULL;
-#endif
-		SSL_CTX_free(conn->ctx);
-	}
-
-	free(conn);
-
-	return;
-}
-
-void
-control_connstart(evutil_socket_t fd, short what, void *arg)
-{
-	struct ctlinfo	*ctl = arg;
-	(void)fd;
-	(void)what;
-
-	if (ctl->conn != NULL) {
-		tls_conn_free(ctl->conn);
-		ctl->conn = NULL;
-	}
-
-	if ((ctl->conn = tls_conn_new(ctl)) == NULL) {
-		log_warnx("%s: tls_conn_new", __func__);
-		goto error;
-	}
-
-	return;
-
-error:
-	control_reconnect(ctl);
-
-	return;
-}
-
-void
-control_reconnect(struct ctlinfo *ctl)
-{
-	struct timeval	one_sec = {1, 0};
-
-	if (ctl->conn != NULL && ctl->conn->bev != NULL) {
-		bufferevent_disable(ctl->conn->bev, EV_READ | EV_WRITE);
-	}
-
-	if (event_base_once(ev_base, -1, EV_TIMEOUT,
-	    control_connstart, ctl, &one_sec) < 0)
-		log_warnx("%s: event_base_once", __func__);
-}
-
-// XXX need a ctlinfo list
-struct ctlinfo		*ctl = NULL;
 
 int
 control_init(const char *network_name)
 {
 	struct network		*netcf = NULL;
 
-	// XXX init globally
 	SSL_library_init();
 	SSL_load_error_strings();
 	OpenSSL_add_all_algorithms();
@@ -573,42 +623,63 @@ control_init(const char *network_name)
 		goto error;
 	}
 
-	if ((ctl = ctlinfo_new()) == NULL) {
-		log_warnx("%s: ctlinfo_new", __func__);
+	if ((vlink = malloc(sizeof(struct vlink))) == NULL) {
+		log_warnx("%s: malloc", __func__);
 		goto error;
 	}
+	vlink->passport = NULL;
+	vlink->tapcfg = NULL;
+	vlink->peer = NULL;
+	vlink->ev_reconnect = NULL;
+	vlink->ev_keepalive = NULL;
+	vlink->ev_readagain = NULL;
+	vlink->addr = NULL;
+	vlink->port = NULL;
+	vlink->netname = NULL;
 
-	if ((ctl->tapcfg = tapcfg_init()) == NULL) {
+	if ((vlink->tapcfg = tapcfg_init()) == NULL) {
 		log_warnx("%s: tapcfg_init", __func__);
 		goto error;
 	}
 
-	if ((ctl->tapfd = tapcfg_start(ctl->tapcfg, "netvirt0", 1)) < 0) {
+	if ((vlink->tapfd = tapcfg_start(vlink->tapcfg, "netvirt0", 1)) < 0) {
 		log_warnx("%s: tapcfg_start", __func__);
 	}
 
-	if ((ctl->netname = strdup(network_name)) == NULL) {
+	if ((vlink->netname = strdup(network_name)) == NULL) {
 		log_warn("%s: strdup", __func__);
 		goto error;
 	}
 
-	if ((ctl->srv_addr = strdup(netcf->ctlsrv_addr)) == NULL) {
+	if ((vlink->addr = strdup(netcf->ctlsrv_addr)) == NULL) {
 		log_warn("%s: strdup", __func__);
 		goto error;
 	}
 
-	if ((ctl->srv_port = strdup("7032")) == NULL) {
+	if ((vlink->port = strdup("7032")) == NULL) {
 		log_warn("%s: strdup", __func__);
 		goto error;
 	}
 
-	if ((ctl->passport =
+	if ((vlink->passport =
 	    pki_passport_load_from_memory(netcf->cert, netcf->pvkey, netcf->cacert)) == NULL) {
 		log_warnx("%s: pki_passport_load_from_memory", __func__);
 		goto error;
 	}
 
-	control_reconnect(ctl);
+	if ((vlink->ev_reconnect = event_new(ev_base, 0,
+	    EV_TIMEOUT, vlink_reconnect, vlink)) == NULL)
+		log_warnx("%s: event_new", __func__);
+
+	if ((vlink->ev_keepalive = event_new(ev_base, 0,
+	    EV_TIMEOUT | EV_PERSIST, vlink_keepalive, vlink)) == NULL)
+		log_warnx("%s: event_new", __func__);
+
+	if ((vlink->ev_readagain = event_new(ev_base, 0,
+	    EV_TIMEOUT, vlink_readagain, vlink)) == NULL)
+		log_warnx("%s: event_new", __func__);
+
+	event_active(vlink->ev_reconnect, EV_TIMEOUT, 0);
 
 	return (0);
 
@@ -619,5 +690,5 @@ error:
 void
 control_fini(void)
 {
-	ctlinfo_free(ctl);
+	vlink_free(vlink);
 }
