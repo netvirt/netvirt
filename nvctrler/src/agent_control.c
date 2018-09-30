@@ -306,9 +306,6 @@ tls_peer_free(struct tls_peer *p)
 		SSL_CTX_free(p->ctx);
 	}
 
-
-	SSL_CTX_free(p->ctx);
-
 	certinfo_destroy(p->ci);
 	free(p);
 }
