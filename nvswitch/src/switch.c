@@ -195,6 +195,7 @@ node_new(const char *uid)
 		goto error;
 	}
 	n->uid = strdup(uid);
+	n->peer = NULL;
 
 	return (n);
 
