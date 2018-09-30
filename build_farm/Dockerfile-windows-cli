@@ -33,6 +33,7 @@ RUN CC=i686-w64-mingw32-gcc ./configure --host=i686-w64-mingw32 --disable-ftp --
 		CPPFLAGS="-I/usr/src/libressl-${LIBRESSL_VERSION}/include/" \
                 LDFLAGS="-L/usr/src/libressl-${LIBRESSL_VERSION}/ssl/.libs/ -L/usr/src/libressl-${LIBRESSL_VERSION}/crypto/.libs/"
 RUN make
+RUN make ca-bundle
 
 
 CMD true && \

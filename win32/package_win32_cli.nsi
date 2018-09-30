@@ -73,6 +73,7 @@ SetCompressor /FINAL /SOLID lzma
 		File ${MINGW_PATH}/libgcc_s_sjlj-1.dll
 		File ${MINGW_PATH}/libstdc++-6.dll
 		File ${MINGW_PATH}/libssp-0.dll
+		File /usr/i686-w64-mingw32/lib/libwinpthread-1.dll
 		File ${LIBRESSL_PATH}/ssl/.libs/libssl-44.dll
 		File ${LIBRESSL_PATH}/crypto/.libs/libcrypto-42.dll
 		File ${LIBEVENT_PATH}/.libs/libevent-2-0-5.dll
@@ -81,6 +82,7 @@ SetCompressor /FINAL /SOLID lzma
 		File ${LIBEVENT_PATH}/.libs/libevent_openssl-2-0-5.dll
 		File ${LIBJANSSON_PATH}/src/.libs/libjansson-4.dll
 		File ${LIBCURL_PATH}/lib/.libs/libcurl-4.dll
+		File /oname=curl-ca-bundle.crt ${LIBCURL_PATH}/lib/ca-bundle.crt
 
 		CreateDirectory $APPDATA\netvirt\default
 

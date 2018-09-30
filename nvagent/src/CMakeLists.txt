@@ -104,7 +104,6 @@ elseif (WIN32)
 
 	target_link_libraries(netvirt-agent2
 		ws2_32
-		pthread
 		nv
 		${LIBS_FOR_WIN32}
 		${OPENSSL_LIBRARIES}
