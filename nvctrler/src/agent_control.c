@@ -167,7 +167,17 @@ vnetwork_free(struct vnetwork *vnet)
 		return;
 
 	pki_passport_destroy(vnet->passport);
-	SSL_CTX_free(vnet->ctx);
+
+        if (vnet->ctx != NULL) {
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
+    (defined (LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2070000fL)
+		// Remove the reference to the store, otherwise OpenSSL will try to free it.
+		// OpenSSL 1.0.1 doesn't have the function X509_STORE_up_ref().
+		vnet->ctx->cert_store = NULL;
+#endif
+		SSL_CTX_free(vnet->ctx);
+        }
+
 	free(vnet->uid);
 	free(vnet);
 }
