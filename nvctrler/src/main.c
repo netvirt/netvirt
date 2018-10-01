@@ -104,6 +104,9 @@ main(int argc, char *argv[])
 	if (json_unpack(config, "{s:s}", "ctlsrv_addr", &ctlsrv_addr) < 0)
 		fatalx("ctlsrv_addr not found in config");
 
+	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+		fatal("signal");
+
 	if ((ev_base = event_base_new()) == NULL)
 		fatalx("event_init");
 

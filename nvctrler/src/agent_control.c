@@ -196,6 +196,7 @@ node_new(const char *network_uid, const char *description, const char *uid,
 	node->description = NULL;
 	node->uid = NULL;
 	node->ipaddr = NULL;
+	node->peer = NULL;
 
 	if ((node->network_uid = strdup(network_uid)) == NULL ||
 	    (node->description = strdup(description)) == NULL ||
