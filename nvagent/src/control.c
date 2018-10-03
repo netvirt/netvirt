@@ -694,7 +694,7 @@ control_init(const char *network_name)
 	    EV_TIMEOUT, vlink_readagain, vlink)) == NULL)
 		log_warnx("%s: event_new", __func__);
 
-	event_active(vlink->ev_reconnect, EV_TIMEOUT, 0);
+	vlink_reset(vlink);
 
 	return (0);
 

@@ -691,8 +691,7 @@ switch_init(tapcfg_t *tapcfg, int tapfd, const char *vswitch_addr, const char *i
 	event_add(ev_iface, NULL);
 #endif
 
-
-	event_active(vlink->ev_reconnect, EV_TIMEOUT, 0);
+	vlink_reconnect(vlink);
 
 	return (0);
 
