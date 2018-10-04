@@ -120,6 +120,7 @@ static void		 vlink_free(struct vlink *);
 static void		 vlink_keepalive(evutil_socket_t, short, void *);
 static void		 vlink_reset(evutil_socket_t, short, void *);
 static void		 vlink_reconnect(struct vlink *);
+static void		 vlink_stop(struct vlink *);
 static int		 vlink_connect(struct tls_peer *, struct vlink *);
 static int		 vlink_send(struct tls_peer *, enum nv_type, const void *, size_t);
 
@@ -474,11 +475,8 @@ error:
 }
 
 void
-vlink_reconnect(struct vlink *vlink)
+vlink_stop(struct vlink *vlink)
 {
-	struct timeval	wait_sec = {5, 0};
-
-	printf("reconnect...\n");
 	event_del(vlink->ev_reconnect);
 	event_del(vlink->ev_keepalive);
 	event_del(vlink->ev_readagain);
@@ -491,7 +489,16 @@ vlink_reconnect(struct vlink *vlink)
 			bufferevent_disable(vlink->peer->bev, EV_READ | EV_WRITE);
 		}
 	}
+}
 
+void
+vlink_reconnect(struct vlink *vlink)
+{
+	struct timeval	wait_sec = {5, 0};
+
+	vlink_stop(vlink);
+
+	printf("reconnect to switch...\n");
 	if (event_base_once(ev_base, -1, EV_TIMEOUT,
 	    vlink_reset, vlink, &wait_sec) < 0)
 		log_warnx("%s: event_base_once", __func__);
@@ -703,6 +710,9 @@ cleanup:
 void
 switch_fini(void)
 {
+	if (vlink != NULL)
+		vlink_stop(vlink);
+
 	vlink_free(vlink);
 	if (ev_iface != NULL)
 		event_free(ev_iface);
