@@ -444,25 +444,25 @@ vlink_keepalive(evutil_socket_t fd, short event, void *arg)
 void
 vlink_reset(evutil_socket_t fd, short what, void *arg)
 {
-	struct vlink	*vlink = arg;
+	struct vlink	*v = arg;
 	(void)fd;
 	(void)what;
 
 	printf("vlink reset\n");
-	event_del(vlink->ev_reconnect);
-	event_del(vlink->ev_keepalive);
-	if (vlink->peer != NULL) {
-		tls_peer_free(vlink->peer);
-		vlink->peer = NULL;
+	event_del(v->ev_reconnect);
+	event_del(v->ev_keepalive);
+	if (v->peer != NULL) {
+		tls_peer_free(v->peer);
+		v->peer = NULL;
 	}
 
-	if ((vlink->peer = tls_peer_new()) == NULL) {
+	if ((v->peer = tls_peer_new()) == NULL) {
 		log_warnx("%s: tls_peer_new", __func__);
 		goto error;
 	}
-	vlink->peer->vlink = vlink;
+	v->peer->vlink = v;
 
-	if (vlink_connect(vlink->peer, vlink) < 0) {
+	if (vlink_connect(v->peer, v) < 0) {
 		log_warnx("%s: vlink_connect", __func__);
 		goto error;
 	}
@@ -470,7 +470,7 @@ vlink_reset(evutil_socket_t fd, short what, void *arg)
 	return;
 
 error:
-	vlink_reconnect(vlink);
+	vlink_reconnect(v);
 	return;
 }
 
@@ -494,14 +494,15 @@ vlink_stop(struct vlink *vlink)
 void
 vlink_reconnect(struct vlink *vlink)
 {
-	struct timeval	wait_sec = {5, 0};
+	struct timeval	tv;
 
 	vlink_stop(vlink);
 
 	printf("reconnect to switch...\n");
-	if (event_base_once(ev_base, -1, EV_TIMEOUT,
-	    vlink_reset, vlink, &wait_sec) < 0)
-		log_warnx("%s: event_base_once", __func__);
+
+	if (event_add(vlink->ev_reconnect, &tv) < 0) {
+		log_warn("%s: event_add", __func__);
+	}
 }
 
 int
@@ -714,6 +715,8 @@ switch_fini(void)
 		vlink_stop(vlink);
 
 	vlink_free(vlink);
+	vlink = NULL;
+
 	if (ev_iface != NULL)
 		event_free(ev_iface);
 }

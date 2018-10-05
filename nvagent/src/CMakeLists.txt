@@ -91,7 +91,6 @@ if (APPLE)
 		event_core
 		event_extra
 		event_openssl
-		event_pthreads
 	)
 elseif (WIN32)
 
