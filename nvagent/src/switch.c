@@ -500,6 +500,8 @@ vlink_reconnect(struct vlink *vlink)
 
 	printf("reconnect to switch...\n");
 
+	tv.tv_sec = 5;
+	tv.tv_usec = 0;
 	if (event_add(vlink->ev_reconnect, &tv) < 0) {
 		log_warn("%s: event_add", __func__);
 	}
