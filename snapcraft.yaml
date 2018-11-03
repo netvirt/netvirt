@@ -1,0 +1,37 @@
+name: netvirt-agent2
+version: 2.0.1
+summary: NetVirt a is network virtualization platform.
+description: |
+  NetVirt a is network virtualization platform.
+
+  This snap contains the NetVirt agent.
+
+confinement: strict
+grade: devel
+
+apps:
+  netvirt-agent2:
+    command: netvirt-agent2
+    plugs:
+      - network
+      - network-bind
+      - network-control
+
+parts:
+  netvirt-agent2:
+    plugin: cmake
+    source: .
+    source-type: git
+    build-packages:
+      - build-essential
+      - scons
+      - cmake
+      - libevent-dev
+      - libssl-dev
+      - libjansson-dev
+      - libcurl4-openssl-dev
+    override-build: |
+      cd $SNAPCRAFT_PART_SRC/tapcfg/
+      ./buildall.sh || true
+      cd -
+      snapcraftctl build
