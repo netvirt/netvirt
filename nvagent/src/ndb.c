@@ -30,6 +30,7 @@
 
 #include <jansson.h>
 
+#include <log.h>
 #include <pki.h>
 
 #include "agent.h"
@@ -194,7 +195,11 @@ ndb_network_free(struct network *n)
 	if (n == NULL)
 		return;
 
-	free(n);
+	free(n->name);
+	free(n->ctlsrv_addr);
+	free(n->cert);
+	free(n->pvkey);
+	free(n->cacert);
 }
 
 struct network *
@@ -231,8 +236,21 @@ ndb_network_add(struct network *netcf, const char *cert, const char *cacert)
 int
 ndb_network_remove(const char *network_name)
 {
-	(void)network_name;
+	struct network	*n;
+
+	if ((n = ndb_network(network_name)) == NULL) {
+		log_warnx("%s: ndb_network", __func__);
+		goto err;
+	}
+
+	RB_REMOVE(network_tree, &networks, n);
+	ndb_network_free(n);
+	ndb_save();
+
 	return (0);
+
+err:
+	return (-1);
 }
 
 struct network *

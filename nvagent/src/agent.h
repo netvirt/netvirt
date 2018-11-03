@@ -46,6 +46,7 @@ int		 ndb_init(void);
 void		 ndb_fini(void);
 void		 ndb_networks(void);
 struct network	*ndb_network(const char *);
+int		 ndb_network_remove(const char *);
 int		 ndb_provisioning(const char *, const char *);
 
 int		 control_init(const char *);

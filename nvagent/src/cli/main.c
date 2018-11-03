@@ -38,6 +38,7 @@ usage(void)
 	    "\t-k\tConfigure new network [provisioning key]\n"
 	    "\t-l\tList networks\n"
 	    "\t-c\tConnect [network name]\n"
+	    "\t-d\tDelete [network name]\n"
 	    "\t-h\thelp\n", __progname);
 	exit(1);
 }
@@ -58,11 +59,12 @@ main(int argc, char *argv[])
 	struct event	*ev_sigterm;
 	int		 ch;
 	int		 list_networks = 0;
+	int		 del_network = 0;
 	char		*provcode = NULL;
 	char		*network_name = NULL;
 	char		 new_name[64];
 
-	while ((ch = getopt(argc, argv, "hk:lc:")) != -1) {
+	while ((ch = getopt(argc, argv, "hk:lc:d:")) != -1) {
 
 		switch (ch) {
 		case 'k':
@@ -72,6 +74,10 @@ main(int argc, char *argv[])
 			list_networks = 1;
 			break;
 		case 'c':
+			network_name = optarg;
+			break;
+		case 'd':
+			del_network = 1;
 			network_name = optarg;
 			break;
 		case 'h':
@@ -102,6 +108,11 @@ main(int argc, char *argv[])
 
 	if (list_networks) {
 		ndb_networks();
+		exit(0);
+	}
+
+	if (del_network) {
+		ndb_network_remove(network_name);
 		exit(0);
 	}
 
