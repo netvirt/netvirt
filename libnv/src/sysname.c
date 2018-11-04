@@ -72,7 +72,7 @@ uname(struct utsname *name) {
 char *
 get_sysname()
 {
-        struct utsname	 buf;
+	struct utsname	 buf;
 	char		*sysname = NULL;
 
         if (uname(&buf) < 0) {
