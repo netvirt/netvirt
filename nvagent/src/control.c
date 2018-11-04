@@ -45,6 +45,7 @@
 #include <pki.h>
 #include <log.h>
 #include <tapcfg.h>
+#include <sysname.h>
 
 #include "agent.h"
 
@@ -145,6 +146,7 @@ xmit_nodeinfo(struct tls_peer *p)
 	const char	*lladdr;
 	char		 lladdr_str[18];
 	char		*lipaddr = NULL;
+	char		*sysname = NULL;
 	char		*msg = NULL;
 
 	ret = -1;
@@ -152,6 +154,11 @@ xmit_nodeinfo(struct tls_peer *p)
 	if ((lladdr = tapcfg_iface_get_hwaddr(p->vlink->tapcfg, &lladdr_len))
 	    == NULL) {
 		log_warnx("%s: tapcfg_iface_get_hwaddr", __func__);
+		goto error;
+	}
+
+	if ((sysname = get_sysname()) == NULL) {
+		log_warnx("%s: get_sysname", __func__);
 		goto error;
 	}
 
@@ -172,6 +179,7 @@ xmit_nodeinfo(struct tls_peer *p)
 	if ((jmsg = json_pack("{s:s,s:s,s:s}",
 	    "action", "nodeinfo",
 	    "local_ipaddr", lipaddr,
+	    "sysname", sysname,
 	    "lladdr", lladdr_str)) == NULL) {
 		log_warnx("%s: json_pack", __func__);
 		goto error;
@@ -199,6 +207,7 @@ error:
 	json_decref(jmsg);
 	free(msg);
 	free(lipaddr);
+	free(sysname);
 
 	return (ret);
 }

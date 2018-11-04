@@ -24,6 +24,7 @@ set(NV_SRCS
 	inet.c
 	log.c
 	pki.c
+	sysname.c
 
 	${compat_src}
 )
