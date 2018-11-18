@@ -622,7 +622,7 @@ node_create(const char *msg, const char *apikey)
 	char		*ipaddress = NULL;
 	char		*subnet = NULL;
 	char		*netmask = NULL;
-	unsigned char	*ippool_bin = NULL, *tmp_pool = NULL;
+	unsigned char	*tmp_pool = NULL;
 	char		 provlink[512];
 
 	ret = -1;
@@ -646,14 +646,15 @@ node_create(const char *msg, const char *apikey)
 
 
 	if (dao_network_get_ippool(network_description, &network_uid,
-	    &subnet, &netmask, &ippool_bin) < 0) {
+	    &subnet, &netmask, &tmp_pool) < 0) {
 		log_warnx("%s: dao_network_get_ippool", __func__);
 		goto cleanup;
 	}
 
 	ippool = ippool_new(subnet, netmask);
-	tmp_pool = ippool->pool;
-	ippool->pool = (uint8_t*)ippool_bin;
+	free(ippool->pool);
+	ippool->pool = (uint8_t*)tmp_pool;
+	tmp_pool = NULL;
 	pool_size = (ippool->hosts+7)/8 * sizeof(uint8_t);
 	ipaddress = ippool_get_ip(ippool);
 
@@ -681,7 +682,6 @@ node_create(const char *msg, const char *apikey)
 		log_warnx("%s: dao_network_update_ippool", __func__);
 		goto cleanup;
 	}
-	ippool->pool = tmp_pool;
 
 	/* forward new node to nvswitch */
 	char	*fwd_resp_str = NULL;
@@ -727,7 +727,6 @@ cleanup:
 	free(network_uid);
 	free(subnet);
 	free(netmask);
-	free(ippool_bin);
 	free(client_id);
 	free(uid);
 	free(key);
