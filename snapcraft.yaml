@@ -7,7 +7,7 @@ description: |
   This snap contains the NetVirt agent.
 
 confinement: strict
-grade: devel
+grade: stable
 
 apps:
   netvirt-agent2:
