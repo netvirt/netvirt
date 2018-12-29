@@ -285,8 +285,6 @@ cert_verify_cb(int ok, X509_STORE_CTX *store)
 	name = X509_get_subject_name(cert);
 	X509_NAME_get_text_by_NID(name, NID_commonName, buf, 256);
 
-	printf("CN: %s\n", buf);
-
 	return (ok);
 }
 
@@ -298,8 +296,6 @@ info_cb(const SSL *ssl, int where, int ret)
 
 	if ((where & SSL_CB_HANDSHAKE_DONE) == 0)
 		return;
-
-	printf("connected to controller !\n");
 }
 
 SSL_CTX *
@@ -509,7 +505,7 @@ vlink_reset(struct vlink *vlink)
 {
 	struct timeval	wait_sec = {5, 0};
 
-	printf("reconnect control...\n");
+	printf("connecting to the controller...\n");
 	event_del(vlink->ev_keepalive);
 	event_del(vlink->ev_readagain);
 	event_del(vlink->ev_reconnect);
@@ -592,7 +588,7 @@ peer_event_cb(struct bufferevent *bev, short events, void *arg)
 
 	if (events & BEV_EVENT_CONNECTED) {
 
-		printf("connected controller !\n");
+		printf("connected.\n");
 
 		event_del(p->vlink->ev_reconnect);
 
@@ -610,8 +606,6 @@ peer_event_cb(struct bufferevent *bev, short events, void *arg)
 			goto error;
 
 	} else if (events & (BEV_EVENT_TIMEOUT | BEV_EVENT_EOF | BEV_EVENT_ERROR)) {
-
-		printf("error: %s\n", evutil_socket_error_to_string(EVUTIL_SOCKET_ERROR()));
 
 		while ((e = bufferevent_get_openssl_error(bev)) > 0) {
 			log_warnx("%s: TLS error: %s", __func__,

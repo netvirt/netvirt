@@ -94,7 +94,6 @@ struct certinfo
 		goto error;
 	}
 
-	printf("cn: %s\n", cn);
 	if ((evhttp_parse_query_str(cn, &headers)) < 0) {
 		log_warnx("%s: evhttp_parse_query_str", __func__);
 		goto error;

@@ -346,8 +346,6 @@ cert_verify_cb(int ok, X509_STORE_CTX *store)
 	name = X509_get_subject_name(cert);
 	X509_NAME_get_text_by_NID(name, NID_commonName, buf, 256);
 
-	printf("CN: %s\n", buf);
-
 	return (ok);
 }
 
@@ -359,8 +357,6 @@ info_cb(const SSL *ssl, int where, int ret)
 
 	if ((where & SSL_CB_HANDSHAKE_DONE) == 0)
 		return;
-
-	printf("connected !\n");
 }
 
 #if defined(_WIN32) || defined(__APPLE__)
@@ -448,7 +444,6 @@ vlink_reset(evutil_socket_t fd, short what, void *arg)
 	(void)fd;
 	(void)what;
 
-	printf("vlink reset\n");
 	event_del(v->ev_reconnect);
 	event_del(v->ev_keepalive);
 	if (v->peer != NULL) {
@@ -498,7 +493,7 @@ vlink_reconnect(struct vlink *vlink)
 
 	vlink_stop(vlink);
 
-	printf("reconnect to switch...\n");
+	printf("connecting to the virtual network...\n");
 
 	tv.tv_sec = 5;
 	tv.tv_usec = 0;
@@ -531,33 +526,10 @@ peer_event_cb(struct bufferevent *bev, short events, void *arg)
 	struct timeval	 tv;
 	unsigned long	 e;
 
-	printf("event cb\n");
-
-	if (events & (BEV_EVENT_READING)) {
-		printf("timeout reading\n");
-	}
-
-	if (events & (BEV_EVENT_WRITING)) {
-		printf("timeout writing\n");
-	}
-
-	if (events & BEV_EVENT_TIMEOUT) {
-		printf("timeout\n");
-	}
-
-	if (events & BEV_EVENT_ERROR) {
-		printf("bev event error\n");
-		printf("err: %s\n", evutil_socket_error_to_string(EVUTIL_SOCKET_ERROR()));
-
-	}
-
-	if (events & BEV_EVENT_EOF) {
-		printf("bev eof\n");
-	}
-
 	if (events & BEV_EVENT_CONNECTED) {
 
-		printf("connected?\n");
+		printf("connected.\n");
+
 		p->status = 1;
 		event_del(p->vlink->ev_reconnect);
 
