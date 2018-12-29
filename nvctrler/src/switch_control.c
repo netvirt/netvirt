@@ -172,6 +172,9 @@ on_read_cb(struct bufferevent *bev, void *arg)
 				log_warnx("%s: update_node_status", __func__);
 				goto error;
 			}
+		} else if (strcmp(action, "keepalive") == 0) {
+			bufferevent_write(bev, msg, strlen(msg));
+			bufferevent_write(bev, "\n", strlen("\n"));
 		} else
 			goto error;
 
@@ -218,6 +221,7 @@ on_connected_cb(struct bufferevent *bev, void *arg)
 void
 on_event_cb(struct bufferevent *bev, short events, void *arg)
 {
+	struct timeval		 tv;
 	struct session_info	*session;
 	unsigned long		 e;
 
@@ -227,8 +231,14 @@ on_event_cb(struct bufferevent *bev, short events, void *arg)
 	e = 0;
 
 	if (events & BEV_EVENT_CONNECTED) {
+
+		tv.tv_sec = 5;
+		tv.tv_usec = 0;
+		bufferevent_set_timeouts(bev, &tv, NULL);
+
 		on_connected_cb(bev, arg);
-	} else if (events & (BEV_EVENT_TIMEOUT|BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
+
+	} else if (events & (BEV_EVENT_TIMEOUT | BEV_EVENT_EOF | BEV_EVENT_ERROR)) {
 		log_warnx("%s: event (%x)", __func__, events);
 		while ((e = bufferevent_get_openssl_error(bev)) > 0) {
 			log_warnx("%s: %s", __func__,

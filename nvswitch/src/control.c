@@ -718,6 +718,12 @@ out:
 void
 vlink_keepalive(evutil_socket_t fd, short event, void *arg)
 {
+	struct vlink	*v = arg;
+	const char	*k = "{\"action\": \"keepalive\"}\n";
+	(void)fd;
+	(void)event;
+
+	bufferevent_write(v->peer->bev, k, strlen(k));
 }
 
 void
@@ -859,18 +865,32 @@ void
 peer_event_cb(struct bufferevent *bev, short events, void *arg)
 {
 	struct tls_peer	*p = arg;
+	struct timeval	 tv;
 	unsigned long	 e;
 
 	if (events & BEV_EVENT_CONNECTED) {
 
-		printf("connected controller!\n");
+		printf("connected to controller!\n");
 
 		event_del(p->vlink->ev_reconnect);
+
+		tv.tv_sec = 5;
+		tv.tv_usec = 0;
+		bufferevent_set_timeouts(p->bev, &tv, NULL);
+
+
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
+		if (event_add(p->vlink->ev_keepalive, &tv) < 0) {
+			log_warn("%s: event_add", __func__);
+		}
 
 		control_init_done = 0;
 		request_network_list(bev);
 
 	} else if (events & (BEV_EVENT_TIMEOUT | BEV_EVENT_EOF | BEV_EVENT_ERROR)) {
+
+		printf("disconnected from controller\n");
 
 		while ((e = bufferevent_get_openssl_error(bev)) > 0)
 			log_warnx("%s: ssl error: %s", __func__,
