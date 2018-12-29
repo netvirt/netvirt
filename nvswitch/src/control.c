@@ -732,6 +732,8 @@ vlink_reconnect(evutil_socket_t fd, short event, void *arg)
 	(void)fd;
 	(void)event;
 
+	printf("vlink reconnect\n");
+
 	if (vlink->peer != NULL)
 		tls_peer_free(vlink->peer);
 
