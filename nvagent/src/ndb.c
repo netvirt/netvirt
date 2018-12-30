@@ -195,11 +195,7 @@ ndb_network_free(struct network *n)
 	if (n == NULL)
 		return;
 
-	free(n->name);
-	free(n->ctlsrv_addr);
-	free(n->cert);
-	free(n->pvkey);
-	free(n->cacert);
+	free(n);
 }
 
 struct network *
