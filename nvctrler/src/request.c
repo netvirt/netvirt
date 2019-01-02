@@ -554,8 +554,8 @@ regions_list(const char *apikey, char **resp)
 		log_warnx("%s: json_array", __func__);
 		goto cleanup;
 	}
-	json_object_set_new(region, "name", json_string("New York 1"));
-	json_object_set_new(region, "tag", json_string("NY1"));
+	json_object_set_new(region, "name", json_string("Toronto 1"));
+	json_object_set_new(region, "tag", json_string("TORONTO1"));
 	json_array_append_new(array, region);
 
 /*

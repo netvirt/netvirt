@@ -843,7 +843,7 @@ restapi_init(json_t *config, struct event_base *evbase)
 		errx(1, "evhttp_set_cb /v1/regions");
 
 	if ((handle = evhttp_bind_socket_with_handle(http,
-	    "0.0.0.0", 8080)) == NULL)
+	    "127.0.0.1", 8080)) == NULL)
 		errx(1, "evhttp_bind_socket_with_handle");
 }
 

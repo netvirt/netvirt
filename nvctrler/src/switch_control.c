@@ -385,7 +385,7 @@ controller_init()
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
-	getaddrinfo("0.0.0.0", "9093", &hints, &res);
+	getaddrinfo("127.0.0.1", "9093", &hints, &res);
 
 	if ((listener = evconnlistener_new_bind(ev_base, accept_conn_cb, NULL,
 	    LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1,
