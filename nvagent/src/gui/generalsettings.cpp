@@ -17,7 +17,7 @@
 #include <QDebug>
 #include <QMovie>
 #include <QUrl>
-#include <QNetworkRequest>
+#include <QtNetwork/QNetworkRequest>
 #include "generalsettings.h"
 
 GeneralSettings::GeneralSettings(MainDialog *dialog)
@@ -37,8 +37,6 @@ GeneralSettings::GeneralSettings(MainDialog *dialog)
 		this, SLOT(slotCheckUpdate()));
 
 	movie = new QMovie(":/rc/loader.gif");
-
-	ui.versionLabel->setText(QString("Version: %1.").arg(NVAGENT_VERSION));
 
 	emit this->slotCheckUpdate();
 
@@ -63,7 +61,6 @@ void GeneralSettings::slotDownloadFinished(QNetworkReply *reply)
 
 	StableVersion = reply->readAll();
 	StableVersion = StableVersion.simplified();
-	CurrentVersion = NVAGENT_VERSION;
 
 	if (StableVersion > CurrentVersion) {
 		ui.updateLabel->setText(QString("<html><head/><body><p>The version %1 is available, please visit <a href=\"https://www.dynvpn.com/download\" target=\"_blank\"><span style=\" text-decoration: underline; color:#0000ff;\">dynvpn.com/download</span></a> to update your client.</p></body></html>").arg(StableVersion));

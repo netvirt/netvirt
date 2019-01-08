@@ -24,31 +24,11 @@
 #include "generalsettings.h"
 #include "wizarddialog.h"
 
-#include <logger.h>
-
-#include "../config.h"
-#include "../agent.h"
-
-struct agent_cfg *agent_cfg;
-
 /* Hack to access this from static method */
 static void *obj_this;
 
 MainDialog::MainDialog()
 {
-	/* Check if the agent is provisioned */
-	/* FIXME check harder */
-	char *ip_conf = agent_config_get_fullname("default", "nvagent.ip");
-	QFile file(ip_conf);
-	if (!file.exists()) {
-		this->wizardDialog = new WizardDialog(this);
-		this->wizardDialog->show();
-		this->wizardDialog->raise();
-	}
-	else {
-		NowRun();
-		this->raise();
-	}
 }
 
 MainDialog::~MainDialog()
@@ -91,20 +71,6 @@ void MainDialog::NowRun()
 	createTrayIcon();
 	setTrayIcon();
 	trayIcon->show();	
-	
-	agent_cfg = (struct agent_cfg*)calloc(1, sizeof(struct agent_cfg));
-	agent_cfg->ev.on_log = this->onLog;
-
-	if (agent_config_init(agent_cfg)) {
-		jlog(L_ERROR, "agent_config_init failed");
-		return;
-	}
-
-	if (agent_cfg->auto_connect != 0) {
-		emit this->generalSettings->slotCheckAutoConnect();
-		emit accountSettings->slotConnWaiting();
-		emit this->slotFireConnection();
-	}
 }
 
 void MainDialog::slotWizardCancel()
@@ -121,21 +87,10 @@ void MainDialog::slotWizardNext()
 
 void MainDialog::slotToggleAutoConnect(int checked)
 {
-	agent_config_toggle_auto_connect(checked);
 }
 
 void MainDialog::slotFireConnection(void)
 {
-	if (this->ProvKey.length() == 36) {
-		const char *str = this->ProvKey.toStdString().c_str();
-		agent_cfg->prov_code = strdup(str);
-	}
-
-	agent_cfg->ev.on_connect = this->onConnect;
-	agent_cfg->ev.on_disconnect = this->onDisconnect;
-
-	jlog(L_NOTICE, "connecting...");
-	agent_init_async(agent_cfg);
 }
 
 void MainDialog::slotResetAccount()
@@ -145,8 +100,6 @@ void MainDialog::slotResetAccount()
 					QMessageBox::Yes|QMessageBox::No);
 
 	if (reply == QMessageBox::Yes) {
-		QFile file(agent_cfg->ip_conf);
-		file.remove();
 		qApp->quit();
 	}
 }

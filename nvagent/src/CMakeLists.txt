@@ -5,6 +5,13 @@ add_subdirectory(tests)
 
 option (WITH_GUI "WITH_GUI" ON)
 
+if(APPLE AND EXISTS /usr/local/opt/qt5)
+	# Homebrew installs Qt5 (up to at least 5.9.1) in
+	# /usr/local/qt5, ensure it can be found by CMake since
+	# it is not in the default /usr/local prefix.
+	list(APPEND CMAKE_PREFIX_PATH "/usr/local/opt/qt5")
+endif()
+
 if (APPLE)
   if (NOT OPENSSL_ROOT_DIR)
     set(OPENSSL_ROOT_DIR /usr/local/opt/openssl)
@@ -37,7 +44,7 @@ link_directories("${TAPCFG_ROOT_DIR}/build")
 
 if (WITH_GUI)
 	add_definitions( -DQT_EDITION=QT_EDITION_OPENSOURCE )
-	find_package(Qt4 COMPONENTS QtCore QtGui QtNetwork REQUIRED)
+	find_package(Qt5 COMPONENTS Widgets Core Gui Network REQUIRED)
 	set(gui_sources
                 gui/main.cpp
 		gui/maindialog.cpp
@@ -53,17 +60,16 @@ if (WITH_GUI)
 		gui/generalsettings.h
 		gui/wizarddialog.h)
 
-	QT4_ADD_RESOURCES(gui_rccs_srcs "./gui/nvagent.qrc")
-	QT4_WRAP_CPP(gui_headers_moc ${gui_headers})
-	QT4_WRAP_UI(gui_form_headers
+	QT5_ADD_RESOURCES(gui_rccs_srcs "./gui/nvagent.qrc")
+	QT5_WRAP_CPP(gui_headers_moc ${gui_headers})
+	QT5_WRAP_UI(gui_form_headers
 			gui/maindialog.ui
 			gui/accountsettings.ui
 			gui/logsettings.ui
 			gui/generalsettings.ui
 			gui/wizarddialog.ui)
 
-	include(${QT_USE_FILE})
-	add_definitions(${QT_DEFINITIONS})
+	add_definitions(${QT5_DEFINITIONS})
 
 	add_executable(netvirt-agent2 MACOSX_BUNDLE WIN32 ${nvagent_sources} ${gui_sources} ${gui_headers_moc} ${gui_form_headers} ${gui_rccs_srcs} ${win_rc_icon})
 
@@ -71,7 +77,7 @@ if (WITH_GUI)
 		set_target_properties(netvirt-agent2 PROPERTIES LINK_FLAGS "-mwindows")
 	endif()
 
-	target_link_libraries(netvirt-agent2 ${QT_LIBRARIES})
+	target_link_libraries(netvirt-agent2 Qt5::Widgets Qt5::Network ${QT5_LIBRARIES})
 
 else()
 	set(cli_sources
@@ -135,7 +141,7 @@ if (APPLE)
             file(WRITE \"\${CMAKE_INSTALL_PREFIX}/${qtconf_dest_dir}/qt.conf\" \"\")
             " COMPONENT Runtime)
         install(DIRECTORY ${CMAKE_SOURCE_DIR}/osx/NetVirt-Agent-launcher.app DESTINATION . USE_SOURCE_PERMISSIONS COMPONENT Runtime)
-        set(DIRS ${QT_LIBRARY_DIRS})
+        set(DIRS ${QT5_LIBRARY_DIRS})
         install(CODE "
             file(GLOB_RECURSE QTPLUGINS
               \"\${CMAKE_INSTALL_PREFIX}/${library_dest_dir}/plugins/*${CMAKE_SHARED_LIBRARY_SUFFIX}\")

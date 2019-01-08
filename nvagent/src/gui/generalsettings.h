@@ -17,8 +17,8 @@
 #ifndef GENERALSETTINGS_H
 #define GENERALSETTINGS_H
 
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
+#include <QtNetwork/QNetworkAccessManager>
+#include <QtNetwork/QNetworkReply>
 #include <QDialog>
 
 #include "maindialog.h"

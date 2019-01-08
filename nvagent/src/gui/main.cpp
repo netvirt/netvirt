@@ -15,7 +15,7 @@
  */
 
 #include <QApplication>
-#include <QCleanlooksStyle>
+#include <QStyle>
 
 #if __APPLE__
 #include <libgen.h>
@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 	#endif
 
 	QApplication app(argc, argv);
-	app.setStyle(new QCleanlooksStyle());
+//	app.setStyle(new QCleanlooksStyle());
 
 	MainDialog s;
 
