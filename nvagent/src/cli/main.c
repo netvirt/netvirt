@@ -147,8 +147,12 @@ main(int argc, char *argv[])
 		if (ndb_provisioning(provcode, new_name) < 0)
 			usage();
 
-	} else if (network_name)
-		control_init(network_name);
+	} else if (network_name) {
+		if (control_init(network_name) == -1) {
+			fprintf(stderr, "%s: control_init\n", __func__);
+			exit(-1);
+		}
+	}
 
 	event_base_dispatch(ev_base);
 

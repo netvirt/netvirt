@@ -662,6 +662,7 @@ control_init(const char *network_name)
 
 	if ((vlink->tapfd = tapcfg_start(vlink->tapcfg, "netvirt0", 1)) < 0) {
 		log_warnx("%s: tapcfg_start", __func__);
+		goto error;
 	}
 
 	if ((vlink->netname = strdup(network_name)) == NULL) {
