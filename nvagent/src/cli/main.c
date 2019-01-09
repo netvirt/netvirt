@@ -137,7 +137,7 @@ main(int argc, char *argv[])
 
 	char *p;
 	if (provcode != NULL) {
-		printf("Give this network a name: ");
+		printf("Give this network the name you want: ");
 		if (fgets(new_name, sizeof(new_name)-1, stdin) == NULL)
 			errx(0, "fgets");
 
