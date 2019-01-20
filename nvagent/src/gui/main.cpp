@@ -35,6 +35,7 @@ int main(int argc, char *argv[])
 	#endif
 
 	QApplication app(argc, argv);
+	QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 	app.setStyle("fusion");
 
 	MainDialog s;

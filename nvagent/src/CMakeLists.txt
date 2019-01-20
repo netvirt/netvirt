@@ -75,6 +75,8 @@ if (WITH_GUI)
 
 	if (WIN32)
 		set_target_properties(netvirt-agent2 PROPERTIES LINK_FLAGS "-mwindows")
+	elseif (APPLE)
+		set_target_properties(netvirt-agent2 PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/gui/Info.plist)
 	endif()
 
 	target_link_libraries(netvirt-agent2 Qt5::Widgets Qt5::Network ${QT5_LIBRARIES})
