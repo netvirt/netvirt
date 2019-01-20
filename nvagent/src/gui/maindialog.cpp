@@ -29,6 +29,13 @@ static void *obj_this;
 
 MainDialog::MainDialog()
 {
+/*
+	this->wizardDialog = new WizardDialog(this);
+	this->wizardDialog->show();
+	this->wizardDialog->raise();
+*/
+	NowRun();
+	this->raise();
 }
 
 MainDialog::~MainDialog()

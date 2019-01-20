@@ -44,6 +44,7 @@ GeneralSettings::GeneralSettings(MainDialog *dialog)
 
 void GeneralSettings::slotCheckUpdate()
 {
+/*
 	ui.updateLabel->setMovie(movie);
 	movie->start();
 
@@ -51,6 +52,7 @@ void GeneralSettings::slotCheckUpdate()
 	QNetworkRequest request(url);
 	QNetworkReply *reply = manager.get(request);
 	currentDownloads.append(reply);
+*/
 }
 
 void GeneralSettings::slotDownloadFinished(QNetworkReply *reply)
