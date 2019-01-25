@@ -121,12 +121,12 @@ response_node_delete(json_t *jmsg)
 
 		if ((vnet = vnetwork_find(network_uid)) == NULL) {
 			log_warnx("%s: vnetwork_find", __func__);
-			return (-1);
+			return (0);
 		}
 
 		if ((node = vnetwork_find_node(vnet, uid)) == NULL) {
 			log_warnx("%s: vnetwork_find_node (%s)", __func__, uid);
-			return (-1);
+			return (0);
 		}
 
 		vnetwork_del_node(vnet, node);
@@ -169,7 +169,7 @@ response_network_delete(json_t *jmsg)
 
 		if ((vnet = vnetwork_find(network_uid)) == NULL) {
 			log_warnx("%s: vnetwork_find", __func__);
-			return (-1);
+			return (0);
 		}
 
 		vnetwork_del(vnet);
