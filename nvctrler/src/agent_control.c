@@ -646,7 +646,9 @@ error:
 void
 listen_error_cb(struct evconnlistener *listener, void *arg)
 {
-	printf("listen_error_cb\n");
+	int	 err = EVUTIL_SOCKET_ERROR();
+	fprintf(stdout, "%s: %s\n", __func__,
+	    evutil_socket_error_to_string(err));
 }
 
 void
