@@ -6,10 +6,10 @@
 	#include <stdio.h>
 	#include <sys/utsname.h>
 #else
-#include <WinSock2.h>
-#include <Windows.h>
+#include <winsock2.h>
+#include <windows.h>
 #include <stdio.h>
-#include "utsname.h"
+#include "sysname.h"
 
 #define UTSNAME_LENGTH 256
 struct utsname {
