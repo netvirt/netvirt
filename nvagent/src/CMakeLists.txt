@@ -36,7 +36,8 @@ endif()
 set(nvagent_sources
 	control.c
 	ndb.c
-	switch.c)
+	switch.c
+	sysname.c)
 
 message(STATUS "CMAKE_SOURCE_DIR" ${CMAKE_SOURCE_DIR})
 
