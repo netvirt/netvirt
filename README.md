@@ -12,3 +12,23 @@ multi-tenant private virtual cloud networks that overlay the Internet.
 Each virtual cloud network functions like a borderless LAN and provides
 fully switched, any-to-any connectivity between servers, PCs, and mobile
 devices from anywhere. -- https://en.wikipedia.org/wiki/Cloud-based_networking
+
+## Local Development + Testing: MacOSx
+
+1. `git clone` repo locally.
+2. `brew install scons cmake libevent curl jansson`
+3. `git submodule init`
+4. `git submodule update`
+5. `cd tapcfg`
+6. `./buildall.sh`
+7. `mkdir build` from the main directory.
+8. `cd build`, then `cmake`, then `make`.
+9. In the `/nvagent/src/netvirt-agent2.app/Contents/MacOS` directory, you will find the agent binary for MacOS.
+10. `$ sudo ./netvirt-agent2 -k <provisioning-key>`
+11. `$ sudo ./netvirt-agent2 -l <node-name>`
+11. `$ sudo ./netvirt-agent2 -c <node-name>`
+
+## Local Development + Testing: Ubuntu
+
+
+## Local Development + Testing: Debian
