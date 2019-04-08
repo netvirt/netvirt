@@ -13,7 +13,9 @@ Each virtual cloud network functions like a borderless LAN and provides
 fully switched, any-to-any connectivity between servers, PCs, and mobile
 devices from anywhere. -- https://en.wikipedia.org/wiki/Cloud-based_networking
 
-## Local Development + Testing: MacOSx
+## nvagent
+
+### Local Development + Testing: MacOSx
 
 1. `git clone` repo locally.
 2. `brew install scons cmake libevent curl jansson`
@@ -27,8 +29,6 @@ devices from anywhere. -- https://en.wikipedia.org/wiki/Cloud-based_networking
 10. `$ sudo ./netvirt-agent2 -k <provisioning-key>`
 11. `$ sudo ./netvirt-agent2 -l <node-name>`
 11. `$ sudo ./netvirt-agent2 -c <node-name>`
+12. If you head to the dashboard on the site, you should see the node connected to your network!
 
-## Local Development + Testing: Ubuntu
-
-
-## Local Development + Testing: Debian
+### TODO(sneha) Local Development + Testing: Ubuntu
